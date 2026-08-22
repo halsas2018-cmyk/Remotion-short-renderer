@@ -211,9 +211,15 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     style={{
                       width: 0,
                       height: 0,
-                      borderTop: 10 solid transparent,
-                      borderBottom: 10 solid transparent,
-                      borderLeft: 15 solid ARROW_COLOR,
+                      borderTopWidth: 10,
+                      borderTopStyle: "solid",
+                      borderTopColor: "transparent",
+                      borderBottomWidth: 10,
+                      borderBottomStyle: "solid",
+                      borderBottomColor: "transparent",
+                      borderLeftWidth: 15,
+                      borderLeftStyle: "solid",
+                      borderLeftColor: ARROW_COLOR,
                       transform: [{ scaleX: arrowProgresses[i] }],
                       transformOrigin: "left center",
                     }}

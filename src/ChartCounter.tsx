@@ -33,6 +33,9 @@ function formatNumber(num: number): string {
   return `$${num.toLocaleString()}`;
 }
 
+// Ease-out bezier curve (fast start, slow finish) - same as Material Design
+const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+
 export const ChartCounter: React.FC<ChartCounterProps> = ({
   value,
   label,
@@ -44,14 +47,14 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   // Entrance animation: fade in + scale up over first 15 frames
   const entranceFrames = 15;
   const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: Easing.out(Easing.circ),
+    easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
   // Count-up animation: ease-out curve (fast start, slow finish)
   const countProgress = interpolate(frame, [0, durationInFrames], [0, 1], {
-    easing: Easing.out(Easing.circ),
+    easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });

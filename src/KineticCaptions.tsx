@@ -83,7 +83,7 @@ function mulberry32(a: number) {
 }
 
 // Generate deterministic position for a word index
-function getWordPosition(index: totalWords: number, width: number, height: number): { x: number; y: number; rotation: number } {
+function getWordPosition(index: number, totalWords: number, width: number, height: number): { x: number; y: number; rotation: number } {
   const rand = mulberry32(index * 1000 + 42);
   const margin = CONFIG.positionMargin;
   const usableWidth = width - 2 * margin;

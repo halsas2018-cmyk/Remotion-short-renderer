@@ -3,7 +3,10 @@ import { KineticCaptionsComposition } from "./KineticCaptions";
 import { ChartCounterTestComposition } from "./ChartCounter";
 import { ChartComparisonTestComposition } from "./ChartComparison";
 import { IconTextTestComposition } from "./IconText";
-import { PlainTextTestComposition } from "./PlainText";
+import { KeyStatementTestComposition } from "./KeyStatement";
+import { TimelineTestComposition } from "./Timeline";
+import { ProcessFlowTestComposition } from "./ProcessFlow";
+import { VersusCardTestComposition } from "./VersusCard";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -12,7 +15,10 @@ export const RemotionRoot: React.FC = () => {
       <ChartCounterTestComposition />
       <ChartComparisonTestComposition />
       <IconTextTestComposition />
-      <PlainTextTestComposition />
+      <KeyStatementTestComposition />
+      <TimelineTestComposition />
+      <ProcessFlowTestComposition />
+      <VersusCardTestComposition />
     </>
   );
 };

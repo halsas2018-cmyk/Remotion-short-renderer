@@ -13,6 +13,7 @@ interface IconTextProps {
   icon: string;
   text: string;
   durationInFrames: number;
+  exitDirection?: "up" | "down" | "left" | "right";
 }
 
 // ICON_MAP mapping keyword strings to lucide-react icon components
@@ -46,15 +47,23 @@ export const IconText: React.FC<IconTextProps> = ({
   icon,
   text,
   durationInFrames,
+  exitDirection = "up",
 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
+
+  const entranceFrames = 15;
+  const exitStart = durationInFrames - 15;
+
+  // Phase detection
+  const isEntrance = frame < entranceFrames;
+  const isExit = frame > exitStart;
+  const isIdle = !isEntrance && !isExit;
 
   // Resolve icon component from map, fallback to DefaultIcon
   const IconComponent = ICON_MAP[icon.toLowerCase()] || DefaultIcon;
 
   // Entrance animation for whole component
-  const entranceFrames = 15;
   const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
@@ -65,6 +74,36 @@ export const IconText: React.FC<IconTextProps> = ({
     extrapolateRight: "clamp",
   });
   const entranceOpacity = entranceProgress;
+
+  // Exit animation for whole component
+  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.9], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitTranslateY = interpolate(
+    frame,
+    [exitStart, durationInFrames],
+    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const exitTranslateX = interpolate(
+    frame,
+    [exitStart, durationInFrames],
+    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  // Idle animation: subtle scale pulse
+  const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
 
   // Icon animation: scale/fade in first
   const iconDurationFrames = Math.min(durationInFrames, 45);
@@ -79,6 +118,9 @@ export const IconText: React.FC<IconTextProps> = ({
   });
   const iconOpacity = iconProgress;
 
+  // Icon idle: subtle rotation drift
+  const iconIdleRotation = isIdle ? 2 * Math.sin(frame * 0.04) : 0;
+
   // Text animation: starts slightly after icon
   const textDelayFrames = 12;
   const textProgress = interpolate(frame, [textDelayFrames, durationInFrames], [0, 1], {
@@ -86,11 +128,20 @@ export const IconText: React.FC<IconTextProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const textOpacity = textProgress;
+  const textOpacity = isExit ? exitOpacity : textProgress;
   const textY = interpolate(textProgress, [0, 1], [30, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  // Text idle: subtle vertical drift
+  const textIdleDrift = isIdle ? 3 * Math.sin(frame * 0.05) : 0;
+
+  // Combined transform values for container
+  const containerScale = isEntrance ? entranceScale : isExit ? exitScale : idleScale;
+  const containerOpacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
+  const containerTranslateX = isExit ? exitTranslateX : 0;
+  const containerTranslateY = isExit ? exitTranslateY : 0;
 
   return (
     <AbsoluteFill
@@ -108,14 +159,18 @@ export const IconText: React.FC<IconTextProps> = ({
     >
       <div
         style={{
-          transform: `scale(${entranceScale})`,
-          opacity: entranceOpacity,
+          transform: [
+            { scale: containerScale },
+            { translateX: containerTranslateX },
+            { translateY: containerTranslateY },
+          ],
+          opacity: containerOpacity,
           transformOrigin: "center",
         }}
       >
         <div
           style={{
-            transform: `scale(${iconScale})`,
+            transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
             opacity: iconOpacity,
             transformOrigin: "center",
             marginBottom: 32,
@@ -134,7 +189,7 @@ export const IconText: React.FC<IconTextProps> = ({
         <div
           style={{
             opacity: textOpacity,
-            transform: `translateY(${textY}px)`,
+            transform: `translateY(${textY + textIdleDrift}px)`,
             maxWidth: width - 240,
           }}
         >
@@ -162,7 +217,7 @@ export const IconTextTestComposition: React.FC = () => (
   <Composition
     id="IconTextTest"
     component={IconText}
-    durationInFrames={120}
+    durationInFrames={90}
     fps={30}
     width={1080}
     height={1920}
@@ -170,6 +225,7 @@ export const IconTextTestComposition: React.FC = () => (
       icon: "risk",
       text: "Broadcom only guarantees part of the loan",
       durationInFrames: 90,
+      exitDirection: "up",
     }}
   />
 );

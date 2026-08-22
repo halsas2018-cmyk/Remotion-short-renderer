@@ -11,6 +11,7 @@ import {
 interface ChartComparisonProps {
   items: { label: string; value: number }[];
   durationInFrames: number;
+  exitDirection?: "up" | "down" | "left" | "right";
 }
 
 // Number formatting with suffixes (same as ChartCounter)
@@ -38,21 +39,20 @@ const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 export const ChartComparison: React.FC<ChartComparisonProps> = ({
   items,
   durationInFrames,
+  exitDirection = "up",
 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
-  // Find max value for proportional scaling
-  const maxValue = Math.max(...items.map((item) => item.value));
-  
-  // Stagger delay per item (in frames)
-  const staggerFrames = 12;
-  
-  // Each item's animation duration (slightly shorter than total to allow stagger)
-  const itemDurationFrames = durationInFrames - staggerFrames * (items.length - 1);
+  const entranceFrames = 15;
+  const exitStart = durationInFrames - 15;
+
+  // Phase detection
+  const isEntrance = frame < entranceFrames;
+  const isExit = frame > exitStart;
+  const isIdle = !isEntrance && !isExit;
 
   // Entrance animation for whole component
-  const entranceFrames = 15;
   const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
@@ -63,6 +63,51 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
     extrapolateRight: "clamp",
   });
   const entranceOpacity = entranceProgress;
+
+  // Exit animation for whole component
+  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.9], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitTranslateY = interpolate(
+    frame,
+    [exitStart, durationInFrames],
+    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const exitTranslateX = interpolate(
+    frame,
+    [exitStart, durationInFrames],
+    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  // Idle animation: subtle scale pulse
+  const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
+
+  // Combined transform values
+  const scale = isEntrance ? entranceScale : isExit ? exitScale : idleScale;
+  const opacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
+  const translateX = isExit ? exitTranslateX : 0;
+  const translateY = isExit ? exitTranslateY : 0;
+
+  // Find max value for proportional scaling
+  const maxValue = Math.max(...items.map((item) => item.value));
+  
+  // Stagger delay per item (in frames)
+  const staggerFrames = 12;
+  
+  // Each item's animation duration (slightly shorter than total to allow stagger)
+  const itemDurationFrames = durationInFrames - staggerFrames * (items.length - 1);
 
   return (
     <AbsoluteFill
@@ -80,8 +125,12 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
     >
       <div
         style={{
-          transform: `scale(${entranceScale})`,
-          opacity: entranceOpacity,
+          transform: [
+            { scale },
+            { translateX },
+            { translateY },
+          ],
+          opacity,
           transformOrigin: "center",
           width: "100%",
           maxWidth: width - 240,
@@ -109,6 +158,10 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           });
+
+          // Idle animation for bars: subtle width breathing
+          const idleBarBreath = isIdle ? 1 + 0.005 * Math.sin(frame * 0.08 + index) : 1;
+          const finalBarWidth = barWidthPercent * idleBarBreath;
 
           return (
             <div
@@ -148,7 +201,7 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
                     marginLeft: 24,
                   }}
                 >
-                  {formatNumber(item.value * itemProgress)}
+                  {formatNumber(item.value * itemProgress * (isIdle ? idleBarBreath : 1))}
                 </span>
               </div>
               <div
@@ -162,7 +215,7 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
               >
                 <div
                   style={{
-                    width: `${barWidthPercent}%`,
+                    width: `${finalBarWidth}%`,
                     height: "100%",
                     backgroundColor: "white",
                     borderRadius: 8,
@@ -183,7 +236,7 @@ export const ChartComparisonTestComposition: React.FC = () => (
   <Composition
     id="ChartComparisonTest"
     component={ChartComparison}
-    durationInFrames={120}
+    durationInFrames={90}
     fps={30}
     width={1080}
     height={1920}
@@ -193,6 +246,7 @@ export const ChartComparisonTestComposition: React.FC = () => (
         { label: "Nvidia", value: 500000000000 },
       ],
       durationInFrames: 90,
+      exitDirection: "up",
     }}
   />
 );

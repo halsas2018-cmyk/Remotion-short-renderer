@@ -44,14 +44,14 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   // Entrance animation: fade in + scale up over first 15 frames
   const entranceFrames = 15;
   const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: Easing.out(Easing.cubic),
+    easing: Easing.out(Easing.circ),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
   // Count-up animation: ease-out curve (fast start, slow finish)
   const countProgress = interpolate(frame, [0, durationInFrames], [0, 1], {
-    easing: Easing.out(Easing.expo),
+    easing: Easing.out(Easing.circ),
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });

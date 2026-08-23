@@ -21,11 +21,13 @@ interface VersusCardProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const CARD_BG = "rgba(255,255,255,0.05)";
-const CARD_BORDER = "rgba(255,255,255,0.15)";
-const DIVIDER_COLOR = "#FFD700";
-const TEXT_COLOR = "white";
-const VALUE_COLOR = "#FFD700";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const DIVIDER_COLOR = ACCENT_COLOR;
+const CARD_BG = "white";
+const CARD_BORDER = "#e8e8e8";
 
 export const VersusCard: React.FC<VersusCardProps> = ({
   left,
@@ -115,21 +117,18 @@ export const VersusCard: React.FC<VersusCardProps> = ({
 
   // Layout
   const padding = 120;
-  const cardWidth = (width - 2 * padding - 60) / 2; // 60px for divider space
+  const availableWidth = width - 2 * padding;
+  const dividerWidth = 80;
+  const cardWidth = (availableWidth - dividerWidth) / 2;
   const cardHeight = 500;
-  const centerY = height / 2;
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        position: "relative",
       }}
     >
       <div
@@ -141,139 +140,163 @@ export const VersusCard: React.FC<VersusCardProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 60,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* Left Card */}
+        {/* 
+          Versus container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            width: cardWidth,
+            position: "absolute",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
+            width: availableWidth,
             height: cardHeight,
-            borderRadius: 24,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
-            textAlign: "center",
-            padding: 40,
-            boxSizing: "border-box",
-            transformOrigin: "center right",
-            transform: [
-              { translateX: interpolate(leftProgress, [0, 1], [-100, 0]) },
-              { scale: leftProgress },
-            ],
-            opacity: leftProgress,
+            justifyContent: "center",
+            gap: 0,
           }}
         >
+          {/* Left Card - elevated */}
           <div
             style={{
-              fontSize: 32,
-              fontWeight: 700,
-              color: TEXT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              marginBottom: 16,
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: 24,
+              backgroundColor: CARD_BG,
+              border: `2px solid ${CARD_BORDER}`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              padding: 40,
+              boxSizing: "border-box",
+              transformOrigin: "center right",
+              transform: [
+                { translateX: interpolate(leftProgress, [0, 1], [-100, 0]) },
+                { scale: leftProgress },
+              ],
+              opacity: leftProgress,
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {left.label}
-          </div>
-          {left.value && (
             <div
               style={{
-                fontSize: 48,
-                fontWeight: 800,
-                color: VALUE_COLOR,
+                fontSize: 32,
+                fontWeight: 700,
+                color: DARK_TEXT,
                 fontFamily: "system-ui, sans-serif",
-                lineHeight: 1.2,
+                marginBottom: 16,
               }}
             >
-              {left.value}
+              {left.label}
             </div>
-          )}
-        </div>
+            {left.value && (
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1.2,
+                }}
+              >
+                {left.value}
+              </div>
+            )}
+          </div>
 
-        {/* Center Divider */}
-        <div
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: "50%",
-            backgroundColor: "rgba(255,255,255,0.05)",
-            border: `2px solid ${DIVIDER_COLOR}`,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            transformOrigin: "center",
-            transform: [
-              { scale: dividerProgress * (isIdle ? idlePulse : 1) },
-            ],
-            opacity: dividerProgress,
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 20,
-              fontWeight: 900,
-              color: DIVIDER_COLOR,
-              fontFamily: "system-ui, sans-serif",
-            }}
-          >
-            VS
-          </span>
-        </div>
-
-        {/* Right Card */}
-        <div
-          style={{
-            width: cardWidth,
-            height: cardHeight,
-            borderRadius: 24,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-            padding: 40,
-            boxSizing: "border-box",
-            transformOrigin: "center left",
-            transform: [
-              { translateX: interpolate(rightProgress, [0, 1], [100, 0]) },
-              { scale: rightProgress },
-            ],
-            opacity: rightProgress,
-          }}
-        >
+          {/* Center Divider - elevated */}
           <div
             style={{
-              fontSize: 32,
-              fontWeight: 700,
-              color: TEXT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              marginBottom: 16,
+              width: dividerWidth,
+              height: dividerWidth,
+              borderRadius: "50%",
+              backgroundColor: CARD_BG,
+              border: `3px solid ${DIVIDER_COLOR}`,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              transformOrigin: "center",
+              transform: [
+                { scale: dividerProgress * (isIdle ? idlePulse : 1) },
+              ],
+              opacity: dividerProgress,
+              flexShrink: 0,
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {right.label}
-          </div>
-          {right.value && (
-            <div
+            <span
               style={{
-                fontSize: 48,
-                fontWeight: 800,
-                color: VALUE_COLOR,
+                fontSize: 20,
+                fontWeight: 900,
+                color: DIVIDER_COLOR,
                 fontFamily: "system-ui, sans-serif",
-                lineHeight: 1.2,
               }}
             >
-              {right.value}
+              VS
+            </span>
+          </div>
+
+          {/* Right Card - elevated */}
+          <div
+            style={{
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: 24,
+              backgroundColor: CARD_BG,
+              border: `2px solid ${CARD_BORDER}`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              padding: 40,
+              boxSizing: "border-box",
+              transformOrigin: "center left",
+              transform: [
+                { translateX: interpolate(rightProgress, [0, 1], [100, 0]) },
+                { scale: rightProgress },
+              ],
+              opacity: rightProgress,
+              boxShadow: CARD_SHADOW,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 32,
+                fontWeight: 700,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                marginBottom: 16,
+              }}
+            >
+              {right.label}
             </div>
-          )}
+            {right.value && (
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1.2,
+                }}
+              >
+                {right.value}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AbsoluteFill>

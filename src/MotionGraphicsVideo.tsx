@@ -20,6 +20,8 @@ import { ProgressMeter } from "./ProgressMeter";
 
 // Import the timed beats data
 import timedBeats from "./sample-timed-beats.json";
+// Import narration audio so Remotion bundles it correctly
+import narrationAudio from "../test_output/narration.mp3";
 
 interface TimedBeat {
   type: string;
@@ -64,7 +66,7 @@ export const MotionGraphicsVideo: React.FC = () => {
       }}
     >
       {/* Narration audio track - spans full duration */}
-      <Audio src="../test_output/narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
+      <Audio src={narrationAudio} startFrom={0} endAt={totalDurationInFrames} />
 
       {/* Persistent background spanning full duration */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>

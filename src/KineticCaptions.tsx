@@ -33,13 +33,13 @@ interface PositionedWord extends Word {
 // CONFIGURATION — tweak these values easily
 // ============================================
 const CONFIG = {
-  // Highlight appearance
-  highlightStyle: "outline" as "outline" | "filled",
-  highlightColor: "white",
-  highlightOutlineWidth: 4,
-  highlightOutlineGap: 2,
+  // Highlight appearance - updated for white background with elevation
+  highlightStyle: "elevated" as "elevated" | "filled",
+  highlightColor: "#FF8C00", // warm orange accent
+  highlightBgColor: "rgba(255, 255, 255, 0.98)",
+  highlightShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)",
   highlightPadding: 16,
-  highlightBorderRadius: 8,
+  highlightBorderRadius: 12,
 
   // Beat grouping (kept for timing reference)
   wordsPerBeat: { min: 3, max: 5 },
@@ -54,22 +54,22 @@ const CONFIG = {
   maxWidth: "100%",
 
   // Animation
-  transitionFrames: 3, // fade-in frames
+  transitionFrames: 3,
   transitionEasing: Easing.bezier(0.16, 1, 0.3, 1),
 
   // Scattered persistent captions
-  maxVisibleItems: 4, // max words visible at once
-  fadeOutDelayFrames: 30, // frames to hold at full opacity before fading (1 sec at 30fps)
-  fadeOutDurationFrames: 60, // frames to fade out (2 sec at 30fps)
-  positionMargin: 120, // px from edges
-  positionJitter: 0.15, // 0-1, how much to vary from grid positions
-  baseRotationRange: 3, // degrees, max base rotation per word
+  maxVisibleItems: 4,
+  fadeOutDelayFrames: 30,
+  fadeOutDurationFrames: 60,
+  positionMargin: 120,
+  positionJitter: 0.15,
+  baseRotationRange: 3,
 
   // Layout
   paddingHorizontal: 80,
-  backgroundColor: "black",
-  textColor: "white",
-  inactiveTextColor: "white",
+  backgroundColor: "white",
+  textColor: "#1a1a1a",
+  inactiveTextColor: "#4a4a4a",
 } as const;
 
 // Deterministic pseudo-random (mulberry32)
@@ -89,7 +89,6 @@ function getWordPosition(index: number, totalWords: number, width: number, heigh
   const usableWidth = width - 2 * margin;
   const usableHeight = height - 2 * margin;
 
-  // Create a loose grid to avoid overlaps, then jitter
   const cols = 3;
   const rows = 3;
   const col = index % cols;
@@ -170,8 +169,6 @@ export const KineticCaptions: React.FC = () => {
   }, [width, height]);
 
   // For each word, compute its visibility progress (0 to 1)
-  // Word fades in at start, holds, then fades out after delay
-  // Only maxVisibleItems most recent words are kept visible
   const wordStates = wordsWithPositions.map((w, i) => {
     const wordStartFrame = Math.round(w.start * fps);
     const wordEndFrame = Math.round(w.end * fps);
@@ -179,7 +176,6 @@ export const KineticCaptions: React.FC = () => {
     const holdFrames = CONFIG.fadeOutDelayFrames;
     const fadeOutFrames = CONFIG.fadeOutDurationFrames;
 
-    // When does this word start fading out?
     const fadeOutStartFrame = wordStartFrame + fadeInFrames + holdFrames;
     const fadeOutEndFrame = fadeOutStartFrame + fadeOutFrames;
 
@@ -190,17 +186,14 @@ export const KineticCaptions: React.FC = () => {
     if (frame < wordStartFrame) {
       progress = 0;
     } else if (frame < wordStartFrame + fadeInFrames) {
-      // Fade in
       progress = interpolate(frame, [wordStartFrame, wordStartFrame + fadeInFrames], [0, 1], {
         easing: CONFIG.transitionEasing,
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
       });
     } else if (frame < fadeOutStartFrame) {
-      // Fully visible
       progress = 1;
     } else if (frame < fadeOutEndFrame) {
-      // Fade out
       progress = interpolate(frame, [fadeOutStartFrame, fadeOutEndFrame], [1, 0], {
         easing: CONFIG.transitionEasing,
         extrapolateLeft: "clamp",
@@ -211,7 +204,6 @@ export const KineticCaptions: React.FC = () => {
     }
 
     // Active highlight: word is currently being spoken
-    // Highlight from word start until next word start (or word end if last)
     const nextWord = allWords[i + 1];
     const nextWordStartFrame = nextWord ? Math.round(nextWord.start * fps) : wordEndFrame;
     const highlightTransitionFrames = CONFIG.transitionFrames;
@@ -272,21 +264,22 @@ export const KineticCaptions: React.FC = () => {
         });
         const opacity = progress;
 
-        // Highlight scale/opacity
-        const highlightScale = interpolate(highlightProgress, [0, 1], [0.95, 1], {
+        // Highlight scale/opacity for elevated card style
+        const highlightScale = interpolate(highlightProgress, [0, 1], [0.95, 1.05], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
         const highlightOpacity = isActiveHighlight ? highlightProgress : 0;
 
         const getHighlightStyles = () => {
-          if (CONFIG.highlightStyle === "filled") {
+          if (CONFIG.highlightStyle === "elevated") {
             return {
-              backgroundColor: isActiveHighlight ? CONFIG.highlightColor : "transparent",
-              padding: `0 ${CONFIG.highlightPadding}px`,
+              backgroundColor: CONFIG.highlightBgColor,
+              padding: `${CONFIG.highlightPadding}px ${CONFIG.highlightPadding + 8}px`,
               borderRadius: CONFIG.highlightBorderRadius,
-              color: isActiveHighlight ? CONFIG.backgroundColor : CONFIG.textColor,
-              boxShadow: "none",
+              color: isActiveHighlight ? CONFIG.highlightColor : CONFIG.textColor,
+              boxShadow: isActiveHighlight ? CONFIG.highlightShadow : "0 2px 8px rgba(0, 0, 0, 0.06)",
+              border: isActiveHighlight ? `2px solid ${CONFIG.highlightColor}` : "1px solid rgba(0, 0, 0, 0.06)",
             };
           } else {
             const outlineOpacity = highlightOpacity;
@@ -323,7 +316,7 @@ export const KineticCaptions: React.FC = () => {
               fontFamily: CONFIG.fontFamily,
               whiteSpace: "nowrap",
               pointerEvents: "none",
-              zIndex: isActiveHighlight ? 10 : index, // active on top
+              zIndex: isActiveHighlight ? 10 : index,
               ...highlightStyles,
             }}
           >

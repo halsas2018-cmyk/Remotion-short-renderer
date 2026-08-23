@@ -12,10 +12,12 @@ import { MapLocationTestComposition } from "./MapLocation";
 import { QuoteCardTestComposition } from "./QuoteCard";
 import { ProgressMeterTestComposition } from "./ProgressMeter";
 import { BeforeAfterTestComposition } from "./BeforeAfter";
+import { BackgroundTestComposition } from "./PersistentBackground";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <BackgroundTestComposition />
       <KineticCaptionsComposition />
       <ChartCounterTestComposition />
       <ChartComparisonTestComposition />

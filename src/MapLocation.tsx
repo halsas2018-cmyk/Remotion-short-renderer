@@ -17,12 +17,15 @@ interface MapLocationProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const MAP_COLOR = "rgba(255,255,255,0.15)";
-const MAP_STROKE = "rgba(255,255,255,0.3)";
-const PIN_COLOR = "#FFD700";
-const PIN_SHADOW = "rgba(0,0,0,0.4)";
-const TEXT_COLOR = "white";
-const LABEL_COLOR = "rgba(255,255,255,0.7)";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const LIGHT_TEXT = "#6a6a6a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const MAP_FILL = "#f0f0f0";
+const MAP_STROKE = "#d0d0d0";
+const PIN_COLOR = ACCENT_COLOR;
+const PIN_INNER = "white";
 
 // Simplified world map path (abstract silhouette) - centered in viewBox
 const WORLD_MAP_PATH = `
@@ -165,7 +168,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
 
   // Convert lat/long to map coordinates (approximate for our abstract map)
   // Map bounds roughly: lat -60 to 70, long -180 to 180
-  // SVG viewBox: 0 0 1000 500 (updated to fit new path)
+  // SVG viewBox: 0 0 1000 500
   const mapWidth = 800;
   const mapHeight = 400;
   const mapLeft = (width - mapWidth) / 2;
@@ -184,7 +187,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         position: "relative",
@@ -206,27 +209,42 @@ export const MapLocation: React.FC<MapLocationProps> = ({
           height: "100%",
         }}
       >
-        {/* World Map SVG - properly centered in full frame */}
-        <svg
-          width={mapWidth}
-          height={mapHeight}
-          viewBox="0 0 1000 500"
+        {/* Map container - elevated card */}
+        <div
           style={{
             position: "absolute",
             left: mapLeft,
             top: mapTop,
+            width: mapWidth,
+            height: mapHeight,
+            backgroundColor: "white",
+            borderRadius: 24,
+            boxShadow: CARD_SHADOW,
+            overflow: "hidden",
             opacity: mapProgress,
             transformOrigin: "center",
             transform: [{ scale: mapProgress }],
           }}
         >
-          <path
-            d={WORLD_MAP_PATH}
-            fill={MAP_COLOR}
-            stroke={MAP_STROKE}
-            strokeWidth={2}
-          />
-        </svg>
+          {/* World Map SVG */}
+          <svg
+            width={mapWidth}
+            height={mapHeight}
+            viewBox="0 0 1000 500"
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+            }}
+          >
+            <path
+              d={WORLD_MAP_PATH}
+              fill={MAP_FILL}
+              stroke={MAP_STROKE}
+              strokeWidth={2}
+            />
+          </svg>
+        </div>
 
         {/* Pin */}
         <div
@@ -249,7 +267,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
               width: pinSize * 1.5,
               height: pinSize * 0.3,
               borderRadius: "50%",
-              backgroundColor: PIN_SHADOW,
+              backgroundColor: "rgba(0, 0, 0, 0.15)",
               position: "absolute",
               bottom: -pinSize * 0.2,
               left: "50%",
@@ -257,7 +275,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
               opacity: pinProgress * 0.5,
             }}
           />
-          {/* Pin body */}
+          {/* Pin body - elevated with shadow */}
           <div
             style={{
               width: pinSize,
@@ -268,7 +286,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              boxShadow: `0 4px 20px ${PIN_SHADOW}`,
+              boxShadow: "0 4px 20px rgba(232, 108, 0, 0.4)",
             }}
           >
             <div
@@ -276,14 +294,14 @@ export const MapLocation: React.FC<MapLocationProps> = ({
                 width: pinSize * 0.5,
                 height: pinSize * 0.5,
                 borderRadius: "50%",
-                backgroundColor: "black",
+                backgroundColor: PIN_INNER,
                 transform: [{ rotate: "-45deg" }],
               }}
             />
           </div>
         </div>
 
-        {/* Location name label */}
+        {/* Location name label - elevated card */}
         <div
           style={{
             position: "absolute",
@@ -299,27 +317,35 @@ export const MapLocation: React.FC<MapLocationProps> = ({
         >
           <div
             style={{
-              fontSize: 36,
-              fontWeight: 800,
-              color: TEXT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: -1,
-              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+              backgroundColor: "white",
+              borderRadius: 12,
+              padding: "8px 16px",
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {locationName}
-          </div>
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: LABEL_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              marginTop: 4,
-            }}
-          >
-            {latitude >= 0 ? latitude.toFixed(2) : Math.abs(latitude).toFixed(2)}°{latitude >= 0 ? "N" : "S"} 
-            {longitude >= 0 ? longitude.toFixed(2) : Math.abs(longitude).toFixed(2)}°{longitude >= 0 ? "E" : "W"}
+            <div
+              style={{
+                fontSize: 32,
+                fontWeight: 800,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: -1,
+              }}
+            >
+              {locationName}
+            </div>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 500,
+                color: MEDIUM_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                marginTop: 4,
+              }}
+            >
+              {latitude >= 0 ? latitude.toFixed(2) : Math.abs(latitude).toFixed(2)}°{latitude >= 0 ? "N" : "S"} 
+              {longitude >= 0 ? longitude.toFixed(2) : Math.abs(longitude).toFixed(2)}°{longitude >= 0 ? "E" : "W"}
+            </div>
           </div>
         </div>
       </div>

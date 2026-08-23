@@ -20,11 +20,16 @@ interface ChartLineProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const LINE_COLOR = "#FFD700";
-const DOT_COLOR = "#FFD700";
-const GRID_COLOR = "rgba(255,255,255,0.1)";
-const TEXT_COLOR = "white";
-const LABEL_COLOR = "rgba(255,255,255,0.7)";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const LIGHT_TEXT = "#6a6a6a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const LINE_COLOR = ACCENT_COLOR;
+const DOT_COLOR = ACCENT_COLOR;
+const GRID_COLOR = "#e8e8e8";
+const AREA_GRADIENT_START = "rgba(232, 108, 0, 0.15)";
+const AREA_GRADIENT_END = "rgba(232, 108, 0, 0)";
 
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
@@ -132,7 +137,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   // Calculate chart dimensions
   const padding = 120;
   const chartWidth = width - 2 * padding;
-  const chartHeight = height * 0.55; // Reduced slightly to ensure labels fit
+  const chartHeight = height * 0.55;
   const centerY = height / 2;
   const chartTop = centerY - chartHeight / 2;
   const chartBottom = centerY + chartHeight / 2;
@@ -172,7 +177,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         display: "flex",
@@ -196,145 +201,204 @@ export const ChartLine: React.FC<ChartLineProps> = ({
           position: "relative",
         }}
       >
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: `${frac * 100}%`,
-              height: 1,
-              backgroundColor: GRID_COLOR,
-              opacity: entranceProgress,
-            }}
-          />
-        ))}
-
-        {/* Y-axis labels - FIXED: positioned within padding area */}
-        {[0, 0.5, 1].map((frac, i) => {
-          const val = maxValue - frac * valueRange;
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: -100, // Moved further left to ensure visibility
-                top: `${frac * 100}%`,
-                transform: [{ translateY: -10 }],
-                textAlign: "right",
-                width: 90,
-                opacity: entranceProgress,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  color: LABEL_COLOR,
-                  fontFamily: "system-ui, sans-serif",
-                }}
-              >
-                {formatNumber(val)}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* SVG Line Chart */}
-        <svg
-          width={chartWidth}
-          height={chartHeight}
+        {/* Chart container with elevated card effect */}
+        <div
           style={{
             position: "absolute",
             left: 0,
             top: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "white",
+            borderRadius: 24,
+            boxShadow: CARD_SHADOW,
             overflow: "visible",
           }}
         >
-          {/* Area fill */}
-          <path
-            d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
-            fill={`url(#${gradientId})`}
-            opacity={0.15 * entranceProgress}
-          />
-          {/* Line */}
-          <path
-            d={pathData}
-            stroke={LINE_COLOR}
-            strokeWidth={3}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray={dashArray}
-            strokeDashoffset={dashOffset}
-            style={{
-              filter: "drop-shadow(0 0 8px rgba(255, 215, 0, 0.5))",
-            }}
-          />
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={LINE_COLOR} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={LINE_COLOR} stopOpacity={0} />
-            </linearGradient>
-          </defs>
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: `${frac * 100}%`,
+                height: 1,
+                backgroundColor: GRID_COLOR,
+                opacity: entranceProgress,
+              }}
+            />
+          ))}
 
-          {/* Dots and labels */}
-          {pathPoints.map((point, i) => {
-            const dotProg = dotProgresses[i];
-            if (dotProg === 0) return null;
-
+          {/* Y-axis labels - elevated cards */}
+          {[0, 0.5, 1].map((frac, i) => {
+            const val = maxValue - frac * valueRange;
             return (
-              <React.Fragment key={i}>
-                {/* Dot */}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={6 * dotProg}
-                  fill={DOT_COLOR}
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: -110,
+                  top: `${frac * 100}%`,
+                  transform: [{ translateY: -10 }],
+                  textAlign: "right",
+                  width: 100,
+                  opacity: entranceProgress,
+                }}
+              >
+                <div
                   style={{
-                    filter: "drop-shadow(0 0 6px rgba(255, 215, 0, 0.8))",
-                    transformOrigin: `${point.x}px ${point.y}px`,
-                  }}
-                />
-
-                {/* Value label above dot */}
-                <text
-                  x={point.x}
-                  y={point.y - 25}
-                  textAnchor="middle"
-                  dominantBaseline="bottom"
-                  fill={TEXT_COLOR}
-                  fontSize="20"
-                  fontWeight="700"
-                  fontFamily="system-ui, sans-serif"
-                  opacity={dotProg}
-                  style={{
-                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+                    backgroundColor: "white",
+                    borderRadius: 8,
+                    padding: "4px 12px",
+                    boxShadow: CARD_SHADOW,
+                    display: "inline-block",
                   }}
                 >
-                  {formatNumber(point.value)}
-                </text>
-
-                {/* X-axis label below - FIXED: positioned within chart area */}
-                <text
-                  x={point.x}
-                  y={chartHeight + 25}
-                  textAnchor="middle"
-                  dominantBaseline="top"
-                  fill={LABEL_COLOR}
-                  fontSize="16"
-                  fontWeight="500"
-                  fontFamily="system-ui, sans-serif"
-                  opacity={dotProg}
-                >
-                  {point.label}
-                </text>
-              </React.Fragment>
+                  <span
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: DARK_TEXT,
+                      fontFamily: "system-ui, sans-serif",
+                    }}
+                  >
+                    {formatNumber(val)}
+                  </span>
+                </div>
+              </div>
             );
           })}
-        </svg>
+
+          {/* SVG Line Chart */}
+          <svg
+            width={chartWidth}
+            height={chartHeight}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              overflow: "visible",
+            }}
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={ACCENT_COLOR} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={ACCENT_COLOR} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+
+            {/* Area fill */}
+            <path
+              d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
+              fill={`url(#${gradientId})`}
+              opacity={entranceProgress}
+            />
+            {/* Line */}
+            <path
+              d={pathData}
+              stroke={LINE_COLOR}
+              strokeWidth={3}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={dashArray}
+              strokeDashoffset={dashOffset}
+              style={{
+                filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.3))",
+              }}
+            />
+
+            {/* Dots and labels */}
+            {pathPoints.map((point, i) => {
+              const dotProg = dotProgresses[i];
+              if (dotProg === 0) return null;
+
+              return (
+                <React.Fragment key={i}>
+                  {/* Dot with elevated glow */}
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={6 * dotProg}
+                    fill={DOT_COLOR}
+                    style={{
+                      filter: "drop-shadow(0 0 6px rgba(232, 108, 0, 0.6))",
+                      transformOrigin: `${point.x}px ${point.y}px`,
+                    }}
+                  />
+
+                  {/* Value label above dot - elevated card */}
+                  <foreignObject
+                    x={point.x - 60}
+                    y={point.y - 60}
+                    width={120}
+                    height={40}
+                    opacity={dotProg}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: 8,
+                        padding: "4px 12px",
+                        boxShadow: CARD_SHADOW,
+                        textAlign: "center",
+                        transform: `scale(${dotProg})`,
+                        transformOrigin: "bottom center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 700,
+                          color: ACCENT_COLOR,
+                          fontFamily: "system-ui, sans-serif",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatNumber(point.value)}
+                      </span>
+                    </div>
+                  </foreignObject>
+
+                  {/* X-axis label below - elevated card */}
+                  <foreignObject
+                    x={point.x - 50}
+                    y={chartHeight + 10}
+                    width={100}
+                    height={36}
+                    opacity={dotProg}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: 8,
+                        padding: "4px 8px",
+                        boxShadow: CARD_SHADOW,
+                        textAlign: "center",
+                        transform: `scale(${dotProg})`,
+                        transformOrigin: "top center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 500,
+                          color: MEDIUM_TEXT,
+                          fontFamily: "system-ui, sans-serif",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {point.label}
+                      </span>
+                    </div>
+                  </foreignObject>
+                </React.Fragment>
+              );
+            })}
+          </svg>
+        </div>
       </div>
     </AbsoluteFill>
   );

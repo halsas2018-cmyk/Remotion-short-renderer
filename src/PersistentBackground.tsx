@@ -11,15 +11,15 @@ export const PersistentBackground: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
-  // Grid configuration
-  const gridSize = 80; // spacing between grid lines
-  const lineOpacity = 0.06; // 6% opacity - subtle
-  const lineColor = "#999999"; // light gray
-  const lineWidth = 1;
+  // Grid configuration - made much more visible
+  const gridSize = 60; // tighter spacing for more lines
+  const lineOpacity = 0.4; // 40% opacity - clearly visible
+  const lineColor = "#000000"; // pure black
+  const lineWidth = 2; // thicker lines
 
-  // Diagonal drift speed (pixels per frame)
-  const driftSpeedX = 0.15;
-  const driftSpeedY = 0.1;
+  // Diagonal drift speed (pixels per frame) - slightly faster for more noticeable motion
+  const driftSpeedX = 0.25;
+  const driftSpeedY = 0.15;
 
   // Calculate offset based on frame - continuous, no reset
   const offsetX = (frame * driftSpeedX) % gridSize;
@@ -92,7 +92,7 @@ export const PersistentBackground: React.FC = () => {
         ))}
       </div>
 
-      {/* Subtle vignette for depth */}
+      {/* Subtle vignette for depth - slightly stronger */}
       <div
         style={{
           position: "absolute",
@@ -101,7 +101,7 @@ export const PersistentBackground: React.FC = () => {
           width: "100%",
           height: "100%",
           pointerEvents: "none",
-          background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)",
+          background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.05) 100%)",
         }}
       />
     </AbsoluteFill>

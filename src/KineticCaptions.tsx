@@ -9,6 +9,9 @@ import {
 } from "remotion";
 import { useBeatContext } from "./MotionGraphicsVideo";
 
+// Import timestamps directly - webpack bundles it
+import timestampsData from "./timestamps.json";
+
 interface Word {
   word: string;
   start: number;
@@ -250,45 +253,34 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   );
 };
 
-// Test composition - loads timestamps.json for preview
-export const KineticCaptionsComposition: React.FC = () => {
-  const [words, setWords] = React.useState<Word[]>([]);
-  
-  React.useEffect(() => {
-    fetch("../timestamps.json")
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setWords(data))
-      .catch(() => setWords([]));
-  }, []);
-
-  return (
-    <Composition
-      id="KineticCaptions"
-      component={KineticCaptions}
-      durationInFrames={300}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        captionEnabledTypes: new Set([
-          "chart_counter",
-          "chart_comparison",
-          "chart_line",
-          "progress_meter",
-          "map_location",
-          "timeline",
-          "process_flow",
-          "versus",
-          "icon_text",
-          "quote_card",
-          "before_after",
-        ]),
-        beats: [],
-        words,
-      }}
-    />
-  );
-};
+// Test composition - import timestamps.json directly (works in Remotion)
+export const KineticCaptionsComposition: React.FC = () => (
+  <Composition
+    id="KineticCaptions"
+    component={KineticCaptions}
+    durationInFrames={300}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      captionEnabledTypes: new Set([
+        "chart_counter",
+        "chart_comparison",
+        "chart_line",
+        "progress_meter",
+        "map_location",
+        "timeline",
+        "process_flow",
+        "versus",
+        "icon_text",
+        "quote_card",
+        "before_after",
+      ]),
+      beats: [],
+      words: timestampsData,
+    }}
+  />
+);
 
 // Dynamic composition factory - create compositions with custom captions
 export function createKineticCaptionsComposition(

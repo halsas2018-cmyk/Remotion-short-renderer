@@ -1,7 +1,3 @@
-// Root.tsx - Composition exports for Remotion Studio auto-discovery
-// These named exports allow Remotion Studio to discover compositions without registerRoot
-// The actual registerRoot is in index.ts with the RemotionRoot component
-
 import React from "react";
 import { Composition } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
@@ -20,6 +16,9 @@ import { ProgressMeter } from "./ProgressMeter";
 import { BeforeAfter } from "./BeforeAfter";
 import { MotionGraphicsVideo } from "./MotionGraphicsVideo";
 import timedBeats from "./sample-timed-beats.json";
+
+// Import timestamps directly - webpack bundles it
+import timestampsData from "./timestamps.json";
 
 interface TimedBeatsData {
   fps: number;
@@ -65,44 +64,33 @@ export const BackgroundTest = () => (
   />
 );
 
-export const KineticCaptionsComposition = () => {
-  const [words, setWords] = React.useState<typeof sampleCaptions1>([]);
-  
-  React.useEffect(() => {
-    fetch("../timestamps.json")
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setWords(data))
-      .catch(() => setWords([]));
-  }, []);
-
-  return (
-    <Composition
-      id="KineticCaptions"
-      component={KineticCaptions}
-      durationInFrames={300}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        captionEnabledTypes: new Set([
-          "chart_counter",
-          "chart_comparison",
-          "chart_line",
-          "progress_meter",
-          "map_location",
-          "timeline",
-          "process_flow",
-          "versus",
-          "icon_text",
-          "quote_card",
-          "before_after",
-        ]),
-        beats: [],
-        words,
-      }}
-    />
-  );
-};
+export const KineticCaptionsComposition = () => (
+  <Composition
+    id="KineticCaptions"
+    component={KineticCaptions}
+    durationInFrames={300}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      captionEnabledTypes: new Set([
+        "chart_counter",
+        "chart_comparison",
+        "chart_line",
+        "progress_meter",
+        "map_location",
+        "timeline",
+        "process_flow",
+        "versus",
+        "icon_text",
+        "quote_card",
+        "before_after",
+      ]),
+      beats: [],
+      words: timestampsData,
+    }}
+  />
+);
 
 // Dynamic composition examples - easy to create new ones with different captions
 export const KineticCaptionsTest1 = createKineticCaptionsComposition(

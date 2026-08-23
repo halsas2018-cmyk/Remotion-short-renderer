@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useEffect, useState } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -25,6 +25,8 @@ import { SceneTransition } from "./SceneTransition";
 import { KineticCaptions } from "./KineticCaptions";
 
 import timedBeats from "./sample-timed-beats.json";
+// Import timestamps directly - webpack bundles it
+import narrationWordsData from "./timestamps.json";
 
 interface TimedBeat {
   type: string;
@@ -129,15 +131,6 @@ const COUNTER_FADE_FRAMES = 10;
 
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
-  const [narrationWords, setNarrationWords] = useState<Array<{ word: string; start: number; end: number }>>([]);
-
-  // Load narration timestamps from JSON
-  useEffect(() => {
-    fetch("../timestamps.json")
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setNarrationWords(data))
-      .catch(() => setNarrationWords([]));
-  }, []);
 
   // Precompute exit/entry directions with continuous linking
   // Beat N entryDirection = Beat N-1 exitDirection
@@ -274,11 +267,11 @@ export const MotionGraphicsVideo: React.FC = () => {
         </Sequence>
 
         {/* Kinetic Captions - only renders during caption-enabled beats
-            Pass narration words dynamically loaded from timestamps.json */}
+            Pass narration words from imported JSON (available immediately) */}
         <KineticCaptions 
           captionEnabledTypes={CAPTION_ENABLED_TYPES}
           beats={beatsWithDirections}
-          words={narrationWords}
+          words={narrationWordsData}
         />
 
         {/* Sequence each beat with exact validated timing, wrapped in SceneTransition */}

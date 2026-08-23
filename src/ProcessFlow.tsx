@@ -15,10 +15,13 @@ interface ProcessFlowProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const BOX_COLOR = "rgba(255,255,255,0.1)";
-const BORDER_COLOR = "rgba(255,255,255,0.3)";
-const ARROW_COLOR = "#FFD700";
-const TEXT_COLOR = "white";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const ARROW_COLOR = ACCENT_COLOR;
+const BOX_BG = "white";
+const BOX_BORDER = "#e8e8e8";
 
 export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   steps,
@@ -106,18 +109,17 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   const translateX = isExit ? exitTranslateX : 0;
   const translateY = isExit ? exitTranslateY : 0;
 
-  // Layout: horizontal flow for 2-4 steps - VERTICALLY CENTERED with proper margins
+  // Layout: horizontal flow for 2-4 steps - VERTICALLY CENTERED
   const padding = 120;
   const availableWidth = width - 2 * padding;
   const boxWidth = Math.min(300, availableWidth / steps.length * 0.85);
-  const boxHeight = 160; // Taller boxes for longer text
+  const boxHeight = 160;
   const gap = (availableWidth - steps.length * boxWidth) / (steps.length - 1);
-  const centerY = height / 2; // Vertically centered in full frame
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         position: "relative",
@@ -137,19 +139,24 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
           left: 0,
           width: "100%",
           height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
         }}
       >
+        {/* 
+          Flow container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
+            position: "absolute",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
             width: availableWidth,
-            position: "relative",
+            height: boxHeight,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            height: boxHeight,
           }}
         >
           {steps.map((step, i) => {
@@ -159,17 +166,17 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
 
             return (
               <React.Fragment key={i}>
-                {/* Step box */}
+                {/* Step box - elevated card */}
                 <div
                   style={{
                     position: "absolute",
                     left: xPos,
-                    top: centerY - padding - boxHeight / 2,
+                    top: 0,
                     width: boxWidth,
                     height: boxHeight,
                     borderRadius: 16,
-                    backgroundColor: BOX_COLOR,
-                    border: `2px solid ${BORDER_COLOR}`,
+                    backgroundColor: BOX_BG,
+                    border: `2px solid ${BOX_BORDER}`,
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
@@ -181,13 +188,14 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     ],
                     opacity: prog,
                     boxSizing: "border-box",
+                    boxShadow: CARD_SHADOW,
                   }}
                 >
                   <span
                     style={{
                       fontSize: 28,
                       fontWeight: 700,
-                      color: TEXT_COLOR,
+                      color: DARK_TEXT,
                       fontFamily: "system-ui, sans-serif",
                       lineHeight: 1.3,
                       wordWrap: "break-word",
@@ -204,7 +212,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     style={{
                       position: "absolute",
                       left: xPos + boxWidth,
-                      top: centerY - padding,
+                      top: boxHeight / 2 - 1,
                       width: gap,
                       height: 2,
                       backgroundColor: ARROW_COLOR,
@@ -217,7 +225,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                       paddingRight: 10,
                     }}
                   >
-                    {/* Arrowhead - FIXED: added "px" units and quotes */}
+                    {/* Arrowhead */}
                     <div
                       style={{
                         width: 0,

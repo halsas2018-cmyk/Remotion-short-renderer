@@ -20,10 +20,13 @@ interface TimelineProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const MARKER_COLOR = "#FFD700";
-const LINE_COLOR = "rgba(255,255,255,0.3)";
-const TEXT_COLOR = "white";
-const LABEL_COLOR = "rgba(255,255,255,0.9)";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const LINE_COLOR = "#d0d0d0";
+const MARKER_BG = "white";
+const MARKER_BORDER = ACCENT_COLOR;
 
 export const Timeline: React.FC<TimelineProps> = ({
   events,
@@ -108,20 +111,19 @@ export const Timeline: React.FC<TimelineProps> = ({
   const translateX = isExit ? exitTranslateX : 0;
   const translateY = isExit ? exitTranslateY : 0;
 
-  // Layout constants - vertically centered with proper margins
+  // Layout constants - centered in the middle of screen
   const padding = 120;
   const availableWidth = width - 2 * padding;
-  const centerY = height / 2; // Vertically centered in the full frame
-  const markerRadius = 16; // Larger markers
-  const labelOffset = 80; // More space between line and labels
+  const centerY = height / 2; // Middle of screen
+  const markerRadius = 20;
+  const labelOffset = 100;
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
-        // Remove flex centering - use absolute positioning from top-left
         position: "relative",
       }}
     >
@@ -151,11 +153,11 @@ export const Timeline: React.FC<TimelineProps> = ({
             height: "auto",
           }}
         >
-          {/* Horizontal line - thicker and more visible */}
+          {/* Horizontal line */}
           <div
             style={{
               position: "absolute",
-              top: centerY - padding, // Adjust for centered container
+              top: centerY - padding,
               left: 0,
               width: `${lineProgress * 100}%`,
               height: 3,
@@ -167,7 +169,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
           {/* Markers and labels */}
           {events.map((event, i) => {
-            const xPos = (i / (events.length - 1)) * availableWidth;
+            const xPos = events.length === 1 
+              ? availableWidth / 2 
+              : (i / (events.length - 1)) * availableWidth;
             const markerProg = markerProgresses[i];
             const isActive = markerProg > 0;
 
@@ -190,7 +194,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   />
                 )}
 
-                {/* Marker circle - larger and more prominent */}
+                {/* Marker circle - elevated card style */}
                 <div
                   style={{
                     position: "absolute",
@@ -199,7 +203,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                     width: markerRadius * 2,
                     height: markerRadius * 2,
                     borderRadius: "50%",
-                    backgroundColor: MARKER_COLOR,
+                    backgroundColor: MARKER_BG,
+                    border: `3px solid ${MARKER_BORDER}`,
                     transformOrigin: "center",
                     transform: [
                       { scale: markerProg * (isIdle ? idlePulse : 1) },
@@ -209,14 +214,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                     justifyContent: "center",
                     alignItems: "center",
                     zIndex: 10,
-                    boxShadow: `0 0 20px ${MARKER_COLOR}80`,
+                    boxShadow: CARD_SHADOW,
                   }}
                 >
                   <span
                     style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: "black",
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: ACCENT_COLOR,
                       fontFamily: "system-ui, sans-serif",
                     }}
                   >
@@ -224,53 +229,74 @@ export const Timeline: React.FC<TimelineProps> = ({
                   </span>
                 </div>
 
-                {/* Marker label (year) above */}
+                {/* Marker label (year) above - elevated card */}
                 <div
                   style={{
                     position: "absolute",
                     left: xPos,
-                    top: centerY - padding - labelOffset - markerRadius * 2 - 40,
+                    top: centerY - padding - labelOffset - markerRadius * 2 - 50,
                     transform: [{ translateX: -50 }],
                     whiteSpace: "nowrap",
                     opacity: markerProg,
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: 32,
-                      fontWeight: 800,
-                      color: TEXT_COLOR,
-                      fontFamily: "system-ui, sans-serif",
-                      textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                      backgroundColor: "white",
+                      borderRadius: 12,
+                      padding: "8px 16px",
+                      boxShadow: CARD_SHADOW,
+                      transform: `scale(${markerProg})`,
+                      transformOrigin: "bottom center",
                     }}
                   >
-                    {event.marker}
-                  </span>
+                    <span
+                      style={{
+                        fontSize: 28,
+                        fontWeight: 800,
+                        color: ACCENT_COLOR,
+                        fontFamily: "system-ui, sans-serif",
+                      }}
+                    >
+                      {event.marker}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Event description below */}
+                {/* Event description below - elevated card */}
                 <div
                   style={{
                     position: "absolute",
                     left: xPos,
                     top: centerY - padding + labelOffset + markerRadius + 10,
                     transform: [{ translateX: -50 }],
-                    width: availableWidth / events.length * 0.9,
+                    width: availableWidth / Math.max(events.length, 2) * 0.85,
                     textAlign: "center",
                     opacity: markerProg,
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: 26,
-                      fontWeight: 600,
-                      color: LABEL_COLOR,
-                      fontFamily: "system-ui, sans-serif",
-                      lineHeight: 1.3,
+                      backgroundColor: "white",
+                      borderRadius: 16,
+                      padding: "16px 24px",
+                      boxShadow: CARD_SHADOW,
+                      transform: `scale(${markerProg})`,
+                      transformOrigin: "top center",
                     }}
                   >
-                    {event.label}
-                  </span>
+                    <span
+                      style={{
+                        fontSize: 28,
+                        fontWeight: 600,
+                        color: DARK_TEXT,
+                        fontFamily: "system-ui, sans-serif",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {event.label}
+                    </span>
+                  </div>
                 </div>
               </React.Fragment>
             );
@@ -285,7 +311,7 @@ export const TimelineTestComposition: React.FC = () => (
   <Composition
     id="TimelineTest"
     component={Timeline}
-    durationInFrames={90}
+    durationInFrames={120}
     fps={30}
     width={1080}
     height={1920}
@@ -294,7 +320,29 @@ export const TimelineTestComposition: React.FC = () => (
         { marker: "2024", label: "Meta raised $27B" },
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
-      durationInFrames: 90,
+      durationInFrames: 120,
+      exitDirection: "up",
+    }}
+  />
+);
+
+// Additional test composition with 3+ events to verify dynamic behavior
+export const TimelineMultiTestComposition: React.FC = () => (
+  <Composition
+    id="TimelineMultiTest"
+    component={Timeline}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      events: [
+        { marker: "2024", label: "Meta raised $27B" },
+        { marker: "2026", label: "Broadcom acquires VMware" },
+        { marker: "2029", label: "Exposure could hit $370B" },
+        { marker: "2032", label: "AI chip market matures" },
+      ],
+      durationInFrames: 180,
       exitDirection: "up",
     }}
   />

@@ -112,7 +112,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   const boxWidth = Math.min(300, availableWidth / steps.length * 0.85);
   const boxHeight = 160; // Taller boxes for longer text
   const gap = (availableWidth - steps.length * boxWidth) / (steps.length - 1);
-  const centerY = height / 2; // Vertically centered
+  const centerY = height / 2; // Vertically centered in full frame
 
   return (
     <AbsoluteFill
@@ -120,11 +120,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
         backgroundColor: "black",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        position: "relative",
       }}
     >
       <div
@@ -136,95 +132,109 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          width: availableWidth,
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
         }}
       >
-        {steps.map((step, i) => {
-          const prog = stepProgresses[i];
-          const xPos = i * (boxWidth + gap);
-          const isLast = i === steps.length - 1;
+        <div
+          style={{
+            width: availableWidth,
+            position: "relative",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            height: boxHeight,
+          }}
+        >
+          {steps.map((step, i) => {
+            const prog = stepProgresses[i];
+            const xPos = i * (boxWidth + gap);
+            const isLast = i === steps.length - 1;
 
-          return (
-            <React.Fragment key={i}>
-              {/* Step box */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: xPos,
-                  top: centerY - boxHeight / 2,
-                  width: boxWidth,
-                  height: boxHeight,
-                  borderRadius: 16,
-                  backgroundColor: BOX_COLOR,
-                  border: `2px solid ${BORDER_COLOR}`,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  textAlign: "center",
-                  padding: 24,
-                  transformOrigin: "center",
-                  transform: [
-                    { scale: prog * (isIdle ? idlePulse : 1) },
-                  ],
-                  opacity: prog,
-                  boxSizing: "border-box",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: TEXT_COLOR,
-                    fontFamily: "system-ui, sans-serif",
-                    lineHeight: 1.3,
-                    wordWrap: "break-word",
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  {step}
-                </span>
-              </div>
-
-              {/* Arrow to next step */}
-              {!isLast && (
+            return (
+              <React.Fragment key={i}>
+                {/* Step box */}
                 <div
                   style={{
                     position: "absolute",
-                    left: xPos + boxWidth,
-                    top: centerY,
-                    width: gap,
-                    height: 2,
-                    backgroundColor: ARROW_COLOR,
-                    transformOrigin: "left center",
-                    transform: [{ scaleX: arrowProgresses[i] }],
-                    opacity: arrowProgresses[i],
+                    left: xPos,
+                    top: centerY - padding - boxHeight / 2,
+                    width: boxWidth,
+                    height: boxHeight,
+                    borderRadius: 16,
+                    backgroundColor: BOX_COLOR,
+                    border: `2px solid ${BORDER_COLOR}`,
                     display: "flex",
-                    justifyContent: "flex-end",
+                    justifyContent: "center",
                     alignItems: "center",
-                    paddingRight: 10,
+                    textAlign: "center",
+                    padding: 24,
+                    transformOrigin: "center",
+                    transform: [
+                      { scale: prog * (isIdle ? idlePulse : 1) },
+                    ],
+                    opacity: prog,
+                    boxSizing: "border-box",
                   }}
                 >
-                  {/* Arrowhead - FIXED: added "px" units and quotes */}
+                  <span
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      color: TEXT_COLOR,
+                      fontFamily: "system-ui, sans-serif",
+                      lineHeight: 1.3,
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {step}
+                  </span>
+                </div>
+
+                {/* Arrow to next step */}
+                {!isLast && (
                   <div
                     style={{
-                      width: 0,
-                      height: 0,
-                      borderTop: "10px solid transparent",
-                      borderBottom: "10px solid transparent",
-                      borderLeft: "15px solid " + ARROW_COLOR,
-                      transform: [{ scaleX: arrowProgresses[i] }],
+                      position: "absolute",
+                      left: xPos + boxWidth,
+                      top: centerY - padding,
+                      width: gap,
+                      height: 2,
+                      backgroundColor: ARROW_COLOR,
                       transformOrigin: "left center",
+                      transform: [{ scaleX: arrowProgresses[i] }],
+                      opacity: arrowProgresses[i],
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      paddingRight: 10,
                     }}
-                  />
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
+                  >
+                    {/* Arrowhead - FIXED: added "px" units and quotes */}
+                    <div
+                      style={{
+                        width: 0,
+                        height: 0,
+                        borderTop: "10px solid transparent",
+                        borderBottom: "10px solid transparent",
+                        borderLeft: "15px solid " + ARROW_COLOR,
+                        transform: [{ scaleX: arrowProgresses[i] }],
+                        transformOrigin: "left center",
+                      }}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </AbsoluteFill>
   );

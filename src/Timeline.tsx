@@ -111,7 +111,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Layout constants - vertically centered with proper margins
   const padding = 120;
   const availableWidth = width - 2 * padding;
-  const centerY = height / 2; // Vertically centered
+  const centerY = height / 2; // Vertically centered in the full frame
   const markerRadius = 16; // Larger markers
   const labelOffset = 80; // More space between line and labels
 
@@ -121,11 +121,8 @@ export const Timeline: React.FC<TimelineProps> = ({
         backgroundColor: "black",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        // Remove flex centering - use absolute positioning from top-left
+        position: "relative",
       }}
     >
       <div
@@ -137,134 +134,148 @@ export const Timeline: React.FC<TimelineProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          width: availableWidth,
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        {/* Horizontal line - thicker and more visible */}
         <div
           style={{
-            position: "absolute",
-            top: centerY,
-            left: 0,
-            width: `${lineProgress * 100}%`,
-            height: 3,
-            backgroundColor: LINE_COLOR,
-            transformOrigin: "left center",
-            borderRadius: 2,
+            width: availableWidth,
+            position: "relative",
+            height: "auto",
           }}
-        />
+        >
+          {/* Horizontal line - thicker and more visible */}
+          <div
+            style={{
+              position: "absolute",
+              top: centerY - padding, // Adjust for centered container
+              left: 0,
+              width: `${lineProgress * 100}%`,
+              height: 3,
+              backgroundColor: LINE_COLOR,
+              transformOrigin: "left center",
+              borderRadius: 2,
+            }}
+          />
 
-        {/* Markers and labels */}
-        {events.map((event, i) => {
-          const xPos = (i / (events.length - 1)) * availableWidth;
-          const markerProg = markerProgresses[i];
-          const isActive = markerProg > 0;
+          {/* Markers and labels */}
+          {events.map((event, i) => {
+            const xPos = (i / (events.length - 1)) * availableWidth;
+            const markerProg = markerProgresses[i];
+            const isActive = markerProg > 0;
 
-          return (
-            <React.Fragment key={i}>
-              {/* Vertical line from center to marker */}
-              {isActive && (
+            return (
+              <React.Fragment key={i}>
+                {/* Vertical line from center to marker */}
+                {isActive && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: xPos,
+                      top: centerY - padding,
+                      width: 2,
+                      height: labelOffset,
+                      backgroundColor: LINE_COLOR,
+                      transformOrigin: "top center",
+                      transform: [{ scaleY: markerProg }],
+                      opacity: markerProg,
+                    }}
+                  />
+                )}
+
+                {/* Marker circle - larger and more prominent */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: xPos - markerRadius,
+                    top: centerY - padding - labelOffset - markerRadius,
+                    width: markerRadius * 2,
+                    height: markerRadius * 2,
+                    borderRadius: "50%",
+                    backgroundColor: MARKER_COLOR,
+                    transformOrigin: "center",
+                    transform: [
+                      { scale: markerProg * (isIdle ? idlePulse : 1) },
+                    ],
+                    opacity: markerProg,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 10,
+                    boxShadow: `0 0 20px ${MARKER_COLOR}80`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "black",
+                      fontFamily: "system-ui, sans-serif",
+                    }}
+                  >
+                    {event.marker}
+                  </span>
+                </div>
+
+                {/* Marker label (year) above */}
                 <div
                   style={{
                     position: "absolute",
                     left: xPos,
-                    top: centerY,
-                    width: 2,
-                    height: labelOffset,
-                    backgroundColor: LINE_COLOR,
-                    transformOrigin: "top center",
-                    transform: [{ scaleY: markerProg }],
+                    top: centerY - padding - labelOffset - markerRadius * 2 - 40,
+                    transform: [{ translateX: -50 }],
+                    whiteSpace: "nowrap",
                     opacity: markerProg,
                   }}
-                />
-              )}
+                >
+                  <span
+                    style={{
+                      fontSize: 32,
+                      fontWeight: 800,
+                      color: TEXT_COLOR,
+                      fontFamily: "system-ui, sans-serif",
+                      textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    {event.marker}
+                  </span>
+                </div>
 
-              {/* Marker circle - larger and more prominent */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: xPos - markerRadius,
-                  top: centerY - labelOffset - markerRadius,
-                  width: markerRadius * 2,
-                  height: markerRadius * 2,
-                  borderRadius: "50%",
-                  backgroundColor: MARKER_COLOR,
-                  transformOrigin: "center",
-                  transform: [
-                    { scale: markerProg * (isIdle ? idlePulse : 1) },
-                  ],
-                  opacity: markerProg,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  zIndex: 10,
-                  boxShadow: `0 0 20px ${MARKER_COLOR}80`,
-                }}
-              >
-                <span
+                {/* Event description below */}
+                <div
                   style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "black",
-                    fontFamily: "system-ui, sans-serif",
+                    position: "absolute",
+                    left: xPos,
+                    top: centerY - padding + labelOffset + markerRadius + 10,
+                    transform: [{ translateX: -50 }],
+                    width: availableWidth / events.length * 0.9,
+                    textAlign: "center",
+                    opacity: markerProg,
                   }}
                 >
-                  {event.marker}
-                </span>
-              </div>
-
-              {/* Marker label (year) above */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: xPos,
-                  top: centerY - labelOffset - markerRadius * 2 - 40,
-                  transform: [{ translateX: -50 }],
-                  whiteSpace: "nowrap",
-                  opacity: markerProg,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 32,
-                    fontWeight: 800,
-                    color: TEXT_COLOR,
-                    fontFamily: "system-ui, sans-serif",
-                    textShadow: "0 2px 10px rgba(0,0,0,0.5)",
-                  }}
-                >
-                  {event.marker}
-                </span>
-              </div>
-
-              {/* Event description below */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: xPos,
-                  top: centerY + labelOffset + markerRadius + 10,
-                  transform: [{ translateX: -50 }],
-                  width: availableWidth / events.length * 0.9,
-                  textAlign: "center",
-                  opacity: markerProg,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 600,
-                    color: LABEL_COLOR,
-                    fontFamily: "system-ui, sans-serif",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {event.label}
-                </span>
-              </div>
-            </React.Fragment>
-          );
-        })}
+                  <span
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 600,
+                      color: LABEL_COLOR,
+                      fontFamily: "system-ui, sans-serif",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {event.label}
+                  </span>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </AbsoluteFill>
   );

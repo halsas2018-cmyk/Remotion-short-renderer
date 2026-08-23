@@ -169,7 +169,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
   const mapWidth = 800;
   const mapHeight = 400;
   const mapLeft = (width - mapWidth) / 2;
-  const mapTop = (height - mapHeight) / 2; // Vertically centered
+  const mapTop = (height - mapHeight) / 2; // Vertically centered in full frame
 
   // Normalize coordinates
   const normLong = (longitude + 180) / 360; // 0 to 1
@@ -187,11 +187,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
         backgroundColor: "black",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 120,
+        position: "relative",
       }}
     >
       <div
@@ -203,10 +199,14 @@ export const MapLocation: React.FC<MapLocationProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* World Map SVG - properly centered */}
+        {/* World Map SVG - properly centered in full frame */}
         <svg
           width={mapWidth}
           height={mapHeight}

@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   Sequence,
   useVideoConfig,
+  Audio,
 } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { ChartCounter } from "./ChartCounter";
@@ -62,6 +63,9 @@ export const MotionGraphicsVideo: React.FC = () => {
         height,
       }}
     >
+      {/* Narration audio track - spans full duration */}
+      <Audio src="./narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
+
       {/* Persistent background spanning full duration */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>
         <PersistentBackground />

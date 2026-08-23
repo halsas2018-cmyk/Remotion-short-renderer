@@ -36,6 +36,12 @@ function formatNumber(num: number): string {
 // Ease-out bezier curve (fast start, slow finish) - same as Material Design
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 
+// Accent color for emphasis
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+
 export const ChartCounter: React.FC<ChartCounterProps> = ({
   value,
   label,
@@ -73,7 +79,7 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         display: "flex",
@@ -93,30 +99,43 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
       >
         <div
           style={{
-            fontSize: 140,
-            fontWeight: 900,
-            fontFamily: "system-ui, sans-serif",
-            color: "white",
-            lineHeight: 1,
-            letterSpacing: -4,
-            whiteSpace: "nowrap",
+            backgroundColor: "white",
+            borderRadius: 24,
+            padding: "48px 64px",
+            boxShadow: CARD_SHADOW,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            minWidth: 400,
           }}
         >
-          {displayValue}
-        </div>
-        <div
-          style={{
-            marginTop: 32,
-            fontSize: 48,
-            fontWeight: 500,
-            fontFamily: "system-ui, sans-serif",
-            color: "rgba(255, 255, 255, 0.85)",
-            lineHeight: 1.2,
-            maxWidth: width - 240,
-            textAlign: "center",
-          }}
-        >
-          {label}
+          <div
+            style={{
+              fontSize: 140,
+              fontWeight: 900,
+              fontFamily: "system-ui, sans-serif",
+              color: ACCENT_COLOR,
+              lineHeight: 1,
+              letterSpacing: -4,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {displayValue}
+          </div>
+          <div
+            style={{
+              marginTop: 32,
+              fontSize: 48,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+              color: DARK_TEXT,
+              lineHeight: 1.2,
+              maxWidth: width - 240,
+              textAlign: "center",
+            }}
+          >
+            {label}
+          </div>
         </div>
       </div>
     </AbsoluteFill>

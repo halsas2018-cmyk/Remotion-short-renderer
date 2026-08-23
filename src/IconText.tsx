@@ -13,6 +13,7 @@ interface IconTextProps {
   icon: string;
   text: string;
   durationInFrames: number;
+  startFrame?: number;
   exitDirection?: "up" | "down" | "left" | "right";
 }
 
@@ -53,9 +54,11 @@ export const IconText: React.FC<IconTextProps> = ({
   icon,
   text,
   durationInFrames,
+  startFrame = 0,
   exitDirection = "up",
 }) => {
-  const frame = useCurrentFrame();
+  const globalFrame = useCurrentFrame();
+  const frame = globalFrame - startFrame;
   const { width, height } = useVideoConfig();
 
   const entranceFrames = 15;
@@ -283,6 +286,7 @@ export const IconTextTestComposition: React.FC = () => (
       icon: "risk",
       text: "Broadcom only guarantees part of the loan",
       durationInFrames: 120,
+      startFrame: 0,
       exitDirection: "up",
     }}
   />

@@ -15,6 +15,17 @@ import { Timeline } from "./Timeline";
 import { VersusCard } from "./VersusCard";
 import { BeforeAfter } from "./BeforeAfter";
 import { PersistentBackground } from "./PersistentBackground";
+import { MotionGraphicsVideo } from "./MotionGraphicsVideo";
+import timedBeats from "./sample-timed-beats.json";
+
+interface TimedBeatsData {
+  fps: number;
+  totalDurationInFrames: number;
+  beats: unknown[];
+}
+
+const beatsData = timedBeats as TimedBeatsData;
+const { fps, totalDurationInFrames } = beatsData;
 
 // Root component that renders all compositions for Remotion Studio
 const RemotionRoot: React.FC = () => {
@@ -239,6 +250,15 @@ const RemotionRoot: React.FC = () => {
           durationInFrames: 90,
           exitDirection: "up",
         }}
+      />
+      <Composition
+        id="MotionGraphicsVideo"
+        component={MotionGraphicsVideo}
+        durationInFrames={totalDurationInFrames}
+        fps={fps}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
       />
     </>
   );

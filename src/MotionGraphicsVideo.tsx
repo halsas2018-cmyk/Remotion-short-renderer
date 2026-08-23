@@ -20,8 +20,6 @@ import { ProgressMeter } from "./ProgressMeter";
 
 // Import the timed beats data
 import timedBeats from "./sample-timed-beats.json";
-// Import narration audio from assets folder (copy narration.mp3 to src/assets/ first)
-import narrationAudio from "./assets/narration.mp3";
 
 interface TimedBeat {
   type: string;
@@ -65,8 +63,8 @@ export const MotionGraphicsVideo: React.FC = () => {
         height,
       }}
     >
-      {/* Narration audio track - spans full duration */}
-      <Audio src={narrationAudio} startFrom={0} endAt={totalDurationInFrames} />
+      {/* Narration audio track - spans full duration, served from public folder */}
+      <Audio src="/narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
 
       {/* Persistent background spanning full duration */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>

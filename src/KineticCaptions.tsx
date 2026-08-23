@@ -27,13 +27,15 @@ interface PositionedWord extends Word {
   x: number;
   y: number;
   rotation: number;
+  scale: number;
+  delay: number;
 }
 
 // ============================================
 // CONFIGURATION — tweak these values easily
 // ============================================
 const CONFIG = {
-  // Highlight appearance - updated for white background with elevation
+  // Highlight appearance - elevated card style
   highlightStyle: "elevated" as "elevated" | "filled",
   highlightColor: "#FF8C00", // warm orange accent
   highlightBgColor: "rgba(255, 255, 255, 0.98)",
@@ -41,29 +43,29 @@ const CONFIG = {
   highlightPadding: 16,
   highlightBorderRadius: 12,
 
-  // Beat grouping (kept for timing reference)
-  wordsPerBeat: { min: 3, max: 5 },
-  beatBreakGap: 0.3,
+  // Beat grouping
+  wordsPerBeat: { min: 3, max: 6 },
+  beatBreakGap: 0.35,
 
   // Typography
-  fontSize: 72,
+  fontSize: 68,
   fontWeight: 800 as React.CSSProperties["fontWeight"],
   fontFamily: "system-ui, sans-serif",
-  lineHeight: 1.3,
-  wordGap: 12,
+  lineHeight: 1.2,
+  wordGap: 8,
   maxWidth: "100%",
 
   // Animation
-  transitionFrames: 3,
+  transitionFrames: 4,
   transitionEasing: Easing.bezier(0.16, 1, 0.3, 1),
 
-  // Scattered persistent captions
-  maxVisibleItems: 4,
-  fadeOutDelayFrames: 30,
-  fadeOutDurationFrames: 60,
-  positionMargin: 120,
-  positionJitter: 0.15,
-  baseRotationRange: 3,
+  // Scattered persistent captions - more structured
+  maxVisibleItems: 5,
+  fadeOutDelayFrames: 25,
+  fadeOutDurationFrames: 50,
+  positionMargin: 100,
+  positionJitter: 0.08,
+  baseRotationRange: 2,
 
   // Layout
   paddingHorizontal: 80,
@@ -82,33 +84,37 @@ function mulberry32(a: number) {
   };
 }
 
-// Generate deterministic position for a word index
-function getWordPosition(index: number, totalWords: number, width: number, height: number): { x: number; y: number; rotation: number } {
+// Generate structured position for a word index - organized in a flowing layout
+function getWordPosition(index: number, totalWords: number, width: number, height: number): { x: number; y: number; rotation: number; scale: number; delay: number } {
   const rand = mulberry32(index * 1000 + 42);
   const margin = CONFIG.positionMargin;
   const usableWidth = width - 2 * margin;
   const usableHeight = height - 2 * margin;
 
-  const cols = 3;
-  const rows = 3;
-  const col = index % cols;
-  const row = Math.floor(index / cols) % rows;
+  // Create a more organic, flowing layout using a spiral/flow pattern
+  const angle = (index * 2.39996323) % (Math.PI * 2); // Golden angle for distribution
+  const radius = 0.15 + (index / totalWords) * 0.35; // Spiral outward
+  
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  const baseX = centerX + Math.cos(angle) * radius * Math.min(usableWidth, usableHeight);
+  const baseY = centerY + Math.sin(angle) * radius * Math.min(usableWidth, usableHeight);
 
-  const cellWidth = usableWidth / cols;
-  const cellHeight = usableHeight / rows;
-
-  const baseX = margin + col * cellWidth + cellWidth / 2;
-  const baseY = margin + row * cellHeight + cellHeight / 2;
-
-  const jitterX = (rand() - 0.5) * 2 * cellWidth * CONFIG.positionJitter;
-  const jitterY = (rand() - 0.5) * 2 * cellHeight * CONFIG.positionJitter;
+  // Add subtle jitter
+  const jitterX = (rand() - 0.5) * 2 * usableWidth * CONFIG.positionJitter;
+  const jitterY = (rand() - 0.5) * 2 * usableHeight * CONFIG.positionJitter;
 
   const rotation = (rand() - 0.5) * 2 * CONFIG.baseRotationRange;
+  const scale = 0.85 + rand() * 0.2; // 0.85 to 1.05
+  const delay = rand() * 0.3; // Staggered entrance
 
   return {
     x: Math.max(margin, Math.min(width - margin, baseX + jitterX)),
     y: Math.max(margin, Math.min(height - margin, baseY + jitterY)),
     rotation,
+    scale,
+    delay,
   };
 }
 
@@ -149,12 +155,7 @@ function groupIntoBeats(words: Word[]): Beat[] {
 const beats = groupIntoBeats(timestamps as Word[]);
 const allWords = timestamps as Word[];
 const lastWordEnd = allWords[allWords.length - 1]?.end ?? 0;
-const BUFFER_SECONDS = 1;
-
-// Pre-compute positions for all words (module level - will be recomputed in component)
-const positionedWords: PositionedWord[] = allWords.map((w, i) => {
-  return { ...w, x: 0, y: 0, rotation: 0 };
-});
+const BUFFER_SECONDS = 1.5;
 
 export const KineticCaptions: React.FC = () => {
   const frame = useCurrentFrame();
@@ -259,18 +260,30 @@ export const KineticCaptions: React.FC = () => {
       <Audio src={staticFile("narration.mp3")} />
 
       {visibleWords.map(({ word: w, progress, isActiveHighlight, highlightProgress, index }) => {
-        const scale = interpolate(progress, [0, 1], [0.8, 1], {
+        // Entrance animation with bounce
+        const entranceProgress = interpolate(progress, [0, 1], [0, 1], {
+          easing: Easing.bezier(0.34, 1.56, 0.64, 1), // bounce easing
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        
+        const scale = interpolate(entranceProgress, [0, 1], [0.3 * w.scale, w.scale], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
         const opacity = progress;
 
         // Highlight scale/opacity for elevated card style
-        const highlightScale = interpolate(highlightProgress, [0, 1], [0.95, 1.05], {
+        const highlightScale = interpolate(highlightProgress, [0, 1], [0.95, 1.08], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
         const highlightOpacity = isActiveHighlight ? highlightProgress : 0;
+
+        // Idle animation for visible words (subtle float)
+        const idleFloatY = progress > 0.99 ? Math.sin(frame * 0.02 + index) * 3 : 0;
+        const idleFloatX = progress > 0.99 ? Math.cos(frame * 0.015 + index) * 2 : 0;
+        const idleRotation = progress > 0.99 ? Math.sin(frame * 0.01 + index) * 1.5 : 0;
 
         const getHighlightStyles = () => {
           if (CONFIG.highlightStyle === "elevated") {
@@ -283,19 +296,11 @@ export const KineticCaptions: React.FC = () => {
               border: isActiveHighlight ? `2px solid ${CONFIG.highlightColor}` : "1px solid rgba(0, 0, 0, 0.06)",
             };
           } else {
-            const outlineOpacity = highlightOpacity;
-            const outlineScale = interpolate(highlightProgress, [0, 1], [0.8, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            });
             return {
               backgroundColor: "transparent",
               padding: 0,
               borderRadius: 0,
               color: CONFIG.textColor,
-              boxShadow: outlineOpacity > 0
-                ? `0 0 0 ${CONFIG.highlightOutlineWidth * outlineScale}px ${CONFIG.highlightColor}, 0 0 0 ${(CONFIG.highlightOutlineWidth + CONFIG.highlightOutlineGap) * outlineScale}px ${CONFIG.backgroundColor}`
-                : "none",
             };
           }
         };
@@ -309,7 +314,7 @@ export const KineticCaptions: React.FC = () => {
               position: "absolute",
               left: w.x,
               top: w.y,
-              transform: `translate(-50%, -50%) rotate(${w.rotation}deg) scale(${scale * highlightScale})`,
+              transform: `translate(-50%, -50%) rotate(${w.rotation + idleRotation}deg) scale(${scale * highlightScale}) translate(${idleFloatX}px, ${idleFloatY}px)`,
               transformOrigin: "center",
               opacity,
               fontSize: CONFIG.fontSize,
@@ -318,6 +323,7 @@ export const KineticCaptions: React.FC = () => {
               whiteSpace: "nowrap",
               pointerEvents: "none",
               zIndex: isActiveHighlight ? 10 : index,
+              lineHeight: CONFIG.lineHeight,
               ...highlightStyles,
             }}
           >

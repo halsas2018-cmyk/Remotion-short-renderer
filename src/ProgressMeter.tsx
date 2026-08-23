@@ -76,16 +76,44 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
     extrapolateRight: "clamp",
   });
 
+  // Subtitle bounce animation (appears after label)
+  const subtitleStart = labelStart + labelDuration + 10;
+  const subtitleDuration = 25;
+  const subtitleProgress = interpolate(frame, [subtitleStart, subtitleStart + subtitleDuration], [0, 1], {
+    easing: Easing.bezier(0.34, 1.56, 0.64, 1), // bounce
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   // Idle animation: subtle pulse on fill
   const idlePulse = 1 + 0.02 * Math.sin(frame * 0.06);
   const idleGlow = 0.3 + 0.2 * Math.sin(frame * 0.08);
+
+  // Subtitle bounce during idle
+  const subtitleBounceFrequency = 0.15;
+  const subtitleBounceAmplitude = 6;
+  const subtitleBounceOffset = frame > subtitleStart + subtitleDuration
+    ? Math.sin(frame * subtitleBounceFrequency * Math.PI * 2) * subtitleBounceAmplitude
+    : 0;
 
   const percentage = Math.min(1, Math.max(0, value / maxValue));
   const currentValue = value * numberProgress;
   const currentPercentage = percentage * fillProgress;
 
-  // Circular meter dimensions
-  const size = 380;
+  // Dynamic sizing based on label length
+  const labelWords = label.split(" ");
+  const longestWord = labelWords.reduce((a, b) => a.length > b.length ? a : b, "");
+  const labelCharCount = label.length;
+  const longestWordLength = longestWord.length;
+  
+  // Base size scales with content - wider for longer labels
+  const baseSize = 380;
+  const minSize = 320;
+  const maxSize = 520;
+  const charWidthEstimate = 14; // approximate px per character at fontSize 22
+  const neededWidth = Math.max(minSize, Math.min(maxSize, labelCharCount * charWidthEstimate + 120));
+  const size = Math.max(baseSize, neededWidth);
+  
   const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -115,7 +143,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           alignItems: "center",
         }}
       >
-        {/* Elevated card background for the meter */}
+        {/* Elevated card background for the meter - dynamically sized */}
         <div
           style={{
             position: "relative",
@@ -202,7 +230,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                 )}
               </div>
 
-              {/* Label */}
+              {/* Main Label */}
               <div
                 style={{
                   fontSize: 22,
@@ -214,9 +242,37 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                   marginTop: 16,
                   opacity: labelProgress,
                   transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
+                  whiteSpace: "nowrap",
+                  maxWidth: size - 40,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {label}
+              </div>
+
+              {/* Subtitle with bouncing animation */}
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: MEDIUM_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  letterSpacing: 1,
+                  marginTop: 12,
+                  opacity: subtitleProgress,
+                  transform: [
+                    { translateY: interpolate(subtitleProgress, [0, 1], [20, 0]) },
+                    { translateY: subtitleBounceOffset },
+                  ],
+                  transformOrigin: "center",
+                  whiteSpace: "nowrap",
+                  maxWidth: size - 40,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {value >= maxValue ? "Target Achieved" : "In Progress"}
               </div>
             </div>
           </div>
@@ -230,7 +286,7 @@ export const ProgressMeterTestComposition: React.FC = () => (
   <Composition
     id="ProgressMeterTest"
     component={ProgressMeter}
-    durationInFrames={90}
+    durationInFrames={120}
     fps={30}
     width={1080}
     height={1920}
@@ -238,7 +294,25 @@ export const ProgressMeterTestComposition: React.FC = () => (
       value: 70000000000,
       maxValue: 100000000000,
       label: "Funding Secured",
-      durationInFrames: 90,
+      durationInFrames: 120,
+    }}
+  />
+);
+
+// Additional test with longer label to verify dynamic sizing
+export const ProgressMeterLongLabelTest: React.FC = () => (
+  <Composition
+    id="ProgressMeterLongLabelTest"
+    component={ProgressMeter}
+    durationInFrames={120}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      value: 50000000000,
+      maxValue: 100000000000,
+      label: "Quarterly Revenue Target",
+      durationInFrames: 120,
     }}
   />
 );

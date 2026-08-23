@@ -36,6 +36,14 @@ function formatNumber(num: number): string {
 // Ease-out bezier curve (fast start, slow finish) - same as Material Design
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 
+// Color constants
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const BAR_BG = "#e8e8e8";
+const BAR_FILL = ACCENT_COLOR;
+
 export const ChartComparison: React.FC<ChartComparisonProps> = ({
   items,
   durationInFrames,
@@ -112,7 +120,7 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         display: "flex",
@@ -174,55 +182,64 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
             >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 12,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 42,
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    color: "rgba(255, 255, 255, 0.9)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 42,
-                    fontWeight: 700,
-                    fontFamily: "system-ui, sans-serif",
-                    color: "white",
-                    whiteSpace: "nowrap",
-                    marginLeft: 24,
-                  }}
-                >
-                  {/* FIXED: Show final formatted value without idle fluctuation */}
-                  {formatNumber(item.value)}
-                </span>
-              </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: 16,
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: 8,
-                  overflow: "hidden",
+                  backgroundColor: "white",
+                  borderRadius: 16,
+                  padding: "24px 32px",
+                  boxShadow: CARD_SHADOW,
+                  marginBottom: 16,
                 }}
               >
                 <div
                   style={{
-                    width: `${finalBarWidth}%`,
-                    height: "100%",
-                    backgroundColor: "white",
-                    borderRadius: 8,
-                    transformOrigin: "left center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
                   }}
-                />
+                >
+                  <span
+                    style={{
+                      fontSize: 42,
+                      fontWeight: 600,
+                      fontFamily: "system-ui, sans-serif",
+                      color: DARK_TEXT,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 42,
+                      fontWeight: 700,
+                      fontFamily: "system-ui, sans-serif",
+                      color: ACCENT_COLOR,
+                      whiteSpace: "nowrap",
+                      marginLeft: 24,
+                    }}
+                  >
+                    {formatNumber(item.value)}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: 16,
+                    backgroundColor: BAR_BG,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${finalBarWidth}%`,
+                      height: "100%",
+                      backgroundColor: BAR_FILL,
+                      borderRadius: 8,
+                      transformOrigin: "left center",
+                    }}
+                  />
+                </div>
               </div>
             </div>
           );

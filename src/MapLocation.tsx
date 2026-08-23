@@ -24,50 +24,50 @@ const PIN_SHADOW = "rgba(0,0,0,0.4)";
 const TEXT_COLOR = "white";
 const LABEL_COLOR = "rgba(255,255,255,0.7)";
 
-// Simplified world map path (abstract silhouette)
+// Simplified world map path (abstract silhouette) - centered in viewBox
 const WORLD_MAP_PATH = `
-  M 100 300
-  Q 150 250 200 280
-  Q 250 240 300 270
-  Q 350 230 400 260
-  Q 450 220 500 250
-  Q 550 210 600 240
-  Q 650 200 700 230
-  Q 750 190 800 220
-  Q 850 180 900 210
-  L 900 500
-  Q 850 520 800 500
-  Q 750 480 700 510
-  Q 650 530 600 500
-  Q 550 480 500 510
-  Q 450 530 400 500
-  Q 350 480 300 510
-  Q 250 530 200 500
-  Q 150 480 100 510
+  M 100 200
+  Q 150 150 200 180
+  Q 250 140 300 170
+  Q 350 130 400 160
+  Q 450 120 500 150
+  Q 550 110 600 140
+  Q 650 100 700 130
+  Q 750 90 800 120
+  Q 850 80 900 110
+  L 900 400
+  Q 850 420 800 400
+  Q 750 380 700 410
+  Q 650 430 600 400
+  Q 550 380 500 410
+  Q 450 430 400 400
+  Q 350 380 300 410
+  Q 250 430 200 400
+  Q 150 380 100 410
   Z
-  M 300 350
-  Q 350 320 400 340
-  Q 450 310 500 330
-  Q 550 300 600 320
-  L 600 450
-  Q 550 470 500 450
-  Q 450 430 400 460
-  Q 350 480 300 450
+  M 300 250
+  Q 350 220 400 240
+  Q 450 210 500 230
+  Q 550 200 600 220
+  L 600 350
+  Q 550 370 500 350
+  Q 450 330 400 360
+  Q 350 380 300 350
   Z
-  M 150 380
-  Q 200 360 250 370
-  L 250 420
-  Q 200 430 150 420
+  M 150 280
+  Q 200 260 250 270
+  L 250 320
+  Q 200 330 150 320
   Z
-  M 650 280
-  Q 700 260 750 270
-  L 750 320
-  Q 700 330 650 320
+  M 650 180
+  Q 700 160 750 170
+  L 750 220
+  Q 700 230 650 220
   Z
-  M 400 400
-  Q 450 380 500 390
-  L 500 430
-  Q 450 440 400 430
+  M 400 300
+  Q 450 280 500 290
+  L 500 330
+  Q 450 340 400 330
   Z
 `.trim();
 
@@ -165,11 +165,11 @@ export const MapLocation: React.FC<MapLocationProps> = ({
 
   // Convert lat/long to map coordinates (approximate for our abstract map)
   // Map bounds roughly: lat -60 to 70, long -180 to 180
-  // SVG viewBox: 0 0 1000 600 (from path)
+  // SVG viewBox: 0 0 1000 500 (updated to fit new path)
   const mapWidth = 800;
-  const mapHeight = 480;
+  const mapHeight = 400;
   const mapLeft = (width - mapWidth) / 2;
-  const mapTop = (height - mapHeight) / 2 - 50;
+  const mapTop = (height - mapHeight) / 2; // Vertically centered
 
   // Normalize coordinates
   const normLong = (longitude + 180) / 360; // 0 to 1
@@ -178,7 +178,7 @@ export const MapLocation: React.FC<MapLocationProps> = ({
   const pinX = mapLeft + normLong * mapWidth;
   const pinY = mapTop + normLat * mapHeight;
 
-  const pinSize = 24;
+  const pinSize = 28;
   const pinDropHeight = -200;
 
   return (
@@ -206,11 +206,11 @@ export const MapLocation: React.FC<MapLocationProps> = ({
           position: "relative",
         }}
       >
-        {/* World Map SVG */}
+        {/* World Map SVG - properly centered */}
         <svg
           width={mapWidth}
           height={mapHeight}
-          viewBox="0 0 1000 600"
+          viewBox="0 0 1000 500"
           style={{
             position: "absolute",
             left: mapLeft,

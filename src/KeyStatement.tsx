@@ -127,7 +127,8 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
           }}
         >
           {words.map((word, i) => {
-            const isEmphasized = emphasisSet.has(word.toLowerCase().replace(/[.,!?;:]$/, ""));
+            const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+            const isEmphasized = emphasisSet.has(cleanWord);
             return (
               <span
                 key={i}
@@ -138,7 +139,9 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                   transform: isEmphasized && isIdle ? [{ scale: idlePulse }] : undefined,
                   transformOrigin: "center",
                   display: "inline-block",
-                  transition: "transform 0.1s ease-out",
+                  // Add proper spacing around emphasized words
+                  marginLeft: i > 0 ? "0.15em" : 0,
+                  marginRight: i < words.length - 1 ? "0.15em" : 0,
                 }}
               >
                 {word}{i < words.length - 1 ? " " : ""}

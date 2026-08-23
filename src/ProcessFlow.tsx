@@ -98,7 +98,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
     });
   });
 
-  // Idle animation: subtle pulse on current step? We'll do a gentle pulse on all boxes.
+  // Idle animation: subtle pulse on current step
   const idlePulse = 1 + 0.02 * Math.sin(frame * 0.06);
 
   const scale = isEntrance ? entranceScale : isExit ? exitScale : 1;
@@ -106,13 +106,13 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   const translateX = isExit ? exitTranslateX : 0;
   const translateY = isExit ? exitTranslateY : 0;
 
-  // Layout: horizontal flow for 2-4 steps
+  // Layout: horizontal flow for 2-4 steps - VERTICALLY CENTERED with proper margins
   const padding = 120;
   const availableWidth = width - 2 * padding;
-  const boxWidth = Math.min(280, availableWidth / steps.length * 0.8);
-  const boxHeight = 140;
+  const boxWidth = Math.min(300, availableWidth / steps.length * 0.85);
+  const boxHeight = 160; // Taller boxes for longer text
   const gap = (availableWidth - steps.length * boxWidth) / (steps.length - 1);
-  const centerY = height / 2;
+  const centerY = height / 2; // Vertically centered
 
   return (
     <AbsoluteFill
@@ -165,7 +165,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                   justifyContent: "center",
                   alignItems: "center",
                   textAlign: "center",
-                  padding: 20,
+                  padding: 24,
                   transformOrigin: "center",
                   transform: [
                     { scale: prog * (isIdle ? idlePulse : 1) },
@@ -181,6 +181,8 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     color: TEXT_COLOR,
                     fontFamily: "system-ui, sans-serif",
                     lineHeight: 1.3,
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {step}
@@ -206,20 +208,14 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     paddingRight: 10,
                   }}
                 >
-                  {/* Arrowhead */}
+                  {/* Arrowhead - FIXED: added "px" units and quotes */}
                   <div
                     style={{
                       width: 0,
                       height: 0,
-                      borderTopWidth: 10,
-                      borderTopStyle: "solid",
-                      borderTopColor: "transparent",
-                      borderBottomWidth: 10,
-                      borderBottomStyle: "solid",
-                      borderBottomColor: "transparent",
-                      borderLeftWidth: 15,
-                      borderLeftStyle: "solid",
-                      borderLeftColor: ARROW_COLOR,
+                      borderTop: "10px solid transparent",
+                      borderBottom: "10px solid transparent",
+                      borderLeft: "15px solid " + ARROW_COLOR,
                       transform: [{ scaleX: arrowProgresses[i] }],
                       transformOrigin: "left center",
                     }}

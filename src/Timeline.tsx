@@ -22,6 +22,8 @@ interface TimelineProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const MARKER_COLOR = "#FFD700";
 const LINE_COLOR = "rgba(255,255,255,0.3)";
+const TEXT_COLOR = "white";
+const LABEL_COLOR = "rgba(255,255,255,0.9)";
 
 export const Timeline: React.FC<TimelineProps> = ({
   events,
@@ -106,12 +108,12 @@ export const Timeline: React.FC<TimelineProps> = ({
   const translateX = isExit ? exitTranslateX : 0;
   const translateY = isExit ? exitTranslateY : 0;
 
-  // Layout constants
+  // Layout constants - vertically centered with proper margins
   const padding = 120;
   const availableWidth = width - 2 * padding;
-  const centerY = height / 2;
-  const markerRadius = 12;
-  const labelOffset = 60;
+  const centerY = height / 2; // Vertically centered
+  const markerRadius = 16; // Larger markers
+  const labelOffset = 80; // More space between line and labels
 
   return (
     <AbsoluteFill
@@ -139,16 +141,17 @@ export const Timeline: React.FC<TimelineProps> = ({
           position: "relative",
         }}
       >
-        {/* Horizontal line */}
+        {/* Horizontal line - thicker and more visible */}
         <div
           style={{
             position: "absolute",
             top: centerY,
             left: 0,
             width: `${lineProgress * 100}%`,
-            height: 2,
+            height: 3,
             backgroundColor: LINE_COLOR,
             transformOrigin: "left center",
+            borderRadius: 2,
           }}
         />
 
@@ -177,7 +180,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 />
               )}
 
-              {/* Marker circle */}
+              {/* Marker circle - larger and more prominent */}
               <div
                 style={{
                   position: "absolute",
@@ -196,11 +199,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                   justifyContent: "center",
                   alignItems: "center",
                   zIndex: 10,
+                  boxShadow: `0 0 20px ${MARKER_COLOR}80`,
                 }}
               >
                 <span
                   style={{
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: 700,
                     color: "black",
                     fontFamily: "system-ui, sans-serif",
@@ -215,7 +219,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 style={{
                   position: "absolute",
                   left: xPos,
-                  top: centerY - labelOffset - markerRadius * 2 - 30,
+                  top: centerY - labelOffset - markerRadius * 2 - 40,
                   transform: [{ translateX: -50 }],
                   whiteSpace: "nowrap",
                   opacity: markerProg,
@@ -223,10 +227,11 @@ export const Timeline: React.FC<TimelineProps> = ({
               >
                 <span
                   style={{
-                    fontSize: 28,
+                    fontSize: 32,
                     fontWeight: 800,
-                    color: "white",
+                    color: TEXT_COLOR,
                     fontFamily: "system-ui, sans-serif",
+                    textShadow: "0 2px 10px rgba(0,0,0,0.5)",
                   }}
                 >
                   {event.marker}
@@ -238,7 +243,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 style={{
                   position: "absolute",
                   left: xPos,
-                  top: centerY + labelOffset + markerRadius,
+                  top: centerY + labelOffset + markerRadius + 10,
                   transform: [{ translateX: -50 }],
                   width: availableWidth / events.length * 0.9,
                   textAlign: "center",
@@ -247,9 +252,9 @@ export const Timeline: React.FC<TimelineProps> = ({
               >
                 <span
                   style={{
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: 600,
-                    color: "rgba(255,255,255,0.9)",
+                    color: LABEL_COLOR,
                     fontFamily: "system-ui, sans-serif",
                     lineHeight: 1.3,
                   }}

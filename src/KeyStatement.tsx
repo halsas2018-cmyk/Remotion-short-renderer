@@ -20,6 +20,9 @@ const ACCENT_COLOR = "#e86c00";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#4a4a4a";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+// Glow constants
+const GLOW_COLOR = "rgba(232, 108, 0, 0.35)";
+const GLOW_BLUR = 60;
 
 export const KeyStatement: React.FC<KeyStatementProps> = ({
   text,
@@ -78,6 +81,14 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
 
   // Idle animation: subtle scale pulse on container
   const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
+
+  // Fast bouncing animation for emphasized words (loop)
+  const bounceFrequency = 0.25; // Fast bounce (cycles per frame)
+  const bounceAmplitude = 8; // pixels
+
+  // Glow pulse animation (idle)
+  const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
+  const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
   // Split text into words and mark emphasis
   const words = text.split(" ");
@@ -139,81 +150,114 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
             textAlign: "center",
           }}
         >
+          {/* Elevated card with glow */}
           <div
             style={{
-              backgroundColor: "white",
-              borderRadius: 24,
-              padding: "48px 64px",
-              boxShadow: CARD_SHADOW,
+              position: "relative",
+              zIndex: 2,
             }}
           >
+            {/* Glow behind card */}
             <div
               style={{
-                fontSize: 64,
-                fontWeight: 700,
-                fontFamily: "system-ui, sans-serif",
-                color: DARK_TEXT,
-                lineHeight: 1.3,
-                letterSpacing: -1.5,
-                textAlign: "center",
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                gap: "0.08em",
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${glowPulse})`,
+                width: "110%",
+                height: "110%",
+                borderRadius: 32,
+                background: `radial-gradient(ellipse at center, ${GLOW_COLOR} 0%, transparent 70%)`,
+                opacity: (isExit ? exitOpacity : 1) * glowOpacity,
+                filter: `blur(${GLOW_BLUR}px)`,
+                pointerEvents: "none",
+                zIndex: -1,
+              }}
+            />
+            {/* Text card */}
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: 24,
+                padding: "48px 64px",
+                boxShadow: CARD_SHADOW,
+                position: "relative",
+                zIndex: 1,
               }}
             >
-              {words.map((word, i) => {
-                const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
-                const isEmphasized = emphasisSet.has(cleanWord);
-                
-                // Word entrance animation
-                const wordStartFrame = textStartDelay + i * wordStaggerFrames;
-                const wordEndFrame = wordStartFrame + wordDurationFrames;
-                
-                const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                  easing: easeOut,
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                });
-                
-                const wordOpacity = isExit ? exitOpacity : wordProgress;
-                const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                });
-                const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                });
-                
-                // Idle animation for emphasized words: subtle scale pulse
-                const idlePulse = isIdle && isEmphasized ? 1 + 0.03 * Math.sin(frame * 0.1 + i) : 1;
-                
-                // Base font size - emphasized words are larger
-                const baseFontSize = isEmphasized ? 76 : 64;
-                const baseFontWeight = isEmphasized ? 900 : 700;
-                const wordColor = isEmphasized ? ACCENT_COLOR : DARK_TEXT;
+              <div
+                style={{
+                  fontSize: 64,
+                  fontWeight: 700,
+                  fontFamily: "system-ui, sans-serif",
+                  color: DARK_TEXT,
+                  lineHeight: 1.3,
+                  letterSpacing: -1.5,
+                  textAlign: "center",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: "0.08em",
+                }}
+              >
+                {words.map((word, i) => {
+                  const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+                  const isEmphasized = emphasisSet.has(cleanWord);
+                  
+                  // Word entrance animation
+                  const wordStartFrame = textStartDelay + i * wordStaggerFrames;
+                  const wordEndFrame = wordStartFrame + wordDurationFrames;
+                  
+                  const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                    easing: easeOut,
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  
+                  const wordOpacity = isExit ? exitOpacity : wordProgress;
+                  const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  
+                  // Fast bouncing animation for emphasized words (idle loop)
+                  const bounceOffset = isIdle && isEmphasized 
+                    ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude 
+                    : 0;
+                  
+                  // Idle animation for emphasized words: subtle scale pulse
+                  const idlePulse = isIdle && isEmphasized ? 1 + 0.03 * Math.sin(frame * 0.1 + i) : 1;
+                  
+                  // Base font size - emphasized words are larger
+                  const baseFontSize = isEmphasized ? 76 : 64;
+                  const baseFontWeight = isEmphasized ? 900 : 700;
+                  const wordColor = isEmphasized ? ACCENT_COLOR : DARK_TEXT;
 
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      display: "inline-block",
-                      opacity: wordOpacity,
-                      transform: `translateY(${wordY}px) scale(${wordScale * idlePulse})`,
-                      transformOrigin: "center bottom",
-                      fontSize: baseFontSize,
-                      fontWeight: baseFontWeight,
-                      color: wordColor,
-                      fontFamily: "system-ui, sans-serif",
-                      lineHeight: 1.3,
-                      margin: "0 0.04em",
-                    }}
-                  >
-                    {word}{i < totalWords - 1 ? " " : ""}
-                  </span>
-                );
-              })}
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        display: "inline-block",
+                        opacity: wordOpacity,
+                        transform: `translateY(${wordY + bounceOffset}px) scale(${wordScale * idlePulse})`,
+                        transformOrigin: "center bottom",
+                        fontSize: baseFontSize,
+                        fontWeight: baseFontWeight,
+                        color: wordColor,
+                        fontFamily: "system-ui, sans-serif",
+                        lineHeight: 1.3,
+                        margin: "0 0.04em",
+                      }}
+                    >
+                      {word}{i < totalWords - 1 ? " " : ""}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

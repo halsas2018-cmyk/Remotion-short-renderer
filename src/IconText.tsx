@@ -43,6 +43,12 @@ const DefaultIcon = LucideIcons.Info;
 // Ease-out bezier curve (fast start, slow finish) - same as Material Design
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 
+// Color constants
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+
 export const IconText: React.FC<IconTextProps> = ({
   icon,
   text,
@@ -121,22 +127,12 @@ export const IconText: React.FC<IconTextProps> = ({
   // Icon idle: subtle rotation drift
   const iconIdleRotation = isIdle ? 2 * Math.sin(frame * 0.04) : 0;
 
-  // Text animation: starts slightly after icon
-  const textDelayFrames = 12;
-  const textProgress = interpolate(frame, [textDelayFrames, durationInFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const textOpacity = isExit ? exitOpacity : textProgress;
-  const textY = interpolate(textProgress, [0, 1], [30, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Text idle: subtle vertical drift
-  const textIdleDrift = isIdle ? 3 * Math.sin(frame * 0.05) : 0;
-
+  // Text animation: word-by-word appearance
+  const words = text.split(" ");
+  const totalWords = words.length;
+  const wordDurationFrames = 8; // frames per word
+  const textStartDelay = 12; // delay after icon starts
+  
   // Combined transform values for container
   const containerScale = isEntrance ? entranceScale : isExit ? exitScale : idleScale;
   const containerOpacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
@@ -146,7 +142,7 @@ export const IconText: React.FC<IconTextProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
         display: "flex",
@@ -168,6 +164,7 @@ export const IconText: React.FC<IconTextProps> = ({
           transformOrigin: "center",
         }}
       >
+        {/* Icon with elevated card */}
         <div
           style={{
             transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
@@ -177,34 +174,73 @@ export const IconText: React.FC<IconTextProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            backgroundColor: "white",
+            borderRadius: 24,
+            padding: 24,
+            boxShadow: CARD_SHADOW,
           }}
         >
           <IconComponent
-            size={120}
-            color="white"
-            strokeWidth={1.5}
-            style={{ filter: "drop-shadow(0 4px 24px rgba(255,255,255,0.15))" }}
+            size={100}
+            color={ACCENT_COLOR}
+            strokeWidth={2}
           />
         </div>
+        
+        {/* Text with word-by-word animation */}
         <div
           style={{
-            opacity: textOpacity,
-            transform: `translateY(${textY + textIdleDrift}px)`,
             maxWidth: width - 240,
+            backgroundColor: "white",
+            borderRadius: 24,
+            padding: "32px 48px",
+            boxShadow: CARD_SHADOW,
           }}
         >
           <div
             style={{
-              fontSize: 56,
-              fontWeight: 700,
+              fontSize: 48,
+              fontWeight: 600,
               fontFamily: "system-ui, sans-serif",
-              color: "white",
-              lineHeight: 1.3,
-              letterSpacing: -1,
+              color: DARK_TEXT,
+              lineHeight: 1.4,
+              letterSpacing: -0.5,
               textAlign: "center",
             }}
           >
-            {text}
+            {words.map((word, wordIndex) => {
+              const wordStartFrame = textStartDelay + wordIndex * wordDurationFrames;
+              const wordEndFrame = wordStartFrame + wordDurationFrames;
+              
+              const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                easing: easeOut,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              });
+              
+              const wordOpacity = isExit ? exitOpacity : wordProgress;
+              const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              });
+              
+              // Idle animation for words: subtle vertical drift
+              const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
+
+              return (
+                <span
+                  key={wordIndex}
+                  style={{
+                    display: "inline-block",
+                    opacity: wordOpacity,
+                    transform: `translateY(${wordY + wordIdleDrift}px)`,
+                    margin: "0 2px",
+                  }}
+                >
+                  {word}{wordIndex < totalWords - 1 ? " " : ""}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -217,14 +253,14 @@ export const IconTextTestComposition: React.FC = () => (
   <Composition
     id="IconTextTest"
     component={IconText}
-    durationInFrames={90}
+    durationInFrames={120}
     fps={30}
     width={1080}
     height={1920}
     defaultProps={{
       icon: "risk",
       text: "Broadcom only guarantees part of the loan",
-      durationInFrames: 90,
+      durationInFrames: 120,
       exitDirection: "up",
     }}
   />

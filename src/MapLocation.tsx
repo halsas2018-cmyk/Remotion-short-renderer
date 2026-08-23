@@ -187,9 +187,10 @@ export const MapLocation: React.FC<MapLocationProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
         position: "relative",
       }}
     >
@@ -209,142 +210,158 @@ export const MapLocation: React.FC<MapLocationProps> = ({
           height: "100%",
         }}
       >
-        {/* Map container - elevated card */}
+        {/* 
+          Map container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
             position: "absolute",
-            left: mapLeft,
-            top: mapTop,
-            width: mapWidth,
-            height: mapHeight,
-            backgroundColor: "white",
-            borderRadius: 24,
-            boxShadow: CARD_SHADOW,
-            overflow: "hidden",
-            opacity: mapProgress,
-            transformOrigin: "center",
-            transform: [{ scale: mapProgress }],
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: "translateY(-50%)",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {/* World Map SVG */}
-          <svg
-            width={mapWidth}
-            height={mapHeight}
-            viewBox="0 0 1000 500"
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-            }}
-          >
-            <path
-              d={WORLD_MAP_PATH}
-              fill={MAP_FILL}
-              stroke={MAP_STROKE}
-              strokeWidth={2}
-            />
-          </svg>
-        </div>
-
-        {/* Pin */}
-        <div
-          style={{
-            position: "absolute",
-            left: pinX - pinSize / 2,
-            top: pinY - pinSize - pinDropHeight * (1 - pinProgress) + (isIdle ? idleFloat : 0),
-            transformOrigin: "bottom center",
-            transform: [
-              { scale: pinProgress * (isIdle ? idlePulse : 1) },
-              { rotate: `${interpolate(pinProgress, [0, 0.5, 1], [-15, 10, 0])}deg` },
-            ],
-            opacity: pinProgress,
-            zIndex: 10,
-          }}
-        >
-          {/* Pin shadow */}
+          {/* Map container - elevated card */}
           <div
             style={{
-              width: pinSize * 1.5,
-              height: pinSize * 0.3,
-              borderRadius: "50%",
-              backgroundColor: "rgba(0, 0, 0, 0.15)",
-              position: "absolute",
-              bottom: -pinSize * 0.2,
-              left: "50%",
-              transform: [{ translateX: -50 }, { scaleX: pinProgress }],
-              opacity: pinProgress * 0.5,
-            }}
-          />
-          {/* Pin body - elevated with shadow */}
-          <div
-            style={{
-              width: pinSize,
-              height: pinSize,
-              borderRadius: "50% 50% 50% 0",
-              backgroundColor: PIN_COLOR,
-              transform: [{ rotate: "45deg" }],
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              boxShadow: "0 4px 20px rgba(232, 108, 0, 0.4)",
-            }}
-          >
-            <div
-              style={{
-                width: pinSize * 0.5,
-                height: pinSize * 0.5,
-                borderRadius: "50%",
-                backgroundColor: PIN_INNER,
-                transform: [{ rotate: "-45deg" }],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Location name label - elevated card */}
-        <div
-          style={{
-            position: "absolute",
-            left: pinX,
-            top: pinY + pinSize + 20,
-            transform: [{ translateX: -50 }],
-            textAlign: "center",
-            whiteSpace: "nowrap",
-            opacity: labelProgress,
-            transformOrigin: "top center",
-            transform: [{ scale: labelProgress }],
-          }}
-        >
-          <div
-            style={{
+              position: "relative",
+              width: mapWidth,
+              height: mapHeight,
               backgroundColor: "white",
-              borderRadius: 12,
-              padding: "8px 16px",
+              borderRadius: 24,
               boxShadow: CARD_SHADOW,
+              overflow: "hidden",
+              opacity: mapProgress,
+              transformOrigin: "center",
+              transform: [{ scale: mapProgress }],
+            }}
+          >
+            {/* World Map SVG */}
+            <svg
+              width={mapWidth}
+              height={mapHeight}
+              viewBox="0 0 1000 500"
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+              }}
+            >
+              <path
+                d={WORLD_MAP_PATH}
+                fill={MAP_FILL}
+                stroke={MAP_STROKE}
+                strokeWidth={2}
+              />
+            </svg>
+          </div>
+
+          {/* Pin */}
+          <div
+            style={{
+              position: "absolute",
+              left: pinX - mapLeft - pinSize / 2,
+              top: pinY - mapTop - pinSize - pinDropHeight * (1 - pinProgress) + (isIdle ? idleFloat : 0),
+              transformOrigin: "bottom center",
+              transform: [
+                { scale: pinProgress * (isIdle ? idlePulse : 1) },
+                { rotate: `${interpolate(pinProgress, [0, 0.5, 1], [-15, 10, 0])}deg` },
+              ],
+              opacity: pinProgress,
+              zIndex: 10,
+            }}
+          >
+            {/* Pin shadow */}
+            <div
+              style={{
+                width: pinSize * 1.5,
+                height: pinSize * 0.3,
+                borderRadius: "50%",
+                backgroundColor: "rgba(0, 0, 0, 0.15)",
+                position: "absolute",
+                bottom: -pinSize * 0.2,
+                left: "50%",
+                transform: [{ translateX: -50 }, { scaleX: pinProgress }],
+                opacity: pinProgress * 0.5,
+              }}
+            />
+            {/* Pin body - elevated with shadow */}
+            <div
+              style={{
+                width: pinSize,
+                height: pinSize,
+                borderRadius: "50% 50% 50% 0",
+                backgroundColor: PIN_COLOR,
+                transform: [{ rotate: "45deg" }],
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                boxShadow: "0 4px 20px rgba(232, 108, 0, 0.4)",
+              }}
+            >
+              <div
+                style={{
+                  width: pinSize * 0.5,
+                  height: pinSize * 0.5,
+                  borderRadius: "50%",
+                  backgroundColor: PIN_INNER,
+                  transform: [{ rotate: "-45deg" }],
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Location name label - elevated card */}
+          <div
+            style={{
+              position: "absolute",
+              left: pinX - mapLeft,
+              top: pinY - mapTop + pinSize + 20,
+              transform: [{ translateX: -50 }],
+              textAlign: "center",
+              whiteSpace: "nowrap",
+              opacity: labelProgress,
+              transformOrigin: "top center",
+              transform: [{ scale: labelProgress }],
             }}
           >
             <div
               style={{
-                fontSize: 32,
-                fontWeight: 800,
-                color: DARK_TEXT,
-                fontFamily: "system-ui, sans-serif",
-                letterSpacing: -1,
+                backgroundColor: "white",
+                borderRadius: 12,
+                padding: "8px 16px",
+                boxShadow: CARD_SHADOW,
               }}
             >
-              {locationName}
-            </div>
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 500,
-                color: MEDIUM_TEXT,
-                fontFamily: "system-ui, sans-serif",
-                marginTop: 4,
-              }}
-            >
-              {latitude >= 0 ? latitude.toFixed(2) : Math.abs(latitude).toFixed(2)}°{latitude >= 0 ? "N" : "S"} 
-              {longitude >= 0 ? longitude.toFixed(2) : Math.abs(longitude).toFixed(2)}°{longitude >= 0 ? "E" : "W"}
+              <div
+                style={{
+                  fontSize: 32,
+                  fontWeight: 800,
+                  color: DARK_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  letterSpacing: -1,
+                }}
+              >
+                {locationName}
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: MEDIUM_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  marginTop: 4,
+                }}
+              >
+                {latitude >= 0 ? latitude.toFixed(2) : Math.abs(latitude).toFixed(2)}°{latitude >= 0 ? "N" : "S"} 
+                {longitude >= 0 ? longitude.toFixed(2) : Math.abs(longitude).toFixed(2)}°{longitude >= 0 ? "E" : "W"}
+              </div>
             </div>
           </div>
         </div>

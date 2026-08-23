@@ -249,9 +249,10 @@ export const KineticCaptions: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: CONFIG.backgroundColor,
         width,
         height,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
         overflow: "hidden",
       }}
     >

@@ -36,6 +36,7 @@ export const PersistentBackground: React.FC = () => {
         width,
         height,
         overflow: "hidden",
+        translate: "-16.3px 0px",
       }}
     >
       {/* Vertical grid lines */}

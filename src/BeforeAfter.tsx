@@ -135,10 +135,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        position: "relative",
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div

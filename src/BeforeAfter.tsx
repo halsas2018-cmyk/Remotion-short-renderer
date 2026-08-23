@@ -16,11 +16,25 @@ interface BeforeAfterProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const TEXT_COLOR = "white";
-const LABEL_COLOR = "rgba(255,255,255,0.6)";
-const ACCENT_COLOR = "#FFD700";
-const CARD_BG = "rgba(255,255,255,0.05)";
-const CARD_BORDER = "rgba(255,255,255,0.15)";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const CARD_BG = "white";
+const CARD_BORDER = "#e8e8e8";
+const BEFORE_TAG_BG = "#fee2e2";
+const BEFORE_TAG_COLOR = "#dc2626";
+const BEFORE_TAG_BORDER = "#fecaca";
+const AFTER_TAG_BG = "#fef3c7";
+const AFTER_TAG_COLOR = "#e86c00";
+const AFTER_TAG_BORDER = "#fde68a";
+const BEFORE_ITEM_BG = "#fee2e2";
+const BEFORE_ITEM_COLOR = "#dc2626";
+const BEFORE_ITEM_BORDER = "#fecaca";
+const AFTER_ITEM_BG = "#dcfce7";
+const AFTER_ITEM_COLOR = "#16a34a";
+const AFTER_ITEM_BORDER = "#bbf7d0";
+const DIVIDER_COLOR = ACCENT_COLOR;
 
 export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
@@ -113,21 +127,18 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const translateY = isExit ? exitTranslateY : 0;
 
   const padding = 120;
-  const cardWidth = (width - 2 * padding) / 2 - 20;
+  const availableWidth = width - 2 * padding;
+  const dividerWidth = 60;
+  const cardWidth = (availableWidth - dividerWidth) / 2;
   const cardHeight = 600;
-  const centerY = height / 2;
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        position: "relative",
       }}
     >
       <div
@@ -139,215 +150,261 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 40,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* BEFORE Card */}
+        {/* 
+          BeforeAfter container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            width: cardWidth,
+            position: "absolute",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
+            width: availableWidth,
             height: cardHeight,
-            borderRadius: 24,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
-            textAlign: "center",
-            padding: 40,
-            boxSizing: "border-box",
-            position: "relative",
-            overflow: "hidden",
-            transformOrigin: "center",
-            transform: [
-              { scale: beforeProgress },
-              { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
-            ],
-            opacity: beforeProgress,
-            clipPath: transitionProgress > 0 ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
-          }}
-        >
-          {/* BEFORE tag */}
-          <div
-            style={{
-              position: "absolute",
-              top: 24,
-              left: 24,
-              fontSize: 14,
-              fontWeight: 700,
-              color: LABEL_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              backgroundColor: "rgba(255,255,255,0.05)",
-              padding: "6px 12px",
-              borderRadius: 4,
-            }}
-          >
-            BEFORE
-          </div>
-
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 800,
-              color: TEXT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.2,
-              letterSpacing: -1,
-            }}
-          >
-            {beforeLabel}
-          </div>
-
-          {/* Decorative elements for "before" state */}
-          <div
-            style={{
-              marginTop: 40,
-              display: "flex",
-              gap: 16,
-              flexWrap: "wrap",
-              justifyContent: "center",
-            }}
-          >
-            {["Legacy", "Manual", "Slow", "Costly"].map((tag, i) => (
-              <div
-                key={i}
-                style={{
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: "rgba(255,100,100,0.8)",
-                  fontFamily: "system-ui, sans-serif",
-                  backgroundColor: "rgba(255,100,100,0.1)",
-                  border: "1px solid rgba(255,100,100,0.3)",
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                }}
-              >
-                {tag}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Transition Divider */}
-        <div
-          style={{
-            width: 4,
-            height: cardHeight,
-            background: `linear-gradient(180deg, ${ACCENT_COLOR}00, ${ACCENT_COLOR} ${idleShimmer * 50}%, ${ACCENT_COLOR}00)`,
-            borderRadius: 2,
-            position: "relative",
-            opacity: transitionProgress > 0 ? 1 : 0,
-            transform: [{ scaleX: transitionProgress }],
-            transformOrigin: "center",
-          }}
-        >
-          {/* Moving shimmer */}
-          <div
-            style={{
-              position: "absolute",
-              top: `${(frame * 0.5) % 100}%`,
-              left: 0,
-              width: "100%",
-              height: "20%",
-              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}88, transparent)`,
-              opacity: transitionProgress,
-            }}
-          />
-        </div>
-
-        {/* AFTER Card */}
-        <div
-          style={{
-            width: cardWidth,
-            height: cardHeight,
-            borderRadius: 24,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
-            display: "flex",
-            flexDirection: "column",
             justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-            padding: 40,
-            boxSizing: "border-box",
-            position: "relative",
-            overflow: "hidden",
-            transformOrigin: "center",
-            transform: [
-              { scale: afterProgress },
-              { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
-            ],
-            opacity: afterProgress,
-            clipPath: transitionProgress > 0 ? `inset(0 0 0 ${transitionProgress * 100}%)` : "none",
+            gap: 0,
           }}
         >
-          {/* AFTER tag */}
+          {/* BEFORE Card - elevated */}
           <div
             style={{
-              position: "absolute",
-              top: 24,
-              right: 24,
-              fontSize: 14,
-              fontWeight: 700,
-              color: ACCENT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              backgroundColor: "rgba(255,215,0,0.1)",
-              padding: "6px 12px",
-              borderRadius: 4,
-              border: "1px solid rgba(255,215,0,0.3)",
-            }}
-          >
-            AFTER
-          </div>
-
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 800,
-              color: TEXT_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.2,
-              letterSpacing: -1,
-            }}
-          >
-            {afterLabel}
-          </div>
-
-          {/* Decorative elements for "after" state */}
-          <div
-            style={{
-              marginTop: 40,
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: 24,
+              backgroundColor: CARD_BG,
+              border: `2px solid ${CARD_BORDER}`,
               display: "flex",
-              gap: 16,
-              flexWrap: "wrap",
+              flexDirection: "column",
               justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              padding: 40,
+              boxSizing: "border-box",
+              position: "relative",
+              overflow: "hidden",
+              transformOrigin: "center",
+              transform: [
+                { scale: beforeProgress },
+                { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
+              ],
+              opacity: beforeProgress,
+              clipPath: transitionProgress > 0 ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {["Modern", "Automated", "Fast", "Efficient"].map((tag, i) => (
-              <div
-                key={i}
-                style={{
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: "rgba(100,255,100,0.9)",
-                  fontFamily: "system-ui, sans-serif",
-                  backgroundColor: "rgba(100,255,100,0.1)",
-                  border: "1px solid rgba(100,255,100,0.3)",
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                }}
-              >
-                {tag}
-              </div>
-            ))}
+            {/* BEFORE tag - elevated card */}
+            <div
+              style={{
+                position: "absolute",
+                top: 24,
+                left: 24,
+                fontSize: 14,
+                fontWeight: 700,
+                color: BEFORE_TAG_COLOR,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                backgroundColor: BEFORE_TAG_BG,
+                border: `1px solid ${BEFORE_TAG_BORDER}`,
+                padding: "6px 12px",
+                borderRadius: 4,
+                boxShadow: "0 2px 8px rgba(220, 38, 38, 0.15)",
+              }}
+            >
+              BEFORE
+            </div>
+
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 800,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                lineHeight: 1.2,
+                letterSpacing: -1,
+              }}
+            >
+              {beforeLabel}
+            </div>
+
+            {/* Decorative elements for "before" state - elevated cards */}
+            <div
+              style={{
+                marginTop: 40,
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {["Legacy", "Manual", "Slow", "Costly"].map((tag, i) => (
+                <div
+                  key={i}
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: BEFORE_ITEM_COLOR,
+                    fontFamily: "system-ui, sans-serif",
+                    backgroundColor: BEFORE_ITEM_BG,
+                    border: `1px solid ${BEFORE_ITEM_BORDER}`,
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    boxShadow: "0 2px 8px rgba(220, 38, 38, 0.1)",
+                  }}
+                >
+                  {tag}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Transition Divider - elevated */}
+          <div
+            style={{
+              width: dividerWidth,
+              height: cardHeight,
+              borderRadius: 12,
+              backgroundColor: CARD_BG,
+              border: `2px solid ${DIVIDER_COLOR}`,
+              position: "relative",
+              opacity: transitionProgress > 0 ? 1 : 0,
+              transform: [{ scaleX: transitionProgress }],
+              transformOrigin: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: CARD_SHADOW,
+            }}
+          >
+            {/* Arrow indicator */}
+            <div
+              style={{
+                width: 0,
+                height: 0,
+                borderTop: "12px solid transparent",
+                borderBottom: "12px solid transparent",
+                borderLeft: "18px solid " + DIVIDER_COLOR,
+                filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.4))",
+              }}
+            />
+            {/* Moving shimmer */}
+            <div
+              style={{
+                position: "absolute",
+                top: `${(frame * 0.5) % 100}%`,
+                left: 0,
+                width: "100%",
+                height: "15%",
+                background: `linear-gradient(180deg, transparent, ${DIVIDER_COLOR}44, transparent)`,
+                opacity: transitionProgress,
+                borderRadius: 10,
+              }}
+            />
+          </div>
+
+          {/* AFTER Card - elevated */}
+          <div
+            style={{
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: 24,
+              backgroundColor: CARD_BG,
+              border: `2px solid ${CARD_BORDER}`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              padding: 40,
+              boxSizing: "border-box",
+              position: "relative",
+              overflow: "hidden",
+              transformOrigin: "center",
+              transform: [
+                { scale: afterProgress },
+                { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
+              ],
+              opacity: afterProgress,
+              clipPath: transitionProgress > 0 ? `inset(0 0 0 ${transitionProgress * 100}%)` : "none",
+              boxShadow: CARD_SHADOW,
+            }}
+          >
+            {/* AFTER tag - elevated card */}
+            <div
+              style={{
+                position: "absolute",
+                top: 24,
+                right: 24,
+                fontSize: 14,
+                fontWeight: 700,
+                color: AFTER_TAG_COLOR,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                backgroundColor: AFTER_TAG_BG,
+                border: `1px solid ${AFTER_TAG_BORDER}`,
+                padding: "6px 12px",
+                borderRadius: 4,
+                boxShadow: "0 2px 8px rgba(232, 108, 0, 0.15)",
+              }}
+            >
+              AFTER
+            </div>
+
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 800,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                lineHeight: 1.2,
+                letterSpacing: -1,
+              }}
+            >
+              {afterLabel}
+            </div>
+
+            {/* Decorative elements for "after" state - elevated cards */}
+            <div
+              style={{
+                marginTop: 40,
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              {["Modern", "Automated", "Fast", "Efficient"].map((tag, i) => (
+                <div
+                  key={i}
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: AFTER_ITEM_COLOR,
+                    fontFamily: "system-ui, sans-serif",
+                    backgroundColor: AFTER_ITEM_BG,
+                    border: `1px solid ${AFTER_ITEM_BORDER}`,
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    boxShadow: "0 2px 8px rgba(22, 163, 74, 0.1)",
+                  }}
+                >
+                  {tag}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

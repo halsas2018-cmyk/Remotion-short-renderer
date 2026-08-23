@@ -49,6 +49,10 @@ const ACCENT_COLOR = "#e86c00";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#4a4a4a";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+// Glow constants
+const GLOW_COLOR = "rgba(232, 108, 0, 0.35)";
+const GLOW_BLUR = 60;
+const GLOW_SPREAD = 20;
 
 export const IconText: React.FC<IconTextProps> = ({
   icon,
@@ -130,6 +134,10 @@ export const IconText: React.FC<IconTextProps> = ({
   // Icon idle: subtle rotation drift
   const iconIdleRotation = isIdle ? 2 * Math.sin(frame * 0.04) : 0;
 
+  // Glow pulse animation (idle)
+  const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
+  const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
+
   // Text animation: word-by-word appearance - complete within first 50% of beat
   const words = text.split(" ");
   const totalWords = words.length;
@@ -188,83 +196,137 @@ export const IconText: React.FC<IconTextProps> = ({
             textAlign: "center",
           }}
         >
-          {/* Icon with elevated card */}
+          {/* Icon with elevated card + glow */}
           <div
             style={{
-              transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
-              opacity: iconOpacity,
-              transformOrigin: "center",
-              marginBottom: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "white",
-              borderRadius: 24,
-              padding: 24,
-              boxShadow: CARD_SHADOW,
+              position: "relative",
+              zIndex: 2,
             }}
           >
-            <IconComponent
-              size={100}
-              color={ACCENT_COLOR}
-              strokeWidth={2}
-            />
-          </div>
-          
-          {/* Text with word-by-word animation */}
-          <div
-            style={{
-              maxWidth: width - 240,
-              backgroundColor: "white",
-              borderRadius: 24,
-              padding: "32px 48px",
-              boxShadow: CARD_SHADOW,
-            }}
-          >
+            {/* Glow behind icon card */}
             <div
               style={{
-                fontSize: 48,
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                color: DARK_TEXT,
-                lineHeight: 1.4,
-                letterSpacing: -0.5,
-                textAlign: "center",
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${glowPulse})`,
+                width: "140%",
+                height: "140%",
+                borderRadius: 32,
+                background: `radial-gradient(ellipse at center, ${GLOW_COLOR} 0%, transparent 70%)`,
+                opacity: iconOpacity * glowOpacity,
+                filter: `blur(${GLOW_BLUR}px)`,
+                pointerEvents: "none",
+                zIndex: -1,
+              }}
+            />
+            {/* Icon card */}
+            <div
+              style={{
+                transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
+                opacity: iconOpacity,
+                transformOrigin: "center",
+                marginBottom: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "white",
+                borderRadius: 24,
+                padding: 24,
+                boxShadow: CARD_SHADOW,
+                position: "relative",
+                zIndex: 1,
               }}
             >
-              {words.map((word, wordIndex) => {
-                const wordStartFrame = textStartDelay + wordIndex * wordStaggerFrames;
-                const wordEndFrame = wordStartFrame + wordDurationFrames;
-                
-                const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                  easing: easeOut,
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                });
-                
-                const wordOpacity = isExit ? exitOpacity : wordProgress;
-                const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                });
-                
-                // Idle animation for words: subtle vertical drift
-                const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
+              <IconComponent
+                size={100}
+                color={ACCENT_COLOR}
+                strokeWidth={2}
+              />
+            </div>
+          </div>
+          
+          {/* Text with word-by-word animation + glow */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+            }}
+          >
+            {/* Glow behind text card */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${glowPulse})`,
+                width: "110%",
+                height: "110%",
+                borderRadius: 32,
+                background: `radial-gradient(ellipse at center, ${GLOW_COLOR} 0%, transparent 70%)`,
+                opacity: (isExit ? exitOpacity : 1) * glowOpacity * 0.7,
+                filter: `blur(${GLOW_BLUR}px)`,
+                pointerEvents: "none",
+                zIndex: -1,
+              }}
+            />
+            {/* Text card */}
+            <div
+              style={{
+                maxWidth: width - 240,
+                backgroundColor: "white",
+                borderRadius: 24,
+                padding: "32px 48px",
+                boxShadow: CARD_SHADOW,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: 600,
+                  fontFamily: "system-ui, sans-serif",
+                  color: DARK_TEXT,
+                  lineHeight: 1.4,
+                  letterSpacing: -0.5,
+                  textAlign: "center",
+                }}
+              >
+                {words.map((word, wordIndex) => {
+                  const wordStartFrame = textStartDelay + wordIndex * wordStaggerFrames;
+                  const wordEndFrame = wordStartFrame + wordDurationFrames;
+                  
+                  const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                    easing: easeOut,
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  
+                  const wordOpacity = isExit ? exitOpacity : wordProgress;
+                  const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  
+                  // Idle animation for words: subtle vertical drift
+                  const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
 
-                return (
-                  <span
-                    key={wordIndex}
-                    style={{
-                      display: "inline-block",
-                      opacity: wordOpacity,
-                      transform: `translateY(${wordY + wordIdleDrift}px)`,
-                      margin: "0 2px",
-                    }}
-                  >
-                    {word}{wordIndex < totalWords - 1 ? " " : ""}
-                  </span>
-                );
-              })}
+                  return (
+                    <span
+                      key={wordIndex}
+                      style={{
+                        display: "inline-block",
+                        opacity: wordOpacity,
+                        transform: `translateY(${wordY + wordIdleDrift}px)`,
+                        margin: "0 2px",
+                      }}
+                    >
+                      {word}{wordIndex < totalWords - 1 ? " " : ""}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

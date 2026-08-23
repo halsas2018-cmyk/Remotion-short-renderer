@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useMemo, useEffect, useState } from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -129,6 +129,15 @@ const COUNTER_FADE_FRAMES = 10;
 
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
+  const [narrationWords, setNarrationWords] = useState<Array<{ word: string; start: number; end: number }>>([]);
+
+  // Load narration timestamps from JSON
+  useEffect(() => {
+    fetch("../timestamps.json")
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setNarrationWords(data))
+      .catch(() => setNarrationWords([]));
+  }, []);
 
   // Precompute exit/entry directions with continuous linking
   // Beat N entryDirection = Beat N-1 exitDirection
@@ -264,10 +273,12 @@ export const MotionGraphicsVideo: React.FC = () => {
           <PersistentBackground />
         </Sequence>
 
-        {/* Kinetic Captions - only renders during caption-enabled beats */}
+        {/* Kinetic Captions - only renders during caption-enabled beats
+            Pass narration words dynamically loaded from timestamps.json */}
         <KineticCaptions 
           captionEnabledTypes={CAPTION_ENABLED_TYPES}
           beats={beatsWithDirections}
+          words={narrationWords}
         />
 
         {/* Sequence each beat with exact validated timing, wrapped in SceneTransition */}

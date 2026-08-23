@@ -7,7 +7,6 @@ import {
   interpolate,
   Easing,
 } from "remotion";
-import timestamps from "../timestamps.json";
 import { useBeatContext } from "./MotionGraphicsVideo";
 
 interface Word {
@@ -33,6 +32,8 @@ interface PositionedWord extends Word {
 interface KineticCaptionsProps {
   captionEnabledTypes: Set<string>;
   beats: Array<{ type: string; startFrame: number; durationInFrames: number }>;
+  // Dynamic captions - if not provided, falls back to timestamps.json
+  words?: Word[];
 }
 
 // ============================================
@@ -156,13 +157,10 @@ function groupIntoBeats(words: Word[]): Beat[] {
   return beats;
 }
 
-const allWords = timestamps as Word[];
-const lastWordEnd = allWords[allWords.length - 1]?.end ?? 0;
-const BUFFER_SECONDS = 1.5;
-
 export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   captionEnabledTypes,
   beats,
+  words: dynamicWords,
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -171,13 +169,21 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   // Determine if captions should show for current beat
   const shouldShowCaptions = currentBeatType ? captionEnabledTypes.has(currentBeatType) : false;
 
+  // Use dynamic words if provided, otherwise fall back to imported timestamps
+  const allWords: Word[] = React.useMemo(() => {
+    if (dynamicWords && dynamicWords.length > 0) {
+      return dynamicWords;
+    }
+    return [] as Word[];
+  }, [dynamicWords]);
+
   // Compute positions once (memoized via closure)
   const wordsWithPositions: PositionedWord[] = React.useMemo(() => {
     return allWords.map((w, i) => {
       const pos = getWordPosition(i, allWords.length, width, height);
       return { ...w, ...pos };
     });
-  }, [width, height]);
+  }, [allWords, width, height]);
 
   // For each word, compute its visibility progress (0 to 1)
   const wordStates = wordsWithPositions.map((w, i) => {
@@ -257,7 +263,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     .sort((a, b) => a.word.start - b.word.start)
     .slice(-CONFIG.maxVisibleItems);
 
-  if (!shouldShowCaptions) {
+  if (!shouldShowCaptions || allWords.length === 0) {
     return null;
   }
 
@@ -347,31 +353,78 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   );
 };
 
-const durationInFrames = Math.round((lastWordEnd + BUFFER_SECONDS) * 30);
+// Test composition - loads timestamps.json for preview
+export const KineticCaptionsComposition: React.FC = () => {
+  const [words, setWords] = React.useState<Word[]>([]);
+  
+  React.useEffect(() => {
+    // Load timestamps.json dynamically
+    fetch("../timestamps.json")
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setWords(data))
+      .catch(() => setWords([]));
+  }, []);
 
-export const KineticCaptionsComposition: React.FC = () => (
-  <Composition
-    id="KineticCaptions"
-    component={KineticCaptions}
-    durationInFrames={durationInFrames}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      captionEnabledTypes: new Set([
-        "chart_counter",
-        "chart_comparison",
-        "chart_line",
-        "progress_meter",
-        "map_location",
-        "timeline",
-        "process_flow",
-        "versus",
-        "icon_text",
-        "quote_card",
-        "before_after",
-      ]),
-      beats: [],
-    }}
-  />
-);
+  return (
+    <Composition
+      id="KineticCaptions"
+      component={KineticCaptions}
+      durationInFrames={300}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        captionEnabledTypes: new Set([
+          "chart_counter",
+          "chart_comparison",
+          "chart_line",
+          "progress_meter",
+          "map_location",
+          "timeline",
+          "process_flow",
+          "versus",
+          "icon_text",
+          "quote_card",
+          "before_after",
+        ]),
+        beats: [],
+        words,
+      }}
+    />
+  );
+};
+
+// Dynamic composition factory - create compositions with custom captions
+export function createKineticCaptionsComposition(
+  id: string,
+  words: Word[],
+  durationInFrames: number = 300
+) {
+  return () => (
+    <Composition
+      id={id}
+      component={KineticCaptions}
+      durationInFrames={durationInFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        captionEnabledTypes: new Set([
+          "chart_counter",
+          "chart_comparison",
+          "chart_line",
+          "progress_meter",
+          "map_location",
+          "timeline",
+          "process_flow",
+          "versus",
+          "icon_text",
+          "quote_card",
+          "before_after",
+        ]),
+        beats: [],
+        words,
+      }}
+    />
+  );
+}

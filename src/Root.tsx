@@ -1,3 +1,7 @@
+// Root.tsx - Composition exports for Remotion Studio auto-discovery
+// These named exports allow Remotion Studio to discover compositions without registerRoot
+// The actual registerRoot is in index.ts with the RemotionRoot component
+
 import { Composition } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { KineticCaptions } from "./KineticCaptions";
@@ -31,7 +35,7 @@ export const KineticCaptionsComposition = () => (
   <Composition
     id="KineticCaptions"
     component={KineticCaptions}
-    durationInFrames={Math.round((1 + 30) * 30)} // fallback duration
+    durationInFrames={Math.round((1 + 30) * 30)}
     fps={30}
     width={1080}
     height={1920}

@@ -73,6 +73,19 @@ const EXIT_DIRECTIONS = ["up", "down", "left", "right"] as const;
 // Entry directions are opposite of exit for continuous flow
 const ENTRY_DIRECTIONS = ["down", "up", "right", "left"] as const;
 
+// ============================================
+// CHUNK 3: SOUND MAP FOR PER-BEAT EFFECTS
+// ============================================
+const COUNTER_TYPES = new Set(["chart_counter", "chart_line", "progress_meter"]);
+
+const SOUND_MAP: Record<string, { file: string; volume: number }> = {
+  chart_counter: { file: "sfx-counter.mp3", volume: 0.45 },
+  chart_line: { file: "sfx-counter.mp3", volume: 0.45 },
+  progress_meter: { file: "sfx-counter.mp3", volume: 0.45 },
+  // Default fallback for all other types
+  default: { file: "sfx-whoosh.mp3", volume: 0.4 },
+};
+
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
 
@@ -100,8 +113,42 @@ export const MotionGraphicsVideo: React.FC = () => {
         backgroundColor: "transparent",
       }}
     >
-      {/* Narration audio track - spans full duration */}
-      <Audio src={staticFile("narration.mp3")} startFrom={0} endAt={totalDurationInFrames} />
+      {/* ============================================
+          CHUNK 3: AUDIO LAYERS
+          ============================================ */}
+      
+      {/* 1. NARRATION: full duration at frame 0 */}
+      <Audio 
+        src={staticFile("narration.mp3")} 
+        startFrom={0} 
+        endAt={totalDurationInFrames} 
+      />
+
+      {/* 2. AMBIENT BED: continuous background at low volume */}
+      <Audio 
+        src={staticFile("sfx-ambient.mp3")} 
+        startFrom={0} 
+        endAt={totalDurationInFrames}
+        volume={0.18}
+      />
+
+      {/* 3. PER-BEAT SOUND EFFECTS: triggered at each beat's startFrame */}
+      {beatsWithDirections.map((beat, index) => {
+        const soundConfig = SOUND_MAP[beat.type] || SOUND_MAP.default;
+        return (
+          <Sequence
+            key={`sfx-${index}`}
+            from={beat.startFrame}
+            durationInFrames={beat.durationInFrames}
+          >
+            <Audio
+              src={staticFile(soundConfig.file)}
+              startFrom={0}
+              volume={soundConfig.volume}
+            />
+          </Sequence>
+        );
+      })}
 
       {/* Persistent background spanning full duration - bottom layer */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>

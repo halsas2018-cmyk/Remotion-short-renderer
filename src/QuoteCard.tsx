@@ -129,10 +129,10 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        position: "relative",
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div

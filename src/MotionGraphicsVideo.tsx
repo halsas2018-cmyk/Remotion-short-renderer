@@ -59,20 +59,21 @@ export const MotionGraphicsVideo: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       {/* Narration audio track - spans full duration, using staticFile like KineticCaptions */}
       <Audio src={staticFile("narration.mp3")} startFrom={0} endAt={totalDurationInFrames} />
 
-      {/* Persistent background spanning full duration */}
+      {/* Persistent background spanning full duration - bottom layer */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>
         <PersistentBackground />
       </Sequence>
 
-      {/* Sequence each beat */}
+      {/* Sequence each beat - components render their elevated cards on top of transparent background */}
       {beats.map((beat, index) => {
         const Component = componentMap[beat.type] || KeyStatement;
         const { type, startFrame, durationInFrames, ...props } = beat;

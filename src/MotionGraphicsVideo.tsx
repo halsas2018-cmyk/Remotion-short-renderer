@@ -38,6 +38,21 @@ interface TimedBeatsData {
 const beatsData = timedBeats as TimedBeatsData;
 const { fps, totalDurationInFrames, beats } = beatsData;
 
+// ============================================
+// PHASE 1: DATA PREPROCESSING (Safety Net)
+// ============================================
+const MIN_BEAT_FRAMES = 45; // 1.5s minimum at 30fps
+
+const validatedBeats: TimedBeat[] = beats.map((beat, index) => {
+  if (beat.durationInFrames < MIN_BEAT_FRAMES) {
+    console.warn(
+      `[MotionGraphicsVideo] Beat ${index} (${beat.type}) duration too short: ${beat.durationInFrames}f → clamping to ${MIN_BEAT_FRAMES}f`
+    );
+    return { ...beat, durationInFrames: MIN_BEAT_FRAMES };
+  }
+  return beat;
+});
+
 // Type-to-component mapping
 const componentMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
   chart_counter: ChartCounter,
@@ -60,11 +75,11 @@ export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
 
   // Precompute adjusted start frames with 10-frame overlap
-  const adjustedBeats = beats.map((beat, index) => {
+  const adjustedBeats = validatedBeats.map((beat, index) => {
     const rawStart = beat.startFrame;
     const overlapStart = Math.max(0, rawStart - 10);
     // Never start before previous beat's original startFrame
-    const prevStart = index > 0 ? beats[index - 1].startFrame : 0;
+    const prevStart = index > 0 ? validatedBeats[index - 1].startFrame : 0;
     const finalStart = Math.max(overlapStart, prevStart);
     
     // Cycle through exit directions

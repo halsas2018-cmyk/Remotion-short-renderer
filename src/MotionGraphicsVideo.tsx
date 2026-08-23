@@ -4,6 +4,7 @@ import {
   Sequence,
   useVideoConfig,
   Audio,
+  staticFile,
 } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { ChartCounter } from "./ChartCounter";
@@ -63,8 +64,8 @@ export const MotionGraphicsVideo: React.FC = () => {
         height,
       }}
     >
-      {/* Narration audio track - spans full duration, served from public folder */}
-      <Audio src="/narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
+      {/* Narration audio track - spans full duration, using staticFile like KineticCaptions */}
+      <Audio src={staticFile("narration.mp3")} startFrom={0} endAt={totalDurationInFrames} />
 
       {/* Persistent background spanning full duration */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>

@@ -182,14 +182,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div
@@ -201,216 +197,235 @@ export const ChartLine: React.FC<ChartLineProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          width: cardWidth,
-          height: cardHeight,
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* The elevated card - chart renders INSIDE this */}
+        {/* 
+          Chart container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
             position: "absolute",
-            left: 0,
-            top: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "white",
-            borderRadius: 24,
-            boxShadow: CARD_SHADOW,
-            overflow: "visible",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
+            width: cardWidth,
+            height: cardHeight,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {/* SVG Line Chart - fills the card with internal padding */}
-          <svg
-            width={cardWidth}
-            height={cardHeight}
+          {/* The elevated card - chart renders INSIDE this */}
+          <div
             style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              backgroundColor: "white",
+              borderRadius: 24,
+              boxShadow: CARD_SHADOW,
               overflow: "visible",
             }}
           >
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={ACCENT_COLOR} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={ACCENT_COLOR} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-
-            {/* Grid lines - inside chart area */}
-            {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
-              <line
-                key={i}
-                x1={chartLeft}
-                x2={chartLeft + chartWidth}
-                y1={chartBottom - frac * chartHeight}
-                y2={chartBottom - frac * chartHeight}
-                stroke={GRID_COLOR}
-                strokeWidth={1}
-                opacity={entranceProgress}
-              />
-            ))}
-
-            {/* Y-axis labels - elevated cards, positioned left of chart area */}
-            {[0, 0.5, 1].map((frac, i) => {
-              const val = maxValue - frac * valueRange;
-              const y = chartBottom - frac * chartHeight;
-              return (
-                <foreignObject
-                  key={i}
-                  x={chartLeft - 100}
-                  y={y - 15}
-                  width={90}
-                  height={30}
-                  opacity={entranceProgress}
-                >
-                  <div
-                    style={{
-                      backgroundColor: "white",
-                      borderRadius: 8,
-                      padding: "2px 8px",
-                      boxShadow: CARD_SHADOW,
-                      textAlign: "right",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                      height: "100%",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: DARK_TEXT,
-                        fontFamily: "system-ui, sans-serif",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatNumber(val)}
-                    </span>
-                  </div>
-                </foreignObject>
-              );
-            })}
-
-            {/* Area fill */}
-            <path
-              d={`${pathData} L ${chartLeft + chartWidth} ${chartBottom} L ${chartLeft} ${chartBottom} Z`}
-              fill={`url(#${gradientId})`}
-              opacity={entranceProgress}
-            />
-            {/* Line */}
-            <path
-              d={pathData}
-              stroke={LINE_COLOR}
-              strokeWidth={3}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={dashArray}
-              strokeDashoffset={dashOffset}
+            {/* SVG Line Chart - fills the card with internal padding */}
+            <svg
+              width={cardWidth}
+              height={cardHeight}
               style={{
-                filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.3))",
+                position: "absolute",
+                left: 0,
+                top: 0,
+                overflow: "visible",
               }}
-            />
+            >
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={ACCENT_COLOR} stopOpacity={0.15} />
+                  <stop offset="100%" stopColor={ACCENT_COLOR} stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-            {/* Dots and labels */}
-            {pathPoints.map((point, i) => {
-              const dotProg = dotProgresses[i];
-              if (dotProg === 0) return null;
+              {/* Grid lines - inside chart area */}
+              {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
+                <line
+                  key={i}
+                  x1={chartLeft}
+                  x2={chartLeft + chartWidth}
+                  y1={chartBottom - frac * chartHeight}
+                  y2={chartBottom - frac * chartHeight}
+                  stroke={GRID_COLOR}
+                  strokeWidth={1}
+                  opacity={entranceProgress}
+                />
+              ))}
 
-              return (
-                <React.Fragment key={i}>
-                  {/* Dot with elevated glow */}
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r={6 * dotProg}
-                    fill={DOT_COLOR}
-                    style={{
-                      filter: "drop-shadow(0 0 6px rgba(232, 108, 0, 0.6))",
-                      transformOrigin: `${point.x}px ${point.y}px`,
-                    }}
-                  />
-
-                  {/* Value label above dot - elevated card */}
+              {/* Y-axis labels - elevated cards, positioned left of chart area */}
+              {[0, 0.5, 1].map((frac, i) => {
+                const val = maxValue - frac * valueRange;
+                const y = chartBottom - frac * chartHeight;
+                return (
                   <foreignObject
-                    x={point.x - 55}
-                    y={point.y - 55}
-                    width={110}
-                    height={36}
-                    opacity={dotProg}
+                    key={i}
+                    x={chartLeft - 100}
+                    y={y - 15}
+                    width={90}
+                    height={30}
+                    opacity={entranceProgress}
                   >
                     <div
                       style={{
                         backgroundColor: "white",
                         borderRadius: 8,
-                        padding: "2px 10px",
+                        padding: "2px 8px",
                         boxShadow: CARD_SHADOW,
-                        textAlign: "center",
-                        transform: `scale(${dotProg})`,
-                        transformOrigin: "bottom center",
+                        textAlign: "right",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        justifyContent: "flex-end",
                         height: "100%",
                       }}
                     >
                       <span
                         style={{
                           fontSize: 16,
-                          fontWeight: 700,
-                          color: ACCENT_COLOR,
+                          fontWeight: 600,
+                          color: DARK_TEXT,
                           fontFamily: "system-ui, sans-serif",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {formatNumber(point.value)}
+                        {formatNumber(val)}
                       </span>
                     </div>
                   </foreignObject>
+                );
+              })}
 
-                  {/* X-axis label below - elevated card */}
-                  <foreignObject
-                    x={point.x - 45}
-                    y={chartBottom + 15}
-                    width={90}
-                    height={32}
-                    opacity={dotProg}
-                  >
-                    <div
+              {/* Area fill */}
+              <path
+                d={`${pathData} L ${chartLeft + chartWidth} ${chartBottom} L ${chartLeft} ${chartBottom} Z`}
+                fill={`url(#${gradientId})`}
+                opacity={entranceProgress}
+              />
+              {/* Line */}
+              <path
+                d={pathData}
+                stroke={LINE_COLOR}
+                strokeWidth={3}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={dashArray}
+                strokeDashoffset={dashOffset}
+                style={{
+                  filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.3))",
+                }}
+              />
+
+              {/* Dots and labels */}
+              {pathPoints.map((point, i) => {
+                const dotProg = dotProgresses[i];
+                if (dotProg === 0) return null;
+
+                return (
+                  <React.Fragment key={i}>
+                    {/* Dot with elevated glow */}
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={6 * dotProg}
+                      fill={DOT_COLOR}
                       style={{
-                        backgroundColor: "white",
-                        borderRadius: 8,
-                        padding: "2px 6px",
-                        boxShadow: CARD_SHADOW,
-                        textAlign: "center",
-                        transform: `scale(${dotProg})`,
-                        transformOrigin: "top center",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
+                        filter: "drop-shadow(0 0 6px rgba(232, 108, 0, 0.6))",
+                        transformOrigin: `${point.x}px ${point.y}px`,
                       }}
+                    />
+
+                    {/* Value label above dot - elevated card */}
+                    <foreignObject
+                      x={point.x - 55}
+                      y={point.y - 55}
+                      width={110}
+                      height={36}
+                      opacity={dotProg}
                     >
-                      <span
+                      <div
                         style={{
-                          fontSize: 14,
-                          fontWeight: 500,
-                          color: MEDIUM_TEXT,
-                          fontFamily: "system-ui, sans-serif",
-                          whiteSpace: "nowrap",
+                          backgroundColor: "white",
+                          borderRadius: 8,
+                          padding: "2px 10px",
+                          boxShadow: CARD_SHADOW,
+                          textAlign: "center",
+                          transform: `scale(${dotProg})`,
+                          transformOrigin: "bottom center",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
                         }}
                       >
-                        {point.label}
-                      </span>
-                    </div>
-                  </foreignObject>
-                </React.Fragment>
-              );
-            })}
-          </svg>
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: ACCENT_COLOR,
+                            fontFamily: "system-ui, sans-serif",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {formatNumber(point.value)}
+                        </span>
+                      </div>
+                    </foreignObject>
+
+                    {/* X-axis label below - elevated card */}
+                    <foreignObject
+                      x={point.x - 45}
+                      y={chartBottom + 15}
+                      width={90}
+                      height={32}
+                      opacity={dotProg}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: 8,
+                          padding: "2px 6px",
+                          boxShadow: CARD_SHADOW,
+                          textAlign: "center",
+                          transform: `scale(${dotProg})`,
+                          transformOrigin: "top center",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: MEDIUM_TEXT,
+                            fontFamily: "system-ui, sans-serif",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {point.label}
+                        </span>
+                      </div>
+                    </foreignObject>
+                  </React.Fragment>
+                );
+              })}
+            </svg>
+          </div>
         </div>
       </div>
     </AbsoluteFill>

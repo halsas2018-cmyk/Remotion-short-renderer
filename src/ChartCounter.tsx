@@ -76,65 +76,116 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   });
   const entranceOpacity = entranceProgress;
 
+  // Exit animation
+  const exitStart = durationInFrames - 15;
+  const isExit = frame > exitStart;
+  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.85], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitTranslateY = interpolate(
+    frame,
+    [exitStart, durationInFrames],
+    [0, -60],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  // Combined transform
+  const scale = isExit ? exitScale : entranceScale;
+  const opacity = isExit ? exitOpacity : entranceOpacity;
+  const translateY = isExit ? exitTranslateY : 0;
+
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        padding: 120,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div
         style={{
-          transform: `scale(${entranceScale})`,
-          opacity: entranceOpacity,
+          transform: [
+            { scale },
+            { translateY },
+          ],
+          opacity,
           transformOrigin: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
+        {/* 
+          ChartCounter container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            backgroundColor: "white",
-            borderRadius: 24,
-            padding: "48px 64px",
-            boxShadow: CARD_SHADOW,
+            position: "absolute",
+            top: "50%",
+            left: 120,
+            right: 120,
+            transform: "translateY(-50%)",
+            width: width - 240,
             display: "flex",
             flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
-            minWidth: 400,
+            textAlign: "center",
           }}
         >
           <div
             style={{
-              fontSize: 140,
-              fontWeight: 900,
-              fontFamily: "system-ui, sans-serif",
-              color: ACCENT_COLOR,
-              lineHeight: 1,
-              letterSpacing: -4,
-              whiteSpace: "nowrap",
+              backgroundColor: "white",
+              borderRadius: 24,
+              padding: "48px 64px",
+              boxShadow: CARD_SHADOW,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              minWidth: 400,
             }}
           >
-            {displayValue}
-          </div>
-          <div
-            style={{
-              marginTop: 32,
-              fontSize: 48,
-              fontWeight: 500,
-              fontFamily: "system-ui, sans-serif",
-              color: DARK_TEXT,
-              lineHeight: 1.2,
-              maxWidth: width - 240,
-              textAlign: "center",
-            }}
-          >
-            {label}
+            <div
+              style={{
+                fontSize: 140,
+                fontWeight: 900,
+                fontFamily: "system-ui, sans-serif",
+                color: ACCENT_COLOR,
+                lineHeight: 1,
+                letterSpacing: -4,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {displayValue}
+            </div>
+            <div
+              style={{
+                marginTop: 32,
+                fontSize: 48,
+                fontWeight: 500,
+                fontFamily: "system-ui, sans-serif",
+                color: DARK_TEXT,
+                lineHeight: 1.2,
+                maxWidth: width - 240,
+                textAlign: "center",
+              }}
+            >
+              {label}
+            </div>
           </div>
         </div>
       </div>

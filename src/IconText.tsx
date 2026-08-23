@@ -142,15 +142,10 @@ export const IconText: React.FC<IconTextProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        padding: 120,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div
@@ -162,85 +157,110 @@ export const IconText: React.FC<IconTextProps> = ({
           ],
           opacity: containerOpacity,
           transformOrigin: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* Icon with elevated card */}
+        {/* 
+          IconText container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
-            opacity: iconOpacity,
-            transformOrigin: "center",
-            marginBottom: 32,
+            position: "absolute",
+            top: "50%",
+            left: 120,
+            right: 120,
+            transform: "translateY(-50%)",
+            width: width - 240,
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
             justifyContent: "center",
-            backgroundColor: "white",
-            borderRadius: 24,
-            padding: 24,
-            boxShadow: CARD_SHADOW,
+            alignItems: "center",
+            textAlign: "center",
           }}
         >
-          <IconComponent
-            size={100}
-            color={ACCENT_COLOR}
-            strokeWidth={2}
-          />
-        </div>
-        
-        {/* Text with word-by-word animation */}
-        <div
-          style={{
-            maxWidth: width - 240,
-            backgroundColor: "white",
-            borderRadius: 24,
-            padding: "32px 48px",
-            boxShadow: CARD_SHADOW,
-          }}
-        >
+          {/* Icon with elevated card */}
           <div
             style={{
-              fontSize: 48,
-              fontWeight: 600,
-              fontFamily: "system-ui, sans-serif",
-              color: DARK_TEXT,
-              lineHeight: 1.4,
-              letterSpacing: -0.5,
-              textAlign: "center",
+              transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
+              opacity: iconOpacity,
+              transformOrigin: "center",
+              marginBottom: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "white",
+              borderRadius: 24,
+              padding: 24,
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {words.map((word, wordIndex) => {
-              const wordStartFrame = textStartDelay + wordIndex * wordDurationFrames;
-              const wordEndFrame = wordStartFrame + wordDurationFrames;
-              
-              const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                easing: easeOut,
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              
-              const wordOpacity = isExit ? exitOpacity : wordProgress;
-              const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              
-              // Idle animation for words: subtle vertical drift
-              const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
+            <IconComponent
+              size={100}
+              color={ACCENT_COLOR}
+              strokeWidth={2}
+            />
+          </div>
+          
+          {/* Text with word-by-word animation */}
+          <div
+            style={{
+              maxWidth: width - 240,
+              backgroundColor: "white",
+              borderRadius: 24,
+              padding: "32px 48px",
+              boxShadow: CARD_SHADOW,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                color: DARK_TEXT,
+                lineHeight: 1.4,
+                letterSpacing: -0.5,
+                textAlign: "center",
+              }}
+            >
+              {words.map((word, wordIndex) => {
+                const wordStartFrame = textStartDelay + wordIndex * wordDurationFrames;
+                const wordEndFrame = wordStartFrame + wordDurationFrames;
+                
+                const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                  easing: easeOut,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                
+                const wordOpacity = isExit ? exitOpacity : wordProgress;
+                const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                
+                // Idle animation for words: subtle vertical drift
+                const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
 
-              return (
-                <span
-                  key={wordIndex}
-                  style={{
-                    display: "inline-block",
-                    opacity: wordOpacity,
-                    transform: `translateY(${wordY + wordIdleDrift}px)`,
-                    margin: "0 2px",
-                  }}
-                >
-                  {word}{wordIndex < totalWords - 1 ? " " : ""}
-                </span>
-              );
-            })}
+                return (
+                  <span
+                    key={wordIndex}
+                    style={{
+                      display: "inline-block",
+                      opacity: wordOpacity,
+                      transform: `translateY(${wordY + wordIdleDrift}px)`,
+                      margin: "0 2px",
+                    }}
+                  >
+                    {word}{wordIndex < totalWords - 1 ? " " : ""}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

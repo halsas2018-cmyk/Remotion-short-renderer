@@ -120,15 +120,10 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        padding: 120,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div
@@ -140,110 +135,133 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
           ],
           opacity,
           transformOrigin: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
           width: "100%",
-          maxWidth: width - 240,
+          height: "100%",
         }}
       >
-        {items.map((item, index) => {
-          // Staggered start frame for this item
-          const itemStartFrame = index * staggerFrames;
-          const itemEndFrame = itemStartFrame + itemDurationFrames;
-          
-          // Progress for this specific item (0 to 1)
-          const itemProgress = interpolate(frame, [itemStartFrame, itemEndFrame], [0, 1], {
-            easing: easeOut,
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          });
-          
-          // Bar width proportional to value
-          const barWidthPercent = (item.value / maxValue) * 100 * itemProgress;
-          
-          // Label/value fade in slightly after bar starts
-          const labelDelayFrames = 8;
-          const labelProgress = interpolate(frame, [itemStartFrame + labelDelayFrames, itemEndFrame], [0, 1], {
-            easing: easeOut,
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          });
+        {/* 
+          ChartComparison container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 120,
+            right: 120,
+            transform: "translateY(-50%)",
+            width: width - 240,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+          }}
+        >
+          {items.map((item, index) => {
+            // Staggered start frame for this item
+            const itemStartFrame = index * staggerFrames;
+            const itemEndFrame = itemStartFrame + itemDurationFrames;
+            
+            // Progress for this specific item (0 to 1)
+            const itemProgress = interpolate(frame, [itemStartFrame, itemEndFrame], [0, 1], {
+              easing: easeOut,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            
+            // Bar width proportional to value
+            const barWidthPercent = (item.value / maxValue) * 100 * itemProgress;
+            
+            // Label/value fade in slightly after bar starts
+            const labelDelayFrames = 8;
+            const labelProgress = interpolate(frame, [itemStartFrame + labelDelayFrames, itemEndFrame], [0, 1], {
+              easing: easeOut,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
 
-          // Idle animation for bars only: subtle width breathing (not on value label)
-          const idleBarBreath = isIdle ? 1 + 0.005 * Math.sin(frame * 0.08 + index) : 1;
-          const finalBarWidth = barWidthPercent * idleBarBreath;
+            // Idle animation for bars only: subtle width breathing (not on value label)
+            const idleBarBreath = isIdle ? 1 + 0.005 * Math.sin(frame * 0.08 + index) : 1;
+            const finalBarWidth = barWidthPercent * idleBarBreath;
 
-          return (
-            <div
-              key={item.label}
-              style={{
-                marginBottom: index < items.length - 1 ? 60 : 0,
-                opacity: labelProgress,
-                transform: `translateY(${interpolate(labelProgress, [0, 1], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`,
-              }}
-            >
+            return (
               <div
+                key={item.label}
                 style={{
-                  backgroundColor: "white",
-                  borderRadius: 16,
-                  padding: "24px 32px",
-                  boxShadow: CARD_SHADOW,
-                  marginBottom: 16,
+                  marginBottom: index < items.length - 1 ? 60 : 0,
+                  opacity: labelProgress,
+                  transform: `translateY(${interpolate(labelProgress, [0, 1], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`,
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 42,
-                      fontWeight: 600,
-                      fontFamily: "system-ui, sans-serif",
-                      color: DARK_TEXT,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 42,
-                      fontWeight: 700,
-                      fontFamily: "system-ui, sans-serif",
-                      color: ACCENT_COLOR,
-                      whiteSpace: "nowrap",
-                      marginLeft: 24,
-                    }}
-                  >
-                    {formatNumber(item.value)}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: 16,
-                    backgroundColor: BAR_BG,
-                    borderRadius: 8,
-                    overflow: "hidden",
+                    backgroundColor: "white",
+                    borderRadius: 16,
+                    padding: "24px 32px",
+                    boxShadow: CARD_SHADOW,
+                    marginBottom: 16,
                   }}
                 >
                   <div
                     style={{
-                      width: `${finalBarWidth}%`,
-                      height: "100%",
-                      backgroundColor: BAR_FILL,
-                      borderRadius: 8,
-                      transformOrigin: "left center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
                     }}
-                  />
+                  >
+                    <span
+                      style={{
+                        fontSize: 42,
+                        fontWeight: 600,
+                        fontFamily: "system-ui, sans-serif",
+                        color: DARK_TEXT,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 42,
+                        fontWeight: 700,
+                        fontFamily: "system-ui, sans-serif",
+                        color: ACCENT_COLOR,
+                        whiteSpace: "nowrap",
+                        marginLeft: 24,
+                      }}
+                    >
+                      {formatNumber(item.value)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 16,
+                      backgroundColor: BAR_BG,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${finalBarWidth}%`,
+                        height: "100%",
+                        backgroundColor: BAR_FILL,
+                        borderRadius: 8,
+                        transformOrigin: "left center",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </AbsoluteFill>
   );

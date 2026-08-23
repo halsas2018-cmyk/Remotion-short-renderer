@@ -7,6 +7,7 @@ import {
   staticFile,
   interpolate,
   Easing,
+  useCurrentFrame,
 } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { ChartCounter } from "./ChartCounter";
@@ -128,7 +129,6 @@ const COUNTER_FADE_FRAMES = 10;
 
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
-  const globalFrame = useVideoConfig().durationInFrames > 0 ? 0 : 0; // placeholder, we'll use useCurrentFrame in provider
 
   // Precompute exit/entry directions with continuous linking
   // Beat N entryDirection = Beat N-1 exitDirection

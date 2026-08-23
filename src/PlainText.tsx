@@ -95,15 +95,10 @@ export const PlainText: React.FC<PlainTextProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        padding: 120,
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div
@@ -115,76 +110,100 @@ export const PlainText: React.FC<PlainTextProps> = ({
           ],
           opacity: containerOpacity,
           transformOrigin: "center",
-          maxWidth: width - 240,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
+        {/* 
+          Text container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            backgroundColor: "white",
-            borderRadius: 24,
-            padding: "48px 64px",
-            boxShadow: CARD_SHADOW,
+            position: "absolute",
+            top: "50%",
+            left: 120,
+            right: 120,
+            transform: "translateY(-50%)",
+            width: width - 240,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
           }}
         >
           <div
             style={{
-              fontSize: 64,
-              fontWeight: 700,
-              fontFamily: "system-ui, sans-serif",
-              color: DARK_TEXT,
-              lineHeight: 1.3,
-              letterSpacing: -1.5,
-              textAlign: "center",
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: "0.08em",
+              backgroundColor: "white",
+              borderRadius: 24,
+              padding: "48px 64px",
+              boxShadow: CARD_SHADOW,
             }}
           >
-            {words.map((word, i) => {
-              // Word entrance animation
-              const wordStartFrame = textStartDelay + i * wordStaggerFrames;
-              const wordEndFrame = wordStartFrame + wordDurationFrames;
-              
-              const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                easing: easeOut,
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              
-              const wordOpacity = isExit ? exitOpacity : wordProgress;
-              const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              
-              // Idle animation for words: subtle vertical drift
-              const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + i * 0.5) : 0;
+            <div
+              style={{
+                fontSize: 64,
+                fontWeight: 700,
+                fontFamily: "system-ui, sans-serif",
+                color: DARK_TEXT,
+                lineHeight: 1.3,
+                letterSpacing: -1.5,
+                textAlign: "center",
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: "0.08em",
+              }}
+            >
+              {words.map((word, i) => {
+                // Word entrance animation
+                const wordStartFrame = textStartDelay + i * wordStaggerFrames;
+                const wordEndFrame = wordStartFrame + wordDurationFrames;
+                
+                const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                  easing: easeOut,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                
+                const wordOpacity = isExit ? exitOpacity : wordProgress;
+                const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                
+                // Idle animation for words: subtle vertical drift
+                const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + i * 0.5) : 0;
 
-              return (
-                <span
-                  key={i}
-                  style={{
-                    display: "inline-block",
-                    opacity: wordOpacity,
-                    transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale})`,
-                    transformOrigin: "center bottom",
-                    fontSize: 64,
-                    fontWeight: 700,
-                    color: DARK_TEXT,
-                    fontFamily: "system-ui, sans-serif",
-                    lineHeight: 1.3,
-                    margin: "0 0.04em",
-                  }}
-                >
-                  {word}{i < totalWords - 1 ? " " : ""}
-                </span>
-              );
-            })}
+                return (
+                  <span
+                    key={i}
+                    style={{
+                      display: "inline-block",
+                      opacity: wordOpacity,
+                      transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale})`,
+                      transformOrigin: "center bottom",
+                      fontSize: 64,
+                      fontWeight: 700,
+                      color: DARK_TEXT,
+                      fontFamily: "system-ui, sans-serif",
+                      lineHeight: 1.3,
+                      margin: "0 0.04em",
+                    }}
+                  >
+                    {word}{i < totalWords - 1 ? " " : ""}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

@@ -149,10 +149,10 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "white",
         width,
         height,
-        position: "relative",
+        // Transparent background so PersistentBackground grid shows through
+        backgroundColor: "transparent",
       }}
     >
       <div

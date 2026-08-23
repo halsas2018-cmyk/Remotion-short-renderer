@@ -10,6 +10,7 @@ import {
   Easing,
 } from "remotion";
 import timestamps from "../timestamps.json";
+import { useBeatContext } from "./MotionGraphicsVideo";
 
 interface Word {
   word: string;
@@ -29,6 +30,11 @@ interface PositionedWord extends Word {
   rotation: number;
   scale: number;
   delay: number;
+}
+
+interface KineticCaptionsProps {
+  captionEnabledTypes: Set<string>;
+  beats: Array<{ type: string; startFrame: number; durationInFrames: number }>;
 }
 
 // ============================================
@@ -152,14 +158,20 @@ function groupIntoBeats(words: Word[]): Beat[] {
   return beats;
 }
 
-const beats = groupIntoBeats(timestamps as Word[]);
 const allWords = timestamps as Word[];
 const lastWordEnd = allWords[allWords.length - 1]?.end ?? 0;
 const BUFFER_SECONDS = 1.5;
 
-export const KineticCaptions: React.FC = () => {
+export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
+  captionEnabledTypes,
+  beats,
+}) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  const { currentBeatType } = useBeatContext();
+
+  // Determine if captions should show for current beat
+  const shouldShowCaptions = currentBeatType ? captionEnabledTypes.has(currentBeatType) : false;
 
   // Compute positions once (memoized via closure)
   const wordsWithPositions: PositionedWord[] = React.useMemo(() => {
@@ -246,6 +258,10 @@ export const KineticCaptions: React.FC = () => {
     .filter((s) => s.progress > 0)
     .sort((a, b) => a.word.start - b.word.start)
     .slice(-CONFIG.maxVisibleItems);
+
+  if (!shouldShowCaptions) {
+    return null;
+  }
 
   return (
     <AbsoluteFill
@@ -345,6 +361,21 @@ export const KineticCaptionsComposition: React.FC = () => (
     fps={30}
     width={1080}
     height={1920}
-    defaultProps={{}}
+    defaultProps={{
+      captionEnabledTypes: new Set([
+        "chart_counter",
+        "chart_comparison",
+        "chart_line",
+        "progress_meter",
+        "map_location",
+        "timeline",
+        "process_flow",
+        "versus",
+        "icon_text",
+        "quote_card",
+        "before_after",
+      ]),
+      beats: [],
+    }}
   />
 );

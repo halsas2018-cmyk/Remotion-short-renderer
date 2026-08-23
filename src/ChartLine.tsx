@@ -43,6 +43,9 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
+// Generate unique ID for gradient to avoid conflicts
+const gradientId = `chart-line-gradient-${Math.random().toString(36).slice(2, 9)}`;
+
 export const ChartLine: React.FC<ChartLineProps> = ({
   points,
   durationInFrames,
@@ -129,7 +132,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   // Calculate chart dimensions
   const padding = 120;
   const chartWidth = width - 2 * padding;
-  const chartHeight = height * 0.6;
+  const chartHeight = height * 0.55; // Reduced slightly to ensure labels fit
   const centerY = height / 2;
   const chartTop = centerY - chartHeight / 2;
   const chartBottom = centerY + chartHeight / 2;
@@ -148,7 +151,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
     return { x, y, value: point.value, label: point.label };
   });
 
-  // Create path data
+  // Create path data with smooth curves
   const pathData = pathPoints.map((p, i) => {
     if (i === 0) return `M ${p.x} ${p.y}`;
     const prev = pathPoints[i - 1];
@@ -157,7 +160,6 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   }).join(" ");
 
   // Calculate total path length for stroke dash animation
-  // We'll approximate with a straight line calculation for the dash array
   const totalLength = pathPoints.reduce((acc, p, i) => {
     if (i === 0) return 0;
     const prev = pathPoints[i - 1];
@@ -210,7 +212,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
           />
         ))}
 
-        {/* Y-axis labels */}
+        {/* Y-axis labels - FIXED: positioned within padding area */}
         {[0, 0.5, 1].map((frac, i) => {
           const val = maxValue - frac * valueRange;
           return (
@@ -218,11 +220,11 @@ export const ChartLine: React.FC<ChartLineProps> = ({
               key={i}
               style={{
                 position: "absolute",
-                left: -80,
+                left: -100, // Moved further left to ensure visibility
                 top: `${frac * 100}%`,
                 transform: [{ translateY: -10 }],
                 textAlign: "right",
-                width: 70,
+                width: 90,
                 opacity: entranceProgress,
               }}
             >
@@ -254,7 +256,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
           {/* Area fill */}
           <path
             d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
-            fill={`url(#gradient-${durationInFrames})`}
+            fill={`url(#${gradientId})`}
             opacity={0.15 * entranceProgress}
           />
           {/* Line */}
@@ -272,7 +274,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
             }}
           />
           <defs>
-            <linearGradient id={`gradient-${durationInFrames}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={LINE_COLOR} stopOpacity={0.3} />
               <stop offset="100%" stopColor={LINE_COLOR} stopOpacity={0} />
             </linearGradient>
@@ -315,10 +317,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                   {formatNumber(point.value)}
                 </text>
 
-                {/* X-axis label below */}
+                {/* X-axis label below - FIXED: positioned within chart area */}
                 <text
                   x={point.x}
-                  y={chartHeight + 30}
+                  y={chartHeight + 25}
                   textAnchor="middle"
                   dominantBaseline="top"
                   fill={LABEL_COLOR}

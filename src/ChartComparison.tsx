@@ -91,7 +91,7 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Idle animation: subtle scale pulse
+  // Idle animation: subtle scale pulse on container only
   const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
 
   // Combined transform values
@@ -159,7 +159,7 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
             extrapolateRight: "clamp",
           });
 
-          // Idle animation for bars: subtle width breathing
+          // Idle animation for bars only: subtle width breathing (not on value label)
           const idleBarBreath = isIdle ? 1 + 0.005 * Math.sin(frame * 0.08 + index) : 1;
           const finalBarWidth = barWidthPercent * idleBarBreath;
 
@@ -201,7 +201,8 @@ export const ChartComparison: React.FC<ChartComparisonProps> = ({
                     marginLeft: 24,
                   }}
                 >
-                  {formatNumber(item.value * itemProgress * (isIdle ? idleBarBreath : 1))}
+                  {/* FIXED: Show final formatted value without idle fluctuation */}
+                  {formatNumber(item.value)}
                 </span>
               </div>
               <div

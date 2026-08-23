@@ -6,6 +6,17 @@ const calculateMetadata: CalculateMetadataFunction<Props> = () => {
   return {};
 };
 
+// This is a template file - replace with actual composition
+// Example usage:
+/*
+export const MyComponent: React.FC<Props> = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "black", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <div style={{ color: "white", fontSize: 72 }}>Hello World</div>
+    </AbsoluteFill>
+  );
+};
+
 export const MyComposition = () => {
   return (
     <Composition
@@ -19,7 +30,8 @@ export const MyComposition = () => {
     />
   );
 };
+*/
 
-export const MyComponent: React.FC<Props> = () => {
-  return null;
-};
+// Export empty to avoid registering a null component
+export const MyComposition = null as any;
+export const MyComponent = null as any;

@@ -152,9 +152,8 @@ const allWords = timestamps as Word[];
 const lastWordEnd = allWords[allWords.length - 1]?.end ?? 0;
 const BUFFER_SECONDS = 1;
 
-// Pre-compute positions for all words
+// Pre-compute positions for all words (module level - will be recomputed in component)
 const positionedWords: PositionedWord[] = allWords.map((w, i) => {
-  // We'll compute actual positions in the component since we need width/height
   return { ...w, x: 0, y: 0, rotation: 0 };
 });
 

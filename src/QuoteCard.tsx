@@ -197,7 +197,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           </span>
         </div>
 
-        {/* Closing quotation mark */}
+        {/* Closing quotation mark - FIXED: use &rdquo; instead of rotated &ldquo; */}
         <div
           style={{
             fontSize: 120,
@@ -209,12 +209,11 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
             transformOrigin: "center top",
             transform: [
               { scale: markProgress * (isIdle ? idlePulse : 1) },
-              { rotate: "180deg" },
             ],
             opacity: markProgress,
           }}
         >
-          &ldquo;
+          &rdquo;
         </div>
 
         {/* Attribution */}

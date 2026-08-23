@@ -95,9 +95,9 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Meter fill animation
+  // Meter fill animation - FIXED: use same duration as number count-up
   const fillStart = entranceFrames;
-  const fillDuration = 35;
+  const fillDuration = 40; // Match numberDuration
   const fillProgress = interpolate(frame, [fillStart, fillStart + fillDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",

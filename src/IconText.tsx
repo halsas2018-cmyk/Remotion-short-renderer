@@ -127,11 +127,13 @@ export const IconText: React.FC<IconTextProps> = ({
   // Icon idle: subtle rotation drift
   const iconIdleRotation = isIdle ? 2 * Math.sin(frame * 0.04) : 0;
 
-  // Text animation: word-by-word appearance
+  // Text animation: word-by-word appearance - complete within first 50% of beat
   const words = text.split(" ");
   const totalWords = words.length;
-  const wordDurationFrames = 8; // frames per word
-  const textStartDelay = 12; // delay after icon starts
+  const wordAnimationWindow = durationInFrames * 0.5; // first 50% of beat
+  const wordDurationFrames = Math.max(6, wordAnimationWindow / totalWords * 0.8);
+  const wordStaggerFrames = wordAnimationWindow / totalWords;
+  const textStartDelay = entranceFrames + 12; // delay after icon starts
   
   // Combined transform values for container
   const containerScale = isEntrance ? entranceScale : isExit ? exitScale : idleScale;
@@ -228,7 +230,7 @@ export const IconText: React.FC<IconTextProps> = ({
               }}
             >
               {words.map((word, wordIndex) => {
-                const wordStartFrame = textStartDelay + wordIndex * wordDurationFrames;
+                const wordStartFrame = textStartDelay + wordIndex * wordStaggerFrames;
                 const wordEndFrame = wordStartFrame + wordDurationFrames;
                 
                 const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {

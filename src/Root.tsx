@@ -17,6 +17,17 @@ import { MapLocation } from "./MapLocation";
 import { QuoteCard } from "./QuoteCard";
 import { ProgressMeter } from "./ProgressMeter";
 import { BeforeAfter } from "./BeforeAfter";
+import { MotionGraphicsVideo } from "./MotionGraphicsVideo";
+import timedBeats from "./sample-timed-beats.json";
+
+interface TimedBeatsData {
+  fps: number;
+  totalDurationInFrames: number;
+  beats: unknown[];
+}
+
+const beatsData = timedBeats as TimedBeatsData;
+const { fps, totalDurationInFrames } = beatsData;
 
 // Register all compositions as named exports for Remotion Studio
 export const BackgroundTest = () => (
@@ -252,5 +263,17 @@ export const BeforeAfterTest = () => (
       durationInFrames: 90,
       exitDirection: "up",
     }}
+  />
+);
+
+export const MotionGraphicsVideoComposition = () => (
+  <Composition
+    id="MotionGraphicsVideo"
+    component={MotionGraphicsVideo}
+    durationInFrames={totalDurationInFrames}
+    fps={fps}
+    width={1080}
+    height={1920}
+    defaultProps={{}}
   />
 );

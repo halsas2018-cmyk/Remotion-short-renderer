@@ -17,10 +17,12 @@ interface ProgressMeterProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const TRACK_COLOR = "rgba(255,255,255,0.1)";
-const FILL_COLOR = "#FFD700";
-const TEXT_COLOR = "white";
-const LABEL_COLOR = "rgba(255,255,255,0.7)";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const TRACK_COLOR = "#e8e8e8";
+const FILL_COLOR = ACCENT_COLOR;
 
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
@@ -95,9 +97,9 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Meter fill animation - FIXED: use same duration as number count-up
+  // Meter fill animation
   const fillStart = entranceFrames;
-  const fillDuration = 40; // Match numberDuration
+  const fillDuration = 40;
   const fillProgress = interpolate(frame, [fillStart, fillStart + fillDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
@@ -147,14 +149,10 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        position: "relative",
       }}
     >
       <div
@@ -166,95 +164,135 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           ],
           opacity,
           transformOrigin: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* Circular Progress Meter */}
-        <div style={{ position: "relative", width: size, height: size }}>
-          <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-            {/* Track */}
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={TRACK_COLOR}
-              strokeWidth={strokeWidth}
-              opacity={entranceProgress}
-            />
-            {/* Fill */}
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={FILL_COLOR}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-              style={{
-                filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(255, 215, 0, ${0.6 * idleGlow}))`,
-                transformOrigin: `${size / 2}px ${size / 2}px`,
-                transform: [{ scale: isIdle ? idlePulse : 1 }],
-              }}
-              opacity={fillProgress}
-            />
-          </svg>
-
-          {/* Center content */}
+        {/* 
+          Meter container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
+            width: width - 2 * padding,
+            height: size,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {/* Elevated card background for the meter */}
           <div
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
+              position: "relative",
               width: size,
               height: size,
+              backgroundColor: "white",
+              borderRadius: "50%",
+              boxShadow: CARD_SHADOW,
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            {/* Percentage/Value number */}
-            <div
-              style={{
-                fontSize: 72,
-                fontWeight: 800,
-                color: TEXT_COLOR,
-                fontFamily: "system-ui, sans-serif",
-                lineHeight: 1,
-                letterSpacing: -2,
-                opacity: numberProgress,
-                transform: [{ scale: numberProgress }],
-              }}
-            >
-              {value >= 1000 || maxValue >= 1000 ? (
-                <>
-                  {formatNumber(currentValue)}
-                  <span style={{ fontSize: 24, fontWeight: 600, color: LABEL_COLOR, marginLeft: 8 }}>
-                    / {formatNumber(maxValue)}
-                  </span>
-                </>
-              ) : (
-                `${Math.round(currentPercentage * 100)}%`
-              )}
-            </div>
+            {/* Circular Progress Meter */}
+            <div style={{ position: "relative", width: size, height: size }}>
+              <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+                {/* Track */}
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={TRACK_COLOR}
+                  strokeWidth={strokeWidth}
+                  opacity={entranceProgress}
+                />
+                {/* Fill */}
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={FILL_COLOR}
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  style={{
+                    filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(232, 108, 0, ${0.6 * idleGlow}))`,
+                    transformOrigin: `${size / 2}px ${size / 2}px`,
+                    transform: [{ scale: isIdle ? idlePulse : 1 }],
+                  }}
+                  opacity={fillProgress}
+                />
+              </svg>
 
-            {/* Label */}
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 600,
-                color: LABEL_COLOR,
-                fontFamily: "system-ui, sans-serif",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                marginTop: 16,
-                opacity: labelProgress,
-                transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
-              }}
-            >
-              {label}
+              {/* Center content */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: size,
+                  height: size,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {/* Percentage/Value number */}
+                <div
+                  style={{
+                    fontSize: 72,
+                    fontWeight: 800,
+                    color: ACCENT_COLOR,
+                    fontFamily: "system-ui, sans-serif",
+                    lineHeight: 1,
+                    letterSpacing: -2,
+                    opacity: numberProgress,
+                    transform: [{ scale: numberProgress }],
+                  }}
+                >
+                  {value >= 1000 || maxValue >= 1000 ? (
+                    <>
+                      {formatNumber(currentValue)}
+                      <span style={{ fontSize: 24, fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
+                        / {formatNumber(maxValue)}
+                      </span>
+                    </>
+                  ) : (
+                    `${Math.round(currentPercentage * 100)}%`
+                  )}
+                </div>
+
+                {/* Label */}
+                <div
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 600,
+                    color: DARK_TEXT,
+                    fontFamily: "system-ui, sans-serif",
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    marginTop: 16,
+                    opacity: labelProgress,
+                    transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
+                  }}
+                >
+                  {label}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -81,11 +81,11 @@ const ENTRY_DIRECTIONS = ["down", "up", "right", "left"] as const;
 const COUNTER_TYPES = new Set(["chart_counter", "chart_line", "progress_meter"]);
 
 const SOUND_MAP: Record<string, { file: string; volume: number }> = {
-  chart_counter: { file: "sfx-counter.mp3", volume: 0.45 },
-  chart_line: { file: "sfx-counter.mp3", volume: 0.45 },
-  progress_meter: { file: "sfx-counter.mp3", volume: 0.45 },
+  chart_counter: { file: "sfx-counter.mp3", volume: 0.25 },
+  chart_line: { file: "sfx-counter.mp3", volume: 0.25 },
+  progress_meter: { file: "sfx-counter.mp3", volume: 0.25 },
   // Default fallback for all other types
-  default: { file: "sfx-whoosh.mp3", volume: 0.4 },
+  default: { file: "sfx-whoosh.mp3", volume: 0.18 },
 };
 
 // Fade-out duration in frames for counter sounds
@@ -122,19 +122,20 @@ export const MotionGraphicsVideo: React.FC = () => {
           CHUNK 3: AUDIO LAYERS
           ============================================ */}
       
-      {/* 1. NARRATION: full duration at frame 0 */}
+      {/* 1. NARRATION: full duration at frame 0 - explicit volume 1.0 */}
       <Audio 
         src={staticFile("narration.mp3")} 
         startFrom={0} 
-        endAt={totalDurationInFrames} 
+        endAt={totalDurationInFrames}
+        volume={1.0}
       />
 
-      {/* 2. AMBIENT BED: continuous background at low volume */}
+      {/* 2. AMBIENT BED: continuous background at audible volume */}
       <Audio 
         src={staticFile("sfx-ambient.mp3")} 
         startFrom={0} 
         endAt={totalDurationInFrames}
-        volume={0.18}
+        volume={0.35}
       />
 
       {/* 3. PER-BEAT SOUND EFFECTS: triggered at each beat's startFrame */}

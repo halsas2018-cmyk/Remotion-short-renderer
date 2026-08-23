@@ -5,6 +5,8 @@ import {
   useVideoConfig,
   Audio,
   staticFile,
+  interpolate,
+  Easing,
 } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { ChartCounter } from "./ChartCounter";
@@ -86,6 +88,9 @@ const SOUND_MAP: Record<string, { file: string; volume: number }> = {
   default: { file: "sfx-whoosh.mp3", volume: 0.4 },
 };
 
+// Fade-out duration in frames for counter sounds
+const COUNTER_FADE_FRAMES = 10;
+
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
 
@@ -141,11 +146,44 @@ export const MotionGraphicsVideo: React.FC = () => {
         
         const soundConfig = SOUND_MAP[beat.type] || SOUND_MAP.default;
         const isWhoosh = soundConfig.file === "sfx-whoosh.mp3";
+        const isCounter = COUNTER_TYPES.has(beat.type);
         
         if (isShortBeat && isWhoosh) {
           return null;
         }
         
+        // For counter types, trim playback to beat duration with fade-out
+        if (isCounter) {
+          const beatDuration = beat.durationInFrames;
+          const fadeStartFrame = Math.max(0, beatDuration - COUNTER_FADE_FRAMES);
+          
+          return (
+            <Sequence
+              key={`sfx-${index}`}
+              from={beat.startFrame}
+              durationInFrames={beatDuration}
+            >
+              <Audio
+                src={staticFile(soundConfig.file)}
+                startFrom={0}
+                endAt={beatDuration}
+                volume={(frame) => {
+                  // Fade out over the last COUNTER_FADE_FRAMES frames
+                  if (frame >= fadeStartFrame) {
+                    return interpolate(frame, [fadeStartFrame, beatDuration], [soundConfig.volume, 0], {
+                      easing: Easing.linear,
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    });
+                  }
+                  return soundConfig.volume;
+                }}
+              />
+            </Sequence>
+          );
+        }
+        
+        // For whoosh and other sounds, play normally for the beat duration
         return (
           <Sequence
             key={`sfx-${index}`}

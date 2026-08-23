@@ -4,8 +4,6 @@ import {
   Composition,
   useCurrentFrame,
   useVideoConfig,
-  staticFile,
-  Audio,
   interpolate,
   Easing,
 } from "remotion";
@@ -273,8 +271,6 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
         overflow: "hidden",
       }}
     >
-      <Audio src={staticFile("narration.mp3")} />
-
       {visibleWords.map(({ word: w, progress, isActiveHighlight, highlightProgress, index }) => {
         // Entrance animation with bounce
         const entranceProgress = interpolate(progress, [0, 1], [0, 1], {

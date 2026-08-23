@@ -16,9 +16,10 @@ interface QuoteCardProps {
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const QUOTE_COLOR = "white";
-const ATTRIBUTION_COLOR = "rgba(255,255,255,0.7)";
-const ACCENT_COLOR = "#FFD700";
+const ACCENT_COLOR = "#e86c00";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#4a4a4a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
 
 export const QuoteCard: React.FC<QuoteCardProps> = ({
   quote,
@@ -128,14 +129,10 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "black",
+        backgroundColor: "white",
         width,
         height,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding,
+        position: "relative",
       }}
     >
       <div
@@ -147,89 +144,123 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          maxWidth,
-          textAlign: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       >
-        {/* Opening quotation mark */}
+        {/* 
+          Quote container: centered vertically in the screen.
+          Uses top: 50% + translateY(-50%) for true vertical centering.
+        */}
         <div
           style={{
-            fontSize: 120,
-            fontWeight: 800,
-            color: ACCENT_COLOR,
-            fontFamily: "Georgia, serif",
-            lineHeight: 1,
-            marginBottom: -40,
-            transformOrigin: "center bottom",
-            transform: [
-              { scale: markProgress * (isIdle ? idlePulse : 1) },
-            ],
-            opacity: markProgress,
-          }}
-        >
-          &ldquo;
-        </div>
-
-        {/* Quote text */}
-        <div
-          style={{
-            fontSize: 48,
-            fontWeight: 600,
-            color: QUOTE_COLOR,
-            fontFamily: "system-ui, sans-serif",
-            lineHeight: 1.4,
-            letterSpacing: -1,
-            marginBottom: 32,
-            minHeight: 140,
+            position: "absolute",
+            top: "50%",
+            left: padding,
+            right: padding,
+            transform: "translateY(-50%)",
+            width: maxWidth,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
+            textAlign: "center",
           }}
         >
-          <span
+          {/* Elevated card for the quote */}
+          <div
             style={{
-              opacity: quoteProgress,
-              transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+              backgroundColor: "white",
+              borderRadius: 24,
+              padding: "48px 64px",
+              boxShadow: CARD_SHADOW,
+              position: "relative",
             }}
           >
-            {displayWords.join(" ")}
-          </span>
-        </div>
+            {/* Opening quotation mark */}
+            <div
+              style={{
+                fontSize: 120,
+                fontWeight: 800,
+                color: ACCENT_COLOR,
+                fontFamily: "Georgia, serif",
+                lineHeight: 1,
+                marginBottom: -40,
+                transformOrigin: "center bottom",
+                transform: [
+                  { scale: markProgress * (isIdle ? idlePulse : 1) },
+                ],
+                opacity: markProgress,
+              }}
+            >
+              &ldquo;
+            </div>
 
-        {/* Closing quotation mark - FIXED: use &rdquo; instead of rotated &ldquo; */}
-        <div
-          style={{
-            fontSize: 120,
-            fontWeight: 800,
-            color: ACCENT_COLOR,
-            fontFamily: "Georgia, serif",
-            lineHeight: 1,
-            marginTop: -40,
-            transformOrigin: "center top",
-            transform: [
-              { scale: markProgress * (isIdle ? idlePulse : 1) },
-            ],
-            opacity: markProgress,
-          }}
-        >
-          &rdquo;
-        </div>
+            {/* Quote text */}
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 600,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                lineHeight: 1.4,
+                letterSpacing: -1,
+                marginBottom: 32,
+                minHeight: 140,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  opacity: quoteProgress,
+                  transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+                }}
+              >
+                {displayWords.join(" ")}
+              </span>
+            </div>
 
-        {/* Attribution */}
-        <div
-          style={{
-            fontSize: 24,
-            fontWeight: 500,
-            color: ATTRIBUTION_COLOR,
-            fontFamily: "system-ui, sans-serif",
-            letterSpacing: 1,
-            textTransform: "uppercase",
-            opacity: attrProgress,
-            transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
-          }}
-        >
-          &mdash; {attribution}
+            {/* Closing quotation mark */}
+            <div
+              style={{
+                fontSize: 120,
+                fontWeight: 800,
+                color: ACCENT_COLOR,
+                fontFamily: "Georgia, serif",
+                lineHeight: 1,
+                marginTop: -40,
+                transformOrigin: "center top",
+                transform: [
+                  { scale: markProgress * (isIdle ? idlePulse : 1) },
+                ],
+                opacity: markProgress,
+              }}
+            >
+              &rdquo;
+            </div>
+
+            {/* Attribution */}
+            <div
+              style={{
+                fontSize: 24,
+                fontWeight: 500,
+                color: MEDIUM_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                marginTop: 24,
+                opacity: attrProgress,
+                transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
+              }}
+            >
+              &mdash; {attribution}
+            </div>
+          </div>
         </div>
       </div>
     </AbsoluteFill>

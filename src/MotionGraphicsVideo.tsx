@@ -53,8 +53,29 @@ const componentMap: Record<string, React.ComponentType<Record<string, unknown>>>
   progress_meter: ProgressMeter,
 };
 
+// Exit directions cycle
+const EXIT_DIRECTIONS = ["up", "down", "left", "right"] as const;
+
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
+
+  // Precompute adjusted start frames with 10-frame overlap
+  const adjustedBeats = beats.map((beat, index) => {
+    const rawStart = beat.startFrame;
+    const overlapStart = Math.max(0, rawStart - 10);
+    // Never start before previous beat's original startFrame
+    const prevStart = index > 0 ? beats[index - 1].startFrame : 0;
+    const finalStart = Math.max(overlapStart, prevStart);
+    
+    // Cycle through exit directions
+    const exitDirection = EXIT_DIRECTIONS[index % EXIT_DIRECTIONS.length];
+
+    return {
+      ...beat,
+      adjustedStartFrame: finalStart,
+      exitDirection,
+    };
+  });
 
   return (
     <AbsoluteFill
@@ -73,20 +94,21 @@ export const MotionGraphicsVideo: React.FC = () => {
         <PersistentBackground />
       </Sequence>
 
-      {/* Sequence each beat - components render their elevated cards on top of transparent background */}
-      {beats.map((beat, index) => {
+      {/* Sequence each beat with overlap and exit direction */}
+      {adjustedBeats.map((beat, index) => {
         const Component = componentMap[beat.type] || KeyStatement;
-        const { type, startFrame, durationInFrames, ...props } = beat;
+        const { type, startFrame, durationInFrames, adjustedStartFrame, exitDirection, ...props } = beat;
 
         return (
           <Sequence
             key={index}
-            from={startFrame}
+            from={adjustedStartFrame}
             durationInFrames={durationInFrames}
           >
             <Component
               {...props}
               durationInFrames={durationInFrames}
+              exitDirection={exitDirection}
             />
           </Sequence>
         );

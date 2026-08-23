@@ -185,6 +185,31 @@ export const Timeline: React.FC<TimelineProps> = ({
             const markerProg = markerProgresses[i];
             const isActive = markerProg > 0;
 
+            // Description card dimensions
+            const descCardWidth = Math.min(
+              availableWidth / Math.max(events.length, 2) * 0.85,
+              320 // max width cap
+            );
+            const halfCardWidth = descCardWidth / 2;
+
+            // Calculate left position and transform to keep card within container bounds (0 to availableWidth)
+            let descLeft: number;
+            let descTransform: string;
+
+            if (xPos + halfCardWidth > availableWidth) {
+              // Near right edge - align right edge of card to container right edge
+              descLeft = availableWidth;
+              descTransform = "translateX(-100%)";
+            } else if (xPos - halfCardWidth < 0) {
+              // Near left edge - align left edge of card to container left edge
+              descLeft = 0;
+              descTransform = "translateX(0)";
+            } else {
+              // Centered on marker
+              descLeft = xPos;
+              descTransform = "translateX(-50%)";
+            }
+
             return (
               <React.Fragment key={i}>
                 {/* Vertical line from center line to marker */}
@@ -245,7 +270,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     position: "absolute",
                     left: xPos,
                     top: -labelOffset - markerRadius * 2 - labelCardHeight,
-                    transform: [{ translateX: -50 }],
+                    transform: [{ translateX: "-50%" }],
                     whiteSpace: "nowrap",
                     opacity: markerProg,
                   }}
@@ -273,14 +298,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                   </div>
                 </div>
 
-                {/* Event description below - elevated card */}
+                {/* Event description below - elevated card, constrained to screen */}
                 <div
                   style={{
                     position: "absolute",
-                    left: xPos,
+                    left: descLeft,
                     top: labelOffset + markerRadius + 10,
-                    transform: [{ translateX: -50 }],
-                    width: availableWidth / Math.max(events.length, 2) * 0.85,
+                    transform: descTransform,
+                    width: descCardWidth,
                     textAlign: "center",
                     opacity: markerProg,
                   }}

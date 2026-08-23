@@ -82,6 +82,13 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   // Idle animation: subtle scale pulse on container
   const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
 
+  // Card bouncing animation (loop during idle)
+  const cardBounceFrequency = 0.08; // Slower, more subtle bounce for the whole card
+  const cardBounceAmplitude = 6; // pixels
+  const cardBounceOffset = isIdle 
+    ? Math.sin(frame * cardBounceFrequency * Math.PI * 2) * cardBounceAmplitude 
+    : 0;
+
   // Fast bouncing animation for emphasized words (loop)
   const bounceFrequency = 0.25; // Fast bounce (cycles per frame)
   const bounceAmplitude = 8; // pixels
@@ -141,7 +148,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
             top: "50%",
             left: 120,
             right: 120,
-            transform: "translateY(-50%)",
+            transform: `translateY(-50%) translateY(${cardBounceOffset}px)`,
             width: width - 240,
             display: "flex",
             flexDirection: "column",

@@ -114,9 +114,11 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Layout constants - centered in the middle of screen
   const padding = 120;
   const availableWidth = width - 2 * padding;
-  const centerY = height / 2; // Middle of screen
+  const centerY = height / 2; // Exact vertical center of screen
   const markerRadius = 20;
-  const labelOffset = 100;
+  const labelOffset = 100; // Distance from line to marker circle
+  const labelCardHeight = 50; // Approximate height of label card
+  const descCardHeight = 70; // Approximate height of description card
 
   return (
     <AbsoluteFill
@@ -153,11 +155,11 @@ export const Timeline: React.FC<TimelineProps> = ({
             height: "auto",
           }}
         >
-          {/* Horizontal line */}
+          {/* Horizontal line - at exact vertical center */}
           <div
             style={{
               position: "absolute",
-              top: centerY - padding,
+              top: centerY,
               left: 0,
               width: `${lineProgress * 100}%`,
               height: 3,
@@ -177,13 +179,13 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             return (
               <React.Fragment key={i}>
-                {/* Vertical line from center to marker */}
+                {/* Vertical line from center line to marker */}
                 {isActive && (
                   <div
                     style={{
                       position: "absolute",
                       left: xPos,
-                      top: centerY - padding,
+                      top: centerY,
                       width: 2,
                       height: labelOffset,
                       backgroundColor: LINE_COLOR,
@@ -199,7 +201,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   style={{
                     position: "absolute",
                     left: xPos - markerRadius,
-                    top: centerY - padding - labelOffset - markerRadius,
+                    top: centerY - labelOffset - markerRadius,
                     width: markerRadius * 2,
                     height: markerRadius * 2,
                     borderRadius: "50%",
@@ -234,7 +236,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   style={{
                     position: "absolute",
                     left: xPos,
-                    top: centerY - padding - labelOffset - markerRadius * 2 - 50,
+                    top: centerY - labelOffset - markerRadius * 2 - labelCardHeight,
                     transform: [{ translateX: -50 }],
                     whiteSpace: "nowrap",
                     opacity: markerProg,
@@ -268,7 +270,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   style={{
                     position: "absolute",
                     left: xPos,
-                    top: centerY - padding + labelOffset + markerRadius + 10,
+                    top: centerY + labelOffset + markerRadius + 10,
                     transform: [{ translateX: -50 }],
                     width: availableWidth / Math.max(events.length, 2) * 0.85,
                     textAlign: "center",

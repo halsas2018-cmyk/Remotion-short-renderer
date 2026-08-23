@@ -20,8 +20,8 @@ import { ProgressMeter } from "./ProgressMeter";
 
 // Import the timed beats data
 import timedBeats from "./sample-timed-beats.json";
-// Import narration audio so Remotion bundles it correctly
-import narrationAudio from "../test_output/narration.mp3";
+// Import narration audio from assets folder (copy narration.mp3 to src/assets/ first)
+import narrationAudio from "./assets/narration.mp3";
 
 interface TimedBeat {
   type: string;

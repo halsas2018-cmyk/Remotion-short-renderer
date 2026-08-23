@@ -134,7 +134,18 @@ export const MotionGraphicsVideo: React.FC = () => {
 
       {/* 3. PER-BEAT SOUND EFFECTS: triggered at each beat's startFrame */}
       {beatsWithDirections.map((beat, index) => {
+        // Skip whoosh sound for beats that were originally shorter than 45 frames
+        // to avoid overlapping into the following transition
+        const originalBeat = beats[index];
+        const isShortBeat = originalBeat && originalBeat.durationInFrames < MIN_BEAT_FRAMES;
+        
         const soundConfig = SOUND_MAP[beat.type] || SOUND_MAP.default;
+        const isWhoosh = soundConfig.file === "sfx-whoosh.mp3";
+        
+        if (isShortBeat && isWhoosh) {
+          return null;
+        }
+        
         return (
           <Sequence
             key={`sfx-${index}`}

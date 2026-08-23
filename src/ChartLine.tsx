@@ -28,8 +28,6 @@ const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0
 const LINE_COLOR = ACCENT_COLOR;
 const DOT_COLOR = ACCENT_COLOR;
 const GRID_COLOR = "#e8e8e8";
-const AREA_GRADIENT_START = "rgba(232, 108, 0, 0.15)";
-const AREA_GRADIENT_END = "rgba(232, 108, 0, 0)";
 
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
@@ -134,13 +132,20 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const translateX = isExit ? exitTranslateX : 0;
   const translateY = isExit ? exitTranslateY : 0;
 
-  // Calculate chart dimensions
+  // Card dimensions - the chart IS the card
   const padding = 120;
-  const chartWidth = width - 2 * padding;
-  const chartHeight = height * 0.55;
+  const cardWidth = width - 2 * padding;
+  const cardHeight = height * 0.55;
   const centerY = height / 2;
-  const chartTop = centerY - chartHeight / 2;
-  const chartBottom = centerY + chartHeight / 2;
+  const cardTop = centerY - cardHeight / 2;
+
+  // Internal chart area with padding inside the card
+  const chartPadding = 60;
+  const chartWidth = cardWidth - 2 * chartPadding;
+  const chartHeight = cardHeight - 2 * chartPadding;
+  const chartLeft = chartPadding;
+  const chartTopInner = chartPadding;
+  const chartBottom = chartTopInner + chartHeight;
 
   // Find min/max values for scaling
   const values = points.map(p => p.value);
@@ -150,7 +155,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
 
   // Generate SVG path for the line
   const pathPoints = points.map((point, i) => {
-    const x = (i / (points.length - 1)) * chartWidth;
+    const x = chartLeft + (i / (points.length - 1)) * chartWidth;
     const normalizedValue = (point.value - minValue) / valueRange;
     const y = chartBottom - normalizedValue * chartHeight;
     return { x, y, value: point.value, label: point.label };
@@ -196,12 +201,12 @@ export const ChartLine: React.FC<ChartLineProps> = ({
           ],
           opacity,
           transformOrigin: "center",
-          width: chartWidth,
-          height: chartHeight,
+          width: cardWidth,
+          height: cardHeight,
           position: "relative",
         }}
       >
-        {/* Chart container with elevated card effect */}
+        {/* The elevated card - chart renders INSIDE this */}
         <div
           style={{
             position: "absolute",
@@ -215,66 +220,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
             overflow: "visible",
           }}
         >
-          {/* Grid lines */}
-          {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: `${frac * 100}%`,
-                height: 1,
-                backgroundColor: GRID_COLOR,
-                opacity: entranceProgress,
-              }}
-            />
-          ))}
-
-          {/* Y-axis labels - elevated cards */}
-          {[0, 0.5, 1].map((frac, i) => {
-            const val = maxValue - frac * valueRange;
-            return (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  left: -110,
-                  top: `${frac * 100}%`,
-                  transform: [{ translateY: -10 }],
-                  textAlign: "right",
-                  width: 100,
-                  opacity: entranceProgress,
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: 8,
-                    padding: "4px 12px",
-                    boxShadow: CARD_SHADOW,
-                    display: "inline-block",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: DARK_TEXT,
-                      fontFamily: "system-ui, sans-serif",
-                    }}
-                  >
-                    {formatNumber(val)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* SVG Line Chart */}
+          {/* SVG Line Chart - fills the card with internal padding */}
           <svg
-            width={chartWidth}
-            height={chartHeight}
+            width={cardWidth}
+            height={cardHeight}
             style={{
               position: "absolute",
               left: 0,
@@ -289,9 +238,65 @@ export const ChartLine: React.FC<ChartLineProps> = ({
               </linearGradient>
             </defs>
 
+            {/* Grid lines - inside chart area */}
+            {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
+              <line
+                key={i}
+                x1={chartLeft}
+                x2={chartLeft + chartWidth}
+                y1={chartBottom - frac * chartHeight}
+                y2={chartBottom - frac * chartHeight}
+                stroke={GRID_COLOR}
+                strokeWidth={1}
+                opacity={entranceProgress}
+              />
+            ))}
+
+            {/* Y-axis labels - elevated cards, positioned left of chart area */}
+            {[0, 0.5, 1].map((frac, i) => {
+              const val = maxValue - frac * valueRange;
+              const y = chartBottom - frac * chartHeight;
+              return (
+                <foreignObject
+                  key={i}
+                  x={chartLeft - 100}
+                  y={y - 15}
+                  width={90}
+                  height={30}
+                  opacity={entranceProgress}
+                >
+                  <div
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: 8,
+                      padding: "2px 8px",
+                      boxShadow: CARD_SHADOW,
+                      textAlign: "right",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      height: "100%",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: DARK_TEXT,
+                        fontFamily: "system-ui, sans-serif",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatNumber(val)}
+                    </span>
+                  </div>
+                </foreignObject>
+              );
+            })}
+
             {/* Area fill */}
             <path
-              d={`${pathData} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
+              d={`${pathData} L ${chartLeft + chartWidth} ${chartBottom} L ${chartLeft} ${chartBottom} Z`}
               fill={`url(#${gradientId})`}
               opacity={entranceProgress}
             />
@@ -331,26 +336,30 @@ export const ChartLine: React.FC<ChartLineProps> = ({
 
                   {/* Value label above dot - elevated card */}
                   <foreignObject
-                    x={point.x - 60}
-                    y={point.y - 60}
-                    width={120}
-                    height={40}
+                    x={point.x - 55}
+                    y={point.y - 55}
+                    width={110}
+                    height={36}
                     opacity={dotProg}
                   >
                     <div
                       style={{
                         backgroundColor: "white",
                         borderRadius: 8,
-                        padding: "4px 12px",
+                        padding: "2px 10px",
                         boxShadow: CARD_SHADOW,
                         textAlign: "center",
                         transform: `scale(${dotProg})`,
                         transformOrigin: "bottom center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
                       }}
                     >
                       <span
                         style={{
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: 700,
                           color: ACCENT_COLOR,
                           fontFamily: "system-ui, sans-serif",
@@ -364,26 +373,30 @@ export const ChartLine: React.FC<ChartLineProps> = ({
 
                   {/* X-axis label below - elevated card */}
                   <foreignObject
-                    x={point.x - 50}
-                    y={chartHeight + 10}
-                    width={100}
-                    height={36}
+                    x={point.x - 45}
+                    y={chartBottom + 15}
+                    width={90}
+                    height={32}
                     opacity={dotProg}
                   >
                     <div
                       style={{
                         backgroundColor: "white",
                         borderRadius: 8,
-                        padding: "4px 8px",
+                        padding: "2px 6px",
                         boxShadow: CARD_SHADOW,
                         textAlign: "center",
                         transform: `scale(${dotProg})`,
                         transformOrigin: "top center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
                       }}
                     >
                       <span
                         style={{
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: 500,
                           color: MEDIUM_TEXT,
                           fontFamily: "system-ui, sans-serif",

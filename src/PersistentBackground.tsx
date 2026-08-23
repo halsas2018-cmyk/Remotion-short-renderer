@@ -17,9 +17,9 @@ export const PersistentBackground: React.FC = () => {
   const lineColor = "#000000"; // pure black
   const lineWidth = 2; // thicker lines
 
-  // Diagonal drift speed (pixels per frame) - increased for faster, more noticeable motion
-  const driftSpeedX = 1.2;
-  const driftSpeedY = 0.8;
+  // Diagonal drift speed (pixels per frame) - increased significantly for faster, more noticeable motion
+  const driftSpeedX = 2.5;
+  const driftSpeedY = 1.5;
 
   // Calculate offset based on frame - continuous, no reset
   const offsetX = (frame * driftSpeedX) % gridSize;

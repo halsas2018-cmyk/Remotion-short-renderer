@@ -18,8 +18,8 @@ import { VersusCard } from "./VersusCard";
 import { MapLocation } from "./MapLocation";
 import { QuoteCard } from "./QuoteCard";
 import { ProgressMeter } from "./ProgressMeter";
+import { SceneTransition } from "./SceneTransition";
 
-// Import the timed beats data
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeat {
@@ -70,25 +70,25 @@ const componentMap: Record<string, React.ComponentType<Record<string, unknown>>>
 
 // Exit directions cycle
 const EXIT_DIRECTIONS = ["up", "down", "left", "right"] as const;
+// Entry directions are opposite of exit for continuous flow
+const ENTRY_DIRECTIONS = ["down", "up", "right", "left"] as const;
 
 export const MotionGraphicsVideo: React.FC = () => {
   const { width, height } = useVideoConfig();
 
-  // Precompute adjusted start frames with 10-frame overlap
-  const adjustedBeats = validatedBeats.map((beat, index) => {
-    const rawStart = beat.startFrame;
-    const overlapStart = Math.max(0, rawStart - 10);
-    // Never start before previous beat's original startFrame
-    const prevStart = index > 0 ? validatedBeats[index - 1].startFrame : 0;
-    const finalStart = Math.max(overlapStart, prevStart);
-    
-    // Cycle through exit directions
+  // Precompute exit/entry directions with continuous linking
+  // Beat N entryDirection = Beat N-1 exitDirection
+  // First beat entryDirection defaults to "up"
+  const beatsWithDirections = validatedBeats.map((beat, index) => {
     const exitDirection = EXIT_DIRECTIONS[index % EXIT_DIRECTIONS.length];
+    const entryDirection = index === 0 
+      ? "up" 
+      : EXIT_DIRECTIONS[(index - 1) % EXIT_DIRECTIONS.length];
 
     return {
       ...beat,
-      adjustedStartFrame: finalStart,
       exitDirection,
+      entryDirection,
     };
   });
 
@@ -97,11 +97,10 @@ export const MotionGraphicsVideo: React.FC = () => {
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
-      {/* Narration audio track - spans full duration, using staticFile like KineticCaptions */}
+      {/* Narration audio track - spans full duration */}
       <Audio src={staticFile("narration.mp3")} startFrom={0} endAt={totalDurationInFrames} />
 
       {/* Persistent background spanning full duration - bottom layer */}
@@ -109,22 +108,27 @@ export const MotionGraphicsVideo: React.FC = () => {
         <PersistentBackground />
       </Sequence>
 
-      {/* Sequence each beat with overlap and exit direction */}
-      {adjustedBeats.map((beat, index) => {
+      {/* Sequence each beat with exact validated timing, wrapped in SceneTransition */}
+      {beatsWithDirections.map((beat, index) => {
         const Component = componentMap[beat.type] || KeyStatement;
-        const { type, startFrame, durationInFrames, adjustedStartFrame, exitDirection, ...props } = beat;
+        const { type, startFrame, durationInFrames, exitDirection, entryDirection, ...props } = beat;
 
         return (
           <Sequence
             key={index}
-            from={adjustedStartFrame}
+            from={startFrame}
             durationInFrames={durationInFrames}
           >
-            <Component
-              {...props}
+            <SceneTransition
               durationInFrames={durationInFrames}
               exitDirection={exitDirection}
-            />
+              entryDirection={entryDirection}
+            >
+              <Component
+                {...props}
+                durationInFrames={durationInFrames}
+              />
+            </SceneTransition>
           </Sequence>
         );
       })}

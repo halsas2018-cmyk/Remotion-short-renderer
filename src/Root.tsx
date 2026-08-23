@@ -84,7 +84,6 @@ export const ChartComparisonTest = () => (
         { label: "Nvidia", value: 500000000000 },
       ],
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -101,7 +100,6 @@ export const IconTextTest = () => (
       icon: "risk",
       text: "Broadcom only guarantees part of the loan",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -118,7 +116,6 @@ export const KeyStatementTest = () => (
       text: "The gamble works while AI chips are scarce",
       emphasisWords: ["scarce"],
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -137,7 +134,6 @@ export const TimelineTest = () => (
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -153,9 +149,8 @@ export const ProcessFlowTest = () => (
     defaultProps={{
       steps: ["Buys the chips", "Leases them back", "Customer pays over time"],
       durationInFrames: 90,
-      exitDirection: "up",
     }}
-  />
+  );
 );
 
 export const VersusCardTest = () => (
@@ -170,7 +165,6 @@ export const VersusCardTest = () => (
       left: { label: "Broadcom", value: "$70B debt" },
       right: { label: "Nvidia", value: "$500B exposure" },
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -191,7 +185,6 @@ export const ChartLineTest = () => (
         { label: "Q4", value: 27000000000 },
       ],
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -209,7 +202,6 @@ export const MapLocationTest = () => (
       latitude: 37.7749,
       longitude: -122.4194,
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -226,7 +218,6 @@ export const QuoteCardTest = () => (
       quote: "The best way to predict the future is to invent it",
       attribution: "Alan Kay",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -244,7 +235,6 @@ export const ProgressMeterTest = () => (
       maxValue: 100000000000,
       label: "Funding Secured",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );
@@ -261,7 +251,6 @@ export const BeforeAfterTest = () => (
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );

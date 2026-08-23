@@ -12,7 +12,6 @@ interface QuoteCardProps {
   quote: string;
   attribution: string;
   durationInFrames: number;
-  exitDirection?: "up" | "down" | "left" | "right";
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -25,59 +24,12 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   quote,
   attribution,
   durationInFrames,
-  exitDirection = "up",
 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
-  const entranceFrames = 15;
-  const exitStart = durationInFrames - 15;
-
-  const isEntrance = frame < entranceFrames;
-  const isExit = frame > exitStart;
-  const isIdle = !isEntrance && !isExit;
-
-  // Entrance animation for whole component
-  const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceScale = interpolate(entranceProgress, [0, 1], [0.85, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceOpacity = entranceProgress;
-
-  // Exit animation
-  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.85], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitTranslateY = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const exitTranslateX = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
   // Quote text typewriter/fade animation
-  const quoteStart = entranceFrames;
+  const quoteStart = 0;
   const quoteDuration = 30;
   const quoteProgress = interpolate(frame, [quoteStart, quoteStart + quoteDuration], [0, 1], {
     easing: easeOut,
@@ -95,7 +47,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   });
 
   // Quotation marks animation
-  const markStart = entranceFrames;
+  const markStart = 0;
   const markDuration = 20;
   const markProgress = interpolate(frame, [markStart, markStart + markDuration], [0, 1], {
     easing: Easing.bezier(0.34, 1.56, 0.64, 1), // bounce
@@ -105,11 +57,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
 
   // Idle animation: subtle scale pulse on quotation marks
   const idlePulse = 1 + 0.02 * Math.sin(frame * 0.05);
-
-  const scale = isEntrance ? entranceScale : isExit ? exitScale : 1;
-  const opacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
-  const translateX = isExit ? exitTranslateX : 0;
-  const translateY = isExit ? exitTranslateY : 0;
 
   // Typewriter effect for quote text
   const words = quote.split(" ");
@@ -131,135 +78,113 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
       <div
         style={{
-          transform: [
-            { scale },
-            { translateX },
-            { translateY },
-          ],
-          opacity,
-          transformOrigin: "center",
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          top: "50%",
+          left: padding,
+          right: padding,
+          transform: "translateY(-50%)",
+          width: maxWidth,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
         }}
       >
-        {/* 
-          Quote container: centered vertically in the screen.
-          Uses top: 50% + translateY(-50%) for true vertical centering.
-        */}
+        {/* Elevated card for the quote */}
         <div
           style={{
-            position: "absolute",
-            top: "50%",
-            left: padding,
-            right: padding,
-            transform: "translateY(-50%)",
-            width: maxWidth,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
+            backgroundColor: "white",
+            borderRadius: 24,
+            padding: "48px 64px",
+            boxShadow: CARD_SHADOW,
+            position: "relative",
           }}
         >
-          {/* Elevated card for the quote */}
+          {/* Opening quotation mark */}
           <div
             style={{
-              backgroundColor: "white",
-              borderRadius: 24,
-              padding: "48px 64px",
-              boxShadow: CARD_SHADOW,
-              position: "relative",
+              fontSize: 120,
+              fontWeight: 800,
+              color: ACCENT_COLOR,
+              fontFamily: "Georgia, serif",
+              lineHeight: 1,
+              marginBottom: -40,
+              transformOrigin: "center bottom",
+              transform: [
+                { scale: markProgress * idlePulse },
+              ],
+              opacity: markProgress,
             }}
           >
-            {/* Opening quotation mark */}
-            <div
-              style={{
-                fontSize: 120,
-                fontWeight: 800,
-                color: ACCENT_COLOR,
-                fontFamily: "Georgia, serif",
-                lineHeight: 1,
-                marginBottom: -40,
-                transformOrigin: "center bottom",
-                transform: [
-                  { scale: markProgress * (isIdle ? idlePulse : 1) },
-                ],
-                opacity: markProgress,
-              }}
-            >
-              &ldquo;
-            </div>
+            &ldquo;
+          </div>
 
-            {/* Quote text */}
-            <div
+          {/* Quote text */}
+          <div
+            style={{
+              fontSize: 48,
+              fontWeight: 600,
+              color: DARK_TEXT,
+              fontFamily: "system-ui, sans-serif",
+              lineHeight: 1.4,
+              letterSpacing: -1,
+              marginBottom: 32,
+              minHeight: 140,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <span
               style={{
-                fontSize: 48,
-                fontWeight: 600,
-                color: DARK_TEXT,
-                fontFamily: "system-ui, sans-serif",
-                lineHeight: 1.4,
-                letterSpacing: -1,
-                marginBottom: 32,
-                minHeight: 140,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
+                opacity: quoteProgress,
+                transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
               }}
             >
-              <span
-                style={{
-                  opacity: quoteProgress,
-                  transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
-                }}
-              >
-                {displayWords.join(" ")}
-              </span>
-            </div>
+              {displayWords.join(" ")}
+            </span>
+          </div>
 
-            {/* Closing quotation mark */}
-            <div
-              style={{
-                fontSize: 120,
-                fontWeight: 800,
-                color: ACCENT_COLOR,
-                fontFamily: "Georgia, serif",
-                lineHeight: 1,
-                marginTop: -40,
-                transformOrigin: "center top",
-                transform: [
-                  { scale: markProgress * (isIdle ? idlePulse : 1) },
-                ],
-                opacity: markProgress,
-              }}
-            >
-              &rdquo;
-            </div>
+          {/* Closing quotation mark */}
+          <div
+            style={{
+              fontSize: 120,
+              fontWeight: 800,
+              color: ACCENT_COLOR,
+              fontFamily: "Georgia, serif",
+              lineHeight: 1,
+              marginTop: -40,
+              transformOrigin: "center top",
+              transform: [
+                { scale: markProgress * idlePulse },
+              ],
+              opacity: markProgress,
+            }}
+          >
+            &rdquo;
+          </div>
 
-            {/* Attribution */}
-            <div
-              style={{
-                fontSize: 24,
-                fontWeight: 500,
-                color: MEDIUM_TEXT,
-                fontFamily: "system-ui, sans-serif",
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                marginTop: 24,
-                opacity: attrProgress,
-                transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
-              }}
-            >
-              &mdash; {attribution}
-            </div>
+          {/* Attribution */}
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: MEDIUM_TEXT,
+              fontFamily: "system-ui, sans-serif",
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              marginTop: 24,
+              opacity: attrProgress,
+              transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
+            }}
+          >
+            &mdash; {attribution}
           </div>
         </div>
       </div>
@@ -279,7 +204,6 @@ export const QuoteCardTestComposition: React.FC = () => (
       quote: "The best way to predict the future is to invent it",
       attribution: "Alan Kay",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );

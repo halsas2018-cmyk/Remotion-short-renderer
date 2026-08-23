@@ -66,7 +66,6 @@ const RemotionRoot: React.FC = () => {
             { label: "Nvidia", value: 500000000000 },
           ],
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -84,7 +83,6 @@ const RemotionRoot: React.FC = () => {
             { label: "Q4", value: 400 },
           ],
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -98,7 +96,6 @@ const RemotionRoot: React.FC = () => {
           icon: "risk",
           text: "Broadcom only guarantees part of the loan",
           durationInFrames: 120,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -112,7 +109,6 @@ const RemotionRoot: React.FC = () => {
           text: "The gamble works while AI chips are scarce",
           emphasisWords: ["scarce"],
           durationInFrames: 120,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -136,7 +132,6 @@ const RemotionRoot: React.FC = () => {
           latitude: 37.7749,
           longitude: -122.4194,
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -149,7 +144,6 @@ const RemotionRoot: React.FC = () => {
         defaultProps={{
           text: "This is a plain text component for simple messages.",
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -167,7 +161,6 @@ const RemotionRoot: React.FC = () => {
             "Recoup investment + profit",
           ],
           durationInFrames: 120,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -182,7 +175,6 @@ const RemotionRoot: React.FC = () => {
           maxValue: 100,
           label: "Funding Secured",
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -196,7 +188,6 @@ const RemotionRoot: React.FC = () => {
           quote: "People who are really serious about software should make their own hardware.",
           attribution: "Alan Kay",
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -212,7 +203,6 @@ const RemotionRoot: React.FC = () => {
             { marker: "2029", label: "Exposure could hit $370B" },
           ],
           durationInFrames: 120,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -234,7 +224,6 @@ const RemotionRoot: React.FC = () => {
             items: ["GPU monopoly", "CUDA lock-in", "Data center"],
           },
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition
@@ -248,7 +237,6 @@ const RemotionRoot: React.FC = () => {
           beforeLabel: "Manual lease-back",
           afterLabel: "Automated platform",
           durationInFrames: 90,
-          exitDirection: "up",
         }}
       />
       <Composition

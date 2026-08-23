@@ -13,7 +13,6 @@ interface ProgressMeterProps {
   maxValue: number;
   label: string;
   durationInFrames: number;
-  exitDirection?: "up" | "down" | "left" | "right";
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -46,59 +45,12 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   maxValue,
   label,
   durationInFrames,
-  exitDirection = "up",
 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
-  const entranceFrames = 15;
-  const exitStart = durationInFrames - 15;
-
-  const isEntrance = frame < entranceFrames;
-  const isExit = frame > exitStart;
-  const isIdle = !isEntrance && !isExit;
-
-  // Entrance animation for whole component
-  const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceScale = interpolate(entranceProgress, [0, 1], [0.85, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceOpacity = entranceProgress;
-
-  // Exit animation
-  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.85], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitTranslateY = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const exitTranslateX = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
   // Meter fill animation
-  const fillStart = entranceFrames;
+  const fillStart = 0;
   const fillDuration = 40;
   const fillProgress = interpolate(frame, [fillStart, fillStart + fillDuration], [0, 1], {
     easing: easeOut,
@@ -107,7 +59,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   });
 
   // Number count-up animation
-  const numberStart = entranceFrames;
+  const numberStart = 0;
   const numberDuration = 40;
   const numberProgress = interpolate(frame, [numberStart, numberStart + numberDuration], [0, 1], {
     easing: easeOut,
@@ -116,7 +68,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   });
 
   // Label fade in
-  const labelStart = entranceFrames + 10;
+  const labelStart = 10;
   const labelDuration = 20;
   const labelProgress = interpolate(frame, [labelStart, labelStart + labelDuration], [0, 1], {
     easing: easeOut,
@@ -132,11 +84,6 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const currentValue = value * numberProgress;
   const currentPercentage = percentage * fillProgress;
 
-  const scale = isEntrance ? entranceScale : isExit ? exitScale : 1;
-  const opacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
-  const translateX = isExit ? exitTranslateX : 0;
-  const translateY = isExit ? exitTranslateY : 0;
-
   // Circular meter dimensions
   const size = 380;
   const strokeWidth = 24;
@@ -151,147 +98,125 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
       <div
         style={{
-          transform: [
-            { scale },
-            { translateX },
-            { translateY },
-          ],
-          opacity,
-          transformOrigin: "center",
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          top: "50%",
+          left: padding,
+          right: padding,
+          transform: "translateY(-50%)",
+          width: width - 2 * padding,
+          height: size,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        {/* 
-          Meter container: centered vertically in the screen.
-          Uses top: 50% + translateY(-50%) for true vertical centering.
-        */}
+        {/* Elevated card background for the meter */}
         <div
           style={{
-            position: "absolute",
-            top: "50%",
-            left: padding,
-            right: padding,
-            transform: "translateY(-50%)",
-            width: width - 2 * padding,
+            position: "relative",
+            width: size,
             height: size,
+            backgroundColor: "white",
+            borderRadius: "50%",
+            boxShadow: CARD_SHADOW,
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
-          {/* Elevated card background for the meter */}
-          <div
-            style={{
-              position: "relative",
-              width: size,
-              height: size,
-              backgroundColor: "white",
-              borderRadius: "50%",
-              boxShadow: CARD_SHADOW,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {/* Circular Progress Meter */}
-            <div style={{ position: "relative", width: size, height: size }}>
-              <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-                {/* Track */}
-                <circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  fill="none"
-                  stroke={TRACK_COLOR}
-                  strokeWidth={strokeWidth}
-                  opacity={entranceProgress}
-                />
-                {/* Fill */}
-                <circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  fill="none"
-                  stroke={FILL_COLOR}
-                  strokeWidth={strokeWidth}
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
-                  style={{
-                    filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(232, 108, 0, ${0.6 * idleGlow}))`,
-                    transformOrigin: `${size / 2}px ${size / 2}px`,
-                    transform: [{ scale: isIdle ? idlePulse : 1 }],
-                  }}
-                  opacity={fillProgress}
-                />
-              </svg>
+          {/* Circular Progress Meter */}
+          <div style={{ position: "relative", width: size, height: size }}>
+            <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+              {/* Track */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={TRACK_COLOR}
+                strokeWidth={strokeWidth}
+                opacity={fillProgress}
+              />
+              {/* Fill */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={FILL_COLOR}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={dashOffset}
+                style={{
+                  filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(232, 108, 0, ${0.6 * idleGlow}))`,
+                  transformOrigin: `${size / 2}px ${size / 2}px`,
+                  transform: [{ scale: idlePulse }],
+                }}
+                opacity={fillProgress}
+              />
+            </svg>
 
-              {/* Center content */}
+            {/* Center content */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: size,
+                height: size,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {/* Percentage/Value number */}
               <div
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: size,
-                  height: size,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  fontSize: 72,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1,
+                  letterSpacing: -2,
+                  opacity: numberProgress,
+                  transform: [{ scale: numberProgress }],
                 }}
               >
-                {/* Percentage/Value number */}
-                <div
-                  style={{
-                    fontSize: 72,
-                    fontWeight: 800,
-                    color: ACCENT_COLOR,
-                    fontFamily: "system-ui, sans-serif",
-                    lineHeight: 1,
-                    letterSpacing: -2,
-                    opacity: numberProgress,
-                    transform: [{ scale: numberProgress }],
-                  }}
-                >
-                  {value >= 1000 || maxValue >= 1000 ? (
-                    <>
-                      {formatNumber(currentValue)}
-                      <span style={{ fontSize: 24, fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
-                        / {formatNumber(maxValue)}
-                      </span>
-                    </>
-                  ) : (
-                    `${Math.round(currentPercentage * 100)}%`
-                  )}
-                </div>
+                {value >= 1000 || maxValue >= 1000 ? (
+                  <>
+                    {formatNumber(currentValue)}
+                    <span style={{ fontSize: 24, fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
+                      / {formatNumber(maxValue)}
+                    </span>
+                  </>
+                ) : (
+                  `${Math.round(currentPercentage * 100)}%`
+                )}
+              </div>
 
-                {/* Label */}
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 600,
-                    color: DARK_TEXT,
-                    fontFamily: "system-ui, sans-serif",
-                    letterSpacing: 2,
-                    textTransform: "uppercase",
-                    marginTop: 16,
-                    opacity: labelProgress,
-                    transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
-                  }}
-                >
-                  {label}
-                </div>
+              {/* Label */}
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color: DARK_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  marginTop: 16,
+                  opacity: labelProgress,
+                  transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
+                }}
+              >
+                {label}
               </div>
             </div>
           </div>
@@ -314,7 +239,6 @@ export const ProgressMeterTestComposition: React.FC = () => (
       maxValue: 100000000000,
       label: "Funding Secured",
       durationInFrames: 90,
-      exitDirection: "up",
     }}
   />
 );

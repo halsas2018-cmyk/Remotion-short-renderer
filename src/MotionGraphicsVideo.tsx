@@ -64,7 +64,7 @@ export const MotionGraphicsVideo: React.FC = () => {
       }}
     >
       {/* Narration audio track - spans full duration */}
-      <Audio src="./narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
+      <Audio src="../test_output/narration.mp3" startFrom={0} endAt={totalDurationInFrames} />
 
       {/* Persistent background spanning full duration */}
       <Sequence from={0} durationInFrames={totalDurationInFrames}>

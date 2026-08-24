@@ -58,6 +58,7 @@ from news_fetcher import rank_top_stories
 from script_generator import process_story
 from voice_generator import generate_narration
 from extract_word_timestamps import extract_word_timestamps
+from beat_generator import generate_beats
 from storyboard_generator import generate_storyboard
 from asset_collector import collect_assets, collect_assets_for_plan, collect_assets_for_plan_with_fallback
 from video_assembler import assemble_video_simple
@@ -285,6 +286,7 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
         │   ├── metadata.txt        — Title, source, score, link
         │   ├── narration.mp3       — Edge TTS audio (if not no_video)
         │   ├── word_timestamps.json — WhisperX word-level timestamps (NEW)
+        │   ├── beats.json          — Typed, frame-accurate beats (NEW)
         │   ├── storyboard.md       — Per-shot visual plan
         │   ├── captions.srt        — Timed subtitles
         │   ├── asset_plan.json     — Keywords + stock search terms
@@ -408,6 +410,28 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
     else:
         print(f"  ⚠ No narration.mp3 found, skipping timestamp extraction")
 
+    # --- Generate beats (NEW STEP) ---
+    beats_data = None
+    if word_timestamps:
+        print(f"  ─ Generating typed beats...")
+        try:
+            beats_data = generate_beats(
+                script=result["script"],
+                word_timestamps=word_timestamps,
+                story=result["research"],
+                headline=result.get("headline", ""),
+                model_key=model_key
+            )
+            beats_path = project_dir / "beats.json"
+            with open(beats_path, "w", encoding="utf-8") as f:
+                json.dump(beats_data, f, indent=2)
+            print(f"  ✓ beats.json ({len(beats_data['beats'])} beats, {beats_data['totalDurationInFrames']} frames)")
+        except Exception as e:
+            print(f"  ⚠ Beat generation failed: {e}")
+            print(f"  · Continuing without beats...")
+    else:
+        print(f"  ⚠ No word timestamps available, skipping beat generation")
+
     # --- Storyboard + Captions + per-sentence Asset plan ---
     # The combined script_generator call already produced the per-sentence plan
     # (result["shots"], each with search_term/media_type) AND the chosen
@@ -421,6 +445,7 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
             sentence_timings=sentence_timings,
             plan=result.get("shots"),
             headline=result.get("headline"),
+            beats=beats_data  # Pass beats for enhanced storyboard
         )
         for f in sb_result["files_written"]:
             print(f"  ✓ {Path(f).name}")
@@ -980,6 +1005,7 @@ Default model: {llm_client.DEFAULT_MODEL_KEY}
         print("║  ├── script.txt         Narration script              ║")
         print("║  ├── narration.mp3      Voiceover audio               ║")
         print("║  ├── word_timestamps.json WhisperX word timestamps    ║")
+        print("║  ├── beats.json         Typed frame-accurate beats    ║")
         print("║  ├── headline.txt       On-screen hook headline       ║")
         print("║  ├── storyboard.md      Visual shot plan              ║")
         print("║  ├── captions.srt       Timed subtitles               ║")

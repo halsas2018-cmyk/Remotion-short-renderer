@@ -297,7 +297,6 @@ def main():
     # Fetch & rank stories
     print(f"Fetching & ranking stories...")
     stories = rank_top_stories(
-        count=args.count * 3,  # fetch extra for dedupe + selection
         no_llm_rank=args.no_llm_rank,
         rank_model_key=rank_model_key,
     )

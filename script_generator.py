@@ -1,3 +1,4 @@
+#!/root/kinetic_typo_vid/venv/bin/python3
 """
 script_generator.py
 Step 2-3 of the Shorts pipeline: the COMBINED script + headline + per-sentence

@@ -56,6 +56,7 @@ import llm_ranker
 from news_fetcher import rank_top_stories
 from script_generator import process_story
 from voice_generator import generate_narration
+from extract_word_timestamps import extract_word_timestamps
 from storyboard_generator import generate_storyboard
 from asset_collector import collect_assets, collect_assets_for_plan, collect_assets_for_plan_with_fallback
 from video_assembler import assemble_video_simple
@@ -196,6 +197,51 @@ def _sentence_timings_from_audio(script: str, total_duration: float) -> list[tup
     return timings
 
 
+def _sentence_timings_from_word_timestamps(script: str, word_timestamps: list[dict]) -> list[tuple]:
+    """
+    Derive sentence-level timings from word-level timestamps by matching words to sentences.
+    More accurate than word-count proxy since it uses actual spoken timing.
+    """
+    sentences = re.split(r'(?<=[.!?])\s+', script.strip())
+    sentences = [s.strip() for s in sentences if s.strip()]
+    if not sentences or not word_timestamps:
+        return []
+    
+    sentence_timings = []
+    word_idx = 0
+    
+    for sentence in sentences:
+        sentence_words = sentence.split()
+        word_count = len(sentence_words)
+        
+        if word_idx >= len(word_timestamps):
+            # Fallback: estimate remaining
+            if sentence_timings:
+                last_end = sentence_timings[-1][1]
+                sentence_timings.append((last_end, last_end + 1.0))
+            else:
+                sentence_timings.append((0.0, 1.0))
+            continue
+        
+        # Get timestamps for this sentence's words
+        sentence_ts = word_timestamps[word_idx:word_idx + word_count]
+        if not sentence_ts:
+            # Fallback
+            if sentence_timings:
+                last_end = sentence_timings[-1][1]
+                sentence_timings.append((last_end, last_end + 1.0))
+            else:
+                sentence_timings.append((0.0, 1.0))
+        else:
+            start = sentence_ts[0]["start"]
+            end = sentence_ts[-1]["end"]
+            sentence_timings.append((start, end))
+        
+        word_idx += word_count
+    
+    return sentence_timings
+
+
 def check_prerequisites(model_key: str = llm_client.DEFAULT_MODEL_KEY):
     """Check API key and critical dependencies before starting.
 
@@ -226,16 +272,6 @@ def check_prerequisites(model_key: str = llm_client.DEFAULT_MODEL_KEY):
     return True
 
 
-def _get_daily_outdir(base_outdir: Path) -> Path:
-    """Get the daily output directory (e.g., output/09_08_short_vids)."""
-    today = date.today()
-    # Format: DD_MM_short_vids (e.g., 09_08_short_vids for August 9th)
-    daily_dir_name = f"{today.day:02d}_{today.month:02d}_short_vids"
-    daily_dir = base_outdir / daily_dir_name
-    daily_dir.mkdir(parents=True, exist_ok=True)
-    return daily_dir
-
-
 def save_project(result: dict, outdir: Path, index: int, no_video: bool = False, model_key: str = llm_client.DEFAULT_MODEL_KEY, render_hook_text: bool = False):
     """
     Save all project files for one Short.
@@ -247,6 +283,7 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
         │   ├── research_notes.json — Fact-checked research
         │   ├── metadata.txt        — Title, source, score, link
         │   ├── narration.mp3       — Edge TTS audio (if not no_video)
+        │   ├── word_timestamps.json — WhisperX word-level timestamps (NEW)
         │   ├── storyboard.md       — Per-shot visual plan
         │   ├── captions.srt        — Timed subtitles
         │   ├── asset_plan.json     — Keywords + stock search terms
@@ -338,18 +375,37 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
     except Exception as e:
         print(f"  ✗ narration.mp3 FAILED: {e}")
 
-    # --- Measure REAL narration timing (drives storyboard + assembly sync) ---
+    # --- Extract word-level timestamps (WhisperX) ---
+    word_timestamps = []
     sentence_timings = []
     if narration_path.exists():
-        real_dur = _audio_duration(narration_path)
-        if real_dur > 0:
-            sentence_timings = _sentence_timings_from_audio(
-                result["script"], real_dur
+        print(f"  ─ Extracting word-level timestamps (WhisperX)...")
+        try:
+            word_timestamps_path = project_dir / "word_timestamps.json"
+            word_timestamps = extract_word_timestamps(
+                audio_path=str(narration_path),
+                output_path=str(word_timestamps_path)
             )
-            print(f"  · narration is {real_dur:.1f}s; timing {len(sentence_timings)} "
-                  f"sentence(s) from real audio")
-        else:
-            print(f"  · couldn't probe narration duration; timing will be estimated")
+            print(f"  ✓ word_timestamps.json ({len(word_timestamps)} words)")
+            
+            # Derive sentence timings from word timestamps for storyboard
+            sentence_timings = _sentence_timings_from_word_timestamps(
+                result["script"], word_timestamps
+            )
+            print(f"  · Derived {len(sentence_timings)} sentence timings from word timestamps")
+        except Exception as e:
+            print(f"  ⚠ Word timestamp extraction failed: {e}")
+            print(f"  · Falling back to word-count proxy timing...")
+            # Fallback to old method
+            real_dur = _audio_duration(narration_path)
+            if real_dur > 0:
+                sentence_timings = _sentence_timings_from_audio(
+                    result["script"], real_dur
+                )
+                print(f"  · narration is {real_dur:.1f}s; timing {len(sentence_timings)} "
+                      f"sentence(s) from word-count proxy")
+    else:
+        print(f"  ⚠ No narration.mp3 found, skipping timestamp extraction")
 
     # --- Storyboard + Captions + per-sentence Asset plan ---
     # The combined script_generator call already produced the per-sentence plan
@@ -753,7 +809,7 @@ Default model: {llm_client.DEFAULT_MODEL_KEY}
         print("│  [llm-rank] skipped (--no-llm-rank) — heuristic order")
         rank_source = "heuristic"
     else:
-        print(f"│  Running LLM editorial rerank ({rank_model})...")
+        print(f"│  Running LLM editorial rerank ({rank_model})....")
         top_stories, rank_source = llm_ranker.rerank(
             top_stories, model_key=rank_model,
             max_picks=max(args.count * 3, 12),
@@ -922,6 +978,7 @@ Default model: {llm_client.DEFAULT_MODEL_KEY}
         print("║  Each project folder contains:                        ║")
         print("║  ├── script.txt         Narration script              ║")
         print("║  ├── narration.mp3      Voiceover audio               ║")
+        print("║  ├── word_timestamps.json WhisperX word timestamps    ║")
         print("║  ├── headline.txt       On-screen hook headline       ║")
         print("║  ├── storyboard.md      Visual shot plan              ║")
         print("║  ├── captions.srt       Timed subtitles               ║")

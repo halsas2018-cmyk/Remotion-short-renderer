@@ -68,10 +68,11 @@ SOURCE MATERIAL (fetched for you — use it; do NOT invent facts):
 
 SCRIPT RULES:
 1. HOOK (sentence 1, 0-3s): Open with a SPECIFIC, CONCRETE detail from the
-   source — a real number, a named person/community/tool, or a surprising fact
-   pulled from the article or the comments. Create a curiosity gap. NEVER open
-   with "Imagine...", "What if...", "Have you ever...", "Picture this...". A
-   vague generality ("a debate is brewing") is a failure.
+   source that creates IMMEDIATE CURIOSITY OR ANTICIPATION — a real number, a
+   named person/community/tool, or a surprising fact pulled from the article or
+   comments. Make the viewer NEED to know what happens next. NEVER open with
+   "Imagine...", "What if...", "Have you ever...", "Picture this...". A vague
+   generality ("a debate is brewing") is a failure.
 2. SPECIFICITY: Use real names, real numbers, and quotes/paraphrased opinions
    from the article and comments. Vague paraphrase is a failure state.
 3. EMOTIONAL ARC: Vary the tone sentence to sentence — curiosity/stakes,
@@ -80,9 +81,12 @@ SCRIPT RULES:
 4. HUMAN TOUCH: Write like telling a friend something wild you just read.
    Contractions fine. Mix short punchy sentences with longer ones. No corporate
    hedging, no press-release tone.
-5. NO FILLER CLOSERS: NEVER end with "be a part of the conversation", "what do
-   you think", or "let me know". End with a real payoff — an outcome, a striking
-   implication, or a genuine open question tied to specific stakes.
+5. END WITH A GENUINE QUESTION: The FINAL sentence MUST be a real, specific
+   question tied to the story's stakes — something viewers can actually answer
+   in comments. NEVER end with generic filler like "be part of the conversation",
+   "what do you think", "let me know", "drop a comment", or "thoughts?".
+   Good: "Would you trust an AI to write your medical records?"
+   Bad: "What do you think about this?"
 6. LENGTH: 6-9 sentences total, {MIN_WORDS}-{MAX_WORDS} words. Aim for the
    middle of the word range.
 7. PLAIN NARRATION: clean punctuation for text-to-speech, no jargon, no acronyms

@@ -241,7 +241,7 @@ export const MotionGraphicsVideo: React.FC = () => {
         <div style={{ fontSize: 28, color: "#dc2626", fontFamily: "system-ui, sans-serif", textAlign: "center", maxWidth: 800 }}>
           <strong>Failed to load project:</strong><br/>{error}<br/><br/>
           <small>Pass <code>projectDir</code> via --props, e.g.:<br/>
-          <code>--props='{"projectDir": "output/09_08_short_vids/your-slug"}'</code></small>
+          <code>{'--props=\'{"projectDir": "output/09_08_short_vids/your-slug"}\''}</code></small>
         </div>
       </AbsoluteFill>
     );

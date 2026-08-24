@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/root/kinetic_typo_vid/venv/bin/python3
 """
 extract_word_timestamps.py
 Extract word-level timestamps from narration audio using WhisperX.

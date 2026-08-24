@@ -34,7 +34,7 @@ if _env_path.exists():
 MAX_WORDS = 150
 MIN_WORDS = 110
 
-SCRIPT_MAX_TOKENS = 2048
+SCRIPT_MAX_TOKENS = 4096
 
 # Banned filler loaded from config.py (allows env override)
 from config import BANNED_FILLER

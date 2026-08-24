@@ -480,7 +480,11 @@ def dedupe(stories: list[dict]) -> list[dict]:
     return unique
 
 
-def rank_top_stories(candidate_pool: int = 40) -> list[dict]:
+def rank_top_stories(
+    candidate_pool: int = 40,
+    no_llm_rank: bool = False,
+    rank_model_key: str = None,
+) -> list[dict]:
     """Heuristic-score and rank all collected stories; return the FULL pool.
 
     The heuristic layer is the RECALL filter (recency + niche + engagement);
@@ -503,6 +507,15 @@ def rank_top_stories(candidate_pool: int = 40) -> list[dict]:
             if resolved != s["link"]:
                 s["link"] = resolved
             time.sleep(0.5)  # small delay between redirect resolutions
+
+    # Optional LLM editorial rerank
+    if not no_llm_rank and candidates:
+        try:
+            from llm_ranker import rerank_stories
+            print(f"Running LLM editorial rerank with model: {rank_model_key or 'default'}...")
+            candidates = rerank_stories(candidates, model_key=rank_model_key)
+        except Exception as e:
+            print(f"  [warn] LLM rerank failed: {e}, falling back to heuristic order")
 
     # Log summary stats
     cat_counts = defaultdict(int)

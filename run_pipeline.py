@@ -380,7 +380,6 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
 
     # --- Extract word-level timestamps (WhisperX) ---
     word_timestamps = []
-    sentence_timings = []
     if narration_path.exists():
         print(f"  ─ Extracting word-level timestamps (WhisperX)...")
         try:
@@ -390,28 +389,10 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
                 output_path=str(word_timestamps_path)
             )
             print(f"  ✓ word_timestamps.json ({len(word_timestamps)} words)")
-            
-            # Derive sentence timings from word timestamps for storyboard
-            sentence_timings = _sentence_timings_from_word_timestamps(
-                result["script"], word_timestamps
-            )
-            print(f"  · Derived {len(sentence_timings)} sentence timings from word timestamps")
         except Exception as e:
             print(f"  ⚠ Word timestamp extraction failed: {e}")
-            print(f"  · Falling back to word-count proxy timing...")
-            # Fallback to old method
-            real_dur = _audio_duration(narration_path)
-            if real_dur > 0:
-                sentence_timings = _sentence_timings_from_audio(
-                    result["script"], real_dur
-                )
-                print(f"  · narration is {real_dur:.1f}s; timing {len(sentence_timings)} "
-                      f"sentence(s) from word-count proxy")
-    else:
-        print(f"  ⚠ No narration.mp3 found, skipping timestamp extraction")
 
-    # --- Generate beats (NEW STEP) ---
-    beats_data = None
+    # --- Generate beats ---
     if word_timestamps:
         print(f"  ─ Generating typed beats...")
         try:
@@ -428,108 +409,10 @@ def save_project(result: dict, outdir: Path, index: int, no_video: bool = False,
             print(f"  ✓ beats.json ({len(beats_data['beats'])} beats, {beats_data['totalDurationInFrames']} frames)")
         except Exception as e:
             print(f"  ⚠ Beat generation failed: {e}")
-            print(f"  · Continuing without beats...")
     else:
         print(f"  ⚠ No word timestamps available, skipping beat generation")
 
-    # --- Storyboard + Captions + per-sentence Asset plan ---
-    # The combined script_generator call already produced the per-sentence plan
-    # (result["shots"], each with search_term/media_type) AND the chosen
-    # headline (result["headline"]). Pass them straight into the storyboard so
-    # it does NOT make a second Groq visual-plan call (the spec merged the two).
-    print(f"  ─ Generating storyboard & captions...")
-    sb_result = None
-    try:
-        sb_result = generate_storyboard(
-            result["script"], story["title"], project_dir,
-            sentence_timings=sentence_timings,
-            plan=result.get("shots"),
-            headline=result.get("headline"),
-            beats=beats_data  # Pass beats for enhanced storyboard
-        )
-        for f in sb_result["files_written"]:
-            print(f"  ✓ {Path(f).name}")
-    except Exception as e:
-        print(f"  ✗ Storyboard FAILED: {e}")
-        # thumbnail_notes.txt is written by the storyboard generator (part of
-        # files_written). If the storyboard step itself failed, fall back to the
-        # run-pipeline version so the project still has thumbnail guidance.
-        try:
-            thumbnail_notes = _generate_thumbnail_notes(story, result)
-            (project_dir / "thumbnail_notes.txt").write_text(
-                thumbnail_notes, encoding="utf-8"
-            )
-            print(f"  ✓ thumbnail_notes.txt (fallback)")
-        except Exception as te:
-            print(f"  ✗ thumbnail_notes.txt FAILED: {te}")
-
-    # --- Edit plan ---
-    try:
-        edit_plan = _generate_edit_plan(result, sb_result)
-        (project_dir / "edit_plan.json").write_text(
-            json.dumps(edit_plan, indent=2), encoding="utf-8"
-        )
-        print(f"  ✓ edit_plan.json")
-    except Exception as e:
-        print(f"  ✗ edit_plan.json FAILED: {e}")
-
-    # --- Asset collection (Pexels free stock — one asset PER SENTENCE) ---
-    asset_plan = sb_result.get("asset_plan", []) if sb_result else []
-    assets_downloaded = 0
-    if asset_plan:
-        print(f"  ─ Downloading {len(asset_plan)} per-sentence asset(s) from Pexels...")
-        try:
-            asset_result = collect_assets_for_plan_with_fallback(asset_plan, project_dir)
-            assets_downloaded = len(asset_result)
-        except Exception as e:
-            print(f"  ✗ Asset download FAILED: {e}")
-    else:
-        # Legacy flat-keyword path if no per-sentence plan was produced.
-        keywords = sb_result.get("keywords", []) if sb_result else []
-        if keywords:
-            print(f"  ─ Downloading stock footage from Pexels (legacy)...")
-            try:
-                collect_assets(keywords, project_dir)
-            except Exception as e:
-                print(f"  ✗ Asset download FAILED: {e}")
-        else:
-            print(f"  ─ No keywords for asset search")
-
-    # --- Video draft (chronological, NO burned captions) ---
-    if narration_path.exists():
-        print(f"  ─ Assembling video draft...")
-        max_retries = 2
-        for attempt in range(max_retries + 1):
-            try:
-                headline = result.get("headline", "")
-                assemble_video_simple(project_dir, headline=headline, render_hook_text=render_hook_text)
-                print(f"  ✓ draft_video.mp4")
-                break
-            except RuntimeError as e:
-                if "assets exhausted" in str(e) and attempt < max_retries:
-                    print(f"  ⚠ {e}")
-                    print(f"  ─ Re-downloading fresh assets (attempt {attempt + 1}/{max_retries})...")
-                    # Clear assets dir and re-download with force_fresh=True
-                    import shutil
-                    assets_dir = project_dir / "assets"
-                    if assets_dir.exists():
-                        shutil.rmtree(assets_dir)
-                    assets_dir.mkdir(parents=True, exist_ok=True)
-                    # Re-download with fresh search (force_fresh bypasses cache)
-                    asset_plan = sb_result.get("asset_plan", []) if sb_result else []
-                    if asset_plan:
-                        try:
-                            collect_assets_for_plan_with_fallback(asset_plan, project_dir, force_fresh=True)
-                            print(f"  ✓ Fresh assets downloaded")
-                            continue  # Retry assembly
-                        except Exception as e2:
-                            print(f"  ✗ Fresh asset download FAILED: {e2}")
-                print(f"  ✗ draft_video.mp4 FAILED: {e}")
-                break
-    else:
-        print(f"  ─ Skipping video (no narration available)")
-
-    return project_dir, assets_downloaded
+    return project_dir
 
 
 def _generate_thumbnail_notes(story: dict, result: dict) -> str:

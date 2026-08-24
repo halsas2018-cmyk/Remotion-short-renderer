@@ -1,3 +1,4 @@
+#!/root/kinetic_typo_vid/venv/bin/python3
 """
 voice_generator.py
 Step 4 of the Shorts pipeline: generate narration audio from script text.

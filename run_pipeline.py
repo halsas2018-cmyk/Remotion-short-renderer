@@ -1,3 +1,4 @@
+#!/root/kinetic_typo_vid/venv/bin/python3
 """
 run_pipeline.py
 PHASE 1 — Fully automated pipeline: discover -> research -> script -> voice ->

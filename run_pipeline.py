@@ -178,4 +178,199 @@ def check_prerequisites(model_key: str = llm_client.DEFAULT_MODEL_KEY):
         print()
         if signup:
             print(f"Get a free key at: {signup}")
-        print(f"Put it in .env:
+        print(f"Put it in .env: {key_env}=your_key")
+        print("=" * 60)
+        return False
+
+    # Check ffmpeg for voice generation
+    import shutil
+    if not shutil.which("ffmpeg"):
+        print("WARNING: ffmpeg not found in PATH — voice generation will fail.")
+        print("Install: apt-get install ffmpeg  |  brew install ffmpeg  |  choco install ffmpeg")
+        return False
+
+    return True
+
+
+def save_project(
+    project_dir: Path,
+    story: dict,
+    script: str,
+    model_key: str,
+    rank_model_key: str,
+    no_video: bool = False,
+) -> dict:
+    """
+    Run the pipeline for a single story up to beat generation.
+
+    Steps:
+      1. Generate narration audio (unless --no-video)
+      2. Extract word-level timestamps via WhisperX
+      3. Generate beats (visual plan)
+
+    Returns a summary dict with paths to generated artifacts.
+    """
+    project_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save story + script metadata
+    (project_dir / "story.json").write_text(json.dumps(story, indent=2), encoding="utf-8")
+    (project_dir / "script.txt").write_text(script, encoding="utf-8")
+    (project_dir / "model.txt").write_text(f"{model_key}\n{rank_model_key}", encoding="utf-8")
+
+    narration_path = None
+    word_timestamps = None
+    beats = None
+
+    # 1. Voice generation (skip if --no-video)
+    if not no_video:
+        narration_path = project_dir / "narration.mp3"
+        print(f"  Generating narration...")
+        generate_narration(script, output_path=str(narration_path))
+
+        # 2. Word timestamps via WhisperX
+        print(f"  Extracting word timestamps...")
+        timestamps_path = project_dir / "word_timestamps.json"
+        word_timestamps = extract_word_timestamps(
+            audio_path=str(narration_path),
+            output_path=str(timestamps_path),
+        )
+    else:
+        print("  Skipping voice + timestamps (--no-video)")
+
+    # 3. Beat generation (visual plan)
+    print(f"  Generating beats...")
+    beats_path = project_dir / "beats.json"
+    beats = generate_beats(
+        script=script,
+        word_timestamps=word_timestamps or [],
+        story=story,
+        headline=story.get("title", ""),
+    )
+    beats_path.write_text(json.dumps(beats, indent=2), encoding="utf-8")
+
+    print(f"  ✓ Project saved to {project_dir}")
+    print(f"    - story.json")
+    print(f"    - script.txt")
+    if narration_path:
+        print(f"    - narration.mp3")
+        print(f"    - word_timestamps.json")
+    print(f"    - beats.json")
+
+    return {
+        "project_dir": str(project_dir),
+        "story": story,
+        "script": script,
+        "narration": str(narration_path) if narration_path else None,
+        "word_timestamps": str(project_dir / "word_timestamps.json") if not no_video else None,
+        "beats": str(beats_path),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Automated Shorts pipeline (discover → script → voice → timestamps → beats)")
+    parser.add_argument("--count", type=int, default=3, help="Number of videos to produce (default: 3, max: 10)")
+    parser.add_argument("--outdir", type=str, default="output", help="Output directory (default: output)")
+    parser.add_argument("--no-video", action="store_true", help="Skip voice generation (scripts only)")
+    parser.add_argument("--quick", action="store_true", help="Minimal output — 1 script for quick review")
+    parser.add_argument("--model", type=str, default=llm_client.DEFAULT_MODEL_KEY, help="LLM model key for script generation")
+    parser.add_argument("--rank-model", type=str, default=None, help="LLM model key for editorial rerank (default: same as --model)")
+    parser.add_argument("--auto", action="store_true", help="Don't prompt for story selection; generate top-N automatically")
+    parser.add_argument("--no-dedupe", action="store_true", help="Don't filter out stories already generated today")
+    parser.add_argument("--no-llm-rank", action="store_true", help="Skip LLM editorial rerank; rank by heuristic score only")
+    args = parser.parse_args()
+
+    if args.count > 10:
+        print("Max count is 10")
+        args.count = 10
+
+    rank_model_key = args.rank_model or args.model
+
+    # Prerequisites
+    if not check_prerequisites(args.model):
+        sys.exit(1)
+    if args.rank_model and not check_prerequisites(args.rank_model):
+        sys.exit(1)
+
+    base_outdir = Path(args.outdir)
+    daily_outdir = _get_daily_outdir(base_outdir)
+
+    # Fetch & rank stories
+    print(f"Fetching & ranking stories...")
+    stories = rank_top_stories(
+        count=args.count * 3,  # fetch extra for dedupe + selection
+        no_llm_rank=args.no_llm_rank,
+        rank_model_key=rank_model_key,
+    )
+
+    if not stories:
+        print("No stories found.")
+        return
+
+    # Dedupe
+    if not args.no_dedupe:
+        stories, removed = _filter_deduped_today(base_outdir, stories)
+        if removed:
+            print(f"  Filtered {removed} already-generated story(s) today")
+
+    if not stories:
+        print("All stories already generated today. Use --no-dedupe to override.")
+        return
+
+    # Select stories
+    if args.auto:
+        selected = stories[:args.count]
+    else:
+        print("\nTop stories:")
+        for i, s in enumerate(stories[:args.count * 2], 1):
+            print(f"  {i}. {s.get('title', 'Untitled')[:80]}")
+        print()
+        choice = input(f"Select stories (1-{min(len(stories), args.count * 2)}, comma-separated, or 'all'): ").strip()
+        if choice.lower() == "all":
+            selected = stories[:args.count]
+        else:
+            try:
+                indices = [int(x.strip()) - 1 for x in choice.split(",")]
+                selected = [stories[i] for i in indices if 0 <= i < len(stories)]
+            except Exception:
+                print("Invalid selection.")
+                return
+
+    if not selected:
+        print("No stories selected.")
+        return
+
+    # Process each story
+    for idx, story in enumerate(selected, 1):
+        print(f"\n[{idx}/{len(selected)}] {story.get('title', 'Untitled')}")
+
+        # Generate script
+        script_result = process_story(story, model_key=args.model)
+        if not script_result or not script_result.get("script"):
+            print("  Script generation failed, skipping.")
+            continue
+
+        script = script_result["script"]
+        project_slug = slugify(story.get("title", "story"))
+        project_dir = daily_outdir / project_slug
+
+        # Save project (runs pipeline up to beats)
+        try:
+            save_project(
+                project_dir=project_dir,
+                story=story,
+                script=script,
+                model_key=args.model,
+                rank_model_key=rank_model_key,
+                no_video=args.no_video,
+            )
+            _log_generated_story(base_outdir, story, args.model, project_slug)
+        except Exception as e:
+            print(f"  ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
+    print(f"\nDone. Output in: {daily_outdir}")
+
+
+if __name__ == "__main__":
+    main()

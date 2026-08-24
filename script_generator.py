@@ -58,10 +58,11 @@ def _call_llm(messages: list[dict], temperature: float = 0.5,
 
 SCRIPT_SYSTEM_PROMPT = f"""You are writing a script for a short-form vertical
 video (30-45 seconds) about a tech/AI news story. Your only goal is to make
-someone stop scrolling and watch to the end.
+someone stop scrolling, watch to the end, and WANT to comment.
 
 Audience: the GENERAL PUBLIC — people who do NOT work in tech, do not know what
-an LLM/parameter/benchmark is. Plain words only.
+an LLM/parameter/benchmark is. Write at a 6th-grade reading level. If a
+12-year-old wouldn't say it, rewrite it. Plain words only.
 
 SOURCE MATERIAL (fetched for you — use it; do NOT invent facts):
 {{SOURCE}}
@@ -73,22 +74,36 @@ SCRIPT RULES:
    comments. Make the viewer NEED to know what happens next. NEVER open with
    "Imagine...", "What if...", "Have you ever...", "Picture this...". A vague
    generality ("a debate is brewing") is a failure.
+   → GOOD: "The guy who built the AI that beat the world champion at Go just got demoted."
+   → BAD: "Google announced a leadership change at DeepMind."
+
 2. SPECIFICITY: Use real names, real numbers, and quotes/paraphrased opinions
    from the article and comments. Vague paraphrase is a failure state.
+
 3. EMOTIONAL ARC: Vary the tone sentence to sentence — curiosity/stakes,
    tension/conflict, relatable anxiety, then a turn or payoff. Do not stay flat
    and explanatory throughout.
-4. HUMAN TOUCH: Write like telling a friend something wild you just read.
-   Contractions fine. Mix short punchy sentences with longer ones. No corporate
-   hedging, no press-release tone.
+
+4. HUMAN TOUCH + PERSONALITY: Write like telling a friend something wild you
+   just read over coffee. Contractions fine. Mix short punchy sentences with
+   longer ones. No corporate hedging, no press-release tone.
+   → Add a dash of dry humor, irony, or a relatable "wait, what?" moment.
+   → Use visual language: things you can SEE (a boardroom, a laptop, a whiteboard
+     covered in math, engineers staring at screens).
+   → Avoid abstract nouns: "leadership transition" → "the boss got swapped";
+     "strategic pivot" → "they changed the plan."
+
 5. END WITH A GENUINE QUESTION: The FINAL sentence MUST be a real, specific
    question tied to the story's stakes — something viewers can actually answer
    in comments. NEVER end with generic filler like "be part of the conversation",
    "what do you think", "let me know", "drop a comment", or "thoughts?".
    Good: "Would you trust an AI to write your medical records?"
+   Good: "If you're building the next breakthrough AI, do you want a scientist or a suit running the lab?"
    Bad: "What do you think about this?"
+
 6. LENGTH: 6-9 sentences total, {MIN_WORDS}-{MAX_WORDS} words. Aim for the
    middle of the word range.
+
 7. PLAIN NARRATION: clean punctuation for text-to-speech, no jargon, no acronyms
    without explanation, no emojis/symbols/markdown, no brackets or directions.
 

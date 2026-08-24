@@ -351,6 +351,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   );
 };
 
+// Test compositions for different durations to verify proportional scaling
 export const BeforeAfterTestComposition: React.FC = () => (
   <Composition
     id="BeforeAfterTest"
@@ -363,6 +364,57 @@ export const BeforeAfterTestComposition: React.FC = () => (
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
       durationInFrames: 90,
+      exitDirection: "up",
+    }}
+  />
+);
+
+export const BeforeAfterTestShort: React.FC = () => (
+  <Composition
+    id="BeforeAfterTestShort"
+    component={BeforeAfter}
+    durationInFrames={60}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      beforeLabel: "Manual Chip Procurement",
+      afterLabel: "Automated Lease-Back Model",
+      durationInFrames: 60,
+      exitDirection: "up",
+    }}
+  />
+);
+
+export const BeforeAfterTestLong: React.FC = () => (
+  <Composition
+    id="BeforeAfterTestLong"
+    component={BeforeAfter}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      beforeLabel: "Manual Chip Procurement",
+      afterLabel: "Automated Lease-Back Model",
+      durationInFrames: 180,
+      exitDirection: "up",
+    }}
+  />
+);
+
+export const BeforeAfterTestVeryLong: React.FC = () => (
+  <Composition
+    id="BeforeAfterTestVeryLong"
+    component={BeforeAfter}
+    durationInFrames={300}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      beforeLabel: "Manual Chip Procurement",
+      afterLabel: "Automated Lease-Back Model",
+      durationInFrames: 300,
       exitDirection: "up",
     }}
   />

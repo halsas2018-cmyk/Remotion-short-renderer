@@ -483,7 +483,7 @@ def process_story(story: dict, content: dict | None = None,
     result = generate_combined(story, content, model_key=model_key)
     script = result["script"]
     print(f"  ✓ script ({result['word_count']} words, "
-          f"{len(result['shots'])} shots, headline: \"{result['headline']}\")")
+          f"{len(result['beats'])} beats, headline: \"{result['headline']}\")")
 
     # Lightweight research_notes.json (kept for downstream / metadata parity).
     # The combined call supersedes the old separate research step — the raw

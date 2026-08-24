@@ -176,7 +176,7 @@ component. Use these types (matching the component library):
 
 Rules:
 - Every beat MUST have `text` (narration for this beat) and `durationInFrames`
-  (estimated from word count @ ~2.5 words/sec → frames = words/2.5*30).
+  (estimated from word count @ ~3.9 words/sec → frames = words/3.9*30).
 - Use ONLY data from source (anti-fabrication). If no real data for a specific
   type → use key_statement.
 - Vary types. Prefer specific types when source supports them:

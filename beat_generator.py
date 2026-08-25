@@ -478,9 +478,14 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
     if num_beats == 0:
         return beats
     
-    # Calculate ideal duration per beat
+    # Calculate ideal duration per beat, capped at MAX_BEAT_FRAMES
     ideal_duration = total_frames // num_beats
     ideal_duration = max(MIN_BEAT_FRAMES, min(ideal_duration, MAX_BEAT_FRAMES))
+    
+    # If even distribution would leave too many frames for the last beat,
+    # increase the number of beats by splitting the longest ones conceptually
+    # (but since this is force-fix, we just cap each beat at MAX_BEAT_FRAMES
+    # and let the last beat take the remainder, then fix if remainder > MAX_BEAT_FRAMES)
     
     fixed = []
     current_start = 0
@@ -488,20 +493,33 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
     for i, beat in enumerate(beats):
         beat_copy = beat.copy()
         
+        remaining_beats = num_beats - i
+        remaining_frames = total_frames - current_start
+        
+        # Calculate max frames this beat can take so remaining beats get at least MIN_BEAT_FRAMES
+        max_this_beat = remaining_frames - (remaining_beats - 1) * MIN_BEAT_FRAMES
+        # Cap at MAX_BEAT_FRAMES
+        max_this_beat = min(max_this_beat, MAX_BEAT_FRAMES)
+        # Ensure at least MIN_BEAT_FRAMES
+        max_this_beat = max(max_this_beat, MIN_BEAT_FRAMES)
+        
         if i == num_beats - 1:
-            # Last beat gets remaining frames
+            # Last beat gets all remaining frames
             beat_copy["startFrame"] = current_start
             beat_copy["endFrame"] = total_frames
         else:
             beat_copy["startFrame"] = current_start
-            beat_copy["endFrame"] = current_start + ideal_duration
+            beat_copy["endFrame"] = current_start + max_this_beat
         
         beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
         
-        # Ensure minimum duration
+        # Final safety clamp
         if beat_copy["durationInFrames"] < MIN_BEAT_FRAMES:
             beat_copy["endFrame"] = beat_copy["startFrame"] + MIN_BEAT_FRAMES
             beat_copy["durationInFrames"] = MIN_BEAT_FRAMES
+        elif beat_copy["durationInFrames"] > MAX_BEAT_FRAMES:
+            beat_copy["endFrame"] = beat_copy["startFrame"] + MAX_BEAT_FRAMES
+            beat_copy["durationInFrames"] = MAX_BEAT_FRAMES
         
         fixed.append(beat_copy)
         current_start = beat_copy["endFrame"]
@@ -510,6 +528,21 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
     if fixed:
         fixed[-1]["endFrame"] = total_frames
         fixed[-1]["durationInFrames"] = total_frames - fixed[-1]["startFrame"]
+        # If last beat is now too long, pull back from previous
+        if fixed[-1]["durationInFrames"] > MAX_BEAT_FRAMES and len(fixed) > 1:
+            excess = fixed[-1]["durationInFrames"] - MAX_BEAT_FRAMES
+            fixed[-2]["endFrame"] -= excess
+            fixed[-2]["durationInFrames"] = fixed[-2]["endFrame"] - fixed[-2]["startFrame"]
+            fixed[-1]["startFrame"] = fixed[-2]["endFrame"]
+            fixed[-1]["durationInFrames"] = MAX_BEAT_FRAMES
+        # If last beat is too short, borrow from previous
+        elif fixed[-1]["durationInFrames"] < MIN_BEAT_FRAMES and len(fixed) > 1:
+            needed = MIN_BEAT_FRAMES - fixed[-1]["durationInFrames"]
+            if fixed[-2]["durationInFrames"] > MIN_BEAT_FRAMES + needed:
+                fixed[-2]["endFrame"] -= needed
+                fixed[-2]["durationInFrames"] = fixed[-2]["endFrame"] - fixed[-2]["startFrame"]
+                fixed[-1]["startFrame"] = fixed[-2]["endFrame"]
+                fixed[-1]["durationInFrames"] = MIN_BEAT_FRAMES
     
     return fixed
 

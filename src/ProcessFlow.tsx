@@ -21,9 +21,12 @@ interface ProcessFlowProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
+const ACCENT_LIGHT = "#fff4ed";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
+const LIGHT_TEXT = "#a3a3a3";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
 const ARROW_COLOR = ACCENT_COLOR;
 const BOX_BG = "white";
 const BOX_BORDER = "#e8e8e8";
@@ -124,6 +127,17 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
     if (frame < shimmerStartFrame) return "-100%";
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
+
+  // Shimmer opacity - 0 before start, then follows step/arrow progress
+  const getStepShimmerOpacity = (shimmerStartFrame: number, stepProg: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return stepProg;
+  };
+
+  const getArrowShimmerOpacity = (shimmerStartFrame: number, arrowProg: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return arrowProg;
   };
 
   // Slider path animation
@@ -259,7 +273,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                 />
               </div>
 
-              {/* Step shimmer with matching curved corners */}
+              {/* Step shimmer with matching curved corners - only visible after start */}
               <div
                 style={{
                   position: "absolute",
@@ -269,7 +283,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                   height: boxHeight,
                   borderRadius: cardBorderRadius,
                   background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}22, transparent)`,
-                  opacity: prog,
+                  opacity: getStepShimmerOpacity(stepShimmerStart, prog),
                   pointerEvents: "none",
                 }}
               >
@@ -320,7 +334,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                 </div>
               )}
 
-              {/* Arrow shimmer */}
+              {/* Arrow shimmer - only visible after start */}
               {!isLast && (
                 <div
                   style={{
@@ -330,7 +344,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                     width: gap,
                     height: 40,
                     background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}22, transparent)`,
-                    opacity: arrowProgresses[i],
+                    opacity: getArrowShimmerOpacity(arrowShimmerStart, arrowProgresses[i]),
                     pointerEvents: "none",
                   }}
                 >

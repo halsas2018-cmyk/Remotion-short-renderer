@@ -44,6 +44,11 @@ BEAT_TYPES = {
 # Types that can be auto-split if too long
 SPLITTABLE_TYPES = {"key_statement", "icon_text"}
 
+# Prompt size limits to stay under Groq free tier TPM (8000)
+MAX_SCRIPT_WORDS_IN_PROMPT = 100
+MAX_SENTENCES_IN_PROMPT = 8
+MAX_STORY_FACTS_CHARS = 200
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -362,14 +367,21 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
 # ---------------------------------------------------------------------------
 
 def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline: str = "") -> str:
-    """Build the LLM prompt with all necessary context."""
+    """Build the LLM prompt with all necessary context, keeping it under token limits."""
     
-    # Prepare sentence-level timing with word indices
+    # Truncate script to keep prompt small
+    script_words = script.strip().split()
+    if len(script_words) > MAX_SCRIPT_WORDS_IN_PROMPT:
+        truncated_script = " ".join(script_words[:MAX_SCRIPT_WORDS_IN_PROMPT]) + "..."
+    else:
+        truncated_script = script
+    
+    # Prepare sentence-level timing with word indices (limit to MAX_SENTENCES_IN_PROMPT)
     sentences = []
     current_sentence = []
     word_idx = 0
     
-    for word in script.strip().split():
+    for word in script_words:
         current_sentence.append(word)
         word_idx += 1
         if word.endswith((".", "!", "?")):
@@ -390,18 +402,17 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
                     })
             current_sentence = []
     
-    # Limit sentences in prompt to avoid token bloat
-    max_sentences_in_prompt = 15
-    if len(sentences) > max_sentences_in_prompt:
-        sentences = sentences[:max_sentences_in_prompt]
+    # Limit sentences in prompt
+    if len(sentences) > MAX_SENTENCES_IN_PROMPT:
+        sentences = sentences[:MAX_SENTENCES_IN_PROMPT]
         sentences.append({"text": "... (truncated)", "startFrame": 0, "endFrame": 0, "durationFrames": 0})
     
     # Story facts for metadata - limit size
     research = story.get("research", {}) if isinstance(story.get("research"), dict) else {}
-    key_numbers = research.get("key_numbers", "")[:300]
-    key_quotes = research.get("key_quotes", [])[:2]
-    locations = research.get("locations", [])[:3]
-    entities = research.get("entities", [])[:5]
+    key_numbers = research.get("key_numbers", "")[:MAX_STORY_FACTS_CHARS]
+    key_quotes = research.get("key_quotes", [])[:1]
+    locations = research.get("locations", [])[:2]
+    entities = research.get("entities", [])[:3]
     
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
@@ -410,7 +421,7 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
 
 SOURCE:
 Title: {story.get("title", "")}
-Script: {script}
+Script: {truncated_script}
 
 TIMING (30fps):
 Total: {len(word_timestamps)} words, {seconds_to_frames(word_timestamps[-1]["end"])} frames

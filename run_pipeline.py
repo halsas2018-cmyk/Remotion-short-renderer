@@ -207,6 +207,7 @@ def save_project(
     project_dir: Path,
     story: dict,
     script: str,
+    pre_chunked_beats: list[dict],
     model_key: str,
     rank_model_key: str,
     no_video: bool = False,
@@ -217,7 +218,7 @@ def save_project(
     Steps:
       1. Generate narration audio (unless --no-video)
       2. Extract word-level timestamps via WhisperX
-      3. Generate beats (visual plan)
+      3. Generate beats (visual plan) using pre-chunked beats
 
     Returns a summary dict with paths to generated artifacts.
     """
@@ -226,6 +227,7 @@ def save_project(
     # Save story + script metadata (serialize datetime objects)
     (project_dir / "story.json").write_text(json.dumps(_serialize_story(story), indent=2), encoding="utf-8")
     (project_dir / "script.txt").write_text(script, encoding="utf-8")
+    (project_dir / "pre_chunked_beats.json").write_text(json.dumps(pre_chunked_beats, indent=2), encoding="utf-8")
     (project_dir / "model.txt").write_text(f"{model_key}\n{rank_model_key}", encoding="utf-8")
 
     narration_path = None
@@ -248,7 +250,7 @@ def save_project(
     else:
         print("  Skipping voice + timestamps (--no-video)")
 
-    # 3. Beat generation (visual plan)
+    # 3. Beat generation (visual plan) — now uses pre_chunked_beats
     print(f"  Generating beats...")
     beats_path = project_dir / "beats.json"
     beats = generate_beats(
@@ -256,12 +258,14 @@ def save_project(
         word_timestamps=word_timestamps or [],
         story=story,
         headline=story.get("title", ""),
+        pre_chunked_beats=pre_chunked_beats,
     )
     beats_path.write_text(json.dumps(beats, indent=2), encoding="utf-8")
 
     print(f"  ✓ Project saved to {project_dir}")
     print(f"    - story.json")
     print(f"    - script.txt")
+    print(f"    - pre_chunked_beats.json")
     if narration_path:
         print(f"    - narration.mp3")
         print(f"    - word_timestamps.json")
@@ -356,13 +360,14 @@ def main():
     for idx, story in enumerate(selected, 1):
         print(f"\n[{idx}/{len(selected)}] {story.get('title', 'Untitled')}")
 
-        # Generate script
+        # Generate script + pre-chunked beats
         script_result = process_story(story, model_key=args.model)
         if not script_result or not script_result.get("script"):
             print("  Script generation failed, skipping.")
             continue
 
         script = script_result["script"]
+        pre_chunked_beats = script_result.get("pre_chunked_beats", [])
         project_slug = slugify(story.get("title", "story"))
         project_dir = daily_outdir / project_slug
 
@@ -372,6 +377,7 @@ def main():
                 project_dir=project_dir,
                 story=story,
                 script=script,
+                pre_chunked_beats=pre_chunked_beats,
                 model_key=args.model,
                 rank_model_key=rank_model_key,
                 no_video=args.no_video,

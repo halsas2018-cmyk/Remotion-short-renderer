@@ -229,7 +229,7 @@ const RemotionRoot: React.FC = () => {
       <Composition
         id="BeforeAfterTest"
         component={BeforeAfter}
-        durationInFrames={120}
+        durationInFrames={90}
         fps={30}
         width={1080}
         height={1920}

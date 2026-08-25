@@ -25,7 +25,9 @@ import llm_client
 
 FPS = 30
 MAX_BEAT_DURATION_SECONDS = 3.0
-MAX_BEAT_FRAMES = int(MAX_BEAT_DURATION_SECONDS * FPS)  # 90 frames at 30fps
+MAX_BEAT_FRAMES = int(MAX_BEAT_DURATION_SECONDS * FPS)        # 90 — target
+MAX_BEAT_FRAMES_SOFT = MAX_BEAT_FRAMES + 20                   # 110 — allow up to ~3.7s
+MAX_BEAT_FRAMES_HARD = MAX_BEAT_FRAMES + 40                   # 130 — absolute ceiling
 MIN_BEAT_FRAMES = 30  # Minimum beat duration (0.5s)
 
 # Valid beat types that map to Remotion components
@@ -42,7 +44,7 @@ BEAT_TYPES = {
 }
 
 # Types that can be auto-split if too long
-SPLITTABLE_TYPES = {"key_statement", "icon_text"}
+SPLITTABLE_TYPES = {"key_statement", "icon_text", "versus"}
 
 # Prompt size limits to stay under Groq free tier TPM (8000)
 MAX_SCRIPT_WORDS_IN_PROMPT = 170
@@ -174,6 +176,20 @@ def assign_frames_from_word_ranges(
     return result
 
 
+def should_split_beat(beat: dict) -> bool:
+    """Determine if a beat should be split based on duration and type."""
+    dur = beat.get("durationInFrames", 0)
+    beat_type = beat.get("type", "")
+    
+    if beat_type not in SPLITTABLE_TYPES:
+        return False
+    if dur <= MAX_BEAT_FRAMES_SOFT:
+        return False          # within buffer — keep as one beat
+    if dur <= MAX_BEAT_FRAMES_HARD:
+        return True           # split if easy (natural clause boundary)
+    return True               # must split — exceeds hard limit
+
+
 def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_map: list[int]) -> list[dict]:
     """
     Split a single beat that's too long into multiple beats of ~MAX_BEAT_FRAMES each.
@@ -184,7 +200,7 @@ def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_m
     end_frame = beat.get("endFrame", 0)
     duration = end_frame - start_frame
     
-    if duration <= MAX_BEAT_FRAMES or beat_type not in SPLITTABLE_TYPES:
+    if not should_split_beat(beat):
         return [beat]
     
     beat_text = beat.get("text", "").strip()
@@ -221,8 +237,8 @@ def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_m
     current_word_start = 0
     current_start_frame = start_frame
     
-    # Calculate how many splits we need
-    num_splits = (duration + MAX_BEAT_FRAMES - 1) // MAX_BEAT_FRAMES
+    # Calculate how many splits we need (target MAX_BEAT_FRAMES each)
+    num_splits = max(2, (duration + MAX_BEAT_FRAMES - 1) // MAX_BEAT_FRAMES)
     
     for split_idx in range(num_splits):
         if current_word_start >= len(beat_word_indices):
@@ -341,8 +357,9 @@ def validate_beats(beats: list[dict], word_timestamps: list[dict], script: str) 
             errors.append(f"Beat {i}: durationInFrames {dur} != endFrame - startFrame ({end - start})")
         if dur <= 0:
             errors.append(f"Beat {i}: non-positive duration ({dur})")
-        if dur > MAX_BEAT_FRAMES and beat_type in SPLITTABLE_TYPES:
-            errors.append(f"Beat {i}: duration {dur} frames exceeds max {MAX_BEAT_FRAMES} for splittable type")
+        # Only warn if exceeds SOFT limit for splittable types
+        if dur > MAX_BEAT_FRAMES_SOFT and beat_type in SPLITTABLE_TYPES:
+            errors.append(f"Beat {i}: duration {dur} frames exceeds soft max {MAX_BEAT_FRAMES_SOFT} for splittable type")
     
     # Check for gaps/overlaps
     for i in range(len(beats) - 1):

@@ -87,6 +87,7 @@ output/
 |-----------|--------|-----------|-------|
 | `BeforeAfter` | ✅ **COMPLETE** | `before_after` | Entrance animations, shimmer effects, divider, slider border |
 | `VersusCard` | ✅ **COMPLETE** | `versus_card` | Dual cards with items, VS divider, shimmer, slider border |
+| `Timeline` | ✅ **COMPLETE** | `timeline` | Flexible N events, line draw, markers, descriptions, slider border |
 | `ChartCounter` | ⏳ TODO | `chart_counter` | |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
@@ -98,7 +99,6 @@ output/
 | `ProcessFlow` | ⏳ TODO | `process_flow` | |
 | `ProgressMeter` | ⏳ TODO | `progress_meter` | |
 | `QuoteCard` | ⏳ TODO | `quote_card` | |
-| `Timeline` | ⏳ TODO | `timeline` | |
 | `PersistentBackground` | ⏳ TODO | — | Global background |
 | `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
 
@@ -137,6 +137,27 @@ output/
 - **Test composition**: `VersusCardTest` (120 frames, 30fps, 1080×1920)
 - **Props**: `left`/`right` objects with `label`, `value`, `items[]`
 
+### Timeline Component Details (`src/Timeline.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: Horizontal line draws from left to right
+  - 15–25%: Markers appear sequentially with stagger (4% each)
+  - 25–70%: Black slider border draws around entire timeline group (SVG stroke-dashoffset, 45% duration)
+  - 70%+: Hold (idle pulse on markers, shimmer loops on line/markers/cards)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on line, markers, and description cards
+  - Gradient horizontal line (neutral → accent → neutral)
+  - Elevated marker circles with year text (responsive radius, min 36px)
+  - Vertical connector lines from center line to markers
+  - Elevated description cards below markers (constrained to screen bounds)
+  - Year labels above markers in accent-colored cards
+  - Black slider border with drop shadow animates drawing around timeline group
+  - Flexible N events (2–5+ tested) with even distribution
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (marker ≥24px, year ≥32px, label ≥28px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `TimelineTest` (2 events, 120f), `Timeline3EventsTest` (3 events, 150f), `Timeline4EventsTest` (4 events, 180f), `Timeline5EventsTest` (5 events, 210f)
+- **Props**: `events[]` with `marker` (string) and `label` (string)
+
 ### Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -153,6 +174,7 @@ my-video/
 │   ├── components/          # Beat components (BeforeAfter, KeyStatement, etc.)
 │   ├── BeforeAfter.tsx      # ✅ Complete
 │   ├── VersusCard.tsx       # ✅ Complete
+│   ├── Timeline.tsx         # ✅ Complete
 │   ├── ChartCounter.tsx
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
@@ -164,7 +186,6 @@ my-video/
 │   ├── ProcessFlow.tsx
 │   ├── ProgressMeter.tsx
 │   ├── QuoteCard.tsx
-│   ├── Timeline.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
 │   ├── index.tsx            # Composition registry

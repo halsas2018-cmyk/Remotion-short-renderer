@@ -36,6 +36,7 @@ const LINE_COLOR = "#d0d0d0";
 const MARKER_BG = "white";
 const MARKER_BORDER = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a";
+const CARD_BORDER = "#e8e8e8"; // Added missing constant
 
 export const Timeline: React.FC<TimelineProps> = ({
   events,

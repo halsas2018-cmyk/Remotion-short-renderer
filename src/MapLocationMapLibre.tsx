@@ -276,21 +276,9 @@ export const MapLocationMapLibre: React.FC<MapLocationMapLibreProps> = ({
     }
 
     map.once("idle", () => continueRender(handle));
+    // Force an idle event even if the camera parameters are unchanged from the previous frame.
     map.triggerRepaint();
   }, [continueRender, delayRender, frame, map, mapLoaded, pinProgress, isIdle, idleTimeSeconds]);
-
-  // Shimmer position calculation - relative to card (0-100% of card height)
-  const getShimmerTop = (shimmerStartFrame: number) => {
-    if (frame < shimmerStartFrame) return "-100%";
-    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
-    return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
-  };
-
-  // Shimmer opacity - 0 before start, then 1
-  const getShimmerOpacity = (shimmerStartFrame: number) => {
-    if (frame < shimmerStartFrame) return 0;
-    return 1;
-  };
 
   // Slider path animation
   const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);

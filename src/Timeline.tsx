@@ -36,7 +36,7 @@ const LINE_COLOR = "#d0d0d0";
 const MARKER_BG = "white";
 const MARKER_BORDER = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a";
-const CARD_BORDER = "#e8e8e8"; // Added missing constant
+const CARD_BORDER = "#e8e8e8";
 
 export const Timeline: React.FC<TimelineProps> = ({
   events,
@@ -280,7 +280,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 />
               )}
 
-              {/* Marker circle - elevated card style */}
+              {/* Marker circle - elevated card style (shows the marker/year) */}
               <div
                 style={{
                   position: "absolute",
@@ -341,42 +341,6 @@ export const Timeline: React.FC<TimelineProps> = ({
                     borderRadius: "50%",
                   }}
                 />
-              </div>
-
-              {/* Year label above marker - elevated card */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: xPos,
-                  top: -labelOffset - markerRadius * 2 - labelCardHeight,
-                  transform: [{ translateX: "-50%" }],
-                  whiteSpace: "nowrap",
-                  opacity: markerProg,
-                  zIndex: 5,
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: 12,
-                    padding: "8px 16px",
-                    boxShadow: CARD_SHADOW,
-                    transform: `scale(${markerProg})`,
-                    transformOrigin: "bottom center",
-                    border: `1px solid ${ACCENT_COLOR}33`,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: yearFontSize,
-                      fontWeight: 800,
-                      color: ACCENT_COLOR,
-                      fontFamily: "system-ui, sans-serif",
-                    }}
-                  >
-                    {event.marker}
-                  </span>
-                </div>
               </div>
 
               {/* Event description below - elevated card, constrained to screen */}

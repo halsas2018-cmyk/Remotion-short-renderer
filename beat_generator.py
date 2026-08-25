@@ -72,7 +72,7 @@ def frames_to_seconds(frames: int) -> float:
 
 
 def word_idx_to_frame(word_timestamps: list[dict], word_idx: int) -> int:
-    """Convert word index to frame number using word timestamp."""
+    """Convert word index to frame number using word timestamp start."""
     if not word_timestamps:
         return 0
     if word_idx >= len(word_timestamps):
@@ -119,10 +119,65 @@ def build_word_index_map(word_timestamps: list[dict], script: str) -> list[int]:
     return mapping
 
 
+def assign_frames_from_word_ranges(
+    beats: list[dict],
+    word_timestamps: list[dict],
+    script: str
+) -> list[dict]:
+    """
+    Convert word indices (startWord/endWord) to frame numbers using Whisper timestamps.
+    This is the single source of truth for frame timing.
+    """
+    if not word_timestamps:
+        return beats
+    
+    word_map = build_word_index_map(word_timestamps, script)
+    script_words = script.strip().split()
+    total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1)
+    
+    result = []
+    for beat in beats:
+        beat_copy = beat.copy()
+        
+        start_word = beat.get("startWord", 0)
+        end_word = beat.get("endWord", len(script_words) - 1)
+        
+        # Clamp to valid script word range
+        start_word = max(0, min(start_word, len(script_words) - 1))
+        end_word = max(start_word, min(end_word, len(script_words) - 1))
+        
+        # Map to timestamp indices
+        start_ts_idx = word_map[start_word] if start_word < len(word_map) else len(word_map) - 1
+        end_ts_idx = word_map[end_word] if end_word < len(word_map) else len(word_map) - 1
+        
+        # Calculate frames from Whisper timestamps
+        start_frame = word_idx_to_frame(word_timestamps, start_ts_idx)
+        end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
+        
+        # Ensure minimum duration
+        if end_frame - start_frame < MIN_BEAT_FRAMES:
+            end_frame = start_frame + MIN_BEAT_FRAMES
+        
+        # Clamp to total duration
+        end_frame = min(end_frame, total_frames)
+        
+        beat_copy["startFrame"] = start_frame
+        beat_copy["endFrame"] = end_frame
+        beat_copy["durationInFrames"] = end_frame - start_frame
+        
+        # Remove word indices from output (they were only for LLM→Python handoff)
+        beat_copy.pop("startWord", None)
+        beat_copy.pop("endWord", None)
+        
+        result.append(beat_copy)
+    
+    return result
+
+
 def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_map: list[int]) -> list[dict]:
     """
     Split a single beat that's too long into multiple beats of ~MAX_BEAT_FRAMES each.
-    Returns list of beats.
+    Returns list of beats with recalculated frame boundaries from word timestamps.
     """
     beat_type = beat.get("type", "")
     start_frame = beat.get("startFrame", 0)
@@ -362,6 +417,54 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
     return fixed
 
 
+def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict]:
+    """EMERGENCY FALLBACK ONLY: redistribute frames evenly across beats to ensure validity.
+    This destroys semantic timing — use only when all else fails."""
+    if not beats or not word_timestamps:
+        return beats
+    
+    total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1)
+    num_beats = len(beats)
+    
+    if num_beats == 0:
+        return beats
+    
+    # Calculate ideal duration per beat
+    ideal_duration = total_frames // num_beats
+    ideal_duration = max(MIN_BEAT_FRAMES, min(ideal_duration, MAX_BEAT_FRAMES))
+    
+    fixed = []
+    current_start = 0
+    
+    for i, beat in enumerate(beats):
+        beat_copy = beat.copy()
+        
+        if i == num_beats - 1:
+            # Last beat gets remaining frames
+            beat_copy["startFrame"] = current_start
+            beat_copy["endFrame"] = total_frames
+        else:
+            beat_copy["startFrame"] = current_start
+            beat_copy["endFrame"] = current_start + ideal_duration
+        
+        beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
+        
+        # Ensure minimum duration
+        if beat_copy["durationInFrames"] < MIN_BEAT_FRAMES:
+            beat_copy["endFrame"] = beat_copy["startFrame"] + MIN_BEAT_FRAMES
+            beat_copy["durationInFrames"] = MIN_BEAT_FRAMES
+        
+        fixed.append(beat_copy)
+        current_start = beat_copy["endFrame"]
+    
+    # Final adjustment to ensure last beat ends at total_frames
+    if fixed:
+        fixed[-1]["endFrame"] = total_frames
+        fixed[-1]["durationInFrames"] = total_frames - fixed[-1]["startFrame"]
+    
+    return fixed
+
+
 # ---------------------------------------------------------------------------
 # Prompt Construction
 # ---------------------------------------------------------------------------
@@ -422,7 +525,7 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     
     prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component.
 
-IMPORTANT: Do NOT output frame numbers. Do NOT calculate timing. Only output beat type, text, and semantic metadata.
+IMPORTANT: Do NOT output frame numbers. Do NOT calculate timing. Only output beat type, text, semantic metadata, and WORD INDICES (startWord/endWord).
 
 SOURCE:
 Title: {story.get("title", "")}
@@ -453,6 +556,7 @@ RULES:
 8. versus: only clear two-sided comparisons.
 9. before_after: only clear before/after comparisons.
 10. Vary types.
+11. Output startWord/endWord as indices into the script word array (0-based).
 
 OUTPUT (JSON only):
 {{"beats": [{{"type": "key_statement", "text": "...", "emphasisWords": ["..."], "startWord": 0, "endWord": 8}}]}}"""
@@ -471,7 +575,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     # Use llm_client to call the model
     messages = [
-        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. Do NOT output frame numbers. Only output beat type, text, and semantic metadata."},
+        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. Do NOT output frame numbers. Only output beat type, text, semantic metadata, and word indices (startWord/endWord)."},
         {"role": "user", "content": prompt}
     ]
     
@@ -505,12 +609,20 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     if not beats:
         raise ValueError("No beats generated")
     
+    # DEBUG: Print raw LLM output before any processing
+    print("\n=== RAW LLM BEATS ===")
+    print(json.dumps(beats, indent=2, ensure_ascii=False))
+    print("=== END RAW LLM BEATS ===\n")
+    
     # Filter out malformed beats (missing text or invalid type)
     valid_beats = []
     for beat in beats:
         if not beat.get("text") or not beat.get("type"):
             continue
         if beat["type"] not in BEAT_TYPES:
+            continue
+        # Ensure startWord/endWord exist
+        if "startWord" not in beat or "endWord" not in beat:
             continue
         valid_beats.append(beat)
     
@@ -519,46 +631,8 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     beats = valid_beats
     
-    # Convert word indices to frames
-    word_map = build_word_index_map(word_timestamps, script)
-    script_words = script.strip().split()
-    
-    converted_beats = []
-    for beat in beats:
-        start_word = beat.get("startWord", 0)
-        end_word = beat.get("endWord", len(script_words) - 1)
-        
-        # Clamp to valid range
-        start_word = max(0, min(start_word, len(script_words) - 1))
-        end_word = max(start_word, min(end_word, len(script_words) - 1))
-        
-        # Map to timestamp indices
-        start_ts_idx = word_map[start_word] if start_word < len(word_map) else len(word_map) - 1
-        end_ts_idx = word_map[end_word] if end_word < len(word_map) else len(word_map) - 1
-        
-        start_frame = word_idx_to_frame(word_timestamps, start_ts_idx)
-        end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
-        
-        # Ensure minimum duration
-        if end_frame - start_frame < MIN_BEAT_FRAMES:
-            end_frame = start_frame + MIN_BEAT_FRAMES
-        
-        # Clamp to total duration
-        total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1) if word_timestamps else 0
-        end_frame = min(end_frame, total_frames)
-        
-        beat_copy = beat.copy()
-        beat_copy["startFrame"] = start_frame
-        beat_copy["endFrame"] = end_frame
-        beat_copy["durationInFrames"] = end_frame - start_frame
-        
-        # Remove word indices from output
-        beat_copy.pop("startWord", None)
-        beat_copy.pop("endWord", None)
-        
-        converted_beats.append(beat_copy)
-    
-    beats = converted_beats
+    # Convert word indices to frames using Whisper timestamps
+    beats = assign_frames_from_word_ranges(beats, word_timestamps, script)
     
     # Validate initial beats
     errors = validate_beats(beats, word_timestamps, script)
@@ -579,7 +653,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     errors = validate_beats(beats, word_timestamps, script)
     if errors:
         # As last resort, force-fix by redistributing frames evenly
-        print(f"  ⚠ Final validation issues, force-fixing: {errors}")
+        print(f"  ⚠ Final validation issues, force-fixing (EMERGENCY): {errors}")
         beats = force_fix_beats(beats, word_timestamps)
         errors = validate_beats(beats, word_timestamps, script)
         if errors:
@@ -592,53 +666,6 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         "totalDurationInFrames": total_frames,
         "beats": beats
     }
-
-
-def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict]:
-    """Last resort: redistribute frames evenly across beats to ensure validity."""
-    if not beats or not word_timestamps:
-        return beats
-    
-    total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1)
-    num_beats = len(beats)
-    
-    if num_beats == 0:
-        return beats
-    
-    # Calculate ideal duration per beat
-    ideal_duration = total_frames // num_beats
-    ideal_duration = max(MIN_BEAT_FRAMES, min(ideal_duration, MAX_BEAT_FRAMES))
-    
-    fixed = []
-    current_start = 0
-    
-    for i, beat in enumerate(beats):
-        beat_copy = beat.copy()
-        
-        if i == num_beats - 1:
-            # Last beat gets remaining frames
-            beat_copy["startFrame"] = current_start
-            beat_copy["endFrame"] = total_frames
-        else:
-            beat_copy["startFrame"] = current_start
-            beat_copy["endFrame"] = current_start + ideal_duration
-        
-        beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
-        
-        # Ensure minimum duration
-        if beat_copy["durationInFrames"] < MIN_BEAT_FRAMES:
-            beat_copy["endFrame"] = beat_copy["startFrame"] + MIN_BEAT_FRAMES
-            beat_copy["durationInFrames"] = MIN_BEAT_FRAMES
-        
-        fixed.append(beat_copy)
-        current_start = beat_copy["endFrame"]
-    
-    # Final adjustment to ensure last beat ends at total_frames
-    if fixed:
-        fixed[-1]["endFrame"] = total_frames
-        fixed[-1]["durationInFrames"] = total_frames - fixed[-1]["startFrame"]
-    
-    return fixed
 
 
 # ---------------------------------------------------------------------------

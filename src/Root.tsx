@@ -11,6 +11,7 @@ import { ProcessFlow } from "./ProcessFlow";
 import { VersusCard } from "./VersusCard";
 import { ChartLine } from "./ChartLine";
 import { MapLocation } from "./MapLocation";
+import { MapLocationMapLibre } from "./MapLocationMapLibre";
 import { QuoteCard } from "./QuoteCard";
 import { ProgressMeter } from "./ProgressMeter";
 import { BeforeAfter } from "./BeforeAfter";
@@ -253,6 +254,54 @@ export const MapLocationTest = () => (
       latitude: 37.7749,
       longitude: -122.4194,
       durationInFrames: 90,
+    }}
+  />
+);
+
+export const MapLocationMapLibreTest = () => (
+  <Composition
+    id="MapLocationMapLibreTest"
+    component={MapLocationMapLibre}
+    durationInFrames={120}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      locationName: "San Francisco",
+      latitude: 37.7749,
+      longitude: -122.4194,
+    }}
+  />
+);
+
+export const MapLocationMapLibreTokyoTest = () => (
+  <Composition
+    id="MapLocationMapLibreTokyoTest"
+    component={MapLocationMapLibre}
+    durationInFrames={120}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      locationName: "Tokyo",
+      latitude: 35.6762,
+      longitude: 139.6503,
+    }}
+  />
+);
+
+export const MapLocationMapLibreLongTest = () => (
+  <Composition
+    id="MapLocationMapLibreLongTest"
+    component={MapLocationMapLibre}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      locationName: "London",
+      latitude: 51.5074,
+      longitude: -0.1278,
     }}
   />
 );

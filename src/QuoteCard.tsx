@@ -23,9 +23,12 @@ interface QuoteCardProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
+const ACCENT_LIGHT = "#fff4ed";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
+const LIGHT_TEXT = "#a3a3a3";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
@@ -114,7 +117,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const cardPadding = Math.max(48, width * 0.044);
   
   // Prominent curved borders - pill-style for modern look
-  const cardBorderRadius = Math.max(40, width * 0.037); // Increased from 24 for more curve
+  const cardBorderRadius = Math.max(40, width * 0.037);
 
   // Calculate card height based on content
   const quoteFontSize = Math.max(48, width * 0.044);
@@ -160,6 +163,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
   const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
   const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);
+
+  // Decorative line animation - draws under the quote as it types
+  const lineProgress = interpolate(frame, [0, quoteDuration], [0, 1], {
+    easing: easeOutExpo,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
@@ -268,7 +278,28 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               }}
             />
 
-            {/* Opening quotation mark */}
+            {/* Subtle background pattern - diagonal lines */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                opacity: 0.03,
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
+                  transparent 1px,
+                  transparent 20px
+                )`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Opening quotation mark - larger, more elegant */}
             <div
               style={{
                 fontSize: markFontSize,
@@ -282,12 +313,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                   { scale: markProgress * idlePulse },
                 ],
                 opacity: markProgress,
+                textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
               }}
             >
               &ldquo;
             </div>
 
-            {/* Quote text */}
+            {/* Quote text with animated underline */}
             <div
               style={{
                 fontSize: quoteFontSize,
@@ -303,8 +335,25 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 justifyContent: "center",
                 alignItems: "center",
                 flex: 1,
+                position: "relative",
               }}
             >
+              {/* Animated underline that grows with text */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -16,
+                  left: "50%",
+                  transform: `translateX(-50%) scaleX(${lineProgress})`,
+                  transformOrigin: "left center",
+                  width: Math.min(cardWidth * 0.6, 400),
+                  height: 3,
+                  background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
+                  borderRadius: 2,
+                  opacity: quoteProgress,
+                }}
+              />
+              
               <span
                 style={{
                   opacity: quoteProgress,
@@ -329,12 +378,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                   { scale: markProgress * idlePulse },
                 ],
                 opacity: markProgress,
+                textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
               }}
             >
               &rdquo;
             </div>
 
-            {/* Attribution */}
+            {/* Attribution with decorative separator */}
             <div
               style={{
                 fontSize: attrFontSize,
@@ -346,8 +396,24 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 marginTop: 24,
                 opacity: attrProgress,
                 transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
+                position: "relative",
+                paddingTop: 20,
               }}
             >
+              {/* Separator line above attribution */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 60,
+                  height: 2,
+                  background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
+                  borderRadius: 1,
+                  opacity: attrProgress,
+                }}
+              />
               &mdash; {attribution}
             </div>
 

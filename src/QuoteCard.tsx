@@ -33,7 +33,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   quote,
   attribution,
   durationInFrames: propsDurationInFrames,
-  quoteDurPct = 0.15,
+  quoteDurPct = 0.50, // Slower: 50% of duration for full quote reveal
   attrDelayPct = 0.03,
   attrDurPct = 0.10,
   markDurPct = 0.10,
@@ -46,7 +46,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE — completes by ~30%, then holds
+  // INTERNAL TIMELINE — completes by ~70%, then holds
   // No exit animation — designed to be wrapped by SceneTransition
   // ============================================
   const quoteDuration = Math.round(durationInFrames * quoteDurPct);
@@ -113,9 +113,21 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const cardWidth = Math.min(availableWidth, 800);
   const cardPadding = Math.max(48, width * 0.044);
 
-  // Container dimensions (for slider)
+  // Calculate card height based on content
+  // Base height + quote text area + attribution + padding
+  const quoteFontSize = Math.max(48, width * 0.044);
+  const attrFontSize = Math.max(24, width * 0.022);
+  const lineHeight = 1.35;
+  const wordsPerLine = Math.max(1, Math.floor(cardWidth / (quoteFontSize * 0.6)));
+  const estimatedLines = Math.ceil(words.length / wordsPerLine);
+  const quoteTextHeight = estimatedLines * quoteFontSize * lineHeight;
+  const minQuoteHeight = 160;
+  const cardContentHeight = Math.max(minQuoteHeight, quoteTextHeight) + 32 + attrFontSize + 24 + 60; // quote + gap + attr + top/bottom padding
+  const cardHeight = cardContentHeight + cardPadding * 2;
+
+  // Container dimensions (for slider) - now dynamic based on actual card height
   const containerWidth = cardWidth + 2 * cardPadding;
-  const containerHeight = 400; // Approximate card height
+  const containerHeight = cardHeight;
   const sliderPadding = 24;
   const sliderWidth = containerWidth + 2 * sliderPadding;
   const sliderHeight = containerHeight + 2 * sliderPadding;
@@ -123,13 +135,11 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
-  const quoteFontSize = Math.max(48, width * 0.044); // Main headline: 84px minimum
-  const attrFontSize = Math.max(24, width * 0.022);
   const markFontSize = Math.max(100, width * 0.092);
 
-  // Shimmer position calculation
+  // Shimmer position calculation - now relative to card (0-100% of card height)
   const getShimmerTop = (shimmerStartFrame: number) => {
-    if (frame < shimmerStartFrame) return "-100%";
+    if (frame < shimmerStartFrame) return "-100%"; // Hidden before start
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
@@ -147,7 +157,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the card */}
+      {/* Slider animation - black border circling the card (dynamic size) */}
       <div
         style={{
           position: "absolute",
@@ -204,7 +214,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           textAlign: "center",
         }}
       >
-        {/* Elevated card for the quote */}
+        {/* Elevated card for the quote - dynamic height */}
         <div
           style={{
             backgroundColor: "white",
@@ -215,6 +225,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
             border: `1px solid ${CARD_BORDER}`,
             width: cardWidth,
             maxWidth: "100%",
+            minHeight: cardHeight,
           }}
         >
           {/* Accent top bar */}
@@ -259,7 +270,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               lineHeight: 1.35,
               letterSpacing: -1,
               marginBottom: 32,
-              minHeight: 160,
+              minHeight: Math.max(minQuoteHeight, quoteTextHeight),
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
@@ -312,7 +323,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
             &mdash; {attribution}
           </div>
 
-          {/* Shimmer animation on card */}
+          {/* Shimmer animation on card - now properly positioned within card */}
           <div
             style={{
               position: "absolute",
@@ -342,6 +353,22 @@ export const QuoteCardTestComposition: React.FC = () => (
     height={1920}
     defaultProps={{
       quote: "The best way to predict the future is to invent it",
+      attribution: "Alan Kay",
+    }}
+  />
+);
+
+// Test with longer quote to verify dynamic sizing
+export const QuoteCardLongTest: React.FC = () => (
+  <Composition
+    id="QuoteCardLongTest"
+    component={QuoteCard}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      quote: "People who are really serious about software should make their own hardware because the hardware defines what the software can do",
       attribution: "Alan Kay",
     }}
   />

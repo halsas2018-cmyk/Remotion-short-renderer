@@ -168,9 +168,9 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
 
-  // Slider path animation - draws a rectangle around the cards
-  // Total perimeter for stroke-dasharray
-  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius; // Approximate with rounded corners
+  // Slider path animation - draws a rectangle around the cards using SVG stroke-dashoffset
+  // Total perimeter for stroke-dasharray (approximate for rounded rect)
+  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
   const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
   const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);
 
@@ -182,7 +182,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the cards */}
+      {/* Slider animation - black border circling the cards (SVG stroke animation) */}
       <div
         style={{
           position: "absolute",
@@ -191,35 +191,36 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           transform: "translate(-50%, -50%)",
           width: sliderWidth,
           height: sliderHeight,
-          borderRadius: sliderBorderRadius,
-          border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
-          opacity: sliderProgress,
           pointerEvents: "none",
-          // Animate stroke drawing using clip-path on a pseudo-element approach
-          // Using a mask with animated stroke
-          mask: `url(#slider-mask-${durationInFrames})`,
+          opacity: sliderProgress,
         }}
       >
-        {/* SVG mask for animated stroke drawing */}
-        <svg style={{ position: "absolute", width: 0, height: 0 }}>
-          <defs>
-            <mask id={`slider-mask-${durationInFrames}`} maskUnits="userSpaceOnUse" x={-sliderWidth/2} y={-sliderHeight/2} width={sliderWidth} height={sliderHeight}>
-              <rect
-                x={-sliderWidth/2}
-                y={-sliderHeight/2}
-                width={sliderWidth}
-                height={sliderHeight}
-                rx={sliderBorderRadius}
-                ry={sliderBorderRadius}
-                fill="none"
-                stroke="white"
-                strokeWidth={sliderStrokeWidth * 2}
-                strokeDasharray={sliderDashArray}
-                strokeDashoffset={sliderDashOffset}
-                strokeLinecap="round"
-              />
-            </mask>
-          </defs>
+        <svg
+          width={sliderWidth}
+          height={sliderHeight}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <rect
+            x={sliderStrokeWidth / 2}
+            y={sliderStrokeWidth / 2}
+            width={sliderWidth - sliderStrokeWidth}
+            height={sliderHeight - sliderStrokeWidth}
+            rx={sliderBorderRadius}
+            ry={sliderBorderRadius}
+            fill="none"
+            stroke={SLIDER_COLOR}
+            strokeWidth={sliderStrokeWidth}
+            strokeDasharray={sliderDashArray}
+            strokeDashoffset={sliderDashOffset}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
         </svg>
       </div>
 

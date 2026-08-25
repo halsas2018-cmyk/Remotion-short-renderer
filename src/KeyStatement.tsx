@@ -8,8 +8,8 @@ import {
   Easing,
 } from "remotion";
 
-// Custom Highlight component - no external dependencies
-// Creates a beautiful animated highlight effect using pure CSS/SVG
+// Custom Highlight component - pure CSS, no refs or measurements needed
+// Creates a beautiful animated highlight effect using CSS clip-path
 const Highlight: React.FC<{
   children: React.ReactNode;
   color?: string;
@@ -27,118 +27,99 @@ const Highlight: React.FC<{
   progress = 1,
   animationDuration = 0,
 }) => {
-  // We use a ref to measure the child dimensions
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [rect, setRect] = React.useState<DOMRect | null>(null);
-
-  React.useEffect(() => {
-    if (containerRef.current) {
-      setRect(containerRef.current.getBoundingClientRect());
-    }
-  }, []);
-
-  // If not measured yet or progress is 0, just render children
-  if (!rect || progress <= 0) {
-    return <div ref={containerRef} style={{ display: "inline" }}>{children}</div>;
+  // If progress is 0, just render children without highlight
+  if (progress <= 0) {
+    return <span style={{ display: "inline" }}>{children}</span>;
   }
 
-  const width = rect.width;
-  const height = rect.height;
-  const padX = padding;
-  const padY = padding;
-  const r = cornerRadius;
-
-  // Create a hand-drawn style path using SVG
-  // We'll draw a rough rectangle with slight imperfections
-  const pathData = `
-    M ${padX},${padY + r}
-    Q ${padX},${padY} ${padX + r},${padY}
-    L ${padX + width - r},${padY}
-    Q ${padX + width},${padY} ${padX + width},${padY + r}
-    L ${padX + width},${padY + height - r}
-    Q ${padX + width},${padY + height} ${padX + width - r},${padY + height}
-    L ${padX + r},${padY + height}
-    Q ${padX},${padY + height} ${padX},${padY + height - r}
-    Z
-  `;
-
-  // Add some "roughness" with a second slightly offset path for hand-drawn feel
-  const roughness = 1.5;
-  const roughPathData = `
-    M ${padX + roughness},${padY + r + roughness}
-    Q ${padX + roughness},${padY + roughness} ${padX + r + roughness},${padY + roughness}
-    L ${padX + width - r - roughness},${padY + roughness}
-    Q ${padX + width - roughness},${padY + roughness} ${padX + width - roughness},${padY + r + roughness}
-    L ${padX + width - roughness},${padY + height - r - roughness}
-    Q ${padX + width - roughness},${padY + height - roughness} ${padX + width - r - roughness},${padY + height - roughness}
-    L ${padX + r + roughness},${padY + height - roughness}
-    Q ${padX + roughness},${padY + height - roughness} ${padX + roughness},${padY + height - r - roughness}
-    Z
-  `;
-
-  const totalLength = Math.sqrt(width * width + height * height) * 2; // Approximate perimeter
-  const dashArray = totalLength;
-  const dashOffset = totalLength * (1 - progress);
-
+  // Use CSS clip-path to animate the highlight reveal
+  // The highlight grows from left to right
+  const clipPath = `inset(0 ${100 - progress * 100}% 0 0)`;
+  
+  // For the hand-drawn stroke effect, we use a pseudo-element approach via inline styles
+  // We'll render a decorative SVG behind the text that animates with stroke-dashoffset
+  
   return (
-    <div
-      ref={containerRef}
+    <span
       style={{
         display: "inline",
         position: "relative",
-        lineHeight: 1,
+        lineHeight: 1.3,
       }}
     >
-      {/* Highlight SVG behind text */}
+      {/* Animated highlight background */}
+      <span
+        style={{
+          position: "absolute",
+          top: -padding,
+          left: -padding,
+          right: -padding,
+          bottom: -padding,
+          backgroundColor: color,
+          borderRadius: cornerRadius,
+          clipPath,
+          pointerEvents: "none",
+          zIndex: -1,
+          opacity: 0.6,
+        }}
+      />
+      
+      {/* Hand-drawn stroke animation using SVG */}
       <svg
         style={{
           position: "absolute",
-          top: -padY,
-          left: -padX,
-          width: width + padX * 2,
-          height: height + padY * 2,
+          top: -padding,
+          left: -padding,
+          right: -padding,
+          bottom: -padding,
           pointerEvents: "none",
           overflow: "visible",
           zIndex: -1,
         }}
-        width={width + padX * 2}
-        height={height + padY * 2}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="none"
       >
-        {/* Main highlight fill */}
-        <path
-          d={pathData}
-          fill={color}
-          fillOpacity={progress * 0.6}
-          stroke="none"
-        />
-        {/* Hand-drawn stroke animation */}
-        <path
-          d={roughPathData}
+        <rect
+          x={strokeWidth / 2}
+          y={strokeWidth / 2}
+          width={`calc(100% - ${strokeWidth}px)`}
+          height={`calc(100% - ${strokeWidth}px)`}
+          rx={cornerRadius}
+          ry={cornerRadius}
           fill="none"
-          stroke={color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb")} // Opaque stroke
+          stroke={color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb")}
           strokeWidth={strokeWidth}
-          strokeDasharray={dashArray}
-          strokeDashoffset={dashOffset}
+          strokeDasharray="1000"
+          strokeDashoffset={1000 * (1 - progress)}
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity={progress}
           filter="drop-shadow(0 0 2px rgba(232, 108, 0, 0.3))"
+          vectorEffect="non-scaling-stroke"
         />
         {/* Second rough stroke for more hand-drawn feel */}
-        <path
-          d={roughPathData}
+        <rect
+          x={strokeWidth / 2 + 1.5}
+          y={strokeWidth / 2 + 1.5}
+          width={`calc(100% - ${strokeWidth + 3}px)`}
+          height={`calc(100% - ${strokeWidth + 3}px)`}
+          rx={cornerRadius - 1.5}
+          ry={cornerRadius - 1.5}
           fill="none"
           stroke={color.replace(/[\d.]+\)$/, "0.6)").replace("rgba", "rgb")}
           strokeWidth={strokeWidth * 0.5}
-          strokeDasharray={dashArray * 1.1}
-          strokeDashoffset={dashOffset * 1.1 + 10}
+          strokeDasharray="1100"
+          strokeDashoffset={1100 * (1 - progress) + 10}
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity={progress * 0.7}
+          vectorEffect="non-scaling-stroke"
         />
       </svg>
+      
       {children}
-    </div>
+    </span>
   );
 };
 

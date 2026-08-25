@@ -20,8 +20,10 @@ interface PlainTextProps {
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const easeOutBack = Easing.bezier(0.34, 1.56, 0.64, 1);
 const ACCENT_COLOR = "#e86c00";
 const ACCENT_LIGHT = "#fff4ed";
+const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
 const LIGHT_TEXT = "#a3a3a3";
@@ -131,6 +133,43 @@ export const PlainText: React.FC<PlainTextProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  // Star SVG component with animated rotation
+  const Star = ({ 
+    size = 20, 
+    color = ACCENT_COLOR, 
+    baseRotation = 0, 
+    opacity = 1,
+    animate = false 
+  }) => {
+    const rotation = animate && isIdle 
+      ? frame * 30 + baseRotation 
+      : baseRotation;
+    const pulse = animate && isIdle 
+      ? 1 + 0.15 * Math.sin(frame * 0.15 + baseRotation * 0.01) 
+      : 1;
+    
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{
+          transform: `rotate(${rotation}deg) scale(${pulse})`,
+          opacity,
+          flexShrink: 0,
+          marginRight: 16,
+          filter: animate && isIdle ? `drop-shadow(0 0 8px ${ACCENT_GLOW})` : "none",
+        }}
+      >
+        <path
+          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+          fill={color}
+        />
+      </svg>
+    );
+  };
 
   return (
     <AbsoluteFill
@@ -263,6 +302,20 @@ export const PlainText: React.FC<PlainTextProps> = ({
               }}
             />
 
+            {/* Subtle radial gradient overlay for depth */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
+
             {/* Glow behind card */}
             <div
               style={{
@@ -290,7 +343,7 @@ export const PlainText: React.FC<PlainTextProps> = ({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 12,
+                gap: 16,
               }}
             >
               {lines.map((line, i) => {
@@ -305,17 +358,27 @@ export const PlainText: React.FC<PlainTextProps> = ({
                 });
                 
                 const lineOpacity = lineProgress;
-                const lineY = interpolate(lineProgress, [0, 1], [30, 0], {
+                const lineY = interpolate(lineProgress, [0, 1], [40, 0], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
-                const lineScale = interpolate(lineProgress, [0, 1], [0.85, 1], {
+                const lineScale = interpolate(lineProgress, [0, 1], [0.8, 1], {
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                });
+                const lineRotation = interpolate(lineProgress, [0, 1], [-3, 0], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
                 
                 // Idle animation for lines: subtle vertical drift
-                const lineIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + i * 0.5) : 0;
+                const lineIdleDrift = isIdle ? 3 * Math.sin(frame * 0.05 + i * 0.7) : 0;
+                const lineIdleScale = isIdle ? 1 + 0.01 * Math.sin(frame * 0.07 + i) : 1;
+
+                // Star animation
+                const starRotation = isIdle ? frame * 20 + i * 45 : i * 45;
+                const starPulse = isIdle ? 1 + 0.2 * Math.sin(frame * 0.12 + i) : 1;
+                const starGlow = isIdle ? `drop-shadow(0 0 ${6 + 4 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})` : "none";
 
                 return (
                   <div
@@ -325,10 +388,18 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       alignItems: "center",
                       justifyContent: "center",
                       opacity: lineOpacity,
-                      transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale})`,
+                      transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale * lineIdleScale}) rotate(${lineRotation}deg)`,
                       transformOrigin: "center",
+                      willChange: "transform, opacity",
                     }}
                   >
+                    <Star
+                      size={22}
+                      color={ACCENT_COLOR}
+                      baseRotation={i * 45}
+                      opacity={lineOpacity * starPulse}
+                      animate={true}
+                    />
                     <span
                       style={{
                         fontSize: baseFontSize,
@@ -338,14 +409,37 @@ export const PlainText: React.FC<PlainTextProps> = ({
                         lineHeight: 1.4,
                         letterSpacing: -1,
                         textAlign: "center",
+                        textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + i) * 2}px rgba(232, 108, 0, 0.15)` : "none",
                       }}
                     >
                       {line}
                     </span>
+                    <Star
+                      size={22}
+                      color={ACCENT_COLOR}
+                      baseRotation={180 + i * 45}
+                      opacity={lineOpacity * starPulse}
+                      animate={true}
+                    />
                   </div>
                 );
               })}
             </div>
+
+            {/* Decorative accent line at bottom */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: cardPadding + 20,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 80,
+                height: 3,
+                background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
+                borderRadius: 2,
+                opacity: isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.4,
+              }}
+            />
 
             {/* Shimmer animation on card - properly positioned within card, only visible after start */}
             <div

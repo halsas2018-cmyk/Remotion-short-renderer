@@ -33,10 +33,10 @@ const SLIDER_COLOR = "#1a1a1a";
 export const PlainText: React.FC<PlainTextProps> = ({
   text,
   durationInFrames: propsDurationInFrames,
-  lineDurPct = 0.12,
-  lineStaggerPct = 0.04,
-  textStartDelayPct = 0.05,
-  sliderDurPct = 0.45,
+  lineDurPct = 0.25,        // 25% per line - completes by ~50% for typical 3-5 lines
+  lineStaggerPct = 0.05,    // 5% stagger between lines
+  textStartDelayPct = 0.05, // 5% initial delay
+  sliderDurPct = 0.45,      // 45% for slider (starts at ~50%, ends at ~95%)
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -324,94 +324,4 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      opacity: lineOpacity,
-                      transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale})`,
-                      transformOrigin: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: baseFontSize,
-                        fontWeight: 700,
-                        color: DARK_TEXT,
-                        fontFamily: "system-ui, sans-serif",
-                        lineHeight: 1.4,
-                        letterSpacing: -1,
-                        textAlign: "center",
-                      }}
-                    >
-                      {line}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
-            <div
-              style={{
-                position: "absolute",
-                top: getShimmerTop(shimmerStart),
-                left: 0,
-                width: "100%",
-                height: "18%",
-                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-                opacity: getShimmerOpacity(shimmerStart),
-                borderRadius: cardBorderRadius,
-                pointerEvents: "none",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// Test composition for isolated preview/render
-export const PlainTextTestComposition: React.FC = () => (
-  <Composition
-    id="PlainTextTest"
-    component={PlainText}
-    durationInFrames={120}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      text: "The gamble works while AI chips are scarce",
-      durationInFrames: 120,
-    }}
-  />
-);
-
-// Test with longer text
-export const PlainTextLongTest: React.FC = () => (
-  <Composition
-    id="PlainTextLongTest"
-    component={PlainText}
-    durationInFrames={180}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      text: "People who are really serious about software should make their own hardware",
-      durationInFrames: 180,
-    }}
-  />
-);
-
-// Test with short punchy text
-export const PlainTextShortTest: React.FC = () => (
-  <Composition
-    id="PlainTextShortTest"
-    component={PlainText}
-    durationInFrames={90}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      text: "The future is already here",
-      durationInFrames: 90,
-    }}
-  />
-);
+                      opacity: lineOpacity

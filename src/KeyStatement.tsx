@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight } from "@remotion/rough-notation";
 
 interface KeyStatementProps {
   text: string;
@@ -456,9 +457,17 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                     ? 3 * Math.sin(frame * 0.08 + i) 
                     : 0;
 
-                  return (
+                  // Rough-notation highlight progress - animates in with the word
+                  const highlightProgress = isEmphasized 
+                    ? interpolate(frame, [wordStartFrame, wordEndFrame + 5], [0, 1], {
+                        easing: easeOutExpo,
+                        extrapolateLeft: "clamp",
+                        extrapolateRight: "clamp",
+                      })
+                    : 1;
+
+                  const wordContent = (
                     <span
-                      key={i}
                       style={{
                         display: "inline-block",
                         opacity: wordOpacity,
@@ -477,6 +486,25 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                       {word}{i < totalWordsCount - 1 ? " " : ""}
                     </span>
                   );
+
+                  // Wrap emphasized words with Highlight from rough-notation
+                  if (isEmphasized) {
+                    return (
+                      <Highlight
+                        key={i}
+                        color="rgba(232, 108, 0, 0.25)"
+                        strokeWidth={3}
+                        padding={6}
+                        cornerRadius={8}
+                        progress={highlightProgress}
+                        animationDuration={0} // We control progress manually
+                      >
+                        {wordContent}
+                      </Highlight>
+                    );
+                  }
+
+                  return <span key={i}>{wordContent}</span>;
                 })}
               </div>
 

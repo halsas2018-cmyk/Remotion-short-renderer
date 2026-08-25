@@ -387,16 +387,21 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
                         "startFrame": start_frame,
                         "endFrame": end_frame,
                         "durationFrames": end_frame - start_frame,
-                        "wordCount": len(current_sentence)
                     })
             current_sentence = []
     
-    # Story facts for metadata
+    # Limit sentences in prompt to avoid token bloat
+    max_sentences_in_prompt = 20
+    if len(sentences) > max_sentences_in_prompt:
+        sentences = sentences[:max_sentences_in_prompt]
+        sentences.append({"text": "... (truncated)", "startFrame": 0, "endFrame": 0, "durationFrames": 0})
+    
+    # Story facts for metadata - limit size
     research = story.get("research", {}) if isinstance(story.get("research"), dict) else {}
-    key_numbers = research.get("key_numbers", "")
-    key_quotes = research.get("key_quotes", [])
-    locations = research.get("locations", [])
-    entities = research.get("entities", [])
+    key_numbers = research.get("key_numbers", "")[:500]
+    key_quotes = research.get("key_quotes", [])[:3]
+    locations = research.get("locations", [])[:5]
+    entities = research.get("entities", [])[:10]
     
     prompt = f"""You are converting a narrated script into structured "beats" for a motion-graphics video. Each beat maps to a specific React component type with exact frame boundaries.
 
@@ -410,7 +415,7 @@ WORD-LEVEL TIMING (30fps):
 Total words: {len(word_timestamps)}
 Total duration: {frames_to_seconds(seconds_to_frames(word_timestamps[-1]["end"])):.1f}s / {seconds_to_frames(word_timestamps[-1]["end"])} frames
 
-Sentence breakdown with frame boundaries:
+Sentence breakdown with frame boundaries (use these EXACT frames):
 {json.dumps(sentences, indent=2)}
 
 STORY FACTS (use for metadata, do not invent):
@@ -472,13 +477,13 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         {"role": "user", "content": prompt}
     ]
     
-    # Try with JSON mode if supported
+    # Try with JSON mode if supported - use lower max_tokens to avoid truncation
     try:
         response = llm_client.call_llm(
             messages=messages,
             model_key=model_key,
             temperature=0.2,
-            max_tokens=4096,
+            max_tokens=2048,  # Reduced from 4096 to avoid token limit errors
         )
     except Exception as e:
         print(f"  ⚠ LLM call failed: {e}")

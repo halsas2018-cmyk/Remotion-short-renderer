@@ -155,6 +155,17 @@ def _log_generated_story(base_outdir: Path, story: dict, model_key: str, project
     _save_dedupe_log(base_outdir, log)
 
 
+def _serialize_story(story: dict) -> dict:
+    """Convert story dict to JSON-serializable format (datetime -> ISO string)."""
+    serialized = {}
+    for k, v in story.items():
+        if isinstance(v, datetime):
+            serialized[k] = v.isoformat()
+        else:
+            serialized[k] = v
+    return serialized
+
+
 def check_prerequisites(model_key: str = llm_client.DEFAULT_MODEL_KEY):
     """Check API key and critical dependencies before starting.
 
@@ -212,8 +223,8 @@ def save_project(
     """
     project_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save story + script metadata
-    (project_dir / "story.json").write_text(json.dumps(story, indent=2), encoding="utf-8")
+    # Save story + script metadata (serialize datetime objects)
+    (project_dir / "story.json").write_text(json.dumps(_serialize_story(story), indent=2), encoding="utf-8")
     (project_dir / "script.txt").write_text(script, encoding="utf-8")
     (project_dir / "model.txt").write_text(f"{model_key}\n{rank_model_key}", encoding="utf-8")
 

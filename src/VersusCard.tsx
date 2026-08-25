@@ -41,7 +41,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   sideDurPct = 0.15,
   sideStaggerPct = 0.03,
   dividerDurPct = 0.10,
-  sliderDurPct = 0.30, // Slower: 30% of duration (was 20%)
+  sliderDurPct = 0.45, // Slower: 45% of duration, finishes ~70% (was 30%)
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -50,7 +50,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE ONLY — completes by ~30%, then holds
+  // INTERNAL TIMELINE ONLY — completes by ~70%, then holds
   // No exit animation — this component only does internal anim
   // ============================================
   const sideDuration = Math.round(durationInFrames * sideDurPct);

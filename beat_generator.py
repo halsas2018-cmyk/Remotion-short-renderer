@@ -355,67 +355,31 @@ def validate_beats(beats: list[dict], word_timestamps: list[dict], script: str) 
 def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str) -> list[dict]:
     """
     Fix frame alignment by ensuring sequential continuity.
-    Recalculates end frames from word timestamps for each beat's text to maintain semantic timing.
+    Does NOT re-match text - just snaps each beat's start to previous beat's end.
+    Preserves the last beat's end frame (total duration).
     """
-    if not beats or not word_timestamps:
+    if not beats:
         return beats
-    
-    word_map = build_word_index_map(word_timestamps, script)
-    script_words = script.strip().split()
-    total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1)
     
     fixed = []
     for i, beat in enumerate(beats):
         beat_copy = beat.copy()
-        beat_text = beat.get("text", "").strip()
-        beat_words = beat_text.split()
-        
-        if not beat_words:
-            fixed.append(beat_copy)
-            continue
-        
-        # Find word range in script for this beat's text
-        try:
-            start_idx = script_words.index(beat_words[0])
-        except ValueError:
-            # Try fuzzy match
-            start_idx = -1
-            for j, sw in enumerate(script_words):
-                if sw.strip(".,!?;:\"'()[]{}").lower() == beat_words[0].strip(".,!?;:\"'()[]{}").lower():
-                    start_idx = j
-                    break
-            if start_idx == -1:
-                fixed.append(beat_copy)
-                continue
-        
-        end_idx = min(start_idx + len(beat_words), len(word_map))
-        if start_idx >= len(word_map) or end_idx > len(word_map) or start_idx >= end_idx:
-            fixed.append(beat_copy)
-            continue
-        
-        # Calculate frame boundaries from word timestamps
-        start_ts_idx = word_map[start_idx]
-        end_ts_idx = word_map[end_idx - 1] if end_idx > start_idx else start_ts_idx
-        
-        calculated_start = word_idx_to_frame(word_timestamps, start_ts_idx)
-        calculated_end = word_idx_to_end_frame(word_timestamps, end_ts_idx)
         
         if i == 0:
-            # First beat keeps its calculated start
-            beat_copy["startFrame"] = calculated_start
+            # First beat keeps its calculated start frame
+            fixed.append(beat_copy)
         else:
-            # Subsequent beats start where previous ended
-            beat_copy["startFrame"] = fixed[i - 1]["endFrame"]
-        
-        # Use calculated end frame, but ensure minimum duration
-        beat_copy["endFrame"] = calculated_end
-        if beat_copy["endFrame"] - beat_copy["startFrame"] < MIN_BEAT_FRAMES:
-            beat_copy["endFrame"] = beat_copy["startFrame"] + MIN_BEAT_FRAMES
-        
-        beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
-        fixed.append(beat_copy)
+            # Each subsequent beat starts where previous ended
+            prev_end = fixed[i - 1]["endFrame"]
+            beat_copy["startFrame"] = prev_end
+            # Keep the calculated end frame, but ensure minimum duration
+            if beat_copy["endFrame"] - prev_end < MIN_BEAT_FRAMES:
+                beat_copy["endFrame"] = prev_end + MIN_BEAT_FRAMES
+            beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
+            fixed.append(beat_copy)
     
     # Ensure last beat ends at total duration
+    total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1) if word_timestamps else 0
     if fixed:
         fixed[-1]["endFrame"] = total_frames
         fixed[-1]["durationInFrames"] = total_frames - fixed[-1]["startFrame"]

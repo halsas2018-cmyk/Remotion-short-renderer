@@ -61,8 +61,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeDurPct = 0.15,
   afterDelayPct = 0.03,
   afterDurPct = 0.10,
-  transitionPct = 0.25,
-  transitionDurPct = 0.05,
+  transitionPct = 0.30,  // Start transition AFTER both cards are fully in (was 0.25)
+  transitionDurPct = 0.10, // Slower, more visible wipe (was 0.05)
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -71,7 +71,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE ONLY — completes by ~30%, then holds
+  // INTERNAL TIMELINE ONLY — completes by ~40%, then holds
   // No exit animation — this component only does internal anim
   // ============================================
   const beforeDuration = Math.round(durationInFrames * beforeDurPct);
@@ -106,7 +106,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
   const dividerWidth = Math.max(40, width * 0.055);
-  const cardWidth = (availableWidth - dividerWidth) / 2;
+  const cardGap = Math.max(16, width * 0.015); // Gap between cards and divider
+  const cardWidth = (availableWidth - dividerWidth - 2 * cardGap) / 2;
   const cardHeight = Math.min(600, height * 0.55);
 
   // Responsive font sizes
@@ -144,7 +145,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 0,
+          gap: cardGap, // Add gap between cards and divider
         }}
       >
         {/* BEFORE Card - elevated */}
@@ -174,6 +175,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             clipPath: frame >= transitionStart ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
+            flexShrink: 0,
           }}
           aria-label={`Before: ${beforeLabel}`}
         >
@@ -326,6 +328,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             clipPath: frame >= transitionStart ? `inset(0 ${(1 - transitionProgress) * 100}% 0 0)` : "inset(0 100% 0 0)",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
+            flexShrink: 0,
           }}
           aria-label={`After: ${afterLabel}`}
         >

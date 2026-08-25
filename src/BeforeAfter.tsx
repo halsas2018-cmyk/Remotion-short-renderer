@@ -101,6 +101,19 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const idleTimeSeconds = (frame - allAnimationsDone) / fps;
   const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
 
+  // Card slide-in complete progress (for triggering scaleX animation)
+  const beforeSlideDone = interpolate(frame, [beforeDuration, beforeDuration + 10], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const afterSlideDone = interpolate(frame, [afterStart + afterDuration, afterStart + afterDuration + 10], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // ScaleX progress for cards (starts after slide-in, uses dividerProgress timing)
+  const cardScaleXProgress = dividerProgress;
+
   // Responsive sizing based on video dimensions
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
@@ -168,6 +181,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             transform: [
               { scale: beforeProgress },
               { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
+              // Add scaleX animation (sliding from center) after slide-in completes
+              { scaleX: interpolate(beforeSlideDone, [0, 1], [0, cardScaleXProgress * idlePulse]) },
             ],
             opacity: beforeProgress,
             boxShadow: CARD_SHADOW,
@@ -319,6 +334,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             transform: [
               { scale: afterProgress },
               { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
+              // Add scaleX animation (sliding from center) after slide-in completes
+              { scaleX: interpolate(afterSlideDone, [0, 1], [0, cardScaleXProgress * idlePulse]) },
             ],
             opacity: afterProgress,
             boxShadow: CARD_SHADOW,

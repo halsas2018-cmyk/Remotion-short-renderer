@@ -372,7 +372,10 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     # Truncate script to keep prompt small
     script_words = script.strip().split()
     if len(script_words) > MAX_SCRIPT_WORDS_IN_PROMPT:
-        truncated_script = " ".join(script_words[:MAX_SCRIPT_WORDS_IN_PROMPT]) + "..."
+        script_words = script_words[:MAX_SCRIPT_WORDS_IN_PROMPT]
+        truncated_script = " ".join(script_words) + "..."
+        # Also truncate word_timestamps to match the truncated script
+        word_timestamps = word_timestamps[:MAX_SCRIPT_WORDS_IN_PROMPT]
     else:
         truncated_script = script
     
@@ -381,7 +384,7 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     current_sentence = []
     word_idx = 0
     
-    for word in script_words:
+    for word in script_words:  # Now uses truncated script_words
         current_sentence.append(word)
         word_idx += 1
         if word.endswith((".", "!", "?")):

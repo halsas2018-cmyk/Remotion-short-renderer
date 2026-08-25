@@ -12,8 +12,8 @@ interface PlainTextProps {
   text: string;
   durationInFrames?: number; // Optional override; defaults to composition duration
   // Timing percentages for internal animation only
-  wordDurPct?: number;
-  wordStaggerPct?: number;
+  lineDurPct?: number;
+  lineStaggerPct?: number;
   textStartDelayPct?: number;
   sliderDurPct?: number;
 }
@@ -33,8 +33,8 @@ const SLIDER_COLOR = "#1a1a1a";
 export const PlainText: React.FC<PlainTextProps> = ({
   text,
   durationInFrames: propsDurationInFrames,
-  wordDurPct = 0.08,
-  wordStaggerPct = 0.03,
+  lineDurPct = 0.12,
+  lineStaggerPct = 0.04,
   textStartDelayPct = 0.05,
   sliderDurPct = 0.45,
 }) => {
@@ -44,16 +44,23 @@ export const PlainText: React.FC<PlainTextProps> = ({
   // Use prop override if provided, otherwise fall back to composition duration
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
+  // Split text into words and group into lines of 4-5 words
+  const words = text.split(" ");
+  const wordsPerLine = 4;
+  const lines: string[] = [];
+  for (let i = 0; i < words.length; i += wordsPerLine) {
+    lines.push(words.slice(i, i + wordsPerLine).join(" "));
+  }
+  const totalLines = lines.length;
+
   // ============================================
   // INTERNAL TIMELINE — completes by ~50%, then holds
   // No exit animation — designed to be wrapped by SceneTransition
   // ============================================
-  const wordDuration = Math.round(durationInFrames * wordDurPct);
-  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+  const lineDuration = Math.round(durationInFrames * lineDurPct);
+  const lineStagger = Math.round(durationInFrames * lineStaggerPct);
   const textStartDelay = Math.round(durationInFrames * textStartDelayPct);
-  const words = text.split(" ");
-  const totalWords = words.length;
-  const textEndFrame = textStartDelay + (totalWords - 1) * wordStagger + wordDuration;
+  const textEndFrame = textStartDelay + (totalLines - 1) * lineStagger + lineDuration;
   const sliderStart = textEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
@@ -124,27 +131,6 @@ export const PlainText: React.FC<PlainTextProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  // Star SVG component
-  const Star = ({ size = 16, color = ACCENT_COLOR, rotation = 0, opacity = 1 }) => (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        opacity,
-        flexShrink: 0,
-        marginRight: 12,
-      }}
-    >
-      <path
-        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-        fill={color}
-      />
-    </svg>
-  );
 
   return (
     <AbsoluteFill
@@ -295,7 +281,7 @@ export const PlainText: React.FC<PlainTextProps> = ({
               }}
             />
 
-            {/* Text content with star bullets */}
+            {/* Text content - lines of 4-5 words */}
             <div
               style={{
                 position: "relative",
@@ -303,37 +289,33 @@ export const PlainText: React.FC<PlainTextProps> = ({
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
-                gap: 16,
+                alignItems: "center",
+                gap: 12,
               }}
             >
-              {words.map((word, i) => {
-                // Word entrance animation
-                const wordStartFrame = textStartDelay + i * wordStagger;
-                const wordEndFrame = wordStartFrame + wordDuration;
+              {lines.map((line, i) => {
+                // Line entrance animation
+                const lineStartFrame = textStartDelay + i * lineStagger;
+                const lineEndFrame = lineStartFrame + lineDuration;
                 
-                const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                const lineProgress = interpolate(frame, [lineStartFrame, lineEndFrame], [0, 1], {
                   easing: easeOutExpo,
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
                 
-                const wordOpacity = wordProgress;
-                const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
+                const lineOpacity = lineProgress;
+                const lineY = interpolate(lineProgress, [0, 1], [30, 0], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
-                const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                const lineScale = interpolate(lineProgress, [0, 1], [0.85, 1], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
                 
-                // Idle animation for words: subtle vertical drift
-                const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + i * 0.5) : 0;
-                
-                // Star rotation animation (idle)
-                const starRotation = isIdle ? frame * 10 + i * 30 : i * 30;
-                const starPulse = isIdle ? 1 + 0.1 * Math.sin(frame * 0.1 + i) : 1;
+                // Idle animation for lines: subtle vertical drift
+                const lineIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + i * 0.5) : 0;
 
                 return (
                   <div
@@ -341,28 +323,24 @@ export const PlainText: React.FC<PlainTextProps> = ({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      opacity: wordOpacity,
-                      transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale})`,
-                      transformOrigin: "center left",
+                      justifyContent: "center",
+                      opacity: lineOpacity,
+                      transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale})`,
+                      transformOrigin: "center",
                     }}
                   >
-                    <Star
-                      size={20}
-                      color={ACCENT_COLOR}
-                      rotation={starRotation}
-                      opacity={wordOpacity * starPulse}
-                    />
                     <span
                       style={{
                         fontSize: baseFontSize,
                         fontWeight: 700,
                         color: DARK_TEXT,
                         fontFamily: "system-ui, sans-serif",
-                        lineHeight: 1.3,
+                        lineHeight: 1.4,
                         letterSpacing: -1,
+                        textAlign: "center",
                       }}
                     >
-                      {word}
+                      {line}
                     </span>
                   </div>
                 );

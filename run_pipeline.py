@@ -332,7 +332,10 @@ def main():
     else:
         print("\nTop stories:")
         for i, s in enumerate(stories[:args.count * 2], 1):
-            print(f"  {i}. {s.get('title', 'Untitled')[:80]}")
+            score = s.get('score', 0)
+            reason = s.get('rank_reason', s.get('reason', '—'))
+            print(f"  {i}. [{score:.2f}] {s.get('title', 'Untitled')[:70]}")
+            print(f"      → {reason[:100]}")
         print()
         choice = input(f"Select stories (1-{min(len(stories), args.count * 2)}, comma-separated, or 'all'): ").strip()
         if choice.lower() == "all":

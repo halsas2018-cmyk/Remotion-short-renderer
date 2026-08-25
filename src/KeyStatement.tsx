@@ -8,8 +8,8 @@ import {
   Easing,
 } from "remotion";
 
-// Custom Highlight component - pure CSS, no refs or measurements needed
-// Creates a beautiful animated highlight effect using CSS clip-path
+// Custom Highlight component - pure CSS/SVG, no refs or measurements needed
+// Creates a beautiful animated highlight effect using CSS clip-path and SVG stroke animation
 const Highlight: React.FC<{
   children: React.ReactNode;
   color?: string;
@@ -32,13 +32,13 @@ const Highlight: React.FC<{
     return <span style={{ display: "inline" }}>{children}</span>;
   }
 
-  // Use CSS clip-path to animate the highlight reveal
-  // The highlight grows from left to right
+  // Use CSS clip-path to animate the highlight reveal (grows from left to right)
   const clipPath = `inset(0 ${100 - progress * 100}% 0 0)`;
   
-  // For the hand-drawn stroke effect, we use a pseudo-element approach via inline styles
-  // We'll render a decorative SVG behind the text that animates with stroke-dashoffset
-  
+  // Convert color to opaque stroke color
+  const strokeColor = color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb");
+  const strokeColorTransparent = color.replace(/[\d.]+\)$/, "0.6)").replace("rgba", "rgb");
+
   return (
     <span
       style={{
@@ -47,7 +47,7 @@ const Highlight: React.FC<{
         lineHeight: 1.3,
       }}
     >
-      {/* Animated highlight background */}
+      {/* Animated highlight background - CSS clip-path animation */}
       <span
         style={{
           position: "absolute",
@@ -64,7 +64,7 @@ const Highlight: React.FC<{
         }}
       />
       
-      {/* Hand-drawn stroke animation using SVG */}
+      {/* Hand-drawn stroke animation using SVG - fixed dimensions via viewBox */}
       <svg
         style={{
           position: "absolute",
@@ -76,19 +76,18 @@ const Highlight: React.FC<{
           overflow: "visible",
           zIndex: -1,
         }}
-        width="100%"
-        height="100%"
+        viewBox={`0 0 100 100`}
         preserveAspectRatio="none"
       >
         <rect
           x={strokeWidth / 2}
           y={strokeWidth / 2}
-          width={`calc(100% - ${strokeWidth}px)`}
-          height={`calc(100% - ${strokeWidth}px)`}
+          width={100 - strokeWidth}
+          height={100 - strokeWidth}
           rx={cornerRadius}
           ry={cornerRadius}
           fill="none"
-          stroke={color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb")}
+          stroke={strokeColor}
           strokeWidth={strokeWidth}
           strokeDasharray="1000"
           strokeDashoffset={1000 * (1 - progress)}
@@ -102,12 +101,12 @@ const Highlight: React.FC<{
         <rect
           x={strokeWidth / 2 + 1.5}
           y={strokeWidth / 2 + 1.5}
-          width={`calc(100% - ${strokeWidth + 3}px)`}
-          height={`calc(100% - ${strokeWidth + 3}px)`}
-          rx={cornerRadius - 1.5}
-          ry={cornerRadius - 1.5}
+          width={100 - strokeWidth - 3}
+          height={100 - strokeWidth - 3}
+          rx={Math.max(0, cornerRadius - 1.5)}
+          ry={Math.max(0, cornerRadius - 1.5)}
           fill="none"
-          stroke={color.replace(/[\d.]+\)$/, "0.6)").replace("rgba", "rgb")}
+          stroke={strokeColorTransparent}
           strokeWidth={strokeWidth * 0.5}
           strokeDasharray="1100"
           strokeDashoffset={1100 * (1 - progress) + 10}

@@ -7,6 +7,7 @@ import { IconText } from "./IconText";
 import { KeyStatement } from "./KeyStatement";
 import { KineticCaptions } from "./KineticCaptions";
 import { MapLocation } from "./MapLocation";
+import { MapLocationMapLibre } from "./MapLocationMapLibre";
 import { PlainText } from "./PlainText";
 import { ProcessFlow } from "./ProcessFlow";
 import { ProgressMeter } from "./ProgressMeter";
@@ -132,6 +133,45 @@ const RemotionRoot: React.FC = () => {
           latitude: 37.7749,
           longitude: -122.4194,
           durationInFrames: 90,
+        }}
+      />
+      <Composition
+        id="MapLocationMapLibreTest"
+        component={MapLocationMapLibre}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          locationName: "San Francisco",
+          latitude: 37.7749,
+          longitude: -122.4194,
+        }}
+      />
+      <Composition
+        id="MapLocationMapLibreTokyoTest"
+        component={MapLocationMapLibre}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          locationName: "Tokyo",
+          latitude: 35.6762,
+          longitude: 139.6503,
+        }}
+      />
+      <Composition
+        id="MapLocationMapLibreLongTest"
+        component={MapLocationMapLibre}
+        durationInFrames={180}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          locationName: "London",
+          latitude: 51.5074,
+          longitude: -0.1278,
         }}
       />
       <Composition

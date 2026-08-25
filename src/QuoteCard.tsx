@@ -143,10 +143,17 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const markFontSize = Math.max(100, width * 0.092);
 
   // Shimmer position calculation - relative to card (0-100% of card height)
+  // Only visible after shimmer start frame
   const getShimmerTop = (shimmerStartFrame: number) => {
     if (frame < shimmerStartFrame) return "-100%";
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
+
+  // Shimmer opacity - 0 before start, then follows quoteProgress
+  const getShimmerOpacity = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return quoteProgress;
   };
 
   // Slider path animation
@@ -344,7 +351,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               &mdash; {attribution}
             </div>
 
-            {/* Shimmer animation on card - properly positioned within card */}
+            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
             <div
               style={{
                 position: "absolute",
@@ -353,7 +360,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 width: "100%",
                 height: "18%",
                 background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-                opacity: quoteProgress,
+                opacity: getShimmerOpacity(quoteShimmerStart),
                 borderRadius: cardBorderRadius,
                 pointerEvents: "none",
               }}

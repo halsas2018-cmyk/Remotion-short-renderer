@@ -146,13 +146,14 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
 
-  // Container dimensions (for slider)
+  // Container dimensions (for slider) - card is circular, so container is square
   const containerWidth = size;
   const containerHeight = size;
   const sliderPadding = 24;
   const sliderWidth = containerWidth + 2 * sliderPadding;
   const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = Math.max(28, width * 0.026);
+  // Circular card - slider border radius matches the circle + padding
+  const sliderBorderRadius = size / 2 + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
@@ -180,7 +181,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the meter */}
+      {/* Slider animation - black border circling the meter with matching curved corners */}
       <div
         style={{
           position: "absolute",
@@ -192,6 +193,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           pointerEvents: "none",
           opacity: sliderProgress,
           filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+          borderRadius: sliderBorderRadius,
         }}
       >
         <svg
@@ -237,7 +239,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           alignItems: "center",
         }}
       >
-        {/* Elevated card background for the meter - dynamically sized */}
+        {/* Elevated card background for the meter - dynamically sized with curved borders */}
         <div
           style={{
             position: "relative",

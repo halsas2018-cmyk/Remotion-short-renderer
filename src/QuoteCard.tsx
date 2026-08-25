@@ -112,7 +112,9 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const availableWidth = width - 2 * padding;
   const cardWidth = Math.min(availableWidth, 800);
   const cardPadding = Math.max(48, width * 0.044);
-  const cardBorderRadius = 24;
+  
+  // Prominent curved borders - pill-style for modern look
+  const cardBorderRadius = Math.max(40, width * 0.037); // Increased from 24 for more curve
 
   // Calculate card height based on content
   const quoteFontSize = Math.max(48, width * 0.044);
@@ -133,6 +135,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const sliderPadding = 24;
   const sliderWidth = cardOuterWidth + 2 * sliderPadding;
   const sliderHeight = cardOuterHeight + 2 * sliderPadding;
+  // Slider border radius matches card's curved border + padding
   const sliderBorderRadius = cardBorderRadius + cardPadding + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
@@ -181,7 +184,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
             height: cardOuterHeight,
           }}
         >
-          {/* Slider animation - black border circling the card (positioned relative to card container) */}
+          {/* Slider animation - black border circling the card with matching curved corners */}
           <div
             style={{
               position: "absolute",
@@ -224,7 +227,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
             </svg>
           </div>
 
-          {/* Elevated card for the quote - dynamic height */}
+          {/* Elevated card for the quote - dynamic height with prominent curved borders */}
           <div
             style={{
               position: "absolute",
@@ -245,7 +248,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               textAlign: "center",
             }}
           >
-            {/* Accent top bar */}
+            {/* Accent top bar with matching curved corners */}
             <div
               style={{
                 position: "absolute",

@@ -109,12 +109,15 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   const sliderPadding = 24;
   const sliderWidth = containerWidth + 2 * sliderPadding;
   const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = Math.max(28, width * 0.026);
+  
+  // Prominent curved borders for step boxes
+  const cardBorderRadius = Math.max(32, width * 0.03); // Increased for more pronounced curves
+  // Slider border radius matches card curves + padding
+  const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
   const stepFontSize = Math.max(28, width * 0.026); // Important supporting text: 44px minimum
-  const cardBorderRadius = Math.max(20, width * 0.0185);
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -136,7 +139,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the flow */}
+      {/* Slider animation - black border circling the flow with matching curved corners */}
       <div
         style={{
           position: "absolute",
@@ -148,6 +151,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
           pointerEvents: "none",
           opacity: sliderProgress,
           filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+          borderRadius: sliderBorderRadius,
         }}
       >
         <svg
@@ -202,7 +206,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
 
           return (
             <React.Fragment key={i}>
-              {/* Step box - elevated card */}
+              {/* Step box - elevated card with prominent curved borders */}
               <div
                 style={{
                   position: "absolute",
@@ -241,7 +245,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                   {step}
                 </span>
 
-                {/* Accent top bar */}
+                {/* Accent top bar with matching curved corners */}
                 <div
                   style={{
                     position: "absolute",
@@ -255,7 +259,7 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
                 />
               </div>
 
-              {/* Step shimmer */}
+              {/* Step shimmer with matching curved corners */}
               <div
                 style={{
                   position: "absolute",

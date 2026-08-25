@@ -102,8 +102,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Responsive sizing
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
-  const markerRadius = Math.max(18, width * 0.0165);
-  const labelOffset = Math.max(80, height * 0.04);
+  
+  // Larger marker radius to accommodate year text (4 digits need more space)
+  const markerRadius = Math.max(36, width * 0.033); // Increased from 18/0.0165
+  const labelOffset = Math.max(100, height * 0.05); // Increased offset for larger markers
   const labelCardHeight = 56;
   const cardHeight = Math.min(520, height * 0.48);
 
@@ -117,7 +119,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
-  const markerFontSize = Math.max(20, width * 0.0185);
+  // Marker font size scales with marker radius for proper fit
+  const markerFontSize = Math.max(24, markerRadius * 0.55); // ~55% of radius for good fit
   const yearFontSize = Math.max(32, width * 0.03);
   const labelFontSize = Math.max(28, width * 0.026);
   const cardBorderRadius = Math.max(16, width * 0.015);
@@ -290,7 +293,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   height: markerRadius * 2,
                   borderRadius: "50%",
                   backgroundColor: MARKER_BG,
-                  border: `3px solid ${MARKER_BORDER}`,
+                  border: `4px solid ${MARKER_BORDER}`, // Thicker border for prominence
                   transformOrigin: "center",
                   transform: [
                     { scale: markerProg * (isIdle ? idlePulse : 1) },
@@ -300,7 +303,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   justifyContent: "center",
                   alignItems: "center",
                   zIndex: 10,
-                  boxShadow: CARD_SHADOW,
+                  boxShadow: `0 8px 32px rgba(232, 108, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1)`,
                   willChange: "transform, opacity",
                 }}
               >
@@ -310,13 +313,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                     fontWeight: 800,
                     color: ACCENT_COLOR,
                     fontFamily: "system-ui, sans-serif",
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {event.marker}
                 </span>
               </div>
 
-              {/* Marker shimmer */}
+              {/* Marker shimmer - subtle radial glow */}
               <div
                 style={{
                   position: "absolute",
@@ -325,7 +330,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   width: markerRadius * 2,
                   height: markerRadius * 2,
                   borderRadius: "50%",
-                  background: `radial-gradient(circle at center, transparent 40%, ${ACCENT_COLOR}33 70%)`,
+                  background: `radial-gradient(circle at center, transparent 50%, ${ACCENT_COLOR}22 80%)`,
                   opacity: markerProg,
                   pointerEvents: "none",
                 }}
@@ -337,7 +342,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     left: 0,
                     width: "100%",
                     height: "30%",
-                    background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
+                    background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
                     borderRadius: "50%",
                   }}
                 />

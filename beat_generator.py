@@ -522,7 +522,7 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
                  pre_chunked_beats: list[dict] = None) -> str:
     """Build the LLM prompt with all necessary context, keeping it under token limits."""
     
-    # Truncate script to keep prompt small
+    # Truncate script to keep prompt small (only used when NO pre-chunked beats)
     script_words = script.strip().split()
     if len(script_words) > MAX_SCRIPT_WORDS_IN_PROMPT:
         script_words = script_words[:MAX_SCRIPT_WORDS_IN_PROMPT]
@@ -573,22 +573,64 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
     
-    # Build pre-chunked beats section for LLM
-    pre_chunked_section = ""
     if pre_chunked_beats:
+        # ============================================================
+        # MODE A: Pre-chunked beats provided — LLM ONLY assigns types + metadata
+        # ============================================================
+        # Build a compact list of chunks for the LLM
+        chunks_for_llm = []
+        for i, chunk in enumerate(pre_chunked_beats):
+            chunks_for_llm.append({
+                "index": i,
+                "text": chunk["text"],
+                "startWord": chunk["startWord"],
+                "endWord": chunk["endWord"],
+            })
+        
         pre_chunked_section = f"""
-PRE-CHUNKED BEATS (from script generator — DO NOT re-chunk, only assign types + metadata):
-{json.dumps(pre_chunked_beats, indent=2)}
+PRE-CHUNKED BEATS (from script generator — YOU MUST USE THESE EXACT CHUNKS):
+{json.dumps(chunks_for_llm, indent=2)}
 
-RULES FOR PRE-CHUNKED BEATS:
-- Each entry has: text, startWord, endWord (0-based indices into script word array)
-- You MUST use these exact chunks — do NOT merge, split, or re-chunk
-- For each chunk, pick the BEST beat type and fill required metadata fields
-- Output the SAME number of beats as pre-chunked entries
-- Keep the same startWord/endWord in your output
+CRITICAL RULES:
+- You are given {len(pre_chunked_beats)} EXACT text chunks with their word indices.
+- DO NOT re-chunk, merge, split, or rewrite the text.
+- DO NOT output startWord/endWord — they are already fixed above.
+- For EACH chunk, pick the BEST beat type and fill ONLY the required metadata fields.
+- Output JSON with the SAME NUMBER of entries, in the SAME ORDER.
+- Each output entry must have: "type" + the metadata fields for that type (see BEAT TYPES below).
+- VARY the types — don't make everything "key_statement". Use versus, icon_text, map_location, quote_card, progress_meter, timeline, process_flow, before_after where appropriate.
+- NEVER invent facts, numbers, coordinates, or quotes. Only use what's in the chunk text or story facts below.
 """
+        prompt = f"""Assign a visual component type + metadata to each pre-chunked script segment.
+
+SOURCE:
+Title: {story.get("title", "")}
+Full script (for context): {truncated_script}
+
+FACTS (metadata only, don't invent):
+Numbers: {key_numbers}
+Quotes: {json.dumps(key_quotes)}
+Locations: {json.dumps(locations)}
+Entities: {json.dumps(entities)}
+
+BEAT TYPES + REQUIRED METADATA FIELDS:
+{json.dumps(beat_types_compact)}
+{pre_chunked_section}
+
+OUTPUT (JSON only — array of objects, one per chunk, in order):
+[
+  {{"type": "key_statement", "emphasisWords": ["word1", "word2"]}},
+  {{"type": "versus", "left": "...", "right": "..."}},
+  ...
+]
+"""
+        return prompt
     
-    prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component.
+    else:
+        # ============================================================
+        # MODE B: No pre-chunked beats — LLM does full chunking (legacy)
+        # ============================================================
+        prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component.
 
 IMPORTANT: Do NOT output frame numbers. Do NOT calculate timing. Only output beat type, text, semantic metadata, and WORD INDICES (startWord/endWord).
 
@@ -609,10 +651,9 @@ Entities: {json.dumps(entities)}
 
 BEAT TYPES:
 {json.dumps(beat_types_compact)}
-{pre_chunked_section}
 
 RULES:
-1. One beat per pre-chunked entry (if provided) or per sentence/key idea.
+1. One beat per sentence/key idea. Target ~10 words per beat.
 2. Pick most specific type. Default: "key_statement".
 3. Never invent facts/numbers/coordinates/quotes.
 4. map_location: only real named locations. Use centroid coords.
@@ -626,7 +667,7 @@ RULES:
 
 OUTPUT (JSON only):
 {{"beats": [{{"type": "key_statement", "text": "...", "emphasisWords": ["..."], "startWord": 0, "endWord": 8}}]}}"""
-    return prompt
+        return prompt
 
 
 # ---------------------------------------------------------------------------
@@ -641,7 +682,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     # Use llm_client to call the model
     messages = [
-        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. Do NOT output frame numbers. Only output beat type, text, semantic metadata, and word indices (startWord/endWord)."},
+        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. When pre-chunked beats are provided, output ONLY type + metadata for each chunk — no text, no word indices. When no pre-chunked beats, output full beat objects with text and word indices."},
         {"role": "user", "content": prompt}
     ]
     
@@ -671,9 +712,75 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     except json.JSONDecodeError as e:
         raise ValueError(f"LLM returned invalid JSON: {e}\nResponse: {response[:500]}")
     
-    beats = data.get("beats", [])
-    if not beats:
-        raise ValueError("No beats generated")
+    if pre_chunked_beats:
+        # MODE A: LLM returned array of {type, metadata...} — merge with pre-chunked beats
+        llm_assignments = data if isinstance(data, list) else data.get("beats", [])
+        if not llm_assignments:
+            raise ValueError("No beat assignments generated")
+        
+        if len(llm_assignments) != len(pre_chunked_beats):
+            print(f"  ⚠ LLM returned {len(llm_assignments)} assignments but expected {len(pre_chunked_beats)}. Truncating/padding.")
+            # Pad or truncate to match
+            if len(llm_assignments) < len(pre_chunked_beats):
+                # Pad with default key_statement
+                while len(llm_assignments) < len(pre_chunked_beats):
+                    llm_assignments.append({"type": "key_statement", "emphasisWords": []})
+            else:
+                llm_assignments = llm_assignments[:len(pre_chunked_beats)]
+        
+        # Merge: pre-chunked beat text + word indices + LLM type + metadata
+        beats = []
+        for i, (chunk, assignment) in enumerate(zip(pre_chunked_beats, llm_assignments)):
+            beat_type = assignment.get("type", "key_statement")
+            if beat_type not in BEAT_TYPES:
+                beat_type = "key_statement"
+            
+            beat = {
+                "type": beat_type,
+                "text": chunk["text"],
+                "startWord": chunk["startWord"],
+                "endWord": chunk["endWord"],
+            }
+            # Add type-specific metadata from LLM assignment
+            for field in BEAT_TYPES[beat_type]:
+                if field in assignment:
+                    beat[field] = assignment[field]
+                else:
+                    # Provide sensible defaults for required fields
+                    if field == "emphasisWords":
+                        beat[field] = []
+                    elif field == "icon":
+                        beat[field] = "📊"
+                    elif field in ("left", "right"):
+                        beat[field] = ""
+                    elif field == "locationName":
+                        beat[field] = "Unknown"
+                    elif field in ("latitude", "longitude"):
+                        beat[field] = 0.0
+                    elif field == "quote":
+                        beat[field] = ""
+                    elif field == "attribution":
+                        beat[field] = ""
+                    elif field == "value":
+                        beat[field] = 0
+                    elif field == "maxValue":
+                        beat[field] = 100
+                    elif field == "label":
+                        beat[field] = ""
+                    elif field == "events":
+                        beat[field] = []
+                    elif field == "steps":
+                        beat[field] = []
+                    elif field in ("beforeLabel", "afterLabel"):
+                        beat[field] = ""
+            
+            beats.append(beat)
+    
+    else:
+        # MODE B: Legacy — LLM returned full beat objects
+        beats = data.get("beats", [])
+        if not beats:
+            raise ValueError("No beats generated")
     
     # DEBUG: Print raw LLM output before any processing
     print("\n=== RAW LLM BEATS ===")
@@ -687,7 +794,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             continue
         if beat["type"] not in BEAT_TYPES:
             continue
-        # Ensure startWord/endWord exist
+        # Ensure startWord/endWord exist (for MODE B) or will be added from pre-chunked (MODE A)
         if "startWord" not in beat or "endWord" not in beat:
             continue
         valid_beats.append(beat)

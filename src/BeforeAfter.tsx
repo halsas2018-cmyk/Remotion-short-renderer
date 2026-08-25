@@ -12,19 +12,15 @@ interface BeforeAfterProps {
   beforeLabel: string;
   afterLabel: string;
   durationInFrames: number;
-  exitDirection?: "up" | "down" | "left" | "right";
-  // Exposed timing percentages (optional)
+  // Timing percentages for internal animation only
   beforeDurPct?: number;
   afterDelayPct?: number;
   afterDurPct?: number;
   transitionPct?: number;
   transitionDurPct?: number;
-  // New: enable component-level exit animation (default false for SceneTransition compatibility)
-  enableExitAnimation?: boolean;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const easeIn = Easing.bezier(0.7, 0, 0.84, 0);
 const ACCENT_COLOR = "#e86c00";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#4a4a4a";
@@ -49,14 +45,12 @@ const DIVIDER_COLOR = ACCENT_COLOR;
 const calculateHeadlineFontSize = (text: string, cardHeight: number, cardPadding: number, width: number): number => {
   const baseFontSize = Math.max(84, width * 0.078);
   const charCount = text.length;
-  // Estimate lines needed: roughly 1 line per 25-30 chars at large sizes
   const estimatedLines = Math.max(1, Math.ceil(charCount / 28));
   const lineHeight = 1.2;
-  const tagHeight = 40; // BEFORE/AFTER tag approximate height
-  const bottomTagsHeight = 60; // Decorative tags approximate height
-  const availableHeight = cardHeight - 2 * cardPadding - tagHeight - bottomTagsHeight - 40; // 40px marginTop on bottom tags
+  const tagHeight = 40;
+  const bottomTagsHeight = 60;
+  const availableHeight = cardHeight - 2 * cardPadding - tagHeight - bottomTagsHeight - 40;
   const maxFontSizeForHeight = availableHeight / (estimatedLines * lineHeight);
-  // Clamp between reasonable bounds
   return Math.min(baseFontSize, Math.max(48, maxFontSizeForHeight));
 };
 
@@ -64,36 +58,24 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
   afterLabel,
   durationInFrames,
-  exitDirection = "up",
-  beforeDurPct = 0.15,      // Faster: 15% (was 25%)
-  afterDelayPct = 0.03,     // Faster stagger: 3% (was 5%)
-  afterDurPct = 0.10,       // Faster: 10% (was 20%)
-  transitionPct = 0.25,     // Transition starts at 25% (was 50%)
-  transitionDurPct = 0.05,  // Faster transition: 5% (was 15%)
-  enableExitAnimation = false, // Default false - SceneTransition handles exit
+  beforeDurPct = 0.15,
+  afterDelayPct = 0.03,
+  afterDurPct = 0.10,
+  transitionPct = 0.25,
+  transitionDurPct = 0.05,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
 
   // ============================================
-  // INTERNAL TIMELINE — completes by ~30%
-  // Then holds until 80%, then exits in last 20% (if enabled)
+  // INTERNAL TIMELINE ONLY — completes by ~30%, then holds
+  // No exit animation, no SceneTransition — this component only does internal anim
   // ============================================
   const beforeDuration = Math.round(durationInFrames * beforeDurPct);
   const afterStart = beforeDuration + Math.round(durationInFrames * afterDelayPct);
   const afterDuration = Math.round(durationInFrames * afterDurPct);
   const transitionStart = Math.round(durationInFrames * transitionPct);
   const transitionDuration = Math.round(durationInFrames * transitionDurPct);
-  
-  // Internal animation completes by ~30%
-  const internalEndFrame = transitionStart + transitionDuration;
-  
-  // Hold until 80%
-  const holdEndFrame = Math.round(durationInFrames * 0.80);
-  
-  // Exit animation in last 20%
-  const exitStartFrame = holdEndFrame;
-  const exitDuration = durationInFrames - exitStartFrame;
 
   // Progress (0–1 each) — internal animation
   const beforeProgress = interpolate(frame, [0, beforeDuration], [0, 1], {
@@ -112,28 +94,19 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // Exit progress (0-1 during last 20%)
-  const exitProgress = enableExitAnimation
-    ? interpolate(frame, [exitStartFrame, durationInFrames], [0, 1], {
-        easing: easeIn,
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      })
-    : 0;
-
-  // Idle pulse (after transition, during hold) — time-based, not frame-based
-  const isIdle = frame > transitionStart + transitionDuration && frame < exitStartFrame;
+  // Idle pulse (after transition) — time-based, not frame-based
+  const isIdle = frame > transitionStart + transitionDuration;
   const idleTimeSeconds = (frame - (transitionStart + transitionDuration)) / fps;
   const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
 
   // Responsive sizing based on video dimensions
-  const padding = Math.max(80, width * 0.11); // ≥80px safe area, ~11% of width
+  const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
-  const dividerWidth = Math.max(40, width * 0.055); // ~5.5% of width, min 40px
+  const dividerWidth = Math.max(40, width * 0.055);
   const cardWidth = (availableWidth - dividerWidth) / 2;
-  const cardHeight = Math.min(600, height * 0.55); // Cap at 600px, max 55% of height
+  const cardHeight = Math.min(600, height * 0.55);
 
-  // Responsive font sizes (video-layout.md guidelines)
+  // Responsive font sizes
   const tagFontSize = Math.max(14, width * 0.013);
   const tagPaddingX = Math.max(12, width * 0.011);
   const tagPaddingY = Math.max(6, height * 0.003);
@@ -147,42 +120,6 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   // Calculate headline font sizes per label to fit in card
   const beforeHeadlineFontSize = calculateHeadlineFontSize(beforeLabel, cardHeight, cardPadding, width);
   const afterHeadlineFontSize = calculateHeadlineFontSize(afterLabel, cardHeight, cardPadding, width);
-
-  // Exit transform based on direction
-  const getExitTransform = (progress: number) => {
-    const distance = 100;
-    switch (exitDirection) {
-      case "up":
-        return [{ translateY: -distance * progress }, { scale: 1 - 0.1 * progress }];
-      case "down":
-        return [{ translateY: distance * progress }, { scale: 1 - 0.1 * progress }];
-      case "left":
-        return [{ translateX: -distance * progress }, { scale: 1 - 0.1 * progress }];
-      case "right":
-        return [{ translateX: distance * progress }, { scale: 1 - 0.1 * progress }];
-    }
-  };
-
-  // Combined transform for cards (entrance + exit)
-  const beforeTransform = [
-    { scale: beforeProgress },
-    { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
-    ...(enableExitAnimation ? getExitTransform(exitProgress) : []),
-  ];
-  const afterTransform = [
-    { scale: afterProgress },
-    { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
-    ...(enableExitAnimation ? getExitTransform(exitProgress) : []),
-  ];
-  const dividerTransform = [
-    { scaleX: transitionProgress * idlePulse },
-    ...(enableExitAnimation ? getExitTransform(exitProgress) : []),
-  ];
-
-  // Combined opacity (entrance + exit)
-  const beforeOpacity = beforeProgress * (enableExitAnimation ? (1 - exitProgress) : 1);
-  const afterOpacity = afterProgress * (enableExitAnimation ? (1 - exitProgress) : 1);
-  const dividerOpacity = (transitionProgress > 0 ? 1 : 0) * (enableExitAnimation ? (1 - exitProgress) : 1);
 
   return (
     <AbsoluteFill
@@ -225,8 +162,11 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             position: "relative",
             overflow: "hidden",
             transformOrigin: "center",
-            transform: beforeTransform,
-            opacity: beforeOpacity,
+            transform: [
+              { scale: beforeProgress },
+              { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
+            ],
+            opacity: beforeProgress,
             clipPath: transitionProgress > 0 ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
@@ -317,8 +257,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             backgroundColor: CARD_BG,
             border: `2px solid ${DIVIDER_COLOR}`,
             position: "relative",
-            opacity: dividerOpacity,
-            transform: dividerTransform,
+            opacity: transitionProgress > 0 ? 1 : 0,
+            transform: [{ scaleX: transitionProgress * idlePulse }],
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -373,8 +313,11 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             position: "relative",
             overflow: "hidden",
             transformOrigin: "center",
-            transform: afterTransform,
-            opacity: afterOpacity,
+            transform: [
+              { scale: afterProgress },
+              { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
+            ],
+            opacity: afterProgress,
             clipPath: transitionProgress > 0 ? `inset(0 0 0 ${transitionProgress * 100}%)` : "none",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
@@ -460,8 +403,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   );
 };
 
-// Test compositions for different durations to verify proportional scaling
-export const BeforeAfterTestComposition: React.FC = () => (
+// Single test composition: 90 frames at 30fps = 3 seconds
+export const BeforeAfterTest: React.FC = () => (
   <Composition
     id="BeforeAfterTest"
     component={BeforeAfter}
@@ -473,62 +416,6 @@ export const BeforeAfterTestComposition: React.FC = () => (
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
       durationInFrames: 90,
-      exitDirection: "up",
-      enableExitAnimation: true, // Enable for testing
-    }}
-  />
-);
-
-export const BeforeAfterTestShort: React.FC = () => (
-  <Composition
-    id="BeforeAfterTestShort"
-    component={BeforeAfter}
-    durationInFrames={60}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      beforeLabel: "Manual Chip Procurement",
-      afterLabel: "Automated Lease-Back Model",
-      durationInFrames: 60,
-      exitDirection: "up",
-      enableExitAnimation: true,
-    }}
-  />
-);
-
-export const BeforeAfterTestLong: React.FC = () => (
-  <Composition
-    id="BeforeAfterTestLong"
-    component={BeforeAfter}
-    durationInFrames={180}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      beforeLabel: "Manual Chip Procurement",
-      afterLabel: "Automated Lease-Back Model",
-      durationInFrames: 180,
-      exitDirection: "up",
-      enableExitAnimation: true,
-    }}
-  />
-);
-
-export const BeforeAfterTestVeryLong: React.FC = () => (
-  <Composition
-    id="BeforeAfterTestVeryLong"
-    component={BeforeAfter}
-    durationInFrames={300}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      beforeLabel: "Manual Chip Procurement",
-      afterLabel: "Automated Lease-Back Model",
-      durationInFrames: 300,
-      exitDirection: "up",
-      enableExitAnimation: true,
     }}
   />
 );

@@ -22,8 +22,10 @@ interface KeyStatementProps {
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const easeOutBack = Easing.bezier(0.34, 1.56, 0.64, 1);
 const ACCENT_COLOR = "#e86c00";
 const ACCENT_LIGHT = "#fff4ed";
+const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
 const LIGHT_TEXT = "#a3a3a3";
@@ -55,7 +57,8 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const wordDuration = Math.round(durationInFrames * wordDurPct);
   const wordStagger = Math.round(durationInFrames * wordStaggerPct);
   const textStartDelay = Math.round(durationInFrames * textStartDelayPct);
-  const totalWords = text.split(" ").length;
+  const words = text.split(" ");
+  const totalWords = words.length;
   const textEndFrame = textStartDelay + (totalWords - 1) * wordStagger + wordDuration;
   const sliderStart = textEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
@@ -71,7 +74,6 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const shimmerStart = textEndFrame;
 
   // Split text into words and mark emphasis
-  const words = text.split(" ");
   const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
   const totalWordsCount = words.length;
 
@@ -137,6 +139,66 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  // Decorative accent elements
+  const AccentDot = ({ 
+    size = 8, 
+    color = ACCENT_COLOR, 
+    baseDelay = 0, 
+    opacity = 1,
+    animate = false 
+  }) => {
+    const pulse = animate && isIdle 
+      ? 1 + 0.3 * Math.sin(frame * 0.2 + baseDelay) 
+      : 1;
+    const float = animate && isIdle 
+      ? 4 * Math.sin(frame * 0.15 + baseDelay) 
+      : 0;
+    
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          backgroundColor: color,
+          opacity: opacity * pulse,
+          transform: `translateY(${float}px)`,
+          flexShrink: 0,
+          filter: animate && isIdle ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1 + baseDelay)}px ${ACCENT_GLOW})` : "none",
+        }}
+      />
+    );
+  };
+
+  // Decorative line separator
+  const DecorativeLine = ({ 
+    width = 60, 
+    height = 2, 
+    color = ACCENT_COLOR, 
+    opacity = 1,
+    animate = false 
+  }) => {
+    const pulse = animate && isIdle 
+      ? 0.6 + 0.2 * Math.sin(frame * 0.08) 
+      : opacity;
+    const glow = animate && isIdle 
+      ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1)}px ${ACCENT_GLOW})` 
+      : "none";
+    
+    return (
+      <div
+        style={{
+          width,
+          height,
+          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+          borderRadius: height / 2,
+          opacity: pulse,
+          filter: glow,
+        }}
+      />
+    );
+  };
 
   return (
     <AbsoluteFill
@@ -269,6 +331,20 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               }}
             />
 
+            {/* Subtle radial gradient overlay for depth */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
+
             {/* Glow behind card */}
             <div
               style={{
@@ -287,12 +363,33 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               }}
             />
 
+            {/* Decorative accent dots at top */}
+            <div
+              style={{
+                position: "absolute",
+                top: cardPadding - 10,
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                gap: 8,
+                pointerEvents: "none",
+              }}
+            >
+              <AccentDot size={6} baseDelay={0} animate={true} />
+              <AccentDot size={8} baseDelay={0.5} animate={true} />
+              <AccentDot size={6} baseDelay={1} animate={true} />
+            </div>
+
             {/* Text card */}
             <div
               style={{
                 position: "relative",
                 zIndex: 1,
                 width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
               }}
             >
               <div
@@ -325,11 +422,15 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                   });
                   
                   const wordOpacity = wordProgress;
-                  const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
+                  const wordY = interpolate(wordProgress, [0, 1], [40, 0], {
                     extrapolateLeft: "clamp",
                     extrapolateRight: "clamp",
                   });
-                  const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                  const wordScale = interpolate(wordProgress, [0, 1], [0.7, 1], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+                  const wordRotation = interpolate(wordProgress, [0, 1], [-5, 0], {
                     extrapolateLeft: "clamp",
                     extrapolateRight: "clamp",
                   });
@@ -340,12 +441,20 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                     : 0;
                   
                   // Idle animation for emphasized words: subtle scale pulse
-                  const idlePulse = isIdle && isEmphasized ? 1 + 0.03 * Math.sin(frame * 0.1 + i) : 1;
+                  const idlePulse = isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
                   
                   // Base font size - emphasized words are larger
                   const wordFontSize = isEmphasized ? emphasisFontSize : baseFontSize;
                   const wordFontWeight = isEmphasized ? 900 : 700;
                   const wordColor = isEmphasized ? ACCENT_COLOR : DARK_TEXT;
+
+                  // Emphasized word idle animations
+                  const emphasisGlow = isIdle && isEmphasized 
+                    ? `0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW}, 0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW}` 
+                    : "none";
+                  const emphasisFloat = isIdle && isEmphasized 
+                    ? 3 * Math.sin(frame * 0.08 + i) 
+                    : 0;
 
                   return (
                     <span
@@ -353,7 +462,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                       style={{
                         display: "inline-block",
                         opacity: wordOpacity,
-                        transform: `translateY(${wordY + bounceOffset}px) scale(${wordScale * idlePulse})`,
+                        transform: `translateY(${wordY + bounceOffset + emphasisFloat}px) scale(${wordScale * idlePulse}) rotate(${wordRotation}deg)`,
                         transformOrigin: "center bottom",
                         fontSize: wordFontSize,
                         fontWeight: wordFontWeight,
@@ -361,12 +470,37 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                         fontFamily: "system-ui, sans-serif",
                         lineHeight: 1.3,
                         margin: "0 0.04em",
+                        textShadow: emphasisGlow,
+                        willChange: "transform, opacity, text-shadow",
                       }}
                     >
                       {word}{i < totalWordsCount - 1 ? " " : ""}
                     </span>
                   );
                 })}
+              </div>
+
+              {/* Decorative separator line */}
+              <DecorativeLine 
+                width={80} 
+                height={3} 
+                color={ACCENT_COLOR} 
+                opacity={isIdle ? 0.7 : 0.4} 
+                animate={true} 
+              />
+
+              {/* Accent dots below text */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginTop: 8,
+                  pointerEvents: "none",
+                }}
+              >
+                <AccentDot size={5} baseDelay={0.2} animate={true} />
+                <AccentDot size={7} baseDelay={0.7} animate={true} />
+                <AccentDot size={5} baseDelay={1.2} animate={true} />
               </div>
             </div>
 

@@ -86,6 +86,7 @@ output/
 | Component | Status | Beat Type | Notes |
 |-----------|--------|-----------|-------|
 | `BeforeAfter` | ✅ **COMPLETE** | `before_after` | Entrance animations, shimmer effects, divider, slider border |
+| `VersusCard` | ✅ **COMPLETE** | `versus_card` | Dual cards with items, VS divider, shimmer, slider border |
 | `ChartCounter` | ⏳ TODO | `chart_counter` | |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
@@ -98,7 +99,6 @@ output/
 | `ProgressMeter` | ⏳ TODO | `progress_meter` | |
 | `QuoteCard` | ⏳ TODO | `quote_card` | |
 | `Timeline` | ⏳ TODO | `timeline` | |
-| `VersusCard` | ⏳ TODO | `versus_card` | |
 | `PersistentBackground` | ⏳ TODO | — | Global background |
 | `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
 
@@ -118,6 +118,25 @@ output/
 - **No exit animation** — designed to be wrapped by `SceneTransition`
 - **Test composition**: `BeforeAfterTest` (90 frames, 30fps, 1080×1920)
 
+### VersusCard Component Details (`src/VersusCard.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: Left card slides in from left with scale + subtle rotation
+  - 3–18%: Right card slides in from right with scale + subtle rotation (3% stagger)
+  - 15–25%: Center "VS" divider scales in with pulse ring
+  - 25–70%: Black slider border draws around entire card group (SVG stroke-dashoffset, 45% duration)
+  - 70%+: Hold (idle pulse on divider, shimmer loops on cards)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on both cards (18% height, 25%/sec)
+  - Accent top bar on each card (gradient)
+  - Center "VS" divider with expanding ring + shimmer
+  - Black slider border with drop shadow animates drawing around card group
+  - Optional `items` array renders as bullet list with accent dots
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (label ≥36px, value ≥56px, items ≥18px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test composition**: `VersusCardTest` (120 frames, 30fps, 1080×1920)
+- **Props**: `left`/`right` objects with `label`, `value`, `items[]`
+
 ### Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -133,6 +152,7 @@ my-video/
 ├── src/
 │   ├── components/          # Beat components (BeforeAfter, KeyStatement, etc.)
 │   ├── BeforeAfter.tsx      # ✅ Complete
+│   ├── VersusCard.tsx       # ✅ Complete
 │   ├── ChartCounter.tsx
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
@@ -145,7 +165,6 @@ my-video/
 │   ├── ProgressMeter.tsx
 │   ├── QuoteCard.tsx
 │   ├── Timeline.tsx
-│   ├── VersusCard.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
 │   ├── index.tsx            # Composition registry

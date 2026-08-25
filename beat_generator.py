@@ -453,7 +453,10 @@ def main():
         project_dir = Path(args.project_dir)
         script_path = project_dir / "script.txt"
         timestamps_path = project_dir / "word_timestamps.json"
-        story_path = project_dir / "research_notes.json"
+        # Try story.json first (what run_pipeline.py creates), fallback to research_notes.json
+        story_path = project_dir / "story.json"
+        if not story_path.exists():
+            story_path = project_dir / "research_notes.json"
         output_path = project_dir / "beats.json"
         headline_path = project_dir / "headline.txt"
         if headline_path.exists():

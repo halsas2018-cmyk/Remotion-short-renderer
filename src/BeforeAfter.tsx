@@ -39,6 +39,7 @@ const AFTER_ITEM_BG = "#dcfce7";
 const AFTER_ITEM_COLOR = "#16a34a";
 const AFTER_ITEM_BORDER = "#bbf7d0";
 const DIVIDER_COLOR = ACCENT_COLOR;
+const SLIDER_COLOR = "#1a1a1a"; // Black slider
 
 // Helper to calculate responsive headline font size based on text length and available height
 const calculateHeadlineFontSize = (text: string, cardHeight: number, cardPadding: number, width: number): number => {
@@ -78,6 +79,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const dividerStart = afterStart + afterDuration;
   const dividerDuration = Math.round(durationInFrames * dividerDurPct);
 
+  // Slider animation starts after all cards are in, takes ~20% of duration
+  const sliderStart = dividerStart + dividerDuration;
+  const sliderDuration = Math.round(durationInFrames * 0.20);
+
   // Progress (0–1 each) — entrance animations only
   const beforeProgress = interpolate(frame, [0, beforeDuration], [0, 1], {
     easing: easeOut,
@@ -90,6 +95,11 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     extrapolateRight: "clamp",
   });
   const dividerProgress = interpolate(frame, [dividerStart, dividerStart + dividerDuration], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const sliderProgress = interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -127,6 +137,15 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const cardWidth = (availableWidth - dividerWidth - 2 * cardGap) / 2;
   const cardHeight = Math.min(600, height * 0.55);
 
+  // Container dimensions (for slider)
+  const containerWidth = availableWidth;
+  const containerHeight = cardHeight;
+  const sliderPadding = 20; // Space between cards and slider border
+  const sliderWidth = containerWidth + 2 * sliderPadding;
+  const sliderHeight = containerHeight + 2 * sliderPadding;
+  const sliderBorderRadius = Math.max(24, width * 0.025);
+  const sliderStrokeWidth = Math.max(4, width * 0.004);
+
   // Responsive font sizes
   const tagFontSize = Math.max(14, width * 0.013);
   const tagPaddingX = Math.max(12, width * 0.011);
@@ -149,6 +168,12 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
 
+  // Slider path animation - draws a rectangle around the cards
+  // Total perimeter for stroke-dasharray
+  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius; // Approximate with rounded corners
+  const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
+  const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);
+
   return (
     <AbsoluteFill
       style={{
@@ -157,6 +182,47 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
         backgroundColor: "transparent",
       }}
     >
+      {/* Slider animation - black border circling the cards */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: sliderWidth,
+          height: sliderHeight,
+          borderRadius: sliderBorderRadius,
+          border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
+          opacity: sliderProgress,
+          pointerEvents: "none",
+          // Animate stroke drawing using clip-path on a pseudo-element approach
+          // Using a mask with animated stroke
+          mask: `url(#slider-mask-${durationInFrames})`,
+        }}
+      >
+        {/* SVG mask for animated stroke drawing */}
+        <svg style={{ position: "absolute", width: 0, height: 0 }}>
+          <defs>
+            <mask id={`slider-mask-${durationInFrames}`} maskUnits="userSpaceOnUse" x={-sliderWidth/2} y={-sliderHeight/2} width={sliderWidth} height={sliderHeight}>
+              <rect
+                x={-sliderWidth/2}
+                y={-sliderHeight/2}
+                width={sliderWidth}
+                height={sliderHeight}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke="white"
+                strokeWidth={sliderStrokeWidth * 2}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+              />
+            </mask>
+          </defs>
+        </svg>
+      </div>
+
       <div
         style={{
           position: "absolute",

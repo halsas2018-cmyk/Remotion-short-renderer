@@ -106,21 +106,25 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
   const boxHeight = 180;
   const gap = steps.length > 1 ? (availableWidth - steps.length * boxWidth) / (steps.length - 1) : 0;
 
-  // Container dimensions (for slider)
-  const containerWidth = availableWidth;
+  // Calculate actual content width (boxes + gaps) for tight slider wrapping
+  const contentWidth = steps.length * boxWidth + (steps.length - 1) * gap;
+  const contentLeft = (availableWidth - contentWidth) / 2; // Center the content
+
+  // Container dimensions (for slider) - now based on actual content
+  const containerWidth = contentWidth;
   const containerHeight = boxHeight;
   const sliderPadding = 24;
   const sliderWidth = containerWidth + 2 * sliderPadding;
   const sliderHeight = containerHeight + 2 * sliderPadding;
   
   // Prominent curved borders for step boxes
-  const cardBorderRadius = Math.max(32, width * 0.03); // Increased for more pronounced curves
+  const cardBorderRadius = Math.max(32, width * 0.03);
   // Slider border radius matches card curves + padding
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
-  const stepFontSize = Math.max(28, width * 0.026); // Important supporting text: 44px minimum
+  const stepFontSize = Math.max(28, width * 0.026);
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -207,13 +211,13 @@ export const ProcessFlow: React.FC<ProcessFlowProps> = ({
           width: availableWidth,
           height: boxHeight,
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center", // Center the content
           alignItems: "center",
         }}
       >
         {steps.map((step, i) => {
           const prog = stepProgresses[i];
-          const xPos = i * (boxWidth + gap);
+          const xPos = contentLeft + i * (boxWidth + gap); // Position relative to centered content
           const isLast = i === steps.length - 1;
           const stepShimmerStart = stepShimmerStarts[i];
           const arrowShimmerStart = arrowShimmerStarts[i];

@@ -714,6 +714,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     if pre_chunked_beats:
         # MODE A: LLM returned array of {type, metadata...} — merge with pre-chunked beats
+        # BUT: LLM might ignore instructions and return full beat objects. Handle both.
         llm_assignments = data if isinstance(data, list) else data.get("beats", [])
         if not llm_assignments:
             raise ValueError("No beat assignments generated")
@@ -731,6 +732,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         # Merge: pre-chunked beat text + word indices + LLM type + metadata
         beats = []
         for i, (chunk, assignment) in enumerate(zip(pre_chunked_beats, llm_assignments)):
+            # Handle both formats: MODE A (type + metadata only) or MODE B (full beat object)
             beat_type = assignment.get("type", "key_statement")
             if beat_type not in BEAT_TYPES:
                 beat_type = "key_statement"

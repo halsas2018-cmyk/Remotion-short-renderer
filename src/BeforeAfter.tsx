@@ -16,8 +16,7 @@ interface BeforeAfterProps {
   beforeDurPct?: number;
   afterDelayPct?: number;
   afterDurPct?: number;
-  transitionPct?: number;
-  transitionDurPct?: number;
+  dividerDurPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -61,8 +60,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeDurPct = 0.15,
   afterDelayPct = 0.03,
   afterDurPct = 0.10,
-  transitionPct = 0.30,  // Start transition AFTER both cards are fully in (was 0.25)
-  transitionDurPct = 0.10, // Slower, more visible wipe (was 0.05)
+  dividerDurPct = 0.10,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -71,16 +69,16 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE ONLY — completes by ~40%, then holds
-  // No exit animation — this component only does internal anim
+  // INTERNAL TIMELINE ONLY — entrance animations complete by ~30%, then hold
+  // NO transition/wipe — both cards stay visible
   // ============================================
   const beforeDuration = Math.round(durationInFrames * beforeDurPct);
   const afterStart = beforeDuration + Math.round(durationInFrames * afterDelayPct);
   const afterDuration = Math.round(durationInFrames * afterDurPct);
-  const transitionStart = Math.round(durationInFrames * transitionPct);
-  const transitionDuration = Math.round(durationInFrames * transitionDurPct);
+  const dividerStart = afterStart + afterDuration;
+  const dividerDuration = Math.round(durationInFrames * dividerDurPct);
 
-  // Progress (0–1 each) — internal animation
+  // Progress (0–1 each) — entrance animations only
   const beforeProgress = interpolate(frame, [0, beforeDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
@@ -91,15 +89,16 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const transitionProgress = interpolate(frame, [transitionStart, transitionStart + transitionDuration], [0, 1], {
+  const dividerProgress = interpolate(frame, [dividerStart, dividerStart + dividerDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Idle pulse (after transition) — time-based, not frame-based
-  const isIdle = frame > transitionStart + transitionDuration;
-  const idleTimeSeconds = (frame - (transitionStart + transitionDuration)) / fps;
+  // Idle pulse (after all entrance animations) — time-based, not frame-based
+  const allAnimationsDone = dividerStart + dividerDuration;
+  const isIdle = frame > allAnimationsDone;
+  const idleTimeSeconds = (frame - allAnimationsDone) / fps;
   const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
 
   // Responsive sizing based on video dimensions
@@ -145,7 +144,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: cardGap, // Add gap between cards and divider
+          gap: cardGap,
         }}
       >
         {/* BEFORE Card - elevated */}
@@ -171,10 +170,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
             ],
             opacity: beforeProgress,
-            // Clip only during transition (frame >= transitionStart)
-            clipPath: frame >= transitionStart ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
             boxShadow: CARD_SHADOW,
-            willChange: "transform, opacity, clip-path",
+            willChange: "transform, opacity",
             flexShrink: 0,
           }}
           aria-label={`Before: ${beforeLabel}`}
@@ -254,7 +251,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           </div>
         </article>
 
-        {/* Transition Divider - elevated */}
+        {/* Divider - elevated */}
         <div
           style={{
             width: dividerWidth,
@@ -263,8 +260,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             backgroundColor: CARD_BG,
             border: `2px solid ${DIVIDER_COLOR}`,
             position: "relative",
-            opacity: transitionProgress > 0 ? 1 : 0,
-            transform: [{ scaleX: transitionProgress * idlePulse }],
+            opacity: dividerProgress,
+            transform: [{ scaleX: dividerProgress * idlePulse }],
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -295,7 +292,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               width: "100%",
               height: "15%",
               background: `linear-gradient(180deg, transparent, ${DIVIDER_COLOR}44, transparent)`,
-              opacity: transitionProgress,
+              opacity: dividerProgress,
               borderRadius: dividerBorderRadius - 2,
             }}
           />
@@ -324,10 +321,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
             ],
             opacity: afterProgress,
-            // Reveal during transition: clip from left (inset right side decreases)
-            clipPath: frame >= transitionStart ? `inset(0 ${(1 - transitionProgress) * 100}% 0 0)` : "inset(0 100% 0 0)",
             boxShadow: CARD_SHADOW,
-            willChange: "transform, opacity, clip-path",
+            willChange: "transform, opacity",
             flexShrink: 0,
           }}
           aria-label={`After: ${afterLabel}`}
@@ -423,7 +418,6 @@ export const BeforeAfterTest: React.FC = () => (
     defaultProps={{
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
-      // durationInFrames omitted — component uses composition duration
     }}
   />
 );

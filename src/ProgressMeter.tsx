@@ -161,11 +161,18 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const labelFontSize = Math.max(28, width * 0.026); // Important supporting text: 44px minimum
   const subtitleFontSize = Math.max(18, width * 0.017);
 
-  // Shimmer position calculation
+  // Shimmer position calculation - relative to card (0-100% of card height)
+  // Only visible after shimmer start frame
   const getShimmerTop = (shimmerStartFrame: number) => {
     if (frame < shimmerStartFrame) return "-100%";
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * 25) % 100}%`;
+  };
+
+  // Shimmer opacity - 0 before start, then follows fillProgress
+  const getShimmerOpacity = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return fillProgress;
   };
 
   // Slider path animation
@@ -181,50 +188,6 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the meter with matching curved corners */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: sliderWidth,
-          height: sliderHeight,
-          pointerEvents: "none",
-          opacity: sliderProgress,
-          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
-          borderRadius: sliderBorderRadius,
-        }}
-      >
-        <svg
-          width={sliderWidth}
-          height={sliderHeight}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <rect
-            x={sliderStrokeWidth / 2}
-            y={sliderStrokeWidth / 2}
-            width={sliderWidth - sliderStrokeWidth}
-            height={sliderHeight - sliderStrokeWidth}
-            rx={sliderBorderRadius}
-            ry={sliderBorderRadius}
-            fill="none"
-            stroke={SLIDER_COLOR}
-            strokeWidth={sliderStrokeWidth}
-            strokeDasharray={sliderDashArray}
-            strokeDashoffset={sliderDashOffset}
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      </div>
-
       <div
         style={{
           position: "absolute",
@@ -239,155 +202,209 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           alignItems: "center",
         }}
       >
-        {/* Elevated card background for the meter - dynamically sized with curved borders */}
+        {/* Card container - explicit dimensions matching card outer size */}
         <div
           style={{
             position: "relative",
             width: size,
             height: size,
-            backgroundColor: "white",
-            borderRadius: "50%",
-            boxShadow: CARD_SHADOW,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            border: `1px solid ${CARD_BORDER}`,
           }}
         >
-          {/* Circular Progress Meter */}
-          <div style={{ position: "relative", width: size, height: size }}>
-            <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-              {/* Track */}
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="none"
-                stroke={TRACK_COLOR}
-                strokeWidth={strokeWidth}
-                opacity={fillProgress}
-              />
-              {/* Fill */}
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="none"
-                stroke={FILL_COLOR}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={dashOffset}
-                style={{
-                  filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(232, 108, 0, ${0.6 * idleGlow}))`,
-                  transformOrigin: `${size / 2}px ${size / 2}px`,
-                  transform: [{ scale: idlePulse }],
-                }}
-                opacity={fillProgress}
-              />
-            </svg>
-
-            {/* Center content */}
-            <div
+          {/* Slider animation - black border circling the meter with matching curved corners */}
+          <div
+            style={{
+              position: "absolute",
+              top: -sliderPadding,
+              left: -sliderPadding,
+              right: -sliderPadding,
+              bottom: -sliderPadding,
+              pointerEvents: "none",
+              opacity: sliderProgress,
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              borderRadius: sliderBorderRadius,
+            }}
+          >
+            <svg
+              width={sliderWidth}
+              height={sliderHeight}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
-                width: size,
-                height: size,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
+                width: "100%",
+                height: "100%",
               }}
             >
-              {/* Percentage/Value number */}
-              <div
-                style={{
-                  fontSize: valueFontSize,
-                  fontWeight: 800,
-                  color: ACCENT_COLOR,
-                  fontFamily: "system-ui, sans-serif",
-                  lineHeight: 1,
-                  letterSpacing: -2,
-                  opacity: numberProgress,
-                  transform: [{ scale: numberProgress }],
-                }}
-              >
-                {value >= 1000 || maxValue >= 1000 ? (
-                  <>
-                    {formatNumber(currentValue)}
-                    <span style={{ fontSize: Math.max(20, width * 0.0185), fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
-                      / {formatNumber(maxValue)}
-                    </span>
-                  </>
-                ) : (
-                  `${Math.round(currentPercentage * 100)}%`
-                )}
-              </div>
-
-              {/* Main Label */}
-              <div
-                style={{
-                  fontSize: labelFontSize,
-                  fontWeight: 700,
-                  color: DARK_TEXT,
-                  fontFamily: "system-ui, sans-serif",
-                  letterSpacing: 2,
-                  textTransform: "uppercase",
-                  marginTop: 16,
-                  opacity: labelProgress,
-                  transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
-                  whiteSpace: "nowrap",
-                  maxWidth: size - 40,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {label}
-              </div>
-
-              {/* Subtitle with bouncing animation */}
-              <div
-                style={{
-                  fontSize: subtitleFontSize,
-                  fontWeight: 500,
-                  color: MEDIUM_TEXT,
-                  fontFamily: "system-ui, sans-serif",
-                  letterSpacing: 1,
-                  marginTop: 12,
-                  opacity: labelProgress,
-                  transform: [
-                    { translateY: interpolate(labelProgress, [0, 1], [20, 0]) },
-                    { translateY: subtitleBounceOffset },
-                  ],
-                  transformOrigin: "center",
-                  whiteSpace: "nowrap",
-                  maxWidth: size - 40,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {value >= maxValue ? "Target Achieved" : "In Progress"}
-              </div>
-            </div>
+              <rect
+                x={sliderStrokeWidth / 2}
+                y={sliderStrokeWidth / 2}
+                width={sliderWidth - sliderStrokeWidth}
+                height={sliderHeight - sliderStrokeWidth}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke={SLIDER_COLOR}
+                strokeWidth={sliderStrokeWidth}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           </div>
 
-          {/* Shimmer animation on card */}
+          {/* Elevated card background for the meter - dynamically sized with curved borders */}
           <div
             style={{
               position: "absolute",
-              top: getShimmerTop(fillDuration),
+              top: 0,
               left: 0,
-              width: "100%",
-              height: "18%",
-              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-              opacity: fillProgress,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "white",
               borderRadius: "50%",
-              pointerEvents: "none",
+              boxShadow: CARD_SHADOW,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              border: `1px solid ${CARD_BORDER}`,
             }}
-          />
+          >
+            {/* Circular Progress Meter */}
+            <div style={{ position: "relative", width: size, height: size }}>
+              <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+                {/* Track */}
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={TRACK_COLOR}
+                  strokeWidth={strokeWidth}
+                  opacity={fillProgress}
+                />
+                {/* Fill */}
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={FILL_COLOR}
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  style={{
+                    filter: `drop-shadow(0 0 ${15 * idleGlow}px rgba(232, 108, 0, ${0.6 * idleGlow}))`,
+                    transformOrigin: `${size / 2}px ${size / 2}px`,
+                    transform: [{ scale: idlePulse }],
+                  }}
+                  opacity={fillProgress}
+                />
+              </svg>
+
+              {/* Center content */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: size,
+                  height: size,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {/* Percentage/Value number */}
+                <div
+                  style={{
+                    fontSize: valueFontSize,
+                    fontWeight: 800,
+                    color: ACCENT_COLOR,
+                    fontFamily: "system-ui, sans-serif",
+                    lineHeight: 1,
+                    letterSpacing: -2,
+                    opacity: numberProgress,
+                    transform: [{ scale: numberProgress }],
+                  }}
+                >
+                  {value >= 1000 || maxValue >= 1000 ? (
+                    <>
+                      {formatNumber(currentValue)}
+                      <span style={{ fontSize: Math.max(20, width * 0.0185), fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
+                        / {formatNumber(maxValue)}
+                      </span>
+                    </>
+                  ) : (
+                    `${Math.round(currentPercentage * 100)}%`
+                  )}
+                </div>
+
+                {/* Main Label */}
+                <div
+                  style={{
+                    fontSize: labelFontSize,
+                    fontWeight: 700,
+                    color: DARK_TEXT,
+                    fontFamily: "system-ui, sans-serif",
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    marginTop: 16,
+                    opacity: labelProgress,
+                    transform: [{ translateY: interpolate(labelProgress, [0, 1], [20, 0]) }],
+                    whiteSpace: "nowrap",
+                    maxWidth: size - 40,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {label}
+                </div>
+
+                {/* Subtitle with bouncing animation */}
+                <div
+                  style={{
+                    fontSize: subtitleFontSize,
+                    fontWeight: 500,
+                    color: MEDIUM_TEXT,
+                    fontFamily: "system-ui, sans-serif",
+                    letterSpacing: 1,
+                    marginTop: 12,
+                    opacity: labelProgress,
+                    transform: [
+                      { translateY: interpolate(labelProgress, [0, 1], [20, 0]) },
+                      { translateY: subtitleBounceOffset },
+                    ],
+                    transformOrigin: "center",
+                    whiteSpace: "nowrap",
+                    maxWidth: size - 40,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {value >= maxValue ? "Target Achieved" : "In Progress"}
+                </div>
+              </div>
+            </div>
+
+            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(fillDuration),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(fillDuration),
+                borderRadius: "50%",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
         </div>
       </div>
     </AbsoluteFill>

@@ -91,16 +91,50 @@ output/
 | `QuoteCard` | ✅ **COMPLETE** | `quote_card` | Typewriter quote, animated underline, attribution, slider border |
 | `ProgressMeter` | ✅ **COMPLETE** | `progress_meter` | Circular progress, dynamic sizing, value formatting, slider border |
 | `ProcessFlow` | ✅ **COMPLETE** | `process_flow` | Dynamic N steps, arrows, tight slider wrap, centered content |
+| `KeyStatement` | ✅ **COMPLETE** | `key_statement` | Word-by-word reveal, emphasis highlighting, glow, slider border |
+| `MapLocation` | ✅ **COMPLETE** | `map_location` | Abstract world map, animated pin drop, coordinate label, slider border |
+| `PlainText` | ✅ **COMPLETE** | `plain_text` | Line-by-line reveal (4-5 words/line), star bullets, glow, slider border |
 | `ChartCounter` | ⏳ TODO | `chart_counter` | |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
 | `IconText` | ⏳ TODO | `icon_text` | |
-| `KeyStatement` | ⏳ TODO | `key_statement` | |
 | `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
-| `MapLocation` | ⏳ TODO | `map_location` | |
-| `PlainText` | ⏳ TODO | `plain_text` | |
 | `PersistentBackground` | ⏳ TODO | — | Global background |
 | `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
+
+### Unified Card Beautification System
+All card-based components now share a consistent visual language:
+
+**Card Structure:**
+- White background with prominent curved borders (32-40px radius)
+- 1px solid border (`#e8e8e8`)
+- Elevated shadow: `0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06)`
+- Accent top bar (4px gradient: `#e86c00` → `#f97316`)
+- Subtle diagonal line pattern overlay (3% opacity)
+- Radial glow behind card during idle (animated pulse)
+
+**Animations (50% timeline rule):**
+- Entrance animations complete by ~50% of duration
+- Staggered reveals with `easeOutExpo` easing
+- No exit animations — designed for `SceneTransition` wrapper
+- Hold phase with idle effects: card bounce (6px), glow pulse, shimmer loop
+
+**Slider Border:**
+- Black (`#1a1a1a`) rounded rectangle wrapping card + 24px padding
+- SVG `stroke-dashoffset` animation (45% duration, `easeOut`)
+- Drop shadow: `0 0 20px rgba(26,26,26,0.15)`
+- Border radius matches card radius + padding
+
+**Shimmer Effect:**
+- Light orange (`#e86c0033`) top-to-bottom gradient sweep
+- 18% card height, 25%/sec speed
+- Only visible after content animation completes
+- Border radius matches card
+
+**Responsive Sizing:**
+- All dimensions scale with video width (1080px baseline)
+- Safe area: 80px minimum from edges
+- Font sizes follow video-layout.md minimums (headline ≥84px, supporting ≥44px)
 
 ### BeforeAfter Component Details (`src/BeforeAfter.tsx`)
 - **Animation timeline** (proportional to `durationInFrames`):
@@ -225,6 +259,69 @@ output/
 - **Test compositions**: `ProcessFlowTest` (3 steps, 120f), `ProcessFlow4StepsTest` (4 steps, 150f), `ProcessFlow5StepsTest` (5 steps, 180f)
 - **Props**: `steps[]` (string array)
 
+### KeyStatement Component Details (`src/KeyStatement.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–5%: Text start delay
+  - 5–50%: Words reveal sequentially (8% duration each, 3% stagger)
+  - 50–60%: Black slider border draws around card (SVG stroke-dashoffset, 45% duration)
+  - 60%+: Hold (idle pulse, glow, emphasized word bounce)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Accent top bar (gradient)
+  - Subtle diagonal line background pattern
+  - Radial glow behind card (animated pulse during idle)
+  - Emphasized words: larger (76px+), bolder (900), accent color, bounce animation during idle
+  - Word entrance: slide up (30px) + scale (0.8→1) with `easeOutExpo`
+  - Black slider border with drop shadow animates drawing around card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (base ≥64px, emphasis ≥76px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `KeyStatementTest` (120 frames), `KeyStatementLongTest` (180 frames), `KeyStatementShortTest` (90 frames)
+- **Props**: `text` (string), `emphasisWords` (string[])
+
+### MapLocation Component Details (`src/MapLocation.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: Map silhouette scales in
+  - 15–30%: Pin drops with bounce + rotation (from -15°→10°→0°)
+  - 25–35%: Location label scales in (overlaps pin)
+  - 35–80%: Black slider border draws around card (SVG stroke-dashoffset, 45% duration)
+  - 80%+: Hold (idle pulse, pin float, glow)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Accent top bar (gradient)
+  - Subtle diagonal line background pattern
+  - Radial glow behind card (animated pulse during idle)
+  - Abstract world map SVG (simplified continents)
+  - Pin: accent color with white inner dot, drop shadow, ground shadow
+  - Pin drop: from 200px above with bounce easing
+  - Location label: elevated card with coordinates
+  - Black slider border with drop shadow animates drawing around card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (label ≥32px, coords ≥18px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `MapLocationTest` (120 frames), `MapLocationTokyoTest` (120 frames), `MapLocationLongTest` (180 frames)
+- **Props**: `locationName` (string), `latitude` (number), `longitude` (number)
+
+### PlainText Component Details (`src/PlainText.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–5%: Text start delay
+  - 5–50%: Lines reveal sequentially (12% duration each, 4% stagger, 4-5 words/line)
+  - 50–60%: Black slider border draws around card (SVG stroke-dashoffset, 45% duration)
+  - 60%+: Hold (idle pulse, glow, line drift)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Accent top bar (gradient)
+  - Subtle diagonal line background pattern
+  - Radial glow behind card (animated pulse during idle)
+  - Each line: star bullet (★) with rotation animation during idle
+  - Line entrance: slide up (30px) + scale (0.85→1) with `easeOutExpo`
+  - Black slider border with drop shadow animates drawing around card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (base ≥56px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `PlainTextTest` (120 frames), `PlainTextLongTest` (180 frames), `PlainTextShortTest` (90 frames)
+- **Props**: `text` (string)
+
 ### Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -245,14 +342,14 @@ my-video/
 │   ├── QuoteCard.tsx        # ✅ Complete
 │   ├── ProgressMeter.tsx    # ✅ Complete
 │   ├── ProcessFlow.tsx      # ✅ Complete
+│   ├── KeyStatement.tsx     # ✅ Complete
+│   ├── MapLocation.tsx      # ✅ Complete
+│   ├── PlainText.tsx        # ✅ Complete
 │   ├── ChartCounter.tsx
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
 │   ├── IconText.tsx
-│   ├── KeyStatement.tsx
 │   ├── KineticCaptions.tsx
-│   ├── MapLocation.tsx
-│   ├── PlainText.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
 │   ├── index.tsx            # Composition registry

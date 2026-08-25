@@ -324,4 +324,94 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      opacity: lineOpacity
+                      opacity: lineOpacity,
+                      transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale})`,
+                      transformOrigin: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: baseFontSize,
+                        fontWeight: 700,
+                        color: DARK_TEXT,
+                        fontFamily: "system-ui, sans-serif",
+                        lineHeight: 1.4,
+                        letterSpacing: -1,
+                        textAlign: "center",
+                      }}
+                    >
+                      {line}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(shimmerStart),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(shimmerStart),
+                borderRadius: cardBorderRadius,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Test composition for isolated preview/render
+export const PlainTextTestComposition: React.FC = () => (
+  <Composition
+    id="PlainTextTest"
+    component={PlainText}
+    durationInFrames={120}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "The gamble works while AI chips are scarce",
+      durationInFrames: 120,
+    }}
+  />
+);
+
+// Test with longer text
+export const PlainTextLongTest: React.FC = () => (
+  <Composition
+    id="PlainTextLongTest"
+    component={PlainText}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "People who are really serious about software should make their own hardware",
+      durationInFrames: 180,
+    }}
+  />
+);
+
+// Test with short punchy text
+export const PlainTextShortTest: React.FC = () => (
+  <Composition
+    id="PlainTextShortTest"
+    component={PlainText}
+    durationInFrames={90}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "The future is already here",
+      durationInFrames: 90,
+    }}
+  />
+);

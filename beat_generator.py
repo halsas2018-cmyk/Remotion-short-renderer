@@ -26,7 +26,7 @@ import llm_client
 FPS = 30
 MAX_BEAT_DURATION_SECONDS = 3.0
 MAX_BEAT_FRAMES = int(MAX_BEAT_DURATION_SECONDS * FPS)  # 90 frames at 30fps
-MIN_BEAT_FRAMES = 15  # Minimum beat duration (0.5s)
+MIN_BEAT_FRAMES = 30  # Minimum beat duration (0.5s)
 
 # Valid beat types that map to Remotion components
 BEAT_TYPES = {
@@ -45,9 +45,9 @@ BEAT_TYPES = {
 SPLITTABLE_TYPES = {"key_statement", "icon_text"}
 
 # Prompt size limits to stay under Groq free tier TPM (8000)
-MAX_SCRIPT_WORDS_IN_PROMPT = 100
-MAX_SENTENCES_IN_PROMPT = 8
-MAX_STORY_FACTS_CHARS = 200
+MAX_SCRIPT_WORDS_IN_PROMPT = 170
+MAX_SENTENCES_IN_PROMPT = 6
+MAX_STORY_FACTS_CHARS = 100
 
 
 # ---------------------------------------------------------------------------
@@ -481,7 +481,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             messages=messages,
             model_key=model_key,
             temperature=0.2,
-            max_tokens=8000,
+            max_tokens=6000,
         )
     except Exception as e:
         print(f"  ⚠ LLM call failed: {e}")

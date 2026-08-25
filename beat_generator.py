@@ -391,73 +391,57 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
             current_sentence = []
     
     # Limit sentences in prompt to avoid token bloat
-    max_sentences_in_prompt = 20
+    max_sentences_in_prompt = 15
     if len(sentences) > max_sentences_in_prompt:
         sentences = sentences[:max_sentences_in_prompt]
         sentences.append({"text": "... (truncated)", "startFrame": 0, "endFrame": 0, "durationFrames": 0})
     
     # Story facts for metadata - limit size
     research = story.get("research", {}) if isinstance(story.get("research"), dict) else {}
-    key_numbers = research.get("key_numbers", "")[:500]
-    key_quotes = research.get("key_quotes", [])[:3]
-    locations = research.get("locations", [])[:5]
-    entities = research.get("entities", [])[:10]
+    key_numbers = research.get("key_numbers", "")[:300]
+    key_quotes = research.get("key_quotes", [])[:2]
+    locations = research.get("locations", [])[:3]
+    entities = research.get("entities", [])[:5]
     
-    prompt = f"""You are converting a narrated script into structured "beats" for a motion-graphics video. Each beat maps to a specific React component type with exact frame boundaries.
+    # Compact beat types for prompt
+    beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
+    
+    prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component with exact frame boundaries.
 
-SOURCE MATERIAL:
+SOURCE:
 Title: {story.get("title", "")}
-Headline: {headline}
-Script (narration text):
-{script}
+Script: {script}
 
-WORD-LEVEL TIMING (30fps):
-Total words: {len(word_timestamps)}
-Total duration: {frames_to_seconds(seconds_to_frames(word_timestamps[-1]["end"])):.1f}s / {seconds_to_frames(word_timestamps[-1]["end"])} frames
+TIMING (30fps):
+Total: {len(word_timestamps)} words, {seconds_to_frames(word_timestamps[-1]["end"])} frames
+Sentences (use EXACT frames):
+{json.dumps(sentences)}
 
-Sentence breakdown with frame boundaries (use these EXACT frames):
-{json.dumps(sentences, indent=2)}
+FACTS (metadata only, don't invent):
+Numbers: {key_numbers}
+Quotes: {json.dumps(key_quotes)}
+Locations: {json.dumps(locations)}
+Entities: {json.dumps(entities)}
 
-STORY FACTS (use for metadata, do not invent):
-- Key numbers: {key_numbers}
-- Key quotes: {json.dumps(key_quotes)}
-- Locations mentioned: {json.dumps(locations)}
-- Entities: {json.dumps(entities)}
+BEAT TYPES:
+{json.dumps(beat_types_compact)}
 
-BEAT TYPES & REQUIRED FIELDS:
-{json.dumps(BEAT_TYPES, indent=2)}
+RULES:
+1. One beat per sentence/key idea. Use EXACT frame boundaries.
+2. MAX 90 frames (3s) per beat. Split long sentences into multiple beats.
+3. Pick most specific type. Default: "key_statement".
+4. Never invent facts/numbers/coordinates/quotes.
+5. map_location: only real named locations. Use centroid coords.
+6. quote_card: only actual attributed quotes.
+7. timeline: only real chronological events with dates.
+8. progress_meter: only explicit percentage data.
+9. versus: only clear two-sided comparisons.
+10. before_after: only clear before/after comparisons.
+11. Vary types. All frames integers. durationInFrames = endFrame - startFrame.
+12. Sequential: beat[i].endFrame == beat[i+1].startFrame.
 
-CRITICAL RULES:
-1. Output ONE beat per sentence or key idea from the script above.
-2. Use the EXACT frame boundaries provided for each sentence (startFrame/endFrame).
-3. **MAXIMUM BEAT DURATION: 90 frames (3 seconds).** If a sentence is longer, you MUST split it into multiple beats of ~90 frames each.
-4. Choose the MOST SPECIFIC fitting type. Default to "key_statement" for narrative/opinion beats.
-5. NEVER invent facts, numbers, dates, coordinates, or quotes not in the source.
-6. For "map_location": only use if a REAL named location appears in the source. Use approximate centroid coordinates.
-7. For "quote_card": only use if source contains an ACTUAL attributed quote.
-8. For "timeline": only use if source provides REAL chronological events with dates.
-9. For "progress_meter": only for percentage/completion data explicitly in source.
-10. For "versus": only for clear two-sided comparisons in the source.
-11. For "before_after": only for clear before/after comparisons in the source.
-12. Vary types — don't overuse one type.
-13. All frame values must be integers at 30fps.
-14. durationInFrames = endFrame - startFrame.
-15. Beats must be sequential: beat[i].endFrame == beat[i+1].startFrame.
-
-OUTPUT FORMAT (JSON only, no markdown):
-{{
-  "beats": [
-    {{
-      "type": "key_statement",
-      "text": "sentence text here",
-      "emphasisWords": ["word1", "word2"],
-      "startFrame": 0,
-      "endFrame": 90,
-      "durationInFrames": 90
-    }},
-    ...
-  ]
-}}"""
+OUTPUT (JSON only):
+{{"beats": [{{"type": "key_statement", "text": "...", "emphasisWords": ["..."], "startFrame": 0, "endFrame": 90, "durationInFrames": 90}}]}}"""
     return prompt
 
 
@@ -477,13 +461,13 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         {"role": "user", "content": prompt}
     ]
     
-    # Try with JSON mode if supported - use lower max_tokens to avoid truncation
+    # Use higher max_tokens to avoid empty responses, but not too high
     try:
         response = llm_client.call_llm(
             messages=messages,
             model_key=model_key,
             temperature=0.2,
-            max_tokens=2048,  # Reduced from 4096 to avoid token limit errors
+            max_tokens=3000,
         )
     except Exception as e:
         print(f"  ⚠ LLM call failed: {e}")

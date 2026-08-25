@@ -11,7 +11,7 @@ import {
 interface BeforeAfterProps {
   beforeLabel: string;
   afterLabel: string;
-  durationInFrames: number;
+  durationInFrames?: number; // Optional override; defaults to composition duration
   // Timing percentages for internal animation only
   beforeDurPct?: number;
   afterDelayPct?: number;
@@ -57,7 +57,7 @@ const calculateHeadlineFontSize = (text: string, cardHeight: number, cardPadding
 export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
   afterLabel,
-  durationInFrames,
+  durationInFrames: propsDurationInFrames,
   beforeDurPct = 0.15,
   afterDelayPct = 0.03,
   afterDurPct = 0.10,
@@ -65,11 +65,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   transitionDurPct = 0.05,
 }) => {
   const frame = useCurrentFrame();
-  const { width, height, fps } = useVideoConfig();
+  const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
+
+  // Use prop override if provided, otherwise fall back to composition duration
+  const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
   // INTERNAL TIMELINE ONLY — completes by ~30%, then holds
-  // No exit animation, no SceneTransition — this component only does internal anim
+  // No exit animation — this component only does internal anim
   // ============================================
   const beforeDuration = Math.round(durationInFrames * beforeDurPct);
   const afterStart = beforeDuration + Math.round(durationInFrames * afterDelayPct);
@@ -167,7 +170,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               { translateX: interpolate(beforeProgress, [0, 1], [-60, 0]) },
             ],
             opacity: beforeProgress,
-            clipPath: transitionProgress > 0 ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
+            // Clip only during transition (frame >= transitionStart)
+            clipPath: frame >= transitionStart ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
           }}
@@ -318,7 +322,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               { translateX: interpolate(afterProgress, [0, 1], [60, 0]) },
             ],
             opacity: afterProgress,
-            clipPath: transitionProgress > 0 ? `inset(0 0 0 ${transitionProgress * 100}%)` : "none",
+            // Reveal during transition: clip from left (inset right side decreases)
+            clipPath: frame >= transitionStart ? `inset(0 ${(1 - transitionProgress) * 100}% 0 0)` : "inset(0 100% 0 0)",
             boxShadow: CARD_SHADOW,
             willChange: "transform, opacity, clip-path",
           }}
@@ -415,7 +420,7 @@ export const BeforeAfterTest: React.FC = () => (
     defaultProps={{
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
-      durationInFrames: 90,
+      // durationInFrames omitted — component uses composition duration
     }}
   />
 );

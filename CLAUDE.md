@@ -88,6 +88,9 @@ output/
 | `BeforeAfter` | ✅ **COMPLETE** | `before_after` | Entrance animations, shimmer effects, divider, slider border |
 | `VersusCard` | ✅ **COMPLETE** | `versus_card` | Dual cards with items, VS divider, shimmer, slider border |
 | `Timeline` | ✅ **COMPLETE** | `timeline` | Flexible N events, line draw, markers, descriptions, slider border |
+| `QuoteCard` | ✅ **COMPLETE** | `quote_card` | Typewriter quote, animated underline, attribution, slider border |
+| `ProgressMeter` | ✅ **COMPLETE** | `progress_meter` | Circular progress, dynamic sizing, value formatting, slider border |
+| `ProcessFlow` | ✅ **COMPLETE** | `process_flow` | Dynamic N steps, arrows, tight slider wrap, centered content |
 | `ChartCounter` | ⏳ TODO | `chart_counter` | |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
@@ -96,9 +99,6 @@ output/
 | `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
 | `MapLocation` | ⏳ TODO | `map_location` | |
 | `PlainText` | ⏳ TODO | `plain_text` | |
-| `ProcessFlow` | ⏳ TODO | `process_flow` | |
-| `ProgressMeter` | ⏳ TODO | `progress_meter` | |
-| `QuoteCard` | ⏳ TODO | `quote_card` | |
 | `PersistentBackground` | ⏳ TODO | — | Global background |
 | `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
 
@@ -158,6 +158,73 @@ output/
 - **Test compositions**: `TimelineTest` (2 events, 120f), `Timeline3EventsTest` (3 events, 150f), `Timeline4EventsTest` (4 events, 180f), `Timeline5EventsTest` (5 events, 210f)
 - **Props**: `events[]` with `marker` (string) and `label` (string)
 
+### QuoteCard Component Details (`src/QuoteCard.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–50%: Quote text types out word-by-word (typewriter effect)
+  - 50–60%: Attribution fades in with slide-up
+  - 0–10%: Quotation marks bounce in
+  - 60–70%: Black slider border draws around card (SVG stroke-dashoffset, 45% duration)
+  - 70%+: Hold (idle pulse on marks, shimmer loops on card)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Accent top bar (gradient)
+  - Animated underline grows with typewriter progress
+  - Large decorative quotation marks with bounce + glow
+  - Attribution with decorative separator line
+  - Subtle diagonal line background pattern
+  - Dynamic card height based on quote length
+  - Black slider border with drop shadow animates drawing around card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (quote ≥48px, attribution ≥24px, marks ≥100px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `QuoteCardTest` (120 frames), `QuoteCardLongTest` (180 frames)
+- **Props**: `quote` (string), `attribution` (string)
+
+### ProgressMeter Component Details (`src/ProgressMeter.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: Circular progress ring draws + center number counts up
+  - 3–13%: Label + subtitle fade in with slide-up
+  - 15–60%: Black slider border draws around meter (SVG stroke-dashoffset, 45% duration)
+  - 60%+: Hold (idle pulse on ring, shimmer loops, subtitle bounce)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Circular progress ring with glowing fill + rounded caps
+  - Dynamic card diameter based on label length (320–520px)
+  - Smart number formatting (K, M, B, T suffixes)
+  - Subtitle with subtle bounce animation during idle
+  - Subtle radial gradient background pattern
+  - Black slider border with drop shadow animates drawing around circular card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (value ≥64px, label ≥28px, subtitle ≥18px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `ProgressMeterTest` (120 frames), `ProgressMeterLongLabelTest` (120 frames)
+- **Props**: `value` (number), `maxValue` (number), `label` (string)
+
+### ProcessFlow Component Details (`src/ProcessFlow.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–12%: First step box scales in
+  - 4–16%: Second step box scales in (4% stagger)
+  - 8–20%: Third step box scales in (4% stagger)
+  - ...continues for N steps
+  - Arrows draw after each step (10% duration each)
+  - 30–75%: Black slider border draws around entire flow (SVG stroke-dashoffset, 45% duration)
+  - 75%+: Hold (idle pulse on boxes, shimmer loops)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on boxes (25% height, 25%/sec)
+  - Accent top bar on each box (gradient)
+  - Animated arrows with arrowheads between steps
+  - Arrow shimmer effect
+  - Tight slider border wraps only rendered boxes (not full width)
+  - Content centered horizontally
+  - Dynamic box width based on step count
+  - Prominent curved borders (32px+ radius)
+  - Black slider border with drop shadow animates drawing around flow
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (step text ≥28px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test compositions**: `ProcessFlowTest` (3 steps, 120f), `ProcessFlow4StepsTest` (4 steps, 150f), `ProcessFlow5StepsTest` (5 steps, 180f)
+- **Props**: `steps[]` (string array)
+
 ### Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -175,6 +242,9 @@ my-video/
 │   ├── BeforeAfter.tsx      # ✅ Complete
 │   ├── VersusCard.tsx       # ✅ Complete
 │   ├── Timeline.tsx         # ✅ Complete
+│   ├── QuoteCard.tsx        # ✅ Complete
+│   ├── ProgressMeter.tsx    # ✅ Complete
+│   ├── ProcessFlow.tsx      # ✅ Complete
 │   ├── ChartCounter.tsx
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
@@ -183,9 +253,6 @@ my-video/
 │   ├── KineticCaptions.tsx
 │   ├── MapLocation.tsx
 │   ├── PlainText.tsx
-│   ├── ProcessFlow.tsx
-│   ├── ProgressMeter.tsx
-│   ├── QuoteCard.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
 │   ├── index.tsx            # Composition registry

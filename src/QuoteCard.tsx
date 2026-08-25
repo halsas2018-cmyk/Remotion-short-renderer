@@ -112,6 +112,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const availableWidth = width - 2 * padding;
   const cardWidth = Math.min(availableWidth, 800);
   const cardPadding = Math.max(48, width * 0.044);
+  const cardBorderRadius = 24;
 
   // Calculate card height based on content
   const quoteFontSize = Math.max(48, width * 0.044);
@@ -124,11 +125,15 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const cardContentHeight = Math.max(minQuoteHeight, quoteTextHeight) + 32 + attrFontSize + 24 + 60;
   const cardHeight = cardContentHeight + cardPadding * 2;
 
+  // Card outer dimensions (including padding)
+  const cardOuterWidth = cardWidth + 2 * cardPadding;
+  const cardOuterHeight = cardHeight + 2 * cardPadding;
+
   // Slider padding around the card
   const sliderPadding = 24;
-  const sliderWidth = cardWidth + 2 * cardPadding + 2 * sliderPadding;
-  const sliderHeight = cardHeight + 2 * sliderPadding;
-  const sliderBorderRadius = 24 + sliderPadding; // card border-radius + slider padding
+  const sliderWidth = cardOuterWidth + 2 * sliderPadding;
+  const sliderHeight = cardOuterHeight + 2 * sliderPadding;
+  const sliderBorderRadius = cardBorderRadius + cardPadding + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes
@@ -168,8 +173,14 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           textAlign: "center",
         }}
       >
-        {/* Card container - relative positioning for slider overlay */}
-        <div style={{ position: "relative", width: cardWidth + 2 * cardPadding }}>
+        {/* Card container - explicit dimensions matching card outer size */}
+        <div
+          style={{
+            position: "relative",
+            width: cardOuterWidth,
+            height: cardOuterHeight,
+          }}
+        >
           {/* Slider animation - black border circling the card (positioned relative to card container) */}
           <div
             style={{
@@ -216,15 +227,22 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           {/* Elevated card for the quote - dynamic height */}
           <div
             style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               backgroundColor: "white",
-              borderRadius: 24,
+              borderRadius: cardBorderRadius,
               padding: cardPadding,
               boxShadow: CARD_SHADOW,
-              position: "relative",
               border: `1px solid ${CARD_BORDER}`,
-              width: cardWidth,
-              maxWidth: "100%",
-              minHeight: cardHeight,
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
             }}
           >
             {/* Accent top bar */}
@@ -236,7 +254,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 right: 0,
                 height: 4,
                 background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
-                borderRadius: "24px 24px 0 0",
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
 
@@ -274,6 +292,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
+                flex: 1,
               }}
             >
               <span
@@ -332,7 +351,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                 height: "18%",
                 background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
                 opacity: quoteProgress,
-                borderRadius: 24,
+                borderRadius: cardBorderRadius,
                 pointerEvents: "none",
               }}
             />

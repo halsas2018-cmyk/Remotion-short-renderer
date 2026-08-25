@@ -420,7 +420,9 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
     
-    prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component with exact frame boundaries.
+    prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component.
+
+IMPORTANT: Do NOT output frame numbers. Do NOT calculate timing. Only output beat type, text, and semantic metadata.
 
 SOURCE:
 Title: {story.get("title", "")}
@@ -428,7 +430,7 @@ Script: {truncated_script}
 
 TIMING (30fps):
 Total: {len(word_timestamps)} words, {seconds_to_frames(word_timestamps[-1]["end"])} frames
-Sentences (use EXACT frames):
+Sentences (for reference only):
 {json.dumps(sentences)}
 
 FACTS (metadata only, don't invent):
@@ -441,21 +443,19 @@ BEAT TYPES:
 {json.dumps(beat_types_compact)}
 
 RULES:
-1. One beat per sentence/key idea. Use EXACT frame boundaries.
-2. MAX 90 frames (3s) per beat. Split long sentences into multiple beats.
-3. Pick most specific type. Default: "key_statement".
-4. Never invent facts/numbers/coordinates/quotes.
-5. map_location: only real named locations. Use centroid coords.
-6. quote_card: only actual attributed quotes.
-7. timeline: only real chronological events with dates.
-8. progress_meter: only explicit percentage data.
-9. versus: only clear two-sided comparisons.
-10. before_after: only clear before/after comparisons.
-11. Vary types. All frames integers. durationInFrames = endFrame - startFrame.
-12. Sequential: beat[i].endFrame == beat[i+1].startFrame.
+1. One beat per sentence/key idea.
+2. Pick most specific type. Default: "key_statement".
+3. Never invent facts/numbers/coordinates/quotes.
+4. map_location: only real named locations. Use centroid coords.
+5. quote_card: only actual attributed quotes.
+6. timeline: only real chronological events with dates.
+7. progress_meter: only explicit percentage data.
+8. versus: only clear two-sided comparisons.
+9. before_after: only clear before/after comparisons.
+10. Vary types.
 
 OUTPUT (JSON only):
-{{"beats": [{{"type": "key_statement", "text": "...", "emphasisWords": ["..."], "startFrame": 0, "endFrame": 90, "durationInFrames": 90}}]}}"""
+{{"beats": [{{"type": "key_statement", "text": "...", "emphasisWords": ["..."], "startWord": 0, "endWord": 8}}]}}"""
     return prompt
 
 
@@ -471,17 +471,17 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     # Use llm_client to call the model
     messages = [
-        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. CRITICAL: No beat may exceed 90 frames (3 seconds). Split long sentences into multiple beats."},
+        {"role": "system", "content": "You are a precise video beat planner. Output only valid JSON. Do NOT output frame numbers. Only output beat type, text, and semantic metadata."},
         {"role": "user", "content": prompt}
     ]
     
-    # Use higher max_tokens to avoid empty responses, but not too high
+    # Use lower max_tokens to avoid hitting Groq TPM limit
     try:
         response = llm_client.call_llm(
             messages=messages,
             model_key=model_key,
             temperature=0.2,
-            max_tokens=6000,
+            max_tokens=1500,
         )
     except Exception as e:
         print(f"  ⚠ LLM call failed: {e}")
@@ -504,6 +504,61 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     beats = data.get("beats", [])
     if not beats:
         raise ValueError("No beats generated")
+    
+    # Filter out malformed beats (missing text or invalid type)
+    valid_beats = []
+    for beat in beats:
+        if not beat.get("text") or not beat.get("type"):
+            continue
+        if beat["type"] not in BEAT_TYPES:
+            continue
+        valid_beats.append(beat)
+    
+    if not valid_beats:
+        raise ValueError("No valid beats after filtering")
+    
+    beats = valid_beats
+    
+    # Convert word indices to frames
+    word_map = build_word_index_map(word_timestamps, script)
+    script_words = script.strip().split()
+    
+    converted_beats = []
+    for beat in beats:
+        start_word = beat.get("startWord", 0)
+        end_word = beat.get("endWord", len(script_words) - 1)
+        
+        # Clamp to valid range
+        start_word = max(0, min(start_word, len(script_words) - 1))
+        end_word = max(start_word, min(end_word, len(script_words) - 1))
+        
+        # Map to timestamp indices
+        start_ts_idx = word_map[start_word] if start_word < len(word_map) else len(word_map) - 1
+        end_ts_idx = word_map[end_word] if end_word < len(word_map) else len(word_map) - 1
+        
+        start_frame = word_idx_to_frame(word_timestamps, start_ts_idx)
+        end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
+        
+        # Ensure minimum duration
+        if end_frame - start_frame < MIN_BEAT_FRAMES:
+            end_frame = start_frame + MIN_BEAT_FRAMES
+        
+        # Clamp to total duration
+        total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1) if word_timestamps else 0
+        end_frame = min(end_frame, total_frames)
+        
+        beat_copy = beat.copy()
+        beat_copy["startFrame"] = start_frame
+        beat_copy["endFrame"] = end_frame
+        beat_copy["durationInFrames"] = end_frame - start_frame
+        
+        # Remove word indices from output
+        beat_copy.pop("startWord", None)
+        beat_copy.pop("endWord", None)
+        
+        converted_beats.append(beat_copy)
+    
+    beats = converted_beats
     
     # Validate initial beats
     errors = validate_beats(beats, word_timestamps, script)

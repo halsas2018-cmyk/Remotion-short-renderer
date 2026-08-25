@@ -12,16 +12,25 @@ interface ProgressMeterProps {
   value: number;
   maxValue: number;
   label: string;
-  durationInFrames: number;
+  durationInFrames?: number; // Optional override; defaults to composition duration
+  // Timing percentages for internal animation only
+  fillDurPct?: number;
+  numberDurPct?: number;
+  labelDelayPct?: number;
+  labelDurPct?: number;
+  sliderDurPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
 const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#4a4a4a";
-const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const MEDIUM_TEXT = "#525252";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
 const TRACK_COLOR = "#e8e8e8";
 const FILL_COLOR = ACCENT_COLOR;
+const SLIDER_COLOR = "#1a1a1a";
+const CARD_BORDER = "#e8e8e8";
 
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
@@ -44,55 +53,69 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   value,
   maxValue,
   label,
-  durationInFrames,
+  durationInFrames: propsDurationInFrames,
+  fillDurPct = 0.15,
+  numberDurPct = 0.15,
+  labelDelayPct = 0.03,
+  labelDurPct = 0.10,
+  sliderDurPct = 0.45,
 }) => {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
+  const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
 
-  // Meter fill animation
-  const fillStart = 0;
-  const fillDuration = 40;
-  const fillProgress = interpolate(frame, [fillStart, fillStart + fillDuration], [0, 1], {
-    easing: easeOut,
+  // Use prop override if provided, otherwise fall back to composition duration
+  const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
+
+  // ============================================
+  // INTERNAL TIMELINE — completes by ~30%, then holds
+  // No exit animation — designed to be wrapped by SceneTransition
+  // ============================================
+  const fillDuration = Math.round(durationInFrames * fillDurPct);
+  const numberDuration = Math.round(durationInFrames * numberDurPct);
+  const labelStart = Math.round(durationInFrames * labelDelayPct);
+  const labelDuration = Math.round(durationInFrames * labelDurPct);
+  const fillEnd = fillDuration;
+  const numberEnd = numberDuration;
+  const labelEnd = labelStart + labelDuration;
+  const allAnimEnd = Math.max(fillEnd, numberEnd, labelEnd);
+  const sliderStart = allAnimEnd;
+  const sliderDuration = Math.round(durationInFrames * sliderDurPct);
+
+  // Progress animations
+  const fillProgress = interpolate(frame, [0, fillDuration], [0, 1], {
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Number count-up animation
-  const numberStart = 0;
-  const numberDuration = 40;
-  const numberProgress = interpolate(frame, [numberStart, numberStart + numberDuration], [0, 1], {
-    easing: easeOut,
+  const numberProgress = interpolate(frame, [0, numberDuration], [0, 1], {
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Label fade in
-  const labelStart = 10;
-  const labelDuration = 20;
   const labelProgress = interpolate(frame, [labelStart, labelStart + labelDuration], [0, 1], {
+    easing: easeOutExpo,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const sliderProgress = interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Subtitle bounce animation (appears after label)
-  const subtitleStart = labelStart + labelDuration + 10;
-  const subtitleDuration = 25;
-  const subtitleProgress = interpolate(frame, [subtitleStart, subtitleStart + subtitleDuration], [0, 1], {
-    easing: Easing.bezier(0.34, 1.56, 0.64, 1), // bounce
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Idle animation: subtle pulse on fill
-  const idlePulse = 1 + 0.02 * Math.sin(frame * 0.06);
-  const idleGlow = 0.3 + 0.2 * Math.sin(frame * 0.08);
+  // Idle pulse — time-based
+  const isIdle = frame > allAnimEnd;
+  const idleTimeSeconds = (frame - allAnimEnd) / fps;
+  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
+  const idleGlow = isIdle ? 0.3 + 0.2 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 0.3;
 
   // Subtitle bounce during idle
   const subtitleBounceFrequency = 0.15;
   const subtitleBounceAmplitude = 6;
-  const subtitleBounceOffset = frame > subtitleStart + subtitleDuration
+  const subtitleBounceOffset = isIdle
     ? Math.sin(frame * subtitleBounceFrequency * Math.PI * 2) * subtitleBounceAmplitude
     : 0;
 
@@ -119,7 +142,35 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - currentPercentage);
 
-  const padding = 120;
+  // Responsive sizing
+  const padding = Math.max(80, width * 0.11);
+  const availableWidth = width - 2 * padding;
+
+  // Container dimensions (for slider)
+  const containerWidth = size;
+  const containerHeight = size;
+  const sliderPadding = 24;
+  const sliderWidth = containerWidth + 2 * sliderPadding;
+  const sliderHeight = containerHeight + 2 * sliderPadding;
+  const sliderBorderRadius = Math.max(28, width * 0.026);
+  const sliderStrokeWidth = Math.max(5, width * 0.0045);
+
+  // Responsive font sizes (following video-layout.md minimums)
+  const valueFontSize = Math.max(64, width * 0.059); // Main headline: 84px minimum
+  const labelFontSize = Math.max(28, width * 0.026); // Important supporting text: 44px minimum
+  const subtitleFontSize = Math.max(18, width * 0.017);
+
+  // Shimmer position calculation
+  const getShimmerTop = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return "-100%";
+    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
+    return `${(elapsedSeconds * 25) % 100}%`;
+  };
+
+  // Slider path animation
+  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
+  const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
+  const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);
 
   return (
     <AbsoluteFill
@@ -129,6 +180,49 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
         backgroundColor: "transparent",
       }}
     >
+      {/* Slider animation - black border circling the meter */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: sliderWidth,
+          height: sliderHeight,
+          pointerEvents: "none",
+          opacity: sliderProgress,
+          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+        }}
+      >
+        <svg
+          width={sliderWidth}
+          height={sliderHeight}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <rect
+            x={sliderStrokeWidth / 2}
+            y={sliderStrokeWidth / 2}
+            width={sliderWidth - sliderStrokeWidth}
+            height={sliderHeight - sliderStrokeWidth}
+            rx={sliderBorderRadius}
+            ry={sliderBorderRadius}
+            fill="none"
+            stroke={SLIDER_COLOR}
+            strokeWidth={sliderStrokeWidth}
+            strokeDasharray={sliderDashArray}
+            strokeDashoffset={sliderDashOffset}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      </div>
+
       <div
         style={{
           position: "absolute",
@@ -136,7 +230,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           left: padding,
           right: padding,
           transform: "translateY(-50%)",
-          width: width - 2 * padding,
+          width: availableWidth,
           height: size,
           display: "flex",
           justifyContent: "center",
@@ -156,6 +250,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
+            border: `1px solid ${CARD_BORDER}`,
           }}
         >
           {/* Circular Progress Meter */}
@@ -208,7 +303,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               {/* Percentage/Value number */}
               <div
                 style={{
-                  fontSize: 72,
+                  fontSize: valueFontSize,
                   fontWeight: 800,
                   color: ACCENT_COLOR,
                   fontFamily: "system-ui, sans-serif",
@@ -221,7 +316,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                 {value >= 1000 || maxValue >= 1000 ? (
                   <>
                     {formatNumber(currentValue)}
-                    <span style={{ fontSize: 24, fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
+                    <span style={{ fontSize: Math.max(20, width * 0.0185), fontWeight: 600, color: MEDIUM_TEXT, marginLeft: 8 }}>
                       / {formatNumber(maxValue)}
                     </span>
                   </>
@@ -233,8 +328,8 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               {/* Main Label */}
               <div
                 style={{
-                  fontSize: 22,
-                  fontWeight: 600,
+                  fontSize: labelFontSize,
+                  fontWeight: 700,
                   color: DARK_TEXT,
                   fontFamily: "system-ui, sans-serif",
                   letterSpacing: 2,
@@ -254,15 +349,15 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               {/* Subtitle with bouncing animation */}
               <div
                 style={{
-                  fontSize: 16,
+                  fontSize: subtitleFontSize,
                   fontWeight: 500,
                   color: MEDIUM_TEXT,
                   fontFamily: "system-ui, sans-serif",
                   letterSpacing: 1,
                   marginTop: 12,
-                  opacity: subtitleProgress,
+                  opacity: labelProgress,
                   transform: [
-                    { translateY: interpolate(subtitleProgress, [0, 1], [20, 0]) },
+                    { translateY: interpolate(labelProgress, [0, 1], [20, 0]) },
                     { translateY: subtitleBounceOffset },
                   ],
                   transformOrigin: "center",
@@ -276,6 +371,21 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Shimmer animation on card */}
+          <div
+            style={{
+              position: "absolute",
+              top: getShimmerTop(fillDuration),
+              left: 0,
+              width: "100%",
+              height: "18%",
+              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+              opacity: fillProgress,
+              borderRadius: "50%",
+              pointerEvents: "none",
+            }}
+          />
         </div>
       </div>
     </AbsoluteFill>
@@ -294,7 +404,6 @@ export const ProgressMeterTestComposition: React.FC = () => (
       value: 70000000000,
       maxValue: 100000000000,
       label: "Funding Secured",
-      durationInFrames: 120,
     }}
   />
 );
@@ -312,7 +421,6 @@ export const ProgressMeterLongLabelTest: React.FC = () => (
       value: 50000000000,
       maxValue: 100000000000,
       label: "Quarterly Revenue Target",
-      durationInFrames: 120,
     }}
   />
 );

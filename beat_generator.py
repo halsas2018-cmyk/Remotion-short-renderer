@@ -411,7 +411,7 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
             continue
         
         end_idx = min(start_idx + len(beat_words), len(word_map))
-        if start_idx >= len(word_map) or end_idx > len(word_map):
+        if start_idx >= len(word_map) or end_idx > len(word_map) or start_idx >= end_idx:
             fixed.append(beat_copy)
             continue
         
@@ -425,7 +425,7 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
         
         fixed.append(beat_copy)
     
-    # Ensure sequential alignment
+    # Ensure sequential alignment - each beat starts where previous ended
     for i in range(len(fixed) - 1):
         fixed[i + 1]["startFrame"] = fixed[i]["endFrame"]
         fixed[i + 1]["durationInFrames"] = fixed[i + 1]["endFrame"] - fixed[i + 1]["startFrame"]

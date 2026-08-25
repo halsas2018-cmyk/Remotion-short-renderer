@@ -24,9 +24,12 @@ interface ProgressMeterProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
+const ACCENT_LIGHT = "#fff4ed";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
+const LIGHT_TEXT = "#a3a3a3";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
 const TRACK_COLOR = "#e8e8e8";
 const FILL_COLOR = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a";
@@ -253,7 +256,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
             </svg>
           </div>
 
-          {/* Elevated card background for the meter - dynamically sized with curved borders */}
+          {/* Elevated card background for the meter - WHITE with curved borders */}
           <div
             style={{
               position: "absolute",
@@ -271,6 +274,21 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               border: `1px solid ${CARD_BORDER}`,
             }}
           >
+            {/* Subtle background pattern - radial gradient */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: "50%",
+                opacity: 0.02,
+                background: `radial-gradient(circle at center, ${ACCENT_COLOR} 0%, transparent 70%)`,
+                pointerEvents: "none",
+              }}
+            />
+
             {/* Circular Progress Meter */}
             <div style={{ position: "relative", width: size, height: size }}>
               <svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>

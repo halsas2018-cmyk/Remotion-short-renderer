@@ -8,21 +8,31 @@ import {
   Easing,
 } from "remotion";
 
-// Import Highlight with fallback for different export patterns
+// Import Highlight with proper error handling for browser bundler
 let Highlight: React.ComponentType<any>;
-try {
-  // Try named export first (per Remotion docs)
-  const roughNotation = require("@remotion/rough-notation");
-  Highlight = roughNotation.Highlight || roughNotation.default?.Highlight;
-  if (!Highlight) {
-    // Try default export
-    Highlight = roughNotation.default;
+
+// Use a lazy initialization that works in both Node and browser
+const getHighlightComponent = () => {
+  if (typeof Highlight !== "undefined") return Highlight;
+  
+  try {
+    // Try ES module import first (works in bundler)
+    const roughNotation = require("@remotion/rough-notation");
+    // Check various export patterns
+    Highlight = roughNotation.Highlight || roughNotation.default?.Highlight || roughNotation.default;
+    if (!Highlight || typeof Highlight !== "function") {
+      throw new Error("Highlight not found in exports");
+    }
+  } catch (e) {
+    console.warn("@remotion/rough-notation not available or invalid export, using fallback");
+    // Fallback: render children without highlight
+    Highlight = ({ children, ...props }: any) => <>{children}</>;
   }
-} catch (e) {
-  console.warn("@remotion/rough-notation not available, using fallback");
-  // Fallback: render children without highlight
-  Highlight = ({ children, ...props }: any) => <>{children}</>;
-}
+  return Highlight;
+};
+
+// Initialize immediately
+getHighlightComponent();
 
 interface KeyStatementProps {
   text: string;
@@ -504,8 +514,9 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
 
                   // Wrap emphasized words with Highlight from rough-notation
                   if (isEmphasized) {
+                    const HighlightComponent = getHighlightComponent();
                     return (
-                      <Highlight
+                      <HighlightComponent
                         key={i}
                         color="rgba(232, 108, 0, 0.25)"
                         strokeWidth={3}
@@ -515,7 +526,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                         animationDuration={0} // We control progress manually
                       >
                         {wordContent}
-                      </Highlight>
+                      </HighlightComponent>
                     );
                   }
 

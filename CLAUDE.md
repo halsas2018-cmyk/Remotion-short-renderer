@@ -3,7 +3,7 @@
 ## Overview
 Automated pipeline for creating YouTube Shorts from news stories.  
 **Phase 1 (Python) — COMPLETE**: Discover → Research → Script → Voice → Word Timestamps → Beats (visual plan).  
-**Phase 2 (Remotion) — TODO**: Render beats + narration into final MP4.
+**Phase 2 (Remotion) — IN PROGRESS**: Render beats + narration into final MP4.
 
 ---
 
@@ -65,3 +65,92 @@ Automated pipeline for creating YouTube Shorts from news stories.
 | `config.py` | Centralized config (banned filler, model defaults, etc.) |
 
 ### Output Structure
+```
+output/
+└── DD_MM_short_vids/
+    ├── story_id/
+    │   ├── story.json
+    │   ├── script.json
+    │   ├── narration.mp3
+    │   ├── word_timestamps.json
+    │   └── beats.json
+    └── _generated_log.json
+```
+
+---
+
+## Phase 2: Remotion Rendering (IN PROGRESS)
+
+### Component Library Status
+
+| Component | Status | Beat Type | Notes |
+|-----------|--------|-----------|-------|
+| `BeforeAfter` | ✅ **COMPLETE** | `before_after` | Entrance animations, shimmer effects, divider, slider border |
+| `ChartCounter` | ⏳ TODO | `chart_counter` | |
+| `ChartComparison` | ⏳ TODO | `chart_comparison` | |
+| `ChartLine` | ⏳ TODO | `chart_line` | |
+| `IconText` | ⏳ TODO | `icon_text` | |
+| `KeyStatement` | ⏳ TODO | `key_statement` | |
+| `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
+| `MapLocation` | ⏳ TODO | `map_location` | |
+| `PlainText` | ⏳ TODO | `plain_text` | |
+| `ProcessFlow` | ⏳ TODO | `process_flow` | |
+| `ProgressMeter` | ⏳ TODO | `progress_meter` | |
+| `QuoteCard` | ⏳ TODO | `quote_card` | |
+| `Timeline` | ⏳ TODO | `timeline` | |
+| `VersusCard` | ⏳ TODO | `versus_card` | |
+| `PersistentBackground` | ⏳ TODO | — | Global background |
+| `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
+
+### BeforeAfter Component Details (`src/BeforeAfter.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: BEFORE card slides in from left
+  - 18–28%: AFTER card slides in from right (3% stagger)
+  - 28–38%: Divider scales in horizontally
+  - 38–58%: Black slider border draws around entire card group (SVG stroke-dashoffset)
+  - 58%+: Hold (idle pulse on divider, shimmer loops on cards)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on both cards
+  - Divider with arrow indicator + shimmer
+  - Black slider border animates drawing around card group
+  - Responsive sizing (scales with width/height)
+  - Headline font auto-sizes to fit card (min 48px, max 84px+)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test composition**: `BeforeAfterTest` (90 frames, 30fps, 1080×1920)
+
+### Next Steps
+1. Implement remaining beat components per the table above
+2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
+3. Add `SceneTransition` wrapper for entrance/exit
+4. Integrate narration audio + `KineticCaptions`
+5. Test full render pipeline
+
+---
+
+## Project Structure
+```
+my-video/
+├── src/
+│   ├── components/          # Beat components (BeforeAfter, KeyStatement, etc.)
+│   ├── BeforeAfter.tsx      # ✅ Complete
+│   ├── ChartCounter.tsx
+│   ├── ChartComparison.tsx
+│   ├── ChartLine.tsx
+│   ├── IconText.tsx
+│   ├── KeyStatement.tsx
+│   ├── KineticCaptions.tsx
+│   ├── MapLocation.tsx
+│   ├── PlainText.tsx
+│   ├── ProcessFlow.tsx
+│   ├── ProgressMeter.tsx
+│   ├── QuoteCard.tsx
+│   ├── Timeline.tsx
+│   ├── VersusCard.tsx
+│   ├── PersistentBackground.tsx
+│   ├── MotionGraphicsVideo.tsx
+│   ├── index.tsx            # Composition registry
+│   └── Root.tsx
+├── public/
+├── package.json
+└── remotion.config.ts
+```

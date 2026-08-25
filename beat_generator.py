@@ -518,7 +518,8 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
 # Prompt Construction
 # ---------------------------------------------------------------------------
 
-def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline: str = "") -> str:
+def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline: str = "",
+                 pre_chunked_beats: list[dict] = None) -> str:
     """Build the LLM prompt with all necessary context, keeping it under token limits."""
     
     # Truncate script to keep prompt small
@@ -572,6 +573,21 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
     
+    # Build pre-chunked beats section for LLM
+    pre_chunked_section = ""
+    if pre_chunked_beats:
+        pre_chunked_section = f"""
+PRE-CHUNKED BEATS (from script generator — DO NOT re-chunk, only assign types + metadata):
+{json.dumps(pre_chunked_beats, indent=2)}
+
+RULES FOR PRE-CHUNKED BEATS:
+- Each entry has: text, startWord, endWord (0-based indices into script word array)
+- You MUST use these exact chunks — do NOT merge, split, or re-chunk
+- For each chunk, pick the BEST beat type and fill required metadata fields
+- Output the SAME number of beats as pre-chunked entries
+- Keep the same startWord/endWord in your output
+"""
+    
     prompt = f"""Convert narrated script into structured "beats" for motion-graphics video. Each beat maps to a React component.
 
 IMPORTANT: Do NOT output frame numbers. Do NOT calculate timing. Only output beat type, text, semantic metadata, and WORD INDICES (startWord/endWord).
@@ -593,9 +609,10 @@ Entities: {json.dumps(entities)}
 
 BEAT TYPES:
 {json.dumps(beat_types_compact)}
+{pre_chunked_section}
 
 RULES:
-1. One beat per sentence/key idea.
+1. One beat per pre-chunked entry (if provided) or per sentence/key idea.
 2. Pick most specific type. Default: "key_statement".
 3. Never invent facts/numbers/coordinates/quotes.
 4. map_location: only real named locations. Use centroid coords.
@@ -617,10 +634,10 @@ OUTPUT (JSON only):
 # ---------------------------------------------------------------------------
 
 def generate_beats(script: str, word_timestamps: list[dict], story: dict, headline: str = "",
-                   model_key: str = None) -> dict:
+                   model_key: str = None, pre_chunked_beats: list[dict] = None) -> dict:
     """Call LLM to generate beats, validate, and return structured data."""
     
-    prompt = build_prompt(script, word_timestamps, story, headline)
+    prompt = build_prompt(script, word_timestamps, story, headline, pre_chunked_beats)
     
     # Use llm_client to call the model
     messages = [
@@ -745,6 +762,13 @@ def main():
         headline_path = project_dir / "headline.txt"
         if headline_path.exists():
             args.headline = load_text(headline_path)
+        
+        # Load pre_chunked_beats if available
+        pre_chunked_beats_path = project_dir / "pre_chunked_beats.json"
+        pre_chunked_beats = None
+        if pre_chunked_beats_path.exists():
+            pre_chunked_beats = load_json(pre_chunked_beats_path)
+            print(f"  Loaded {len(pre_chunked_beats)} pre-chunked beats")
     else:
         if not all([args.script, args.timestamps, args.story, args.output]):
             parser.error("Either --project-dir OR all of --script --timestamps --story --output required")
@@ -752,6 +776,7 @@ def main():
         timestamps_path = Path(args.timestamps)
         story_path = Path(args.story)
         output_path = Path(args.output)
+        pre_chunked_beats = None
 
     # Load inputs
     print(f"Loading script: {script_path}")
@@ -769,7 +794,7 @@ def main():
     # Generate beats
     print("Generating beats via LLM...")
     try:
-        result = generate_beats(script, word_timestamps, story, args.headline, args.model)
+        result = generate_beats(script, word_timestamps, story, args.headline, args.model, pre_chunked_beats)
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)

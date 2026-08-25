@@ -7,7 +7,22 @@ import {
   interpolate,
   Easing,
 } from "remotion";
-import { Highlight } from "@remotion/rough-notation";
+
+// Import Highlight with fallback for different export patterns
+let Highlight: React.ComponentType<any>;
+try {
+  // Try named export first (per Remotion docs)
+  const roughNotation = require("@remotion/rough-notation");
+  Highlight = roughNotation.Highlight || roughNotation.default?.Highlight;
+  if (!Highlight) {
+    // Try default export
+    Highlight = roughNotation.default;
+  }
+} catch (e) {
+  console.warn("@remotion/rough-notation not available, using fallback");
+  // Fallback: render children without highlight
+  Highlight = ({ children, ...props }: any) => <>{children}</>;
+}
 
 interface KeyStatementProps {
   text: string;

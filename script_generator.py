@@ -1,12 +1,13 @@
 #!/root/kinetic_typo_vid/venv/bin/python3
 """
 script_generator.py
-Step 2 of the Shorts pipeline: script + headline generation (NO beats).
+Step 2 of the Shorts pipeline: script + headline generation + pre-chunked beats.
 
 Produces:
   - the narration script (6-9 sentences, hook-first, concrete-grounded)
   - 5 headline options + a chosen headline
   - youtube_title + youtube_description
+  - pre_chunked_beats: array of ~10-word chunks with startWord/endWord indices
 
 Beats are generated later by beat_generator.py using exact Whisper timings.
 """
@@ -38,6 +39,11 @@ SCRIPT_MAX_TOKENS = 4096
 
 # Banned filler loaded from config.py (allows env override)
 from config import BANNED_FILLER
+
+# Target words per pre-chunked beat
+TARGET_WORDS_PER_BEAT = 10
+MIN_WORDS_PER_BEAT = 6
+MAX_WORDS_PER_BEAT = 14
 
 
 def _call_llm(messages: list[dict], temperature: float = 0.5,
@@ -148,6 +154,50 @@ def _source_block(story: dict, content: dict) -> str:
     return "\n".join(parts)
 
 
+def _chunk_script_into_beats(script: str) -> list[dict]:
+    """
+    Split script into ~10-word chunks with word indices.
+    Returns list of {text, startWord, endWord}.
+    """
+    words = script.strip().split()
+    if not words:
+        return []
+    
+    chunks = []
+    current_start = 0
+    
+    while current_start < len(words):
+        # Target ~TARGET_WORDS_PER_BEAT words, but respect sentence boundaries
+        target_end = min(current_start + TARGET_WORDS_PER_BEAT, len(words))
+        
+        # Try to end at a sentence boundary if close
+        best_end = target_end
+        for i in range(max(current_start + MIN_WORDS_PER_BEAT, target_end - 3), 
+                       min(current_start + MAX_WORDS_PER_BEAT, len(words))):
+            if i < len(words) and words[i].endswith(('.', '!', '?')):
+                best_end = i + 1
+                break
+        
+        # Don't exceed max words per beat
+        if best_end - current_start > MAX_WORDS_PER_BEAT:
+            best_end = current_start + MAX_WORDS_PER_BEAT
+        
+        # Ensure minimum words
+        if best_end - current_start < MIN_WORDS_PER_BEAT and current_start + MIN_WORDS_PER_BEAT <= len(words):
+            best_end = current_start + MIN_WORDS_PER_BEAT
+        
+        chunk_words = words[current_start:best_end]
+        chunks.append({
+            "text": " ".join(chunk_words),
+            "startWord": current_start,
+            "endWord": best_end - 1
+        })
+        
+        current_start = best_end
+    
+    return chunks
+
+
 def generate_script(story: dict, content: dict,
                     retry_feedback: str = "",
                     model_key: str = llm_client.DEFAULT_MODEL_KEY) -> dict:
@@ -179,6 +229,9 @@ def generate_script(story: dict, content: dict,
 
     script = parsed["script"].strip()
     word_count = len(script.split())
+    
+    # Generate pre-chunked beats (~10 words each)
+    pre_chunked_beats = _chunk_script_into_beats(script)
 
     # Calculate script quality metrics
     all_words = script.lower().split()
@@ -199,6 +252,7 @@ def generate_script(story: dict, content: dict,
         "youtube_description": (parsed.get("youtube_description") or "").strip(),
         "word_count": word_count,
         "quality_metrics": quality_metrics,
+        "pre_chunked_beats": pre_chunked_beats,
     }
 
 
@@ -292,7 +346,7 @@ def _validate_script(parsed: dict, story: dict = None) -> list[str]:
 
 def process_story(story: dict, content: dict | None = None,
                   model_key: str = llm_client.DEFAULT_MODEL_KEY) -> dict:
-    """End-to-end Step 2 for one story: script + headlines only."""
+    """End-to-end Step 2 for one story: script + headlines + pre-chunked beats."""
     # --- Step 1.5: fetch real content (unless the caller already did) ---
     if content is None:
         from article_fetcher import fetch_article_content
@@ -302,6 +356,7 @@ def process_story(story: dict, content: dict | None = None,
     result = generate_script(story, content, model_key=model_key)
     script = result["script"]
     print(f"  ✓ script ({result['word_count']} words, headline: \"{result['headline']}\")")
+    print(f"  ✓ pre-chunked beats: {len(result['pre_chunked_beats'])} chunks")
 
     research = {
         "source_kind": content.get("source_kind", "rss"),
@@ -335,4 +390,7 @@ if __name__ == "__main__":
         out = {k: v for k, v in result.items() if k != "story"}
         print(f"Script: {out['script']}")
         print(f"Word count: {out['word_count']}")
+        print(f"Pre-chunked beats: {len(out['pre_chunked_beats'])}")
+        for i, beat in enumerate(out['pre_chunked_beats']):
+            print(f"  {i+1}. [{beat['startWord']}-{beat['endWord']}] {beat['text']}")
         print(json.dumps(out, indent=2)[:4000])

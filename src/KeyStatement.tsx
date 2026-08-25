@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   AbsoluteFill,
   Composition,
@@ -8,31 +8,14 @@ import {
   Easing,
 } from "remotion";
 
-// Import Highlight with proper error handling for browser bundler
-let Highlight: React.ComponentType<any>;
-
-// Use a lazy initialization that works in both Node and browser
-const getHighlightComponent = () => {
-  if (typeof Highlight !== "undefined") return Highlight;
-  
-  try {
-    // Try ES module import first (works in bundler)
-    const roughNotation = require("@remotion/rough-notation");
-    // Check various export patterns
-    Highlight = roughNotation.Highlight || roughNotation.default?.Highlight || roughNotation.default;
-    if (!Highlight || typeof Highlight !== "function") {
-      throw new Error("Highlight not found in exports");
-    }
-  } catch (e) {
-    console.warn("@remotion/rough-notation not available or invalid export, using fallback");
-    // Fallback: render children without highlight
-    Highlight = ({ children, ...props }: any) => <>{children}</>;
-  }
-  return Highlight;
-};
-
-// Initialize immediately
-getHighlightComponent();
+// Lazy load Highlight to handle import errors gracefully
+const Highlight = lazy(() => 
+  import("@remotion/rough-notation")
+    .then((module) => ({ default: module.Highlight }))
+    .catch(() => ({
+      default: ({ children }: any) => <>{children}</>,
+    }))
+);
 
 interface KeyStatementProps {
   text: string;
@@ -514,19 +497,19 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
 
                   // Wrap emphasized words with Highlight from rough-notation
                   if (isEmphasized) {
-                    const HighlightComponent = getHighlightComponent();
                     return (
-                      <HighlightComponent
-                        key={i}
-                        color="rgba(232, 108, 0, 0.25)"
-                        strokeWidth={3}
-                        padding={6}
-                        cornerRadius={8}
-                        progress={highlightProgress}
-                        animationDuration={0} // We control progress manually
-                      >
-                        {wordContent}
-                      </HighlightComponent>
+                      <Suspense fallback={wordContent} key={i}>
+                        <Highlight
+                          color="rgba(232, 108, 0, 0.25)"
+                          strokeWidth={3}
+                          padding={6}
+                          cornerRadius={8}
+                          progress={highlightProgress}
+                          animationDuration={0} // We control progress manually
+                        >
+                          {wordContent}
+                        </Highlight>
+                      </Suspense>
                     );
                   }
 

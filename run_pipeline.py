@@ -334,14 +334,15 @@ def main():
     if args.auto:
         selected = stories[:args.count]
     else:
-        print("\nTop stories:")
-        for i, s in enumerate(stories[:args.count * 2], 1):
+        print(f"\nTop {len(stories)} stories (showing all candidates):")
+        for i, s in enumerate(stories, 1):
             score = s.get('score', 0)
-            reason = s.get('rank_reason', s.get('reason', '—'))
-            print(f"  {i}. [{score:.2f}] {s.get('title', 'Untitled')[:70]}")
-            print(f"      → {reason[:100]}")
+            reason = s.get('rank_reason', s.get('reason', 'heuristic rank'))
+            source = s.get('source', 'unknown')
+            print(f"  {i:2d}. [{score:.2f}] ({source}) {s.get('title', 'Untitled')[:75]}")
+            print(f"       → {reason[:120]}")
         print()
-        choice = input(f"Select stories (1-{min(len(stories), args.count * 2)}, comma-separated, or 'all'): ").strip()
+        choice = input(f"Select stories (1-{len(stories)}, comma-separated, or 'all'): ").strip()
         if choice.lower() == "all":
             selected = stories[:args.count]
         else:

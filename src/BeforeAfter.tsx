@@ -114,6 +114,11 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   // ScaleX progress for cards (starts after slide-in, uses dividerProgress timing)
   const cardScaleXProgress = dividerProgress;
 
+  // Shimmer animation progress — starts after each card's entrance, continues during idle
+  const beforeShimmerStart = beforeDuration;
+  const afterShimmerStart = afterStart + afterDuration;
+  const shimmerSpeed = 30; // percent per second
+
   // Responsive sizing based on video dimensions
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
@@ -136,6 +141,13 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   // Calculate headline font sizes per label to fit in card
   const beforeHeadlineFontSize = calculateHeadlineFontSize(beforeLabel, cardHeight, cardPadding, width);
   const afterHeadlineFontSize = calculateHeadlineFontSize(afterLabel, cardHeight, cardPadding, width);
+
+  // Shimmer position calculation (0-100% top position, loops)
+  const getShimmerTop = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return "-100%"; // Hidden before start
+    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
+    return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
 
   return (
     <AbsoluteFill
@@ -264,6 +276,21 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               </div>
             ))}
           </div>
+
+          {/* Shimmer animation - light orange sliding from top to bottom */}
+          <div
+            style={{
+              position: "absolute",
+              top: getShimmerTop(beforeShimmerStart),
+              left: 0,
+              width: "100%",
+              height: "15%",
+              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
+              opacity: beforeProgress,
+              borderRadius: cardBorderRadius,
+              pointerEvents: "none",
+            }}
+          />
         </article>
 
         {/* Divider - elevated */}
@@ -302,7 +329,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           <div
             style={{
               position: "absolute",
-              top: `${(idleTimeSeconds * 30) % 100}%`,
+              top: `${(idleTimeSeconds * shimmerSpeed) % 100}%`,
               left: 0,
               width: "100%",
               height: "15%",
@@ -417,6 +444,21 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               </div>
             ))}
           </div>
+
+          {/* Shimmer animation - light orange sliding from top to bottom */}
+          <div
+            style={{
+              position: "absolute",
+              top: getShimmerTop(afterShimmerStart),
+              left: 0,
+              width: "100%",
+              height: "15%",
+              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
+              opacity: afterProgress,
+              borderRadius: cardBorderRadius,
+              pointerEvents: "none",
+            }}
+          />
         </article>
       </div>
     </AbsoluteFill>

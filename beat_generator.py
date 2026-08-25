@@ -95,29 +95,86 @@ def word_idx_to_end_frame(word_timestamps: list[dict], word_idx: int) -> int:
     return seconds_to_frames(word_timestamps[word_idx]["end"])
 
 
+def normalize_word(word: str) -> str:
+    """Normalize word for comparison: lowercase, strip punctuation."""
+    return word.strip(".,!?;:\"'()[]{}").lower()
+
+
 def build_word_index_map(word_timestamps: list[dict], script: str) -> list[int]:
     """
-    Map each word in the script to its index in word_timestamps.
+    Map each word in the script to its index in word_timestamps using
+    a robust sequence alignment (dynamic programming / LCS-based).
     Returns list of word_timestamps indices, one per script word.
     """
     script_words = script.strip().split()
-    ts_words = [w["word"].strip().lower() for w in word_timestamps]
+    ts_words = [normalize_word(w["word"]) for w in word_timestamps]
+    script_norm = [normalize_word(w) for w in script_words]
     
-    # Simple greedy matching
-    mapping = []
-    ts_idx = 0
-    for sw in script_words:
-        sw_clean = sw.strip(".,!?;:\"'()[]{}").lower()
-        # Find next matching word in timestamps
-        while ts_idx < len(ts_words):
-            if ts_words[ts_idx] == sw_clean or sw_clean in ts_words[ts_idx] or ts_words[ts_idx] in sw_clean:
-                mapping.append(ts_idx)
-                ts_idx += 1
-                break
-            ts_idx += 1
+    # Use dynamic programming to find the longest common subsequence alignment
+    # This is essentially the Needleman-Wunsch algorithm for sequence alignment
+    n, m = len(script_norm), len(ts_words)
+    
+    # DP table for LCS length
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            if script_norm[i - 1] == ts_words[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    
+    # Backtrack to find alignment
+    mapping = [-1] * n
+    i, j = n, m
+    while i > 0 and j > 0:
+        if script_norm[i - 1] == ts_words[j - 1]:
+            mapping[i - 1] = j - 1
+            i -= 1
+            j -= 1
+        elif dp[i - 1][j] >= dp[i][j - 1]:
+            i -= 1
         else:
-            # Fallback: use last available index
-            mapping.append(min(ts_idx, len(ts_words) - 1))
+            j -= 1
+    
+    # Fill in any unmatched script words by interpolating between matched neighbors
+    last_matched_ts = -1
+    last_matched_script = -1
+    
+    for i in range(n):
+        if mapping[i] != -1:
+            # This word is matched
+            last_matched_ts = mapping[i]
+            last_matched_script = i
+        else:
+            # Unmatched - find next matched word to interpolate
+            next_matched_ts = -1
+            next_matched_script = -1
+            for k in range(i + 1, n):
+                if mapping[k] != -1:
+                    next_matched_ts = mapping[k]
+                    next_matched_script = k
+                    break
+            
+            if last_matched_ts >= 0 and next_matched_ts >= 0:
+                # Interpolate proportionally
+                script_span = next_matched_script - last_matched_script
+                ts_span = next_matched_ts - last_matched_ts
+                if script_span > 0:
+                    ratio = (i - last_matched_script) / script_span
+                    mapping[i] = last_matched_ts + int(round(ratio * ts_span))
+                else:
+                    mapping[i] = last_matched_ts
+            elif last_matched_ts >= 0:
+                mapping[i] = last_matched_ts
+            elif next_matched_ts >= 0:
+                mapping[i] = next_matched_ts
+            else:
+                mapping[i] = 0
+    
+    # Clamp to valid range
+    mapping = [max(0, min(m, m - 1)) for m in mapping]
+    
     return mapping
 
 
@@ -217,7 +274,7 @@ def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_m
         # Try fuzzy match
         start_word_idx = -1
         for i, sw in enumerate(script_words):
-            if sw.strip(".,!?;:\"'()[]{}").lower() == beat_words[0].strip(".,!?;:\"'()[]{}").lower():
+            if normalize_word(sw) == normalize_word(beat_words[0]):
                 start_word_idx = i
                 break
         if start_word_idx == -1:
@@ -232,7 +289,6 @@ def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_m
         return [beat]
     
     # Split by accumulating frame duration from word timestamps
-    # This ensures each split is ~MAX_BEAT_FRAMES in actual time
     result = []
     current_word_start = 0
     current_start_frame = start_frame

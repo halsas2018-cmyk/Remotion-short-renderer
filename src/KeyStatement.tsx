@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import {
   AbsoluteFill,
   Composition,
@@ -8,14 +8,139 @@ import {
   Easing,
 } from "remotion";
 
-// Lazy load Highlight to handle import errors gracefully
-const Highlight = lazy(() => 
-  import("@remotion/rough-notation")
-    .then((module) => ({ default: module.Highlight }))
-    .catch(() => ({
-      default: ({ children }: any) => <>{children}</>,
-    }))
-);
+// Custom Highlight component - no external dependencies
+// Creates a beautiful animated highlight effect using pure CSS/SVG
+const Highlight: React.FC<{
+  children: React.ReactNode;
+  color?: string;
+  strokeWidth?: number;
+  padding?: number;
+  cornerRadius?: number;
+  progress?: number;
+  animationDuration?: number;
+}> = ({
+  children,
+  color = "rgba(232, 108, 0, 0.25)",
+  strokeWidth = 3,
+  padding = 6,
+  cornerRadius = 8,
+  progress = 1,
+  animationDuration = 0,
+}) => {
+  // We use a ref to measure the child dimensions
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [rect, setRect] = React.useState<DOMRect | null>(null);
+
+  React.useEffect(() => {
+    if (containerRef.current) {
+      setRect(containerRef.current.getBoundingClientRect());
+    }
+  }, []);
+
+  // If not measured yet or progress is 0, just render children
+  if (!rect || progress <= 0) {
+    return <div ref={containerRef} style={{ display: "inline" }}>{children}</div>;
+  }
+
+  const width = rect.width;
+  const height = rect.height;
+  const padX = padding;
+  const padY = padding;
+  const r = cornerRadius;
+
+  // Create a hand-drawn style path using SVG
+  // We'll draw a rough rectangle with slight imperfections
+  const pathData = `
+    M ${padX},${padY + r}
+    Q ${padX},${padY} ${padX + r},${padY}
+    L ${padX + width - r},${padY}
+    Q ${padX + width},${padY} ${padX + width},${padY + r}
+    L ${padX + width},${padY + height - r}
+    Q ${padX + width},${padY + height} ${padX + width - r},${padY + height}
+    L ${padX + r},${padY + height}
+    Q ${padX},${padY + height} ${padX},${padY + height - r}
+    Z
+  `;
+
+  // Add some "roughness" with a second slightly offset path for hand-drawn feel
+  const roughness = 1.5;
+  const roughPathData = `
+    M ${padX + roughness},${padY + r + roughness}
+    Q ${padX + roughness},${padY + roughness} ${padX + r + roughness},${padY + roughness}
+    L ${padX + width - r - roughness},${padY + roughness}
+    Q ${padX + width - roughness},${padY + roughness} ${padX + width - roughness},${padY + r + roughness}
+    L ${padX + width - roughness},${padY + height - r - roughness}
+    Q ${padX + width - roughness},${padY + height - roughness} ${padX + width - r - roughness},${padY + height - roughness}
+    L ${padX + r + roughness},${padY + height - roughness}
+    Q ${padX + roughness},${padY + height - roughness} ${padX + roughness},${padY + height - r - roughness}
+    Z
+  `;
+
+  const totalLength = Math.sqrt(width * width + height * height) * 2; // Approximate perimeter
+  const dashArray = totalLength;
+  const dashOffset = totalLength * (1 - progress);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        display: "inline",
+        position: "relative",
+        lineHeight: 1,
+      }}
+    >
+      {/* Highlight SVG behind text */}
+      <svg
+        style={{
+          position: "absolute",
+          top: -padY,
+          left: -padX,
+          width: width + padX * 2,
+          height: height + padY * 2,
+          pointerEvents: "none",
+          overflow: "visible",
+          zIndex: -1,
+        }}
+        width={width + padX * 2}
+        height={height + padY * 2}
+      >
+        {/* Main highlight fill */}
+        <path
+          d={pathData}
+          fill={color}
+          fillOpacity={progress * 0.6}
+          stroke="none"
+        />
+        {/* Hand-drawn stroke animation */}
+        <path
+          d={roughPathData}
+          fill="none"
+          stroke={color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb")} // Opaque stroke
+          strokeWidth={strokeWidth}
+          strokeDasharray={dashArray}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={progress}
+          filter="drop-shadow(0 0 2px rgba(232, 108, 0, 0.3))"
+        />
+        {/* Second rough stroke for more hand-drawn feel */}
+        <path
+          d={roughPathData}
+          fill="none"
+          stroke={color.replace(/[\d.]+\)$/, "0.6)").replace("rgba", "rgb")}
+          strokeWidth={strokeWidth * 0.5}
+          strokeDasharray={dashArray * 1.1}
+          strokeDashoffset={dashOffset * 1.1 + 10}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={progress * 0.7}
+        />
+      </svg>
+      {children}
+    </div>
+  );
+};
 
 interface KeyStatementProps {
   text: string;
@@ -495,21 +620,20 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                     </span>
                   );
 
-                  // Wrap emphasized words with Highlight from rough-notation
+                  // Wrap emphasized words with custom Highlight component
                   if (isEmphasized) {
                     return (
-                      <Suspense fallback={wordContent} key={i}>
-                        <Highlight
-                          color="rgba(232, 108, 0, 0.25)"
-                          strokeWidth={3}
-                          padding={6}
-                          cornerRadius={8}
-                          progress={highlightProgress}
-                          animationDuration={0} // We control progress manually
-                        >
-                          {wordContent}
-                        </Highlight>
-                      </Suspense>
+                      <Highlight
+                        key={i}
+                        color="rgba(232, 108, 0, 0.25)"
+                        strokeWidth={3}
+                        padding={6}
+                        cornerRadius={8}
+                        progress={highlightProgress}
+                        animationDuration={0}
+                      >
+                        {wordContent}
+                      </Highlight>
                     );
                   }
 

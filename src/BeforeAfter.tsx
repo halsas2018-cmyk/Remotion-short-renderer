@@ -42,6 +42,21 @@ const AFTER_ITEM_COLOR = "#16a34a";
 const AFTER_ITEM_BORDER = "#bbf7d0";
 const DIVIDER_COLOR = ACCENT_COLOR;
 
+// Helper to calculate responsive headline font size based on text length and available height
+const calculateHeadlineFontSize = (text: string, cardHeight: number, cardPadding: number, width: number): number => {
+  const baseFontSize = Math.max(84, width * 0.078);
+  const charCount = text.length;
+  // Estimate lines needed: roughly 1 line per 25-30 chars at large sizes
+  const estimatedLines = Math.max(1, Math.ceil(charCount / 28));
+  const lineHeight = 1.2;
+  const tagHeight = 40; // BEFORE/AFTER tag approximate height
+  const bottomTagsHeight = 60; // Decorative tags approximate height
+  const availableHeight = cardHeight - 2 * cardPadding - tagHeight - bottomTagsHeight - 40; // 40px marginTop on bottom tags
+  const maxFontSizeForHeight = availableHeight / (estimatedLines * lineHeight);
+  // Clamp between reasonable bounds
+  return Math.min(baseFontSize, Math.max(48, maxFontSizeForHeight));
+};
+
 export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
   afterLabel,
@@ -96,7 +111,6 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const cardHeight = Math.min(600, height * 0.55); // Cap at 600px, max 55% of height
 
   // Responsive font sizes (video-layout.md guidelines)
-  const headlineFontSize = Math.max(84, width * 0.078); // ≥84px, ~7.8% of width
   const tagFontSize = Math.max(14, width * 0.013);
   const tagPaddingX = Math.max(12, width * 0.011);
   const tagPaddingY = Math.max(6, height * 0.003);
@@ -106,6 +120,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const cardBorderRadius = Math.max(16, width * 0.022);
   const dividerBorderRadius = Math.max(8, width * 0.011);
   const cardPadding = Math.max(32, width * 0.03);
+
+  // Calculate headline font sizes per label to fit in card
+  const beforeHeadlineFontSize = calculateHeadlineFontSize(beforeLabel, cardHeight, cardPadding, width);
+  const afterHeadlineFontSize = calculateHeadlineFontSize(afterLabel, cardHeight, cardPadding, width);
 
   return (
     <AbsoluteFill
@@ -184,12 +202,19 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
 
           <div
             style={{
-              fontSize: headlineFontSize,
+              fontSize: beforeHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
               lineHeight: 1.2,
               letterSpacing: -1,
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+              maxWidth: "100%",
+              flex: "1 1 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             {beforeLabel}
@@ -203,6 +228,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               gap: 12,
               flexWrap: "wrap",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             {["Legacy", "Manual", "Slow", "Costly"].map((tag, i) => (
@@ -327,12 +353,19 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
 
           <div
             style={{
-              fontSize: headlineFontSize,
+              fontSize: afterHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
               lineHeight: 1.2,
               letterSpacing: -1,
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+              maxWidth: "100%",
+              flex: "1 1 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             {afterLabel}
@@ -346,6 +379,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               gap: 12,
               flexWrap: "wrap",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             {["Modern", "Automated", "Fast", "Efficient"].map((tag, i) => (

@@ -13,6 +13,12 @@ interface BeforeAfterProps {
   afterLabel: string;
   durationInFrames: number;
   exitDirection?: "up" | "down" | "left" | "right";
+  // Exposed timing percentages (optional)
+  beforeDurPct?: number;
+  afterDelayPct?: number;
+  afterDurPct?: number;
+  transitionPct?: number;
+  transitionDurPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -41,24 +47,24 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   afterLabel,
   durationInFrames,
   exitDirection = "up",
+  beforeDurPct = 0.25,
+  afterDelayPct = 0.05,
+  afterDurPct = 0.20,
+  transitionPct = 0.50,
+  transitionDurPct = 0.15,
 }) => {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
+  const { width, height, fps } = useVideoConfig();
 
   // ============================================
   // INTERNAL TIMELINE ONLY — done by 50%
   // No entrance/exit — SceneTransition handles that
   // ============================================
-  const BEFORE_DUR_PCT = 0.25;    // 0–25%: before card enters
-  const AFTER_DELAY_PCT = 0.05;   // 25–30%: stagger
-  const AFTER_DUR_PCT = 0.20;     // 30–50%: after card enters
-  const TRANSITION_PCT = 0.50;    // 50%: transition START
-
-  const beforeDuration = Math.round(durationInFrames * BEFORE_DUR_PCT);
-  const afterStart = beforeDuration + Math.round(durationInFrames * AFTER_DELAY_PCT);
-  const afterDuration = Math.round(durationInFrames * AFTER_DUR_PCT);
-  const transitionStart = Math.round(durationInFrames * TRANSITION_PCT);
-  const transitionDuration = Math.round(durationInFrames * 0.15); // 50–65% wipe
+  const beforeDuration = Math.round(durationInFrames * beforeDurPct);
+  const afterStart = beforeDuration + Math.round(durationInFrames * afterDelayPct);
+  const afterDuration = Math.round(durationInFrames * afterDurPct);
+  const transitionStart = Math.round(durationInFrames * transitionPct);
+  const transitionDuration = Math.round(durationInFrames * transitionDurPct);
 
   // Progress (0–1 each)
   const beforeProgress = interpolate(frame, [0, beforeDuration], [0, 1], {
@@ -77,30 +83,38 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // Idle pulse (after transition)
+  // Idle pulse (after transition) — time-based, not frame-based
   const isIdle = frame > transitionStart + transitionDuration;
-  const idlePulse = isIdle ? 1 + 0.02 * Math.sin(frame * 0.06) : 1;
+  const idleTimeSeconds = (frame - (transitionStart + transitionDuration)) / fps;
+  const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
 
-  const padding = 120;
+  // Responsive sizing based on video dimensions
+  const padding = Math.max(80, width * 0.11); // ≥80px safe area, ~11% of width
   const availableWidth = width - 2 * padding;
-  const dividerWidth = 60;
+  const dividerWidth = Math.max(40, width * 0.055); // ~5.5% of width, min 40px
   const cardWidth = (availableWidth - dividerWidth) / 2;
-  const cardHeight = 600;
+  const cardHeight = Math.min(600, height * 0.55); // Cap at 600px, max 55% of height
+
+  // Responsive font sizes (video-layout.md guidelines)
+  const headlineFontSize = Math.max(84, width * 0.078); // ≥84px, ~7.8% of width
+  const tagFontSize = Math.max(14, width * 0.013);
+  const tagPaddingX = Math.max(12, width * 0.011);
+  const tagPaddingY = Math.max(6, height * 0.003);
+  const itemFontSize = Math.max(16, width * 0.015);
+  const itemPaddingX = Math.max(16, width * 0.015);
+  const itemPaddingY = Math.max(8, height * 0.004);
+  const cardBorderRadius = Math.max(16, width * 0.022);
+  const dividerBorderRadius = Math.max(8, width * 0.011);
+  const cardPadding = Math.max(32, width * 0.03);
 
   return (
     <AbsoluteFill
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
-      {/* 
-        BeforeAfter container: centered vertically in the screen.
-        Uses top: 50% + translateY(-50%) for true vertical centering.
-        NO entrance/exit transforms — SceneTransition wrapper handles that.
-      */}
       <div
         style={{
           position: "absolute",
@@ -117,11 +131,11 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
         }}
       >
         {/* BEFORE Card - elevated */}
-        <div
+        <article
           style={{
             width: cardWidth,
             height: cardHeight,
-            borderRadius: 24,
+            borderRadius: cardBorderRadius,
             backgroundColor: CARD_BG,
             border: `2px solid ${CARD_BORDER}`,
             display: "flex",
@@ -129,7 +143,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             justifyContent: "center",
             alignItems: "center",
             textAlign: "center",
-            padding: 40,
+            padding: cardPadding,
             boxSizing: "border-box",
             position: "relative",
             overflow: "hidden",
@@ -141,15 +155,17 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             opacity: beforeProgress,
             clipPath: transitionProgress > 0 ? `inset(0 ${transitionProgress * 100}% 0 0)` : "none",
             boxShadow: CARD_SHADOW,
+            willChange: "transform, opacity, clip-path",
           }}
+          aria-label={`Before: ${beforeLabel}`}
         >
           {/* BEFORE tag - elevated card */}
           <div
             style={{
               position: "absolute",
-              top: 24,
-              left: 24,
-              fontSize: 14,
+              top: tagPaddingY,
+              left: tagPaddingX,
+              fontSize: tagFontSize,
               fontWeight: 700,
               color: BEFORE_TAG_COLOR,
               fontFamily: "system-ui, sans-serif",
@@ -157,17 +173,18 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               textTransform: "uppercase",
               backgroundColor: BEFORE_TAG_BG,
               border: `1px solid ${BEFORE_TAG_BORDER}`,
-              padding: "6px 12px",
+              padding: `${tagPaddingY}px ${tagPaddingX}px`,
               borderRadius: 4,
               boxShadow: "0 2px 8px rgba(220, 38, 38, 0.15)",
             }}
+            role="label"
           >
             BEFORE
           </div>
 
           <div
             style={{
-              fontSize: 48,
+              fontSize: headlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
@@ -192,13 +209,13 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               <div
                 key={i}
                 style={{
-                  fontSize: 16,
+                  fontSize: itemFontSize,
                   fontWeight: 600,
                   color: BEFORE_ITEM_COLOR,
                   fontFamily: "system-ui, sans-serif",
                   backgroundColor: BEFORE_ITEM_BG,
                   border: `1px solid ${BEFORE_ITEM_BORDER}`,
-                  padding: "8px 16px",
+                  padding: `${itemPaddingY}px ${itemPaddingX}px`,
                   borderRadius: 20,
                   boxShadow: "0 2px 8px rgba(220, 38, 38, 0.1)",
                 }}
@@ -207,14 +224,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </article>
 
         {/* Transition Divider - elevated */}
         <div
           style={{
             width: dividerWidth,
             height: cardHeight,
-            borderRadius: 12,
+            borderRadius: dividerBorderRadius,
             backgroundColor: CARD_BG,
             border: `2px solid ${DIVIDER_COLOR}`,
             position: "relative",
@@ -226,7 +243,9 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             justifyContent: "center",
             flexShrink: 0,
             boxShadow: CARD_SHADOW,
+            willChange: "transform, opacity",
           }}
+          aria-hidden="true"
         >
           {/* Arrow indicator */}
           <div
@@ -239,27 +258,27 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.4))",
             }}
           />
-          {/* Moving shimmer */}
+          {/* Moving shimmer — time-based */}
           <div
             style={{
               position: "absolute",
-              top: `${(frame * 0.5) % 100}%`,
+              top: `${(idleTimeSeconds * 30) % 100}%`,
               left: 0,
               width: "100%",
               height: "15%",
               background: `linear-gradient(180deg, transparent, ${DIVIDER_COLOR}44, transparent)`,
               opacity: transitionProgress,
-              borderRadius: 10,
+              borderRadius: dividerBorderRadius - 2,
             }}
           />
         </div>
 
         {/* AFTER Card - elevated */}
-        <div
+        <article
           style={{
             width: cardWidth,
             height: cardHeight,
-            borderRadius: 24,
+            borderRadius: cardBorderRadius,
             backgroundColor: CARD_BG,
             border: `2px solid ${CARD_BORDER}`,
             display: "flex",
@@ -267,7 +286,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             justifyContent: "center",
             alignItems: "center",
             textAlign: "center",
-            padding: 40,
+            padding: cardPadding,
             boxSizing: "border-box",
             position: "relative",
             overflow: "hidden",
@@ -279,15 +298,17 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             opacity: afterProgress,
             clipPath: transitionProgress > 0 ? `inset(0 0 0 ${transitionProgress * 100}%)` : "none",
             boxShadow: CARD_SHADOW,
+            willChange: "transform, opacity, clip-path",
           }}
+          aria-label={`After: ${afterLabel}`}
         >
           {/* AFTER tag - elevated card */}
           <div
             style={{
               position: "absolute",
-              top: 24,
-              right: 24,
-              fontSize: 14,
+              top: tagPaddingY,
+              right: tagPaddingX,
+              fontSize: tagFontSize,
               fontWeight: 700,
               color: AFTER_TAG_COLOR,
               fontFamily: "system-ui, sans-serif",
@@ -295,17 +316,18 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               textTransform: "uppercase",
               backgroundColor: AFTER_TAG_BG,
               border: `1px solid ${AFTER_TAG_BORDER}`,
-              padding: "6px 12px",
+              padding: `${tagPaddingY}px ${tagPaddingX}px`,
               borderRadius: 4,
               boxShadow: "0 2px 8px rgba(232, 108, 0, 0.15)",
             }}
+            role="label"
           >
             AFTER
           </div>
 
           <div
             style={{
-              fontSize: 48,
+              fontSize: headlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
@@ -330,13 +352,13 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               <div
                 key={i}
                 style={{
-                  fontSize: 16,
+                  fontSize: itemFontSize,
                   fontWeight: 600,
                   color: AFTER_ITEM_COLOR,
                   fontFamily: "system-ui, sans-serif",
                   backgroundColor: AFTER_ITEM_BG,
                   border: `1px solid ${AFTER_ITEM_BORDER}`,
-                  padding: "8px 16px",
+                  padding: `${itemPaddingY}px ${itemPaddingX}px`,
                   borderRadius: 20,
                   boxShadow: "0 2px 8px rgba(22, 163, 74, 0.1)",
                 }}
@@ -345,7 +367,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </article>
       </div>
     </AbsoluteFill>
   );

@@ -114,7 +114,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const cardPadding = Math.max(48, width * 0.044);
 
   // Calculate card height based on content
-  // Base height + quote text area + attribution + padding
   const quoteFontSize = Math.max(48, width * 0.044);
   const attrFontSize = Math.max(24, width * 0.022);
   const lineHeight = 1.35;
@@ -122,24 +121,22 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const estimatedLines = Math.ceil(words.length / wordsPerLine);
   const quoteTextHeight = estimatedLines * quoteFontSize * lineHeight;
   const minQuoteHeight = 160;
-  const cardContentHeight = Math.max(minQuoteHeight, quoteTextHeight) + 32 + attrFontSize + 24 + 60; // quote + gap + attr + top/bottom padding
+  const cardContentHeight = Math.max(minQuoteHeight, quoteTextHeight) + 32 + attrFontSize + 24 + 60;
   const cardHeight = cardContentHeight + cardPadding * 2;
 
-  // Container dimensions (for slider) - now dynamic based on actual card height
-  const containerWidth = cardWidth + 2 * cardPadding;
-  const containerHeight = cardHeight;
+  // Slider padding around the card
   const sliderPadding = 24;
-  const sliderWidth = containerWidth + 2 * sliderPadding;
-  const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = Math.max(28, width * 0.026);
+  const sliderWidth = cardWidth + 2 * cardPadding + 2 * sliderPadding;
+  const sliderHeight = cardHeight + 2 * sliderPadding;
+  const sliderBorderRadius = 24 + sliderPadding; // card border-radius + slider padding
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  // Responsive font sizes (following video-layout.md minimums)
+  // Responsive font sizes
   const markFontSize = Math.max(100, width * 0.092);
 
-  // Shimmer position calculation - now relative to card (0-100% of card height)
+  // Shimmer position calculation - relative to card (0-100% of card height)
   const getShimmerTop = (shimmerStartFrame: number) => {
-    if (frame < shimmerStartFrame) return "-100%"; // Hidden before start
+    if (frame < shimmerStartFrame) return "-100%";
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
@@ -157,49 +154,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the card (dynamic size) */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: sliderWidth,
-          height: sliderHeight,
-          pointerEvents: "none",
-          opacity: sliderProgress,
-          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
-        }}
-      >
-        <svg
-          width={sliderWidth}
-          height={sliderHeight}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <rect
-            x={sliderStrokeWidth / 2}
-            y={sliderStrokeWidth / 2}
-            width={sliderWidth - sliderStrokeWidth}
-            height={sliderHeight - sliderStrokeWidth}
-            rx={sliderBorderRadius}
-            ry={sliderBorderRadius}
-            fill="none"
-            stroke={SLIDER_COLOR}
-            strokeWidth={sliderStrokeWidth}
-            strokeDasharray={sliderDashArray}
-            strokeDashoffset={sliderDashOffset}
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      </div>
-
       <div
         style={{
           position: "absolute",
@@ -214,129 +168,175 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           textAlign: "center",
         }}
       >
-        {/* Elevated card for the quote - dynamic height */}
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: 24,
-            padding: cardPadding,
-            boxShadow: CARD_SHADOW,
-            position: "relative",
-            border: `1px solid ${CARD_BORDER}`,
-            width: cardWidth,
-            maxWidth: "100%",
-            minHeight: cardHeight,
-          }}
-        >
-          {/* Accent top bar */}
+        {/* Card container - relative positioning for slider overlay */}
+        <div style={{ position: "relative", width: cardWidth + 2 * cardPadding }}>
+          {/* Slider animation - black border circling the card (positioned relative to card container) */}
           <div
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 4,
-              background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
-              borderRadius: "24px 24px 0 0",
-            }}
-          />
-
-          {/* Opening quotation mark */}
-          <div
-            style={{
-              fontSize: markFontSize,
-              fontWeight: 800,
-              color: ACCENT_COLOR,
-              fontFamily: "Georgia, serif",
-              lineHeight: 1,
-              marginBottom: -30,
-              transformOrigin: "center bottom",
-              transform: [
-                { scale: markProgress * idlePulse },
-              ],
-              opacity: markProgress,
+              top: -sliderPadding,
+              left: -sliderPadding,
+              right: -sliderPadding,
+              bottom: -sliderPadding,
+              pointerEvents: "none",
+              opacity: sliderProgress,
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              borderRadius: sliderBorderRadius,
             }}
           >
-            &ldquo;
-          </div>
-
-          {/* Quote text */}
-          <div
-            style={{
-              fontSize: quoteFontSize,
-              fontWeight: 700,
-              color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.35,
-              letterSpacing: -1,
-              marginBottom: 32,
-              minHeight: Math.max(minQuoteHeight, quoteTextHeight),
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <span
+            <svg
+              width={sliderWidth}
+              height={sliderHeight}
               style={{
-                opacity: quoteProgress,
-                transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
               }}
             >
-              {displayWords.join(" ")}
-            </span>
+              <rect
+                x={sliderStrokeWidth / 2}
+                y={sliderStrokeWidth / 2}
+                width={sliderWidth - sliderStrokeWidth}
+                height={sliderHeight - sliderStrokeWidth}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke={SLIDER_COLOR}
+                strokeWidth={sliderStrokeWidth}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           </div>
 
-          {/* Closing quotation mark */}
+          {/* Elevated card for the quote - dynamic height */}
           <div
             style={{
-              fontSize: markFontSize,
-              fontWeight: 800,
-              color: ACCENT_COLOR,
-              fontFamily: "Georgia, serif",
-              lineHeight: 1,
-              marginTop: -30,
-              transformOrigin: "center top",
-              transform: [
-                { scale: markProgress * idlePulse },
-              ],
-              opacity: markProgress,
-            }}
-          >
-            &rdquo;
-          </div>
-
-          {/* Attribution */}
-          <div
-            style={{
-              fontSize: attrFontSize,
-              fontWeight: 600,
-              color: MEDIUM_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              marginTop: 24,
-              opacity: attrProgress,
-              transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
-            }}
-          >
-            &mdash; {attribution}
-          </div>
-
-          {/* Shimmer animation on card - now properly positioned within card */}
-          <div
-            style={{
-              position: "absolute",
-              top: getShimmerTop(quoteShimmerStart),
-              left: 0,
-              width: "100%",
-              height: "18%",
-              background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-              opacity: quoteProgress,
+              backgroundColor: "white",
               borderRadius: 24,
-              pointerEvents: "none",
+              padding: cardPadding,
+              boxShadow: CARD_SHADOW,
+              position: "relative",
+              border: `1px solid ${CARD_BORDER}`,
+              width: cardWidth,
+              maxWidth: "100%",
+              minHeight: cardHeight,
             }}
-          />
+          >
+            {/* Accent top bar */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
+                borderRadius: "24px 24px 0 0",
+              }}
+            />
+
+            {/* Opening quotation mark */}
+            <div
+              style={{
+                fontSize: markFontSize,
+                fontWeight: 800,
+                color: ACCENT_COLOR,
+                fontFamily: "Georgia, serif",
+                lineHeight: 1,
+                marginBottom: -30,
+                transformOrigin: "center bottom",
+                transform: [
+                  { scale: markProgress * idlePulse },
+                ],
+                opacity: markProgress,
+              }}
+            >
+              &ldquo;
+            </div>
+
+            {/* Quote text */}
+            <div
+              style={{
+                fontSize: quoteFontSize,
+                fontWeight: 700,
+                color: DARK_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                lineHeight: 1.35,
+                letterSpacing: -1,
+                marginBottom: 32,
+                minHeight: Math.max(minQuoteHeight, quoteTextHeight),
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  opacity: quoteProgress,
+                  transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+                }}
+              >
+                {displayWords.join(" ")}
+              </span>
+            </div>
+
+            {/* Closing quotation mark */}
+            <div
+              style={{
+                fontSize: markFontSize,
+                fontWeight: 800,
+                color: ACCENT_COLOR,
+                fontFamily: "Georgia, serif",
+                lineHeight: 1,
+                marginTop: -30,
+                transformOrigin: "center top",
+                transform: [
+                  { scale: markProgress * idlePulse },
+                ],
+                opacity: markProgress,
+              }}
+            >
+              &rdquo;
+            </div>
+
+            {/* Attribution */}
+            <div
+              style={{
+                fontSize: attrFontSize,
+                fontWeight: 600,
+                color: MEDIUM_TEXT,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+                marginTop: 24,
+                opacity: attrProgress,
+                transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
+              }}
+            >
+              &mdash; {attribution}
+            </div>
+
+            {/* Shimmer animation on card - properly positioned within card */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(quoteShimmerStart),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: quoteProgress,
+                borderRadius: 24,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
         </div>
       </div>
     </AbsoluteFill>

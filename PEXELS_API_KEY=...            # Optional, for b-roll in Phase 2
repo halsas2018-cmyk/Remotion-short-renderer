@@ -1,0 +1,34 @@
+
+---
+
+## Key Design Decisions
+
+- **Pre-chunked beats**: Script generator owns chunking (~10 words/beat). Beat generator only assigns types + metadata. This avoids LLM timing hallucinations.
+- **WhisperX as ground truth**: All frame timing derived from forced alignment, not LLM estimates.
+- **Two-mode beat generator**: Backward compatible with legacy full-chunking mode, but MODE A is the happy path.
+- **Daily dedupe**: Prevents re-generating the same story in one day; resets at midnight.
+- **Category-aware fetching**: AI / Business / Science sources interleaved to avoid rate limits and ensure diversity.
+- **Engagement-aware scoring**: YouTube view counts, HN points, Reddit upvotes all normalized into heuristic score.
+
+---
+
+## Common Issues & Fixes
+
+| Issue | Fix |
+|-------|-----|
+| "No stories found" | Check RSS feeds in `news_fetcher.py` — some may 404/block |
+| LLM JSON parse error | `beat_generator.py` now handles both MODE A/B formats + markdown fences |
+| Beat duration too long | Auto-splitter kicks in for splittable types > 3.7s |
+| Frame gaps/overlaps | `auto_fix_frames` snaps each beat start to previous end |
+| Groq TPM limit | Prompt truncated to 170 words / 6 sentences; `max_tokens=6000` |
+| Reddit 429 | 8s delay + 3 retries built into `fetch_rss` |
+| Google News redirects | Resolved for top candidates only (saves requests) |
+
+---
+
+## Next Steps (Priority Order)
+
+1. **Remotion Composition** — wire `beats.json` → component sequence
+2. **Asset pipeline** — Pexels search by beat keywords, MapTiler static maps
+3. **Render script** — `render_video.py` wrapping `npx remotion render`
+4. **Upload automation** — YouTube Data API for Shorts upload + metadata

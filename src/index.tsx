@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition } from "remotion";
+import { Composition, registerRoot } from "remotion";
 import { PersistentBackground } from "./PersistentBackground";
 import { KineticCaptions, createKineticCaptionsComposition } from "./KineticCaptions";
 import { ChartCounter } from "./ChartCounter";
@@ -171,6 +171,36 @@ export const KeyStatementTest = () => (
   />
 );
 
+export const KeyStatementLongTest = () => (
+  <Composition
+    id="KeyStatementLongTest"
+    component={KeyStatement}
+    durationInFrames={180}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "People who are really serious about software should make their own hardware",
+      emphasisWords: ["serious", "software", "hardware"],
+    }}
+  />
+);
+
+export const KeyStatementShortTest = () => (
+  <Composition
+    id="KeyStatementShortTest"
+    component={KeyStatement}
+    durationInFrames={90}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "The future is already here",
+      emphasisWords: ["future"],
+    }}
+  />
+);
+
 export const TimelineTest = () => (
   <Composition
     id="TimelineTest"
@@ -317,3 +347,26 @@ export const MotionGraphicsVideoComposition = () => (
     defaultProps={{}}
   />
 );
+
+// Call registerRoot() so Remotion finds compositions regardless of entry point
+registerRoot({
+  BackgroundTest,
+  KineticCaptionsComposition,
+  KineticCaptionsTest1,
+  KineticCaptionsTest2,
+  ChartCounterTest,
+  ChartComparisonTest,
+  IconTextTest,
+  KeyStatementTest,
+  KeyStatementLongTest,
+  KeyStatementShortTest,
+  TimelineTest,
+  ProcessFlowTest,
+  VersusCardTest,
+  ChartLineTest,
+  MapLocationTest,
+  QuoteCardTest,
+  ProgressMeterTest,
+  BeforeAfterTest,
+  MotionGraphicsVideoComposition,
+});

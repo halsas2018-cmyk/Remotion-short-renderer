@@ -17,9 +17,11 @@ interface BeforeAfterProps {
   afterDelayPct?: number;
   afterDurPct?: number;
   dividerDurPct?: number;
+  sliderDurPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#4a4a4a";
@@ -58,10 +60,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
   afterLabel,
   durationInFrames: propsDurationInFrames,
-  beforeDurPct = 0.15,
-  afterDelayPct = 0.03,
-  afterDurPct = 0.10,
-  dividerDurPct = 0.10,
+  // CLAUDE.md Rule 1: Non-text cards must complete entrance by 25-30% of durationInFrames
+  // Defaults tuned so entranceEndFrame ≈ 28% (midpoint of 25-30%)
+  beforeDurPct = 0.12,        // 12% - BEFORE card entrance
+  afterDelayPct = 0.03,       // 3%  - stagger after BEFORE
+  afterDurPct = 0.10,         // 10% - AFTER card entrance
+  dividerDurPct = 0.03,       // 3%  - divider entrance (12+3+10+3 = 28%)
+  // CLAUDE.md Rule 3: Slider starts at entranceEndFrame, duration ~45%
+  sliderDurPct = 0.45,        // 45% - slider border draw duration
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -70,8 +76,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE ONLY — entrance animations complete by ~30%, then hold
-  // NO transition/wipe — both cards stay visible
+  // INTERNAL TIMELINE — CLAUDE.md compliant
+  // Non-text card: entrance completes by 25-30% (target ~28%)
+  // No exit animations (Rule 2) — designed for SceneTransition wrapper
+  // Slider starts at entranceEndFrame, runs 45% (Rule 3)
   // ============================================
   const beforeDuration = Math.round(durationInFrames * beforeDurPct);
   const afterStart = beforeDuration + Math.round(durationInFrames * afterDelayPct);
@@ -79,23 +87,27 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const dividerStart = afterStart + afterDuration;
   const dividerDuration = Math.round(durationInFrames * dividerDurPct);
 
-  // Slider animation starts after all cards are in, takes ~20% of duration
-  const sliderStart = dividerStart + dividerDuration;
-  const sliderDuration = Math.round(durationInFrames * 0.20);
+  // entranceEndFrame = when all content (cards + divider) have finished animating in
+  // Target: 25-30% of durationInFrames (Rule 1 for non-text cards)
+  const entranceEndFrame = dividerStart + dividerDuration; // ≈ 28% with defaults
+  
+  // Slider (Rule 3): starts at entranceEndFrame, duration ~45%
+  const sliderStart = entranceEndFrame;
+  const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
   // Progress (0–1 each) — entrance animations only
   const beforeProgress = interpolate(frame, [0, beforeDuration], [0, 1], {
-    easing: easeOut,
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const afterProgress = interpolate(frame, [afterStart, afterStart + afterDuration], [0, 1], {
-    easing: easeOut,
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const dividerProgress = interpolate(frame, [dividerStart, dividerStart + dividerDuration], [0, 1], {
-    easing: easeOut,
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -106,9 +118,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   });
 
   // Idle pulse (after all entrance animations) — time-based, not frame-based
-  const allAnimationsDone = dividerStart + dividerDuration;
-  const isIdle = frame > allAnimationsDone;
-  const idleTimeSeconds = (frame - allAnimationsDone) / fps;
+  const isIdle = frame > entranceEndFrame;
+  const idleTimeSeconds = isIdle ? (frame - entranceEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
 
   // Card slide-in complete progress (for triggering scaleX animation)
@@ -168,6 +179,12 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
 
+  // Shimmer opacity - 0 before start, then 1
+  const getShimmerOpacity = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return 1;
+  };
+
   // Slider path animation - draws a rectangle around the cards using SVG stroke-dashoffset
   // Total perimeter for stroke-dasharray (approximate for rounded rect)
   const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
@@ -193,6 +210,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           height: sliderHeight,
           pointerEvents: "none",
           opacity: sliderProgress,
+          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
         }}
       >
         <svg
@@ -353,7 +371,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               width: "100%",
               height: "15%",
               background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
-              opacity: beforeProgress,
+              opacity: getShimmerOpacity(beforeShimmerStart),
               borderRadius: cardBorderRadius,
               pointerEvents: "none",
             }}
@@ -396,7 +414,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           <div
             style={{
               position: "absolute",
-              top: `${(idleTimeSeconds * shimmerSpeed) % 100}%`,
+              top: isIdle ? `${(idleTimeSeconds * shimmerSpeed) % 100}%` : "-100%",
               left: 0,
               width: "100%",
               height: "15%",
@@ -521,7 +539,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               width: "100%",
               height: "15%",
               background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
-              opacity: afterProgress,
+              opacity: getShimmerOpacity(afterShimmerStart),
               borderRadius: cardBorderRadius,
               pointerEvents: "none",
             }}

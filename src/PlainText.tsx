@@ -35,10 +35,13 @@ const SLIDER_COLOR = "#1a1a1a";
 export const PlainText: React.FC<PlainTextProps> = ({
   text,
   durationInFrames: propsDurationInFrames,
-  lineDurPct = 0.25,        // 25% per line - completes by ~50% for typical 3-5 lines
-  lineStaggerPct = 0.05,    // 5% stagger between lines
-  textStartDelayPct = 0.05, // 5% initial delay
-  sliderDurPct = 0.45,      // 45% for slider (starts at ~50%, ends at ~95%)
+  // CLAUDE.md Rule 1: Text cards must complete entrance by 50% of durationInFrames
+  // Defaults tuned so textEndFrame ≈ 50% for typical 3-5 lines
+  lineDurPct = 0.12,         // 12% per line
+  lineStaggerPct = 0.04,     // 4% stagger between lines
+  textStartDelayPct = 0.05,  // 5% initial delay
+  // CLAUDE.md Rule 3: Slider starts at textEndFrame, duration ~45%
+  sliderDurPct = 0.45,       // 45% for slider (starts at ~50%, ends at ~95%)
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -56,8 +59,10 @@ export const PlainText: React.FC<PlainTextProps> = ({
   const totalLines = lines.length;
 
   // ============================================
-  // INTERNAL TIMELINE — completes by ~50%, then holds
-  // No exit animation — designed to be wrapped by SceneTransition
+  // INTERNAL TIMELINE — CLAUDE.md compliant
+  // Text card: entrance completes by 50% of durationInFrames
+  // No exit animation (Rule 2) — designed to be wrapped by SceneTransition
+  // Slider starts at textEndFrame, runs 45% (Rule 3)
   // ============================================
   const lineDuration = Math.round(durationInFrames * lineDurPct);
   const lineStagger = Math.round(durationInFrames * lineStaggerPct);
@@ -67,9 +72,8 @@ export const PlainText: React.FC<PlainTextProps> = ({
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
   // Idle pulse — time-based
-  const allAnimationsDone = textEndFrame;
-  const isIdle = frame > allAnimationsDone;
-  const idleTimeSeconds = (frame - allAnimationsDone) / fps;
+  const isIdle = frame > textEndFrame;
+  const idleTimeSeconds = isIdle ? (frame - textEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
   // Shimmer timing

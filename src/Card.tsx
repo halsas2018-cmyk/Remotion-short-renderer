@@ -76,7 +76,7 @@ export const Card: React.FC<CardProps> = ({
   const cardWidth = widthProp ?? videoWidth - 2 * Math.max(80, videoWidth * 0.11);
   const minHeight = minHeightProp ?? 400;
   const padding = paddingProp ?? Math.max(48, videoWidth * 0.044);
-  const radius = Math.max(32, videoWidth * 0.03);
+  const borderRadius = Math.max(32, videoWidth * 0.03);
   const depth = depthProp ?? Math.max(28, videoWidth * 0.033);
   const enterDur = entranceDurationProp ?? Math.max(18, Math.round(fps * 0.9));
   const idleStartFrame = idleStartFrameProp ?? enterDur;
@@ -208,7 +208,7 @@ export const Card: React.FC<CardProps> = ({
                 left: 0,
                 right: 0,
                 height: Math.max(4, videoWidth * 0.0037),
-                borderRadius: `${radius}px ${radius}px 0 0`,
+                borderRadius: `${borderRadius}px ${borderRadius}px 0 0`,
                 background: `linear-gradient(90deg, ${ACCENT_LIGHT}, ${ACCENT})`,
                 transform: "translateZ(10px)",
               }}

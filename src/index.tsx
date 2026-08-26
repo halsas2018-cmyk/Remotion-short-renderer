@@ -348,25 +348,4 @@ export const MotionGraphicsVideoComposition = () => (
   />
 );
 
-// Call registerRoot() so Remotion finds compositions regardless of entry point
-registerRoot({
-  BackgroundTest,
-  KineticCaptionsComposition,
-  KineticCaptionsTest1,
-  KineticCaptionsTest2,
-  ChartCounterTest,
-  ChartComparisonTest,
-  IconTextTest,
-  KeyStatementTest,
-  KeyStatementLongTest,
-  KeyStatementShortTest,
-  TimelineTest,
-  ProcessFlowTest,
-  VersusCardTest,
-  ChartLineTest,
-  MapLocationTest,
-  QuoteCardTest,
-  ProgressMeterTest,
-  BeforeAfterTest,
-  MotionGraphicsVideoComposition,
-});
+// registerRoot is now ONLY in src/Root.tsx — removed from here to prevent duplicate registration

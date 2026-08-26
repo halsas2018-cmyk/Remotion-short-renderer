@@ -15,5 +15,5 @@ Config.overrideBundlerConfig(enableTailwind);
 Config.setBrowserExecutable("/usr/bin/chromium");
 Config.setChromiumOpenGlRenderer("swiftshader");
 
-// Optional: Explicitly set entry point (default is ./src/index.tsx)
-// Config.setEntryPoint("./src/index.tsx");
+// Entry point is ./src/index.tsx (default) which calls registerRoot(RemotionRoot)
+// RemotionRoot is defined in ./src/Root.tsx (separate file per best practice)

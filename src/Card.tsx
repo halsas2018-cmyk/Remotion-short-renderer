@@ -1,7 +1,7 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 /* ------------------------------------------------------------------ */
@@ -19,6 +19,40 @@ interface CubeCardProps {
   /** Video width for responsive sizing */
   videoWidth?: number;
 }
+
+/** Lighting rig — deterministic, no self-animation */
+const Lighting: React.FC = () => {
+  const { scene } = useThree();
+
+  // Create lights imperatively to avoid JSX transform issues
+  React.useEffect(() => {
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(5, 8, 6);
+    dirLight.castShadow = true;
+    dirLight.shadow.camera.left = -8;
+    dirLight.shadow.camera.right = 8;
+    dirLight.shadow.camera.top = 8;
+    dirLight.shadow.camera.bottom = -8;
+    dirLight.shadow.camera.near = 0.1;
+    dirLight.shadow.camera.far = 50;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    fillLight.position.set(-4, 3, -5);
+    scene.add(fillLight);
+
+    return () => {
+      scene.remove(ambient);
+      scene.remove(dirLight);
+      scene.remove(fillLight);
+    };
+  }, [scene]);
+
+  return null;
+};
 
 /** Inner cube mesh — receives frame-driven transforms via useFrame */
 const CubeMesh: React.FC<{ size: number }> = ({ size }) => {
@@ -84,28 +118,6 @@ const CubeMesh: React.FC<{ size: number }> = ({ size }) => {
         material={new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, opacity: 0.03, transparent: true })}
       />
     </group>
-  );
-};
-
-/** Lighting rig — deterministic, no self-animation */
-const Lighting: React.FC = () => {
-  return (
-    <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 8, 6]} intensity={1.2} castShadow>
-        <directionalLight.shadow>
-          <orthographicCamera
-            left={-8}
-            right={8}
-            top={8}
-            bottom={-8}
-            near={0.1}
-            far={50}
-          />
-        </directionalLight.shadow>
-      </directionalLight>
-      <directionalLight position={[-4, 3, -5]} intensity={0.3} />
-    </>
   );
 };
 

@@ -7,15 +7,34 @@ import {
   interpolate,
   Easing,
 } from "remotion";
-import { Card, CardContent, tokens } from "./design-system";
 
-interface ChartCounterProps {
-  value: number;
-  label: string;
-  durationInFrames: number;
-  /** Card variant from design system */
-  cardVariant?: "elevated" | "accent" | "glass" | "accentGlass" | "filled" | "outlined" | "minimal";
-}
+// Inline design tokens (removed dependency on ./design-system)
+const tokens = {
+  colors: {
+    accent: "#e86c00",
+    accentLight: "#f97316",
+    dark: "#1a1a1a",
+    darkMuted: "#525252",
+    light: "#a3a3a3",
+    white: "#ffffff",
+    cardBg: "white",
+    cardBorder: "#e8e8e8",
+    sliderColor: "#1a1a1a",
+    dividerBg: "#fff7ed",
+  },
+  easing: {
+    easeOut: [0.16, 1, 0.3, 1] as const,
+    easeOutExpo: [0.19, 1, 0.22, 1] as const,
+  },
+  space: {
+    lg: 24,
+  },
+};
+
+const easeOut = Easing.bezier(...tokens.easing.easeOut);
+const ACCENT_COLOR = tokens.colors.accent;
+const DARK_TEXT = tokens.colors.dark;
+const MEDIUM_TEXT = tokens.colors.darkMuted;
 
 // Number formatting with suffixes
 function formatNumber(num: number): string {
@@ -36,10 +55,13 @@ function formatNumber(num: number): string {
   return `$${num.toLocaleString()}`;
 }
 
-const easeOut = Easing.bezier(...tokens.easing.easeOut);
-const ACCENT_COLOR = tokens.colors.accent;
-const DARK_TEXT = tokens.colors.dark;
-const MEDIUM_TEXT = tokens.colors.darkMuted;
+interface ChartCounterProps {
+  value: number;
+  label: string;
+  durationInFrames: number;
+  /** Card variant from design system */
+  cardVariant?: "elevated" | "accent" | "glass" | "accentGlass" | "filled" | "outlined" | "minimal";
+}
 
 export const ChartCounter: React.FC<ChartCounterProps> = ({
   value,
@@ -97,6 +119,59 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
     ? `translateY(${exitTranslateY}px) scale(${exitScale})`
     : "none";
 
+  // Card styles based on variant
+  const getCardStyles = () => {
+    switch (cardVariant) {
+      case "filled":
+        return {
+          background: `linear-gradient(135deg, ${DARK_TEXT} 0%, #2d2d2d 100%)`,
+          border: "none",
+          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.15)",
+        };
+      case "accent":
+        return {
+          background: "white",
+          border: `2px solid ${ACCENT_COLOR}`,
+          boxShadow: "0 12px 40px rgba(232, 108, 0, 0.15), 0 4px 12px rgba(232, 108, 0, 0.08)",
+        };
+      case "glass":
+        return {
+          background: "rgba(255, 255, 255, 0.85)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.3)",
+          boxShadow: "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)",
+        };
+      case "accentGlass":
+        return {
+          background: "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(20px)",
+          border: `1px solid ${ACCENT_COLOR}40`,
+          boxShadow: "0 12px 40px rgba(232, 108, 0, 0.1), 0 4px 12px rgba(232, 108, 0, 0.05)",
+        };
+      case "outlined":
+        return {
+          background: "white",
+          border: `2px solid ${tokens.colors.cardBorder}`,
+          boxShadow: "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)",
+        };
+      case "minimal":
+        return {
+          background: "transparent",
+          border: "none",
+          boxShadow: "none",
+        };
+      default: // "elevated"
+        return {
+          background: "white",
+          border: `1px solid ${tokens.colors.cardBorder}`,
+          boxShadow: "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)",
+        };
+    }
+  };
+
+  const cardStyles = getCardStyles();
+  const isDarkVariant = cardVariant === "filled";
+
   return (
     <AbsoluteFill
       style={{
@@ -105,45 +180,54 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      <Card
-        variant={cardVariant}
-        entrance="scale"
-        idle="breathe"
-        entranceDuration={entranceFrames}
+      <div
         style={{
-          transform: exitTransform,
-          opacity: isExit ? exitOpacity : 1,
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: `translate(-50%, -50%) ${exitTransform}`,
           transformOrigin: "center",
+          opacity: isExit ? exitOpacity : 1,
+          width: "100%",
+          maxWidth: width - 160,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: 60,
+          borderRadius: 32,
+          ...cardStyles,
         }}
       >
-        <CardContent.Header
+        <div
           style={{
             fontSize: 140,
             fontWeight: 900,
             fontFamily: "system-ui, sans-serif",
-            color: cardVariant === "filled" ? tokens.colors.white : ACCENT_COLOR,
+            color: isDarkVariant ? tokens.colors.white : ACCENT_COLOR,
             lineHeight: 1,
             letterSpacing: -4,
             whiteSpace: "nowrap",
           }}
         >
           {displayValue}
-        </CardContent.Header>
-        <CardContent.Body
+        </div>
+        <div
           style={{
             marginTop: tokens.space.lg,
             fontSize: 48,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
-            color: cardVariant === "filled" ? "rgba(255, 255, 255, 0.8)" : DARK_TEXT,
+            color: isDarkVariant ? "rgba(255, 255, 255, 0.8)" : DARK_TEXT,
             lineHeight: 1.2,
             maxWidth: width - 240,
             textAlign: "center",
           }}
         >
           {label}
-        </CardContent.Body>
-      </Card>
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };

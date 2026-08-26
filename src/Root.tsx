@@ -7,7 +7,6 @@ import { ChartComparison } from "./ChartComparison";
 import { ChartComparison3D } from "./ChartComparison3D";
 import { IconText } from "./IconText";
 import { KeyStatement } from "./KeyStatement";
-import { KeyStatement3D } from "./KeyStatement3D";
 import { Card3DTest } from "./CardTest";
 import { Timeline } from "./Timeline";
 import { ProcessFlow } from "./ProcessFlow";
@@ -243,43 +242,6 @@ export const RemotionRoot = () => (
     <Composition
       id="KeyStatementShortTest"
       component={KeyStatement}
-      durationInFrames={90}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        text: "The future is already here",
-        emphasisWords: ["future"],
-      }}
-    />
-    {/* 3D variants — A/B against the originals above */}
-    <Composition
-      id="KeyStatement3DTest"
-      component={KeyStatement3D}
-      durationInFrames={120}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        text: "The gamble works while AI chips are scarce",
-        emphasisWords: ["scarce"],
-      }}
-    />
-    <Composition
-      id="KeyStatement3DLongTest"
-      component={KeyStatement3D}
-      durationInFrames={180}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        text: "People who are really serious about software should make their own hardware",
-        emphasisWords: ["serious", "software", "hardware"],
-      }}
-    />
-    <Composition
-      id="KeyStatement3DShortTest"
-      component={KeyStatement3D}
       durationInFrames={90}
       fps={30}
       width={1080}

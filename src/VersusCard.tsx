@@ -44,10 +44,13 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   left,
   right,
   durationInFrames: propsDurationInFrames,
-  sideDurPct = 0.15,
-  sideStaggerPct = 0.03,
-  dividerDurPct = 0.10,
-  sliderDurPct = 0.45,
+  // CLAUDE.md Rule 1: Non-text cards must complete entrance by 25-30% of durationInFrames
+  // Defaults tuned so entranceEndFrame ≈ 28% (midpoint of 25-30%)
+  sideDurPct = 0.15,        // 15% - left/right card entrance duration
+  sideStaggerPct = 0.03,    // 3%  - stagger between left and right
+  dividerDurPct = 0.13,     // 13% - divider entrance (15% + 13% = 28% entranceEndFrame)
+  // CLAUDE.md Rule 3: Slider starts at entranceEndFrame, duration ~45%
+  sliderDurPct = 0.45,      // 45% - slider border draw duration
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -55,7 +58,10 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE — completes by ~70%, then holds
+  // INTERNAL TIMELINE — CLAUDE.md compliant
+  // Non-text card: entrance completes by 25-30% (target ~28%)
+  // No exit animations (Rule 2) — designed for SceneTransition wrapper
+  // Slider starts at entranceEndFrame, runs 45% (Rule 3)
   // ============================================
   const sideDuration = Math.round(durationInFrames * sideDurPct);
   const sideStagger = Math.round(durationInFrames * sideStaggerPct);
@@ -63,7 +69,12 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const rightStart = leftStart + sideStagger;
   const dividerStart = leftStart + sideDuration;
   const dividerDuration = Math.round(durationInFrames * dividerDurPct);
-  const sliderStart = dividerStart + dividerDuration;
+  
+  // entranceEndFrame = when all content (cards + divider) have finished animating in
+  // Target: 25-30% of durationInFrames (Rule 1 for non-text cards)
+  const entranceEndFrame = dividerStart + dividerDuration; // ≈ 28% with defaults
+  
+  const sliderStart = entranceEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
   // Progress with smoother easing
@@ -88,16 +99,15 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // Idle pulse — time-based
-  const allAnimationsDone = dividerStart + dividerDuration;
-  const isIdle = frame > allAnimationsDone;
-  const idleTimeSeconds = (frame - allAnimationsDone) / fps;
+  // Idle state — begins after entranceEndFrame (Rule 1)
+  const isIdle = frame > entranceEndFrame;
+  const idleTimeSeconds = isIdle ? (frame - entranceEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
-  // Shimmer timing
+  // Shimmer timing — starts after each card's entrance completes
   const leftShimmerStart = leftStart + sideDuration;
   const rightShimmerStart = rightStart + sideDuration;
-  const shimmerSpeed = 25; // Slightly slower, more elegant
+  const shimmerSpeed = 25; // % per second
 
   // Responsive sizing
   const padding = Math.max(80, width * 0.11);
@@ -131,7 +141,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
 
-  // Slider path animation
+  // Slider path animation (SVG stroke-dashoffset)
   const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
   const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
   const sliderDashOffset = sliderPerimeter * (1 - sliderProgress);
@@ -156,7 +166,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the cards */}
+      {/* Slider animation - black border circling the cards (Rule 3) */}
       <div
         style={{
           position: "absolute",
@@ -306,7 +316,6 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                     backgroundColor: "#fafafa",
                     borderRadius: 12,
                     border: `1px solid ${CARD_BORDER}`,
-                    transition: "all 0.2s ease",
                   }}
                 >
                   <span
@@ -324,7 +333,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
             </div>
           )}
 
-          {/* Shimmer animation */}
+          {/* Shimmer animation - starts after card entrance */}
           <div
             style={{
               position: "absolute",
@@ -372,11 +381,11 @@ export const VersusCard: React.FC<VersusCardProps> = ({
           >
             VS
           </span>
-          {/* Moving shimmer */}
+          {/* Moving shimmer - runs during idle */}
           <div
             style={{
               position: "absolute",
-              top: `${(idleTimeSeconds * shimmerSpeed) % 100}%`,
+              top: isIdle ? `${(idleTimeSeconds * shimmerSpeed) % 100}%` : "-100%",
               left: 0,
               width: "100%",
               height: "15%",
@@ -496,7 +505,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
             </div>
           )}
 
-          {/* Shimmer animation */}
+          {/* Shimmer animation - starts after card entrance */}
           <div
             style={{
               position: "absolute",

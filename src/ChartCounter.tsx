@@ -178,6 +178,7 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
         width,
         height,
         backgroundColor: "transparent",
+        translate: "-114.9px -358.8px",
       }}
     >
       <div

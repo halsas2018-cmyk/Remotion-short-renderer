@@ -12,6 +12,7 @@ import {
 } from "remotion";
 import { Lottie, LottieAnimationData } from "@remotion/lottie";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
+import { fitText } from "@remotion/layout-utils";
 import * as LucideIcons from "lucide-react";
 
 interface IconTextProps {
@@ -188,7 +189,16 @@ export const IconText: React.FC<IconTextProps> = ({
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
-  const baseFontSize = Math.max(56, width * 0.052);
+  // Use fitText to ensure text fits within card width
+  const fitTextResult = fitText({
+    text,
+    withinWidth: containerWidth - 2 * cardPadding, // Account for card padding
+    fontFamily: "system-ui, sans-serif",
+    fontWeight: "500",
+    maxFontSize: Math.max(72, width * 0.065),
+    minFontSize: 48,
+  });
+  const baseFontSize = Math.max(56, Math.min(fitTextResult.fontSize, width * 0.052));
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {

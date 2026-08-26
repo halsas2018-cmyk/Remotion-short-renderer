@@ -12,7 +12,7 @@ import {
 } from "remotion";
 import { Lottie, LottieAnimationData } from "@remotion/lottie";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
-import { fitText } from "@remotion/layout-utils";
+import { fitText, fillTextBox } from "@remotion/layout-utils";
 import * as LucideIcons from "lucide-react";
 
 interface IconTextProps {
@@ -89,6 +89,13 @@ const ANNOTATION_CYCLE = [
   { Component: Underline, color: ACCENT_COLOR },
 ];
 
+// Text line interface for wrapped text
+interface TextLine {
+  words: string[];
+  startFrame: number;
+  endFrame: number;
+}
+
 export const IconText: React.FC<IconTextProps> = ({
   icon,
   text,
@@ -137,17 +144,105 @@ export const IconText: React.FC<IconTextProps> = ({
   }, [lottieHandle, iconPath]);
 
   // ============================================
-  // INTERNAL TIMELINE — CLAUDE.md compliant
-  // Text card: entrance completes by 50% of durationInFrames
-  // No exit animations (Rule 2) — designed for SceneTransition wrapper
-  // Slider starts at textEndFrame, runs 45% (Rule 3)
+  // RESPONSIVE SIZING & TEXT WRAPPING (using measuring-text.md)
   // ============================================
+  const padding = Math.max(80, width * 0.11);
+  const availableWidth = width - 2 * padding;
+  const cardPadding = Math.max(48, width * 0.044);
+  const cardBorderRadius = Math.max(32, width * 0.03);
+
+  // Container dimensions (for slider)
+  const containerWidth = availableWidth;
+  const containerHeight = 500; // Approximate card height (icon + text)
+  const sliderPadding = 24;
+  const sliderWidth = containerWidth + 2 * sliderPadding;
+  const sliderHeight = containerHeight + 2 * sliderPadding;
+  const sliderBorderRadius = cardBorderRadius + sliderPadding;
+  const sliderStrokeWidth = Math.max(5, width * 0.0045);
+
+  // Text content width (accounting for card padding)
+  const textContentWidth = containerWidth - 2 * cardPadding;
+
+  // Use fitText to find optimal font size that fits the text within the container
+  // We measure the full text as a single block to get a baseline font size
+  const fitTextResult = fitText({
+    text,
+    withinWidth: textContentWidth,
+    fontFamily: "system-ui, sans-serif",
+    fontWeight: "500",
+    maxFontSize: Math.max(72, width * 0.065),
+    minFontSize: 48,
+  });
+  const baseFontSize = Math.max(56, Math.min(fitTextResult.fontSize, width * 0.052));
+
+  // Use fillTextBox to wrap text into lines that fit within the container
+  // This follows measuring-text.md pattern for checking text overflow
+  const textBox = fillTextBox({
+    maxBoxWidth: textContentWidth,
+    maxLines: 10, // Allow up to 10 lines
+    fontSize: baseFontSize,
+    fontFamily: "system-ui, sans-serif",
+    fontWeight: "500",
+    lineHeight: 1.4,
+  });
+
+  const words = text.split(" ");
+  const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
+
+  // Build lines using fillTextBox - add words one by one until they exceed the box
+  const lines: TextLine[] = [];
+  let currentLineWords: string[] = [];
+  let currentLineStartFrame = 0;
+
+  // Calculate timing constants
   const iconDuration = Math.round(durationInFrames * iconDurPct);
   const textStartDelay = Math.round(durationInFrames * textStartDelayPct);
   const wordDuration = Math.round(durationInFrames * wordDurPct);
   const wordStagger = Math.round(durationInFrames * wordStaggerPct);
 
-  const words = text.split(" ");
+  // First, determine line breaks by simulating fillTextBox
+  // We'll use a simpler approach: measure each potential line
+  let testLineWords: string[] = [];
+  const lineBreaks: number[] = []; // Indices where lines break
+
+  for (let i = 0; i < words.length; i++) {
+    testLineWords.push(words[i]);
+    const testText = testLineWords.join(" ");
+    const { width: lineWidth } = textBox.measure({
+      text: testText,
+      fontFamily: "system-ui, sans-serif",
+      fontSize: baseFontSize,
+      fontWeight: "500",
+    });
+
+    if (lineWidth > textContentWidth && testLineWords.length > 1) {
+      // This word would overflow, break before it
+      lineBreaks.push(i);
+      testLineWords = [words[i]];
+    }
+  }
+
+  // Build line objects with timing
+  let wordIndex = 0;
+  let lineStartWordIndex = 0;
+
+  for (const breakIndex of [...lineBreaks, words.length]) {
+    const lineWords = words.slice(lineStartWordIndex, breakIndex);
+    const lineWordCount = lineWords.length;
+
+    const lineStartFrame = textStartDelay + iconDuration + lineStartWordIndex * wordStagger;
+    const lineEndFrame = lineStartFrame + (lineWordCount - 1) * wordStagger + wordDuration;
+
+    lines.push({
+      words: lineWords,
+      startFrame: lineStartFrame,
+      endFrame: lineEndFrame,
+    });
+
+    lineStartWordIndex = breakIndex;
+  }
+
+  // Calculate total text end frame (last word of last line)
   const totalWords = words.length;
   const textEndFrame = textStartDelay + iconDuration + (totalWords - 1) * wordStagger + wordDuration;
   const sliderStart = textEndFrame;
@@ -172,33 +267,6 @@ export const IconText: React.FC<IconTextProps> = ({
   // Shimmer timing — starts after text animation completes
   const shimmerStart = textEndFrame;
   const shimmerSpeed = 25; // % per second
-
-  // Responsive sizing
-  const padding = Math.max(80, width * 0.11);
-  const availableWidth = width - 2 * padding;
-  const cardPadding = Math.max(48, width * 0.044);
-  const cardBorderRadius = Math.max(32, width * 0.03);
-
-  // Container dimensions (for slider)
-  const containerWidth = availableWidth;
-  const containerHeight = 500; // Approximate card height (icon + text)
-  const sliderPadding = 24;
-  const sliderWidth = containerWidth + 2 * sliderPadding;
-  const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = cardBorderRadius + sliderPadding;
-  const sliderStrokeWidth = Math.max(5, width * 0.0045);
-
-  // Responsive font sizes (following video-layout.md minimums)
-  // Use fitText to ensure text fits within card width
-  const fitTextResult = fitText({
-    text,
-    withinWidth: containerWidth - 2 * cardPadding, // Account for card padding
-    fontFamily: "system-ui, sans-serif",
-    fontWeight: "500",
-    maxFontSize: Math.max(72, width * 0.065),
-    minFontSize: 48,
-  });
-  const baseFontSize = Math.max(56, Math.min(fitTextResult.fontSize, width * 0.052));
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -227,10 +295,9 @@ export const IconText: React.FC<IconTextProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // Build emphasis set and assign annotations per word (like KeyStatement)
-  const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
+  // Assign annotations per emphasized word (cycle through styles)
   let emphasisRunIndex = 0;
-  const wordAnnotations = words.map((word) => {
+  const wordAnnotations: (typeof ANNOTATION_CYCLE[0] | null)[] = words.map((word) => {
     const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
     if (!emphasisSet.has(cleanWord)) return null;
     const entry = ANNOTATION_CYCLE[emphasisRunIndex % ANNOTATION_CYCLE.length];
@@ -454,7 +521,7 @@ export const IconText: React.FC<IconTextProps> = ({
                 {renderIcon()}
               </div>
 
-              {/* Text with word-by-word animation + rough-notation highlights */}
+              {/* Text with line-by-line word animation + rough-notation highlights */}
               <div
                 style={{
                   width: "100%",
@@ -462,97 +529,121 @@ export const IconText: React.FC<IconTextProps> = ({
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 8,
+                  textAlign: "center",
                 }}
               >
-                {words.map((word, wordIndex) => {
-                  const wordStartFrame = textStartDelay + iconDuration + wordIndex * wordStagger;
-                  const wordEndFrame = wordStartFrame + wordDuration;
+                {lines.map((line, lineIndex) => {
+                  const lineWords = line.words;
+                  const lineWordCount = lineWords.length;
 
-                  const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                    easing: easeOutExpo,
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-
-                  const wordOpacity = wordProgress;
-                  const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-                  const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-
-                  // Idle animation for words: subtle vertical drift
-                  const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
-                  const wordIdleScale = isIdle ? 1 + 0.01 * Math.sin(frame * 0.07 + wordIndex) : 1;
-
-                  const annotation = wordAnnotations[wordIndex];
-                  const wordHasEmphasis = !!annotation;
-
-                  const wordContent = (
-                    <span
+                  return (
+                    <div
+                      key={lineIndex}
                       style={{
-                        fontSize: baseFontSize,
-                        fontWeight: wordHasEmphasis ? 700 : 500,
-                        color: DARK_TEXT,
-                        fontFamily: "system-ui, sans-serif",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 4,
                         lineHeight: 1.4,
-                        letterSpacing: -1,
-                        textAlign: "center",
-                        textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + wordIndex) * 2}px rgba(232, 108, 0, 0.15)` : "none",
-                        ...(wordHasEmphasis
-                          ? {
-                              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
-                              WebkitBackgroundClip: "text",
-                              backgroundClip: "text",
-                              WebkitTextFillColor: "transparent",
-                            }
-                          : {}),
                       }}
                     >
-                      {word}
-                    </span>
-                  );
+                      {lineWords.map((word, wordInLineIndex) => {
+                        const globalWordIndex = words.indexOf(word, 
+                          lines.slice(0, lineIndex).reduce((sum, l) => sum + l.words.length, 0)
+                        );
+                        
+                        const wordStartFrame = textStartDelay + iconDuration + globalWordIndex * wordStagger;
+                        const wordEndFrame = wordStartFrame + wordDuration;
 
-                  const renderedWord = wordHasEmphasis && annotation ? (
-                    <annotation.Component
-                      key={wordIndex}
-                      color={annotation.color}
-                      strokeWidth={3}
-                      padding={6}
-                      progress={interpolate(
-                        frame,
-                        [wordStartFrame, wordEndFrame + 5],
-                        [0, 1],
-                        {
+                        const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
                           easing: easeOutExpo,
                           extrapolateLeft: "clamp",
                           extrapolateRight: "clamp",
-                        }
-                      )}
-                    >
-                      {wordContent}
-                    </annotation.Component>
-                  ) : (
-                    <span key={wordIndex}>{wordContent}</span>
-                  );
+                        });
 
-                  return (
-                    <span
-                      key={wordIndex}
-                      style={{
-                        display: "inline-block",
-                        opacity: wordOpacity,
-                        transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale * wordIdleScale})`,
-                        transformOrigin: "center",
-                        willChange: "transform, opacity",
-                        margin: "0 2px",
-                      }}
-                    >
-                      {renderedWord}{wordIndex < totalWords - 1 ? " " : ""}
-                    </span>
+                        const wordOpacity = wordProgress;
+                        const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        });
+                        const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        });
+
+                        // Idle animation for words: subtle vertical drift
+                        const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + globalWordIndex * 0.5) : 0;
+                        const wordIdleScale = isIdle ? 1 + 0.01 * Math.sin(frame * 0.07 + globalWordIndex) : 1;
+
+                        const annotation = wordAnnotations[globalWordIndex];
+                        const wordHasEmphasis = !!annotation;
+
+                        const wordContent = (
+                          <span
+                            style={{
+                              fontSize: baseFontSize,
+                              fontWeight: wordHasEmphasis ? 700 : 500,
+                              color: DARK_TEXT,
+                              fontFamily: "system-ui, sans-serif",
+                              lineHeight: 1.4,
+                              letterSpacing: -1,
+                              textAlign: "center",
+                              textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + globalWordIndex) * 2}px rgba(232, 108, 0, 0.15)` : "none",
+                              ...(wordHasEmphasis
+                                ? {
+                                    backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                                    WebkitBackgroundClip: "text",
+                                    backgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                  }
+                                : {}),
+                            }}
+                          >
+                            {word}
+                          </span>
+                        );
+
+                        const renderedWord = wordHasEmphasis && annotation ? (
+                          <annotation.Component
+                            key={globalWordIndex}
+                            color={annotation.color}
+                            strokeWidth={3}
+                            padding={6}
+                            progress={interpolate(
+                              frame,
+                              [wordStartFrame, wordEndFrame + 5],
+                              [0, 1],
+                              {
+                                easing: easeOutExpo,
+                                extrapolateLeft: "clamp",
+                                extrapolateRight: "clamp",
+                              }
+                            )}
+                          >
+                            {wordContent}
+                          </annotation.Component>
+                        ) : (
+                          <span key={globalWordIndex}>{wordContent}</span>
+                        );
+
+                        return (
+                          <span
+                            key={globalWordIndex}
+                            style={{
+                              display: "inline",
+                              opacity: wordOpacity,
+                              transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale * wordIdleScale})`,
+                              transformOrigin: "center",
+                              willChange: "transform, opacity",
+                              margin: "0 2px",
+                            }}
+                          >
+                            {renderedWord}{globalWordIndex < totalWords - 1 ? " " : ""}
+                          </span>
+                        );
+                      })}
+                    </div>
                   );
                 })}
               </div>

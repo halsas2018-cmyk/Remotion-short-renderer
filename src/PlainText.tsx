@@ -7,9 +7,11 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 
 interface PlainTextProps {
   text: string;
+  emphasisWords?: string[]; // NEW: optional emphasis words for highlighting
   durationInFrames?: number; // Optional override; defaults to composition duration
   // Timing percentages for internal animation only
   lineDurPct?: number;
@@ -20,9 +22,8 @@ interface PlainTextProps {
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
-const easeOutBack = Easing.bezier(0.34, 1.56, 0.64, 1);
 const ACCENT_COLOR = "#e86c00";
-const ACCENT_LIGHT = "#fff4ed";
+const ACCENT_LIGHT = "#f97316";
 const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
@@ -32,13 +33,21 @@ const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
+// Rough-notation variety — cycle annotation style per emphasized word (matches KeyStatement)
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
+
 export const PlainText: React.FC<PlainTextProps> = ({
   text,
+  emphasisWords = [], // NEW: default empty array
   durationInFrames: propsDurationInFrames,
   // CLAUDE.md Rule 1: Text cards must complete entrance by 50% of durationInFrames
-  // Defaults tuned so textEndFrame ≈ 50% for typical 3-5 lines
-  lineDurPct = 0.12,         // 12% per line
-  lineStaggerPct = 0.04,     // 4% stagger between lines
+  // Adjusted to target ~45-50% for typical line counts (consistent with KeyStatement)
+  lineDurPct = 0.10,         // 10% per line (was 12%)
+  lineStaggerPct = 0.035,    // 3.5% stagger between lines (was 4%)
   textStartDelayPct = 0.05,  // 5% initial delay
   // CLAUDE.md Rule 3: Slider starts at textEndFrame, duration ~45%
   sliderDurPct = 0.45,       // 45% for slider (starts at ~50%, ends at ~95%)
@@ -136,6 +145,18 @@ export const PlainText: React.FC<PlainTextProps> = ({
     easing: easeOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+  });
+
+  // NEW: Build emphasis set and assign annotations per line (like KeyStatement)
+  const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
+  let emphasisRunIndex = 0;
+  const lineAnnotations = lines.map((line) => {
+    const lineWords = line.split(" ");
+    const hasEmphasis = lineWords.some((w) => emphasisSet.has(w.toLowerCase().replace(/[.,!?;:]$/, "")));
+    if (!hasEmphasis) return null;
+    const entry = ANNOTATION_CYCLE[emphasisRunIndex % ANNOTATION_CYCLE.length];
+    emphasisRunIndex += 1;
+    return entry;
   });
 
   // Star SVG component with animated rotation
@@ -384,6 +405,61 @@ export const PlainText: React.FC<PlainTextProps> = ({
                 const starPulse = isIdle ? 1 + 0.2 * Math.sin(frame * 0.12 + i) : 1;
                 const starGlow = isIdle ? `drop-shadow(0 0 ${6 + 4 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})` : "none";
 
+                // Check if this line has emphasis
+                const annotation = lineAnnotations[i];
+                const lineHasEmphasis = !!annotation;
+
+                // Line content with optional rough-notation wrapper
+                const lineContent = (
+                  <span
+                    style={{
+                      fontSize: baseFontSize,
+                      fontWeight: lineHasEmphasis ? 700 : 500,
+                      color: DARK_TEXT,
+                      fontFamily: "system-ui, sans-serif",
+                      lineHeight: 1.4,
+                      letterSpacing: -1,
+                      textAlign: "center",
+                      textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + i) * 2}px rgba(232, 108, 0, 0.15)` : "none",
+                      // Gradient text for emphasized lines (optional visual cue)
+                      ...(lineHasEmphasis
+                        ? {
+                            backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }
+                        : {}),
+                    }}
+                  >
+                    {line}
+                  </span>
+                );
+
+                // Wrap with rough-notation if emphasized
+                const renderedLine = lineHasEmphasis && annotation ? (
+                  <annotation.Component
+                    key={i}
+                    color={annotation.color}
+                    strokeWidth={3}
+                    padding={6}
+                    progress={interpolate(
+                      frame,
+                      [lineStartFrame, lineEndFrame + 5],
+                      [0, 1],
+                      {
+                        easing: easeOutExpo,
+                        extrapolateLeft: "clamp",
+                        extrapolateRight: "clamp",
+                      }
+                    )}
+                  >
+                    {lineContent}
+                  </annotation.Component>
+                ) : (
+                  <span key={i}>{lineContent}</span>
+                );
+
                 return (
                   <div
                     key={i}
@@ -404,20 +480,7 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       opacity={lineOpacity * starPulse}
                       animate={true}
                     />
-                    <span
-                      style={{
-                        fontSize: baseFontSize,
-                        fontWeight: 700,
-                        color: DARK_TEXT,
-                        fontFamily: "system-ui, sans-serif",
-                        lineHeight: 1.4,
-                        letterSpacing: -1,
-                        textAlign: "center",
-                        textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + i) * 2}px rgba(232, 108, 0, 0.15)` : "none",
-                      }}
-                    >
-                      {line}
-                    </span>
+                    {renderedLine}
                     <Star
                       size={22}
                       color={ACCENT_COLOR}
@@ -477,6 +540,7 @@ export const PlainTextTestComposition: React.FC = () => (
     height={1920}
     defaultProps={{
       text: "The gamble works while AI chips are scarce",
+      emphasisWords: ["scarce"], // NEW: test emphasis
       durationInFrames: 120,
     }}
   />
@@ -493,6 +557,7 @@ export const PlainTextLongTest: React.FC = () => (
     height={1920}
     defaultProps={{
       text: "People who are really serious about software should make their own hardware",
+      emphasisWords: ["serious", "software", "hardware"], // NEW: test multiple emphasis
       durationInFrames: 180,
     }}
   />
@@ -509,6 +574,7 @@ export const PlainTextShortTest: React.FC = () => (
     height={1920}
     defaultProps={{
       text: "The future is already here",
+      emphasisWords: ["future"], // NEW: test emphasis
       durationInFrames: 90,
     }}
   />

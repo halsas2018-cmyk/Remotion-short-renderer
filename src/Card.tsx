@@ -1,332 +1,152 @@
 import React from "react";
-import {
-  Easing,
-  Interactive,
-  interpolate,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 /* ------------------------------------------------------------------ */
-/* Tokens — TEMPORARY locals.                                          */
-/* Next step: extract to src/designSystem.ts and import from there     */
-/* so every component shares one source of truth.                      */
+/* 3D Cube Card — built with React Three Fiber inside <ThreeCanvas>   */
 /* ------------------------------------------------------------------ */
-const ACCENT = "#e86c00";
-const ACCENT_LIGHT = "#f97316";
-const CARD_BORDER = "#e8e8e8";
-const CARD_SHADOW =
-  "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
 
-/** hex (#rrggbb) -> rgba() string */
-const withAlpha = (hex: string, alpha: number): string => {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-export interface CardProps {
-  children: React.ReactNode;
-  /** Card width in px. Default: fills stage minus safe-area padding. */
-  width?: number;
-  /** Minimum height in px; the card grows with content. Default 400. */
-  minHeight?: number;
-  /** Inner padding in px. Default: responsive (max(48, width * 0.044)). */
-  padding?: number;
-  /** How deep the interior recedes behind the rim, px. Default: responsive. */
-  depth?: number;
-  /** Fly-in length in frames. Default: ~0.9s. */
+interface CubeCardProps {
+  children?: React.ReactNode;
+  /** Cube size in world units. Default: 4 */
+  size?: number;
+  /** Entrance duration in frames. Default: ~0.9s */
   entranceDuration?: number;
-  /** Frame where idle float + glow pulse begin. Default: right after entrance. */
+  /** Frame where idle animation begins. Default: right after entrance */
   idleStartFrame?: number;
-  /** Render the accent gradient trim along the top rim. */
-  showTopBar?: boolean;
+  /** Video width for responsive sizing */
+  videoWidth?: number;
 }
 
-/**
- * Centralized 3D card base — an open-front CONTAINER.
- *
- * Anatomy (all inside a preserve-3d context):
- *   - The front face is an OPENING (no face plane), framed by the rim.
- *   - Four shaded walls slope from the rim edges down/back to a floor at
- *     translateZ(-depth):  top (brightest), bottom (darkest),
- *     left (medium), right (dark).
- *   - Children sit ON the floor, recessed inside the box.
- *   - An ambient-occlusion ring darkens the seam where walls meet the rim.
- *
- * Entrance: the whole container flies in from beyond the frame borders
- * toward the viewer with a rotational settle. Idle: gentle float, orbital
- * drift and a pulsing accent glow behind the box.
- *
- * All motion is driven by useCurrentFrame() — no self-running animations.
- */
-export const Card: React.FC<CardProps> = ({
-  children,
-  width: widthProp,
-  minHeight: minHeightProp,
-  padding: paddingProp,
-  depth: depthProp,
-  entranceDuration: entranceDurationProp,
-  idleStartFrame: idleStartFrameProp,
-  showTopBar = true,
-}) => {
+/** Inner cube mesh — receives frame-driven transforms via useFrame */
+const CubeMesh: React.FC<{ size: number }> = ({ size }) => {
   const frame = useCurrentFrame();
-  const { width: videoWidth, fps } = useVideoConfig();
+  const { fps } = useVideoConfig();
 
-  /* ---------------- responsive defaults ---------------- */
-  const cardWidth = widthProp ?? videoWidth - 2 * Math.max(80, videoWidth * 0.11);
-  const minHeight = minHeightProp ?? 400;
-  const padding = paddingProp ?? Math.max(48, videoWidth * 0.044);
-  const borderRadius = Math.max(32, videoWidth * 0.03);
-  const depth = depthProp ?? Math.max(44, videoWidth * 0.05);
-  const enterDur = entranceDurationProp ?? Math.max(18, Math.round(fps * 0.9));
-  const idleStartFrame = idleStartFrameProp ?? enterDur;
-  const flightDistance = videoWidth * 0.95;
-  const perspective = Math.round(videoWidth * 1.2);
+  // Entrance params
+  const enterDur = 27; // ~0.9s at 30fps
+  const flightDistance = 20;
 
-  /* ---------------- entrance: fly in toward the viewer ---------------- */
-  const spring = Easing.spring({ damping: 200 });
-  const outBezier = Easing.bezier(0.16, 1, 0.3, 1);
+  // Entrance: fly in from -Z with rotational settle
+  const progress = Math.min(frame / enterDur, 1);
+  const eased = 1 - Math.pow(1 - progress, 3); // cubic ease-out
 
-  const z = interpolate(frame, [0, enterDur], [-flightDistance, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: spring,
-  });
-  const rotX = interpolate(frame, [0, enterDur], [15, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: outBezier,
-  });
-  const rotY = interpolate(frame, [0, enterDur], [-11, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: outBezier,
-  });
-  const opacity = interpolate(frame, [0, enterDur * 0.45], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: outBezier,
-  });
-  const blurPx = interpolate(frame, [0, enterDur * 0.7], [12, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: outBezier,
-  });
-  // Content settles onto the floor in sync with the landing (avoids a pop
-  // when the entrance opacity/filter stop flattening the 3D context)
-  const contentZ = interpolate(frame, [0, enterDur], [0, -depth], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: outBezier,
-  });
+  const z = -flightDistance + flightDistance * eased;
+  const rotX = (1 - eased) * 0.5; // ~28 deg
+  const rotY = (1 - eased) * -0.3; // ~-17 deg
 
-  /* ---------------- idle: float + drift + glow pulse ---------------- */
-  const idleT = Math.max(0, frame - idleStartFrame);
-  const idleBlend = interpolate(idleT, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Idle float + drift
+  const idleStart = enterDur;
+  const idleT = Math.max(0, frame - idleStart);
   const t = idleT / fps;
-  const floatY = Math.sin(t * Math.PI * 2 * 0.45) * 7 * idleBlend;
-  const driftX = Math.sin(t * Math.PI * 2 * 0.31 + 1.2) * 1.3 * idleBlend;
-  const driftY = Math.cos(t * Math.PI * 2 * 0.26) * 1.7 * idleBlend;
-  const glowPulse = idleBlend * (0.5 + 0.5 * Math.sin(t * Math.PI));
-  const glowOpacity =
-    interpolate(frame, [0, enterDur * 0.6], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: outBezier,
-    }) *
-    (0.72 + 0.28 * glowPulse);
+  const floatY = Math.sin(t * Math.PI * 2 * 0.45) * 0.15;
+  const driftX = Math.sin(t * Math.PI * 2 * 0.31 + 1.2) * 0.03;
+  const driftY = Math.cos(t * Math.PI * 2 * 0.26) * 0.04;
 
-  /* ---------------- shared wall style ---------------- */
-  const wallStyle: React.CSSProperties = {
-    position: "absolute",
-    pointerEvents: "none",
-  };
+  // Ref to mesh for direct manipulation in useFrame
+  const meshRef = React.useRef<THREE.Mesh>(null);
+
+  // Drive transforms via useFrame (runs every frame, deterministic)
+  useFrame(() => {
+    if (!meshRef.current) return;
+    meshRef.current.position.set(0, floatY, z);
+    meshRef.current.rotation.set(rotX + driftX, rotY + driftY, 0);
+  });
+
+  // Cube geometry + materials (6 faces with subtle variation)
+  const half = size / 2;
+  const materials = [
+    new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.8, metalness: 0.05 }), // +X right
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.8, metalness: 0.05 }), // -X left
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.05 }), // +Y top
+    new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.8, metalness: 0.05 }), // -Y bottom
+    new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.75, metalness: 0.05 }), // +Z front
+    new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.8, metalness: 0.05 }), // -Z back
+  ];
+
+  // Accent top edge (thin line along top front edge)
+  const edgeGeo = new THREE.BufferGeometry();
+  edgeGeo.setFromPoints([
+    new THREE.Vector3(-half, half, half),
+    new THREE.Vector3(half, half, half),
+  ]);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0xe86c00, linewidth: 2 });
 
   return (
-    <Interactive.Div
-      name="Card Stage"
-      style={{
-        perspective,
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <group ref={meshRef}>
+      <mesh geometry={new THREE.BoxGeometry(size, size, size)} material={materials} castShadow receiveShadow />
+      <line geometry={edgeGeo} material={edgeMat} />
+      {/* Subtle wireframe overlay for depth perception */}
+      <mesh
+        geometry={new THREE.BoxGeometry(size * 1.002, size * 1.002, size * 1.002)}
+        material={new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, opacity: 0.03, transparent: true })}
+      />
+    </group>
+  );
+};
+
+/** Lighting rig — deterministic, no self-animation */
+const Lighting: React.FC = () => {
+  return (
+    <>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 8, 6]} intensity={1.2} castShadow>
+        <directionalLight.shadow>
+          <orthographicCamera
+            left={-8}
+            right={8}
+            top={8}
+            bottom={-8}
+            near={0.1}
+            far={50}
+          />
+        </directionalLight.shadow>
+      </directionalLight>
+      <directionalLight position={[-4, 3, -5]} intensity={0.3} />
+    </>
+  );
+};
+
+/** Floor shadow catcher */
+const Floor: React.FC<{ size: number }> = ({ size }) => {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -size / 2 - 0.01, 0]}
+      receiveShadow
     >
-      <Interactive.Div
-        name="Card Rig"
-        style={{
-          transformStyle: "preserve-3d",
-          // Screen-space idle float via the individual `translate` property
-          // (composes before `transform`, so the bob stays vertical)
-          translate: floatY !== 0 ? `0px ${floatY}px` : undefined,
-          // Order-sensitive chain (rotation must precede the Z push), which
-          // individual properties can't express — see timing.md exception
-          transform: `rotateX(${rotX + driftX}deg) rotateY(${
-            rotY + driftY
-          }deg) translateZ(${z}px)`,
-          // Guard: opacity < 1 flattens preserve-3d, so only apply it while
-          // fading in. Once opaque, the container interior goes fully live.
-          opacity: opacity < 0.999 ? opacity : undefined,
-        }}
-      >
-        {/* Accent glow hovering behind the container */}
-        <div
-          style={{
-            position: "absolute",
-            inset: "-10%",
-            transform: "translateZ(-110px)",
-            background: `radial-gradient(closest-side, ${withAlpha(
-              ACCENT,
-              0.4
-            )}, transparent 70%)`,
-            filter: "blur(36px)",
-            opacity: glowOpacity,
-            pointerEvents: "none",
-          }}
-        />
+      <planeGeometry args={[size * 3, size * 3]} />
+      <meshStandardMaterial color={0xffffff} transparent opacity={0} />
+    </mesh>
+  );
+};
 
-        {/* Box shell — the rim of the container (front face is open) */}
-        <Interactive.Div
-          name="Card Body"
-          style={{
-            position: "relative",
-            width: cardWidth,
-            minHeight,
-            borderRadius,
-            border: `1px solid ${CARD_BORDER}`,
-            boxShadow: CARD_SHADOW,
-            transformStyle: "preserve-3d",
-            // Guard: same flattening rule as opacity — blur only during entrance
-            filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
-          }}
-        >
-          {/* ---- Interior floor (content stands on this) ---- */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius,
-              transform: `translateZ(${-depth}px)`,
-              background:
-                "radial-gradient(120% 120% at 50% 30%, #ffffff 0%, #f6f6f6 55%, #ededed 100%)",
-              boxShadow: "inset 0 0 60px rgba(26, 26, 26, 0.05)",
-              pointerEvents: "none",
-            }}
-          />
+export const Card: React.FC<CubeCardProps> = ({
+  children, // kept for API compatibility; not rendered in 3D (use texture if needed)
+  size = 4,
+  entranceDuration,
+  idleStartFrame,
+  videoWidth = 1080,
+}) => {
+  const { fps, width, height } = useVideoConfig();
 
-          {/* ---- Four interior walls, rim -> floor ---- */}
+  // ThreeCanvas requires explicit width/height in pixels
+  // Map world units to fill ~70% of shorter dimension
+  const canvasSize = Math.min(width, height) * 0.7;
 
-          {/* Top wall: brightest (light from above) */}
-          <div
-            style={{
-              ...wallStyle,
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: depth,
-              transformOrigin: "top",
-              transform: "rotateX(-90deg)",
-              background: "linear-gradient(to bottom, #ffffff, #ececec)",
-            }}
-          />
-
-          {/* Bottom wall: darkest */}
-          <div
-            style={{
-              ...wallStyle,
-              bottom: 0,
-              left: 0,
-              width: "100%",
-              height: depth,
-              transformOrigin: "bottom",
-              transform: "rotateX(90deg)",
-              background: "linear-gradient(to bottom, #d8d8d8, #f0f0f0)",
-            }}
-          />
-
-          {/* Left wall: medium */}
-          <div
-            style={{
-              ...wallStyle,
-              top: 0,
-              left: 0,
-              width: depth,
-              height: "100%",
-              transformOrigin: "left",
-              transform: "rotateY(90deg)",
-              background: "linear-gradient(to right, #f5f5f5, #e3e3e3)",
-            }}
-          />
-
-          {/* Right wall: dark-medium */}
-          <div
-            style={{
-              ...wallStyle,
-              top: 0,
-              right: 0,
-              width: depth,
-              height: "100%",
-              transformOrigin: "right",
-              transform: "rotateY(-90deg)",
-              background: "linear-gradient(to left, #eeeeee, #d9d9d9)",
-            }}
-          />
-
-          {/* ---- Recessed content, standing on the floor ---- */}
-          <Interactive.Div
-            name="Card Content"
-            style={{
-              position: "relative",
-              padding,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: Math.max(16, videoWidth * 0.017),
-              transform: `translateZ(${contentZ}px)`,
-            }}
-          >
-            {children}
-          </Interactive.Div>
-
-          {/* ---- Ambient occlusion: darkens the seam where walls meet rim ---- */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius,
-              transform: "translateZ(0.5px)",
-              boxShadow: `inset 0 0 ${Math.round(
-                borderRadius * 0.8
-              )}px rgba(26, 26, 26, 0.13), inset 0 3px 8px rgba(26, 26, 26, 0.07)`,
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* Accent trim along the top rim */}
-          {showTopBar && (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: Math.max(4, videoWidth * 0.0037),
-                borderRadius: `${borderRadius}px ${borderRadius}px 0 0`,
-                background: `linear-gradient(90deg, ${ACCENT_LIGHT}, ${ACCENT})`,
-                transform: "translateZ(10px)",
-              }}
-            />
-          )}
-        </Interactive.Div>
-      </Interactive.Div>
-    </Interactive.Div>
+  return (
+    <ThreeCanvas
+      width={canvasSize}
+      height={canvasSize}
+      camera={{ position: [0, 0, 12], fov: 35 }}
+      shadows
+      style={{ transform: "translateZ(0)" }} // force GPU layer
+    >
+      <Lighting />
+      <Floor size={size} />
+      <CubeMesh size={size} />
+    </ThreeCanvas>
   );
 };

@@ -17,6 +17,7 @@ import { BeforeAfter } from "./BeforeAfter";
 import { MotionGraphicsVideo } from "./MotionGraphicsVideo";
 import timedBeats from "./sample-timed-beats.json";
 import timestampsData from "./timestamps.json";
+import { ThreeDTestComposition } from "./ThreeDTest";
 
 interface TimedBeatsData {
   fps: number;
@@ -321,6 +322,14 @@ export const RemotionRoot = () => (
       width={1080}
       height={1920}
       defaultProps={{}}
+    />
+    <Composition
+      id="ThreeDTest"
+      component={ThreeDTestComposition}
+      durationInFrames={90}
+      fps={30}
+      width={1080}
+      height={1920}
     />
   </>
 );

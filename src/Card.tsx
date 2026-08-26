@@ -15,7 +15,6 @@ import {
 const ACCENT = "#e86c00";
 const ACCENT_LIGHT = "#f97316";
 const CARD_BORDER = "#e8e8e8";
-const CARD_BACKGROUND = "#ffffff";
 const CARD_SHADOW =
   "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
 
@@ -36,25 +35,30 @@ export interface CardProps {
   minHeight?: number;
   /** Inner padding in px. Default: responsive (max(48, width * 0.044)). */
   padding?: number;
-  /** How far the interior recedes behind the card face, px. Default: responsive. */
+  /** How deep the interior recedes behind the rim, px. Default: responsive. */
   depth?: number;
   /** Fly-in length in frames. Default: ~0.9s. */
   entranceDuration?: number;
   /** Frame where idle float + glow pulse begin. Default: right after entrance. */
   idleStartFrame?: number;
-  /** Render the accent gradient top bar. */
+  /** Render the accent gradient trim along the top rim. */
   showTopBar?: boolean;
-  /** Render the diagonal pattern overlay. */
-  showPattern?: boolean;
 }
 
 /**
- * Centralized 3D card base.
+ * Centralized 3D card base — an open-front CONTAINER.
  *
- * Entrance: flies in from beyond the frame borders toward the viewer
- * (translateZ from far-negative to 0) with a rotational settle.
- * Interior: children sink behind the card face (translateZ(-depth)) and an
- * edge vignette paints over them, producing a recessed-tray look.
+ * Anatomy (all inside a preserve-3d context):
+ *   - The front face is an OPENING (no face plane), framed by the rim.
+ *   - Four shaded walls slope from the rim edges down/back to a floor at
+ *     translateZ(-depth):  top (brightest), bottom (darkest),
+ *     left (medium), right (dark).
+ *   - Children sit ON the floor, recessed inside the box.
+ *   - An ambient-occlusion ring darkens the seam where walls meet the rim.
+ *
+ * Entrance: the whole container flies in from beyond the frame borders
+ * toward the viewer with a rotational settle. Idle: gentle float, orbital
+ * drift and a pulsing accent glow behind the box.
  *
  * All motion is driven by useCurrentFrame() — no self-running animations.
  */
@@ -67,7 +71,6 @@ export const Card: React.FC<CardProps> = ({
   entranceDuration: entranceDurationProp,
   idleStartFrame: idleStartFrameProp,
   showTopBar = true,
-  showPattern = true,
 }) => {
   const frame = useCurrentFrame();
   const { width: videoWidth, fps } = useVideoConfig();
@@ -77,11 +80,11 @@ export const Card: React.FC<CardProps> = ({
   const minHeight = minHeightProp ?? 400;
   const padding = paddingProp ?? Math.max(48, videoWidth * 0.044);
   const borderRadius = Math.max(32, videoWidth * 0.03);
-  const depth = depthProp ?? Math.max(28, videoWidth * 0.033);
+  const depth = depthProp ?? Math.max(44, videoWidth * 0.05);
   const enterDur = entranceDurationProp ?? Math.max(18, Math.round(fps * 0.9));
   const idleStartFrame = idleStartFrameProp ?? enterDur;
   const flightDistance = videoWidth * 0.95;
-  const perspective = Math.round(videoWidth * 1.3);
+  const perspective = Math.round(videoWidth * 1.2);
 
   /* ---------------- entrance: fly in toward the viewer ---------------- */
   const spring = Easing.spring({ damping: 200 });
@@ -112,8 +115,8 @@ export const Card: React.FC<CardProps> = ({
     extrapolateRight: "clamp",
     easing: outBezier,
   });
-  // Interior recedes in sync with the landing (avoids a size pop when
-  // the entrance opacity/filter stop flattening the 3D context)
+  // Content settles onto the floor in sync with the landing (avoids a pop
+  // when the entrance opacity/filter stop flattening the 3D context)
   const contentZ = interpolate(frame, [0, enterDur], [0, -depth], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -138,6 +141,12 @@ export const Card: React.FC<CardProps> = ({
       easing: outBezier,
     }) *
     (0.72 + 0.28 * glowPulse);
+
+  /* ---------------- shared wall style ---------------- */
+  const wallStyle: React.CSSProperties = {
+    position: "absolute",
+    pointerEvents: "none",
+  };
 
   return (
     <Interactive.Div
@@ -164,11 +173,11 @@ export const Card: React.FC<CardProps> = ({
             rotY + driftY
           }deg) translateZ(${z}px)`,
           // Guard: opacity < 1 flattens preserve-3d, so only apply it while
-          // fading in. Once opaque, the interior depth goes fully live.
+          // fading in. Once opaque, the container interior goes fully live.
           opacity: opacity < 0.999 ? opacity : undefined,
         }}
       >
-        {/* Accent glow hovering behind the card */}
+        {/* Accent glow hovering behind the container */}
         <div
           style={{
             position: "absolute",
@@ -184,6 +193,7 @@ export const Card: React.FC<CardProps> = ({
           }}
         />
 
+        {/* Box shell — the rim of the container (front face is open) */}
         <Interactive.Div
           name="Card Body"
           style={{
@@ -191,7 +201,6 @@ export const Card: React.FC<CardProps> = ({
             width: cardWidth,
             minHeight,
             borderRadius,
-            backgroundColor: CARD_BACKGROUND,
             border: `1px solid ${CARD_BORDER}`,
             boxShadow: CARD_SHADOW,
             transformStyle: "preserve-3d",
@@ -199,38 +208,79 @@ export const Card: React.FC<CardProps> = ({
             filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
           }}
         >
-          {/* Accent top bar — pops slightly toward the viewer */}
-          {showTopBar && (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: Math.max(4, videoWidth * 0.0037),
-                borderRadius: `${borderRadius}px ${borderRadius}px 0 0`,
-                background: `linear-gradient(90deg, ${ACCENT_LIGHT}, ${ACCENT})`,
-                transform: "translateZ(10px)",
-              }}
-            />
-          )}
+          {/* ---- Interior floor (content stands on this) ---- */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius,
+              transform: `translateZ(${-depth}px)`,
+              background:
+                "radial-gradient(120% 120% at 50% 30%, #ffffff 0%, #f6f6f6 55%, #ededed 100%)",
+              boxShadow: "inset 0 0 60px rgba(26, 26, 26, 0.05)",
+              pointerEvents: "none",
+            }}
+          />
 
-          {/* Diagonal pattern — sunk just behind the face */}
-          {showPattern && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius,
-                background:
-                  "repeating-linear-gradient(135deg, rgba(26,26,26,0.028) 0px, rgba(26,26,26,0.028) 1px, transparent 1px, transparent 14px)",
-                transform: "translateZ(-6px)",
-                pointerEvents: "none",
-              }}
-            />
-          )}
+          {/* ---- Four interior walls, rim -> floor ---- */}
 
-          {/* Recessed interior — children sink behind the card face */}
+          {/* Top wall: brightest (light from above) */}
+          <div
+            style={{
+              ...wallStyle,
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: depth,
+              transformOrigin: "top",
+              transform: "rotateX(-90deg)",
+              background: "linear-gradient(to bottom, #ffffff, #ececec)",
+            }}
+          />
+
+          {/* Bottom wall: darkest */}
+          <div
+            style={{
+              ...wallStyle,
+              bottom: 0,
+              left: 0,
+              width: "100%",
+              height: depth,
+              transformOrigin: "bottom",
+              transform: "rotateX(90deg)",
+              background: "linear-gradient(to bottom, #d8d8d8, #f0f0f0)",
+            }}
+          />
+
+          {/* Left wall: medium */}
+          <div
+            style={{
+              ...wallStyle,
+              top: 0,
+              left: 0,
+              width: depth,
+              height: "100%",
+              transformOrigin: "left",
+              transform: "rotateY(90deg)",
+              background: "linear-gradient(to right, #f5f5f5, #e3e3e3)",
+            }}
+          />
+
+          {/* Right wall: dark-medium */}
+          <div
+            style={{
+              ...wallStyle,
+              top: 0,
+              right: 0,
+              width: depth,
+              height: "100%",
+              transformOrigin: "right",
+              transform: "rotateY(-90deg)",
+              background: "linear-gradient(to left, #eeeeee, #d9d9d9)",
+            }}
+          />
+
+          {/* ---- Recessed content, standing on the floor ---- */}
           <Interactive.Div
             name="Card Content"
             style={{
@@ -246,18 +296,35 @@ export const Card: React.FC<CardProps> = ({
             {children}
           </Interactive.Div>
 
-          {/* Edge vignette painted over the sunken content -> recessed walls */}
+          {/* ---- Ambient occlusion: darkens the seam where walls meet rim ---- */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               borderRadius,
-              boxShadow:
-                "inset 0 14px 34px rgba(26,26,26,0.09), inset 0 -8px 20px rgba(26,26,26,0.05)",
-              transform: "translateZ(-1px)",
+              transform: "translateZ(0.5px)",
+              boxShadow: `inset 0 0 ${Math.round(
+                borderRadius * 0.8
+              )}px rgba(26, 26, 26, 0.13), inset 0 3px 8px rgba(26, 26, 26, 0.07)`,
               pointerEvents: "none",
             }}
           />
+
+          {/* Accent trim along the top rim */}
+          {showTopBar && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: Math.max(4, videoWidth * 0.0037),
+                borderRadius: `${borderRadius}px ${borderRadius}px 0 0`,
+                background: `linear-gradient(90deg, ${ACCENT_LIGHT}, ${ACCENT})`,
+                transform: "translateZ(10px)",
+              }}
+            />
+          )}
         </Interactive.Div>
       </Interactive.Div>
     </Interactive.Div>

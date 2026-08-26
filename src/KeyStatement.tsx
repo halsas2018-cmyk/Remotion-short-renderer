@@ -7,13 +7,14 @@ import {
   interpolate,
   Easing,
 } from "remotion";
-import { Highlight } from "@remotion/rough-notation";
-import { loadFont } from "@remotion/google-fonts/Inter";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText } from "@remotion/layout-utils";
 
-// Google Font — type-safe, blocks rendering until the font is ready
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
 const { fontFamily } = loadFont("normal", {
-  weights: ["700", "900"],
+  weights: ["500", "700"],
   subsets: ["latin"],
 });
 
@@ -32,11 +33,19 @@ interface KeyStatementProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
+const ACCENT_COLOR_LIGHT = "#f97316";
 const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
+
+// Rough-notation variety — cycle annotation style per emphasized word
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_COLOR_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
 
 export const KeyStatement: React.FC<KeyStatementProps> = ({
   text,
@@ -67,11 +76,24 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const sliderStart = textEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
+  // Card entrance — quick fade + spring pop at the very start
+  const cardEntranceDuration = Math.max(12, Math.round(durationInFrames * 0.07));
+
   // Idle state — everything time-based from here on
   const isIdle = frame > textEndFrame;
 
   // Split text into words and mark emphasis
   const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
+
+  // Assign an annotation style to each emphasized word (cycles Highlight → Circle → Underline)
+  let emphasisRunIndex = 0;
+  const wordAnnotations = words.map((word) => {
+    const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+    if (!emphasisSet.has(cleanWord)) return null;
+    const entry = ANNOTATION_CYCLE[emphasisRunIndex % ANNOTATION_CYCLE.length];
+    emphasisRunIndex += 1;
+    return entry;
+  });
 
   // Card bounce during idle
   const cardBounceFrequency = 0.08;
@@ -79,6 +101,9 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const cardBounceOffset = isIdle
     ? Math.sin(frame * cardBounceFrequency * Math.PI * 2) * cardBounceAmplitude
     : 0;
+
+  // Subtle 3D tilt during idle — gentle nod around the X axis
+  const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
 
   // Fast bouncing animation for emphasized words (idle loop)
   const bounceFrequency = 0.25;
@@ -96,7 +121,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
 
   // Container dimensions (for slider)
   const containerWidth = availableWidth;
-  const containerHeight = 400; // Approximate card height
+  const containerMinHeight = 400; // Minimum card height — grows with content
   const sliderPadding = 24;
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
@@ -112,7 +137,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
     text: longestWord,
     withinWidth: textAreaWidth,
     fontFamily,
-    fontWeight: "900",
+    fontWeight: "700",
   }).fontSize;
   const baseFontSize = Math.min(Math.max(64, width * 0.059), fittedSize * 0.85);
   const emphasisFontSize = Math.min(Math.max(76, width * 0.07), fittedSize);
@@ -215,22 +240,19 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
           textAlign: "center",
         }}
       >
-        {/* Card container - explicit dimensions matching card outer size */}
+        {/* Wrapper — in-flow, grows with the card's natural content height */}
         <div
           style={{
             position: "relative",
             width: containerWidth,
-            minHeight: containerHeight,
+            perspective: 1200,
           }}
         >
-          {/* Slider border — pure CSS: fades in, then springs to full scale */}
+          {/* Slider border — pure CSS: negative insets track the wrapper's REAL size */}
           <div
             style={{
               position: "absolute",
-              top: -sliderPadding,
-              left: -sliderPadding,
-              right: -sliderPadding,
-              bottom: -sliderPadding,
+              inset: -sliderPadding,
               pointerEvents: "none",
               border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
               borderRadius: sliderBorderRadius,
@@ -255,14 +277,11 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
             }}
           />
 
-          {/* Elevated card for the key statement - with prominent curved borders */}
+          {/* Elevated card for the key statement — normal flow child, height follows content */}
           <div
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              position: "relative",
+              minHeight: containerMinHeight,
               backgroundColor: "white",
               borderRadius: cardBorderRadius,
               padding: cardPadding,
@@ -274,7 +293,21 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
+              // Entrance: fade + spring pop
+              opacity: interpolate(frame, [0, cardEntranceDuration], [0, 1], {
+                easing: easeOut,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+              scale: interpolate(frame, [0, cardEntranceDuration], [0.92, 1], {
+                easing: Easing.spring({ damping: 200 }),
+                output: "perceptual-scale",
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+              // Idle: bounce + subtle 3D tilt
               translate: `0px ${cardBounceOffset}px`,
+              rotate: `x ${cardTiltDeg}deg`,
             }}
           >
             {/* Accent top bar with matching curved corners */}
@@ -285,7 +318,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                 left: 0,
                 right: 0,
                 height: 4,
-                background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
                 borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
@@ -385,7 +418,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               <div
                 style={{
                   fontSize: baseFontSize,
-                  fontWeight: 700,
+                  fontWeight: 500,
                   fontFamily,
                   color: DARK_TEXT,
                   lineHeight: 1.3,
@@ -400,6 +433,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                 {words.map((word, i) => {
                   const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
                   const isEmphasized = emphasisSet.has(cleanWord);
+                  const annotation = wordAnnotations[i];
 
                   // Word entrance window
                   const wordStartFrame = textStartDelay + i * wordStagger;
@@ -414,12 +448,22 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                     isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
                   const emphasisFloat =
                     isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
-                  const emphasisGlow =
-                    isIdle && isEmphasized
-                      ? `0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW}, 0 0 ${
-                          16 + 8 * Math.sin(frame * 0.1 + i)
-                        }px ${ACCENT_GLOW}`
-                      : "none";
+
+                  // Filter chain: entrance blur (+ idle glow for emphasized words).
+                  // Glow uses drop-shadow because text-shadow breaks under background-clip: text.
+                  const wordFilter = [
+                    `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [8, 0], {
+                      easing: easeOutExpo,
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    })}px)`,
+                    ...(isIdle && isEmphasized
+                      ? [
+                          `drop-shadow(0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW})`,
+                          `drop-shadow(0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})`,
+                        ]
+                      : []),
+                  ].join(" ");
 
                   const wordContent = (
                     <span
@@ -453,13 +497,21 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                         })}deg`,
                         transformOrigin: "center bottom",
                         fontSize: isEmphasized ? emphasisFontSize : baseFontSize,
-                        fontWeight: isEmphasized ? 900 : 700,
-                        color: isEmphasized ? ACCENT_COLOR : DARK_TEXT,
+                        fontWeight: isEmphasized ? 700 : 500,
                         fontFamily,
                         lineHeight: 1.3,
                         margin: "0 0.04em",
-                        textShadow: emphasisGlow,
-                        willChange: "transform, opacity",
+                        // Gradient text for emphasis, flat dark for regular words
+                        ...(isEmphasized
+                          ? {
+                              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+                              WebkitBackgroundClip: "text",
+                              backgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                            }
+                          : { color: DARK_TEXT }),
+                        filter: wordFilter,
+                        willChange: "transform, opacity, filter",
                       }}
                     >
                       {word}
@@ -467,12 +519,13 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                     </span>
                   );
 
-                  // Wrap emphasized words with rough-notation Highlight
-                  if (isEmphasized) {
+                  // Wrap emphasized words with cycling rough-notation annotations
+                  if (isEmphasized && annotation) {
+                    const AnnotationComponent = annotation.Component;
                     return (
-                      <Highlight
+                      <AnnotationComponent
                         key={i}
-                        color="rgba(232, 108, 0, 0.25)"
+                        color={annotation.color}
                         strokeWidth={3}
                         padding={6}
                         progress={interpolate(
@@ -487,7 +540,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                         )}
                       >
                         {wordContent}
-                      </Highlight>
+                      </AnnotationComponent>
                     );
                   }
 

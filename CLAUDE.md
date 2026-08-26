@@ -322,6 +322,26 @@ All card-based components now share a consistent visual language:
 - **Test compositions**: `PlainTextTest` (120 frames), `PlainTextLongTest` (180 frames), `PlainTextShortTest` (90 frames)
 - **Props**: `text` (string)
 
+### Remotion Architecture Fixes (Latest)
+
+#### Fixed: Duplicate `registerRoot()` Calls & Entry Point Structure
+**Problem**: Both `src/index.tsx` and `src/Root.tsx` called `registerRoot()` with the same compositions, causing "Element type is invalid" and "Waiting for registerRoot()" errors.
+
+**Solution**: Follow Remotion best practice — separate compositions from `registerRoot()` call:
+
+| File | Role |
+|------|------|
+| `src/Root.tsx` | Defines `RemotionRoot` component returning all `<Composition>` elements in a fragment. **No `registerRoot()` call.** |
+| `src/index.tsx` | Entry point. Imports `RemotionRoot` and calls `registerRoot(RemotionRoot)` **once**. |
+| `remotion.config.ts` | Uses default entry point (`./src/index.tsx`). No override needed. |
+
+**Why this works**: Remotion's Fast Refresh re-executes the entry point file on changes. Keeping `registerRoot()` in a minimal `index.tsx` (separate from the heavy `Root.tsx` with all compositions) prevents double-registration and refresh issues.
+
+**Commits**:
+- `3925447` — Removed duplicate `registerRoot` from `index.tsx` (first attempt, wrong location)
+- `032e0de` — Added optional entry point comment to `remotion.config.ts`
+- `69c5566` — **Final fix**: Moved all compositions to `Root.tsx` as `RemotionRoot` fragment; `index.tsx` only calls `registerRoot(RemotionRoot)`
+
 ### Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -352,8 +372,8 @@ my-video/
 │   ├── KineticCaptions.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
-│   ├── index.tsx            # Composition registry
-│   └── Root.tsx
+│   ├── index.tsx            # Entry point: registerRoot(RemotionRoot)
+│   └── Root.tsx             # Defines RemotionRoot fragment with all Compositions
 ├── public/
 ├── package.json
 └── remotion.config.ts

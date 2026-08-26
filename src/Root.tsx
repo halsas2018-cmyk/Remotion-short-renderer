@@ -5,6 +5,7 @@ import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
 import { BeforeAfter } from "./BeforeAfter";
 import { PlainText } from "./PlainText";
+import { IconText } from "./IconText";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -136,6 +137,20 @@ export const RemotionRoot = () => (
       defaultProps={{
         text: "The future is already here",
         durationInFrames: 90,
+      }}
+    />
+    <Composition
+      id="IconTextTest"
+      component={IconText}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        icon: "risk",
+        text: "Broadcom only guarantees part of the loan",
+        emphasisWords: ["guarantees", "part"],
+        durationInFrames: 150,
       }}
     />
     <Composition

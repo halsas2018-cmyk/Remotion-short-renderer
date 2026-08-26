@@ -6,19 +6,60 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
+  delayRender,
+  continueRender,
+  cancelRender,
 } from "remotion";
+import { Lottie, LottieAnimationData } from "@remotion/lottie";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import * as LucideIcons from "lucide-react";
 
 interface IconTextProps {
   icon: string;
   text: string;
-  durationInFrames: number;
-  startFrame?: number;
-  exitDirection?: "up" | "down" | "left" | "right";
+  emphasisWords?: string[];
+  durationInFrames?: number; // Optional override; defaults to composition duration
+  // Timing percentages for internal animation only
+  iconDurPct?: number;
+  textStartDelayPct?: number;
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  sliderDurPct?: number;
 }
 
-// ICON_MAP mapping keyword strings to lucide-react icon components
-const ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
+const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const ACCENT_COLOR = "#e86c00";
+const ACCENT_LIGHT = "#f97316";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "#525252";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_BORDER = "#e8e8e8";
+const SLIDER_COLOR = "#1a1a1a";
+
+// Lottie icon map - maps icon names to files in public/icons/
+const ICON_MAP: Record<string, string> = {
+  warning: "warning.json",
+  money: "money.json",
+  chip: "chip.json",
+  risk: "risk.json",
+  contract: "contract.json",
+  handshake: "handshake.json",
+  brain: "brain.json",
+  rocket: "rocket.json",
+  growth: "growth.json",
+  decline: "decline.json",
+  clock: "clock.json",
+  globe: "globe.json",
+  lock: "lock.json",
+  shield: "shield.json",
+  lightbulb: "lightbulb.json",
+  "trending-up": "trending-up.json",
+  "trending-down": "trending-down.json",
+};
+
+// Lucide fallback icons for when Lottie files don't exist
+const LUCIDE_FALLBACK_MAP: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
   warning: LucideIcons.AlertTriangle,
   money: LucideIcons.DollarSign,
   chip: LucideIcons.Cpu,
@@ -38,222 +79,322 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: stri
   "trending-down": LucideIcons.TrendingDown,
 };
 
-// Default fallback icon
-const DefaultIcon = LucideIcons.Info;
+const DefaultLucideIcon = LucideIcons.Info;
 
-// Ease-out bezier curve (fast start, slow finish) - same as Material Design
-const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-
-// Color constants
-const ACCENT_COLOR = "#e86c00";
-const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#4a4a4a";
-const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
-// Glow constants
-const GLOW_COLOR = "rgba(232, 108, 0, 0.35)";
-const GLOW_BLUR = 60;
-const GLOW_SPREAD = 20;
+// Rough-notation variety — cycle annotation style per emphasized word (matches KeyStatement/PlainText)
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
 
 export const IconText: React.FC<IconTextProps> = ({
   icon,
   text,
-  durationInFrames,
-  startFrame = 0,
-  exitDirection = "up",
+  emphasisWords = [],
+  durationInFrames: propsDurationInFrames,
+  // CLAUDE.md Rule 1: Text cards must complete entrance by 50% of durationInFrames
+  // IconText has both icon + text animation, target ~45-50%
+  iconDurPct = 0.15,         // 15% - icon entrance
+  textStartDelayPct = 0.05,  // 5% - delay before text starts
+  wordDurPct = 0.08,         // 8% per word
+  wordStaggerPct = 0.03,     // 3% stagger between words
+  // CLAUDE.md Rule 3: Slider starts at textEndFrame, duration ~45%
+  sliderDurPct = 0.45,       // 45% for slider
 }) => {
-  const globalFrame = useCurrentFrame();
-  const frame = globalFrame - startFrame;
-  const { width, height } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
 
-  const entranceFrames = 15;
-  const exitStart = durationInFrames - 15;
+  const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
-  // Phase detection
-  const isEntrance = frame < entranceFrames;
-  const isExit = frame > exitStart;
-  const isIdle = !isEntrance && !isExit;
+  // ============================================
+  // LOTTIE LOADING (from lottie.md pattern) with fallback
+  // ============================================
+  const iconFile = ICON_MAP[icon.toLowerCase()] || "info.json";
+  const iconPath = `/icons/${iconFile}`;
 
-  // Resolve icon component from map, fallback to DefaultIcon
-  const IconComponent = ICON_MAP[icon.toLowerCase()] || DefaultIcon;
+  const [lottieHandle] = React.useState(() => delayRender(`Loading Lottie: ${iconFile}`));
+  const [animationData, setAnimationData] = React.useState<LottieAnimationData | null>(null);
+  const [lottieFailed, setLottieFailed] = React.useState(false);
 
-  // Entrance animation for whole component
-  const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: easeOut,
+  React.useEffect(() => {
+    // Try to load Lottie file
+    fetch(iconPath)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load ${iconPath}: ${res.status}`);
+        return res.json();
+      })
+      .then((json) => {
+        setAnimationData(json);
+        continueRender(lottieHandle);
+      })
+      .catch((err) => {
+        console.warn(`Lottie icon not found: ${iconPath}, using Lucide fallback`);
+        setLottieFailed(true);
+        continueRender(lottieHandle); // Continue render even if Lottie fails
+      });
+  }, [lottieHandle, iconPath]);
+
+  // ============================================
+  // INTERNAL TIMELINE — CLAUDE.md compliant
+  // Text card: entrance completes by 50% of durationInFrames
+  // No exit animations (Rule 2) — designed for SceneTransition wrapper
+  // Slider starts at textEndFrame, runs 45% (Rule 3)
+  // ============================================
+  const iconDuration = Math.round(durationInFrames * iconDurPct);
+  const textStartDelay = Math.round(durationInFrames * textStartDelayPct);
+  const wordDuration = Math.round(durationInFrames * wordDurPct);
+  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+
+  const words = text.split(" ");
+  const totalWords = words.length;
+  const textEndFrame = textStartDelay + iconDuration + (totalWords - 1) * wordStagger + wordDuration;
+  const sliderStart = textEndFrame;
+  const sliderDuration = Math.round(durationInFrames * sliderDurPct);
+
+  // Progress animations
+  const iconProgress = interpolate(frame, [0, iconDuration], [0, 1], {
+    easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const entranceScale = interpolate(entranceProgress, [0, 1], [0.9, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceOpacity = entranceProgress;
 
-  // Exit animation for whole component
-  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.9], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitTranslateY = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const exitTranslateX = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
-  // Idle animation: subtle scale pulse
-  const idleScale = 1 + 0.01 * Math.sin(frame * 0.06);
-
-  // Icon animation: scale/fade in first
-  const iconDurationFrames = Math.min(durationInFrames, 45);
-  const iconProgress = interpolate(frame, [0, iconDurationFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const iconScale = interpolate(iconProgress, [0, 1], [0.5, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const iconOpacity = iconProgress;
-
-  // Icon idle: subtle rotation drift
-  const iconIdleRotation = isIdle ? 2 * Math.sin(frame * 0.04) : 0;
+  // Idle state — begins after textEndFrame (Rule 1)
+  const isIdle = frame > textEndFrame;
+  const idleTimeSeconds = isIdle ? (frame - textEndFrame) / fps : 0;
+  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
   // Glow pulse animation (idle)
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
-  // Text animation: word-by-word appearance - complete within first 50% of beat
-  const words = text.split(" ");
-  const totalWords = words.length;
-  const wordAnimationWindow = durationInFrames * 0.5; // first 50% of beat
-  const wordDurationFrames = Math.max(6, wordAnimationWindow / totalWords * 0.8);
-  const wordStaggerFrames = wordAnimationWindow / totalWords;
-  const textStartDelay = entranceFrames + 12; // delay after icon starts
-  
-  // Combined transform values for container
-  const containerScale = isEntrance ? entranceScale : isExit ? exitScale : idleScale;
-  const containerOpacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
-  const containerTranslateX = isExit ? exitTranslateX : 0;
-  const containerTranslateY = isExit ? exitTranslateY : 0;
+  // Shimmer timing — starts after text animation completes
+  const shimmerStart = textEndFrame;
+  const shimmerSpeed = 25; // % per second
+
+  // Responsive sizing
+  const padding = Math.max(80, width * 0.11);
+  const availableWidth = width - 2 * padding;
+  const cardPadding = Math.max(48, width * 0.044);
+  const cardBorderRadius = Math.max(32, width * 0.03);
+
+  // Container dimensions (for slider)
+  const containerWidth = availableWidth;
+  const containerHeight = 500; // Approximate card height (icon + text)
+  const sliderPadding = 24;
+  const sliderWidth = containerWidth + 2 * sliderPadding;
+  const sliderHeight = containerHeight + 2 * sliderPadding;
+  const sliderBorderRadius = cardBorderRadius + sliderPadding;
+  const sliderStrokeWidth = Math.max(5, width * 0.0045);
+
+  // Responsive font sizes (following video-layout.md minimums)
+  const baseFontSize = Math.max(56, width * 0.052);
+
+  // Shimmer position calculation
+  const getShimmerTop = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return "-100%";
+    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
+    return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
+
+  const getShimmerOpacity = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return 1;
+  };
+
+  // Slider path animation
+  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
+  const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
+  const sliderDashOffset = sliderPerimeter * (1 - interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  }));
+
+  const sliderProgress = interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Build emphasis set and assign annotations per word (like KeyStatement)
+  const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
+  let emphasisRunIndex = 0;
+  const wordAnnotations = words.map((word) => {
+    const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+    if (!emphasisSet.has(cleanWord)) return null;
+    const entry = ANNOTATION_CYCLE[emphasisRunIndex % ANNOTATION_CYCLE.length];
+    emphasisRunIndex += 1;
+    return entry;
+  });
+
+  // Resolve fallback Lucide icon
+  const LucideFallback = LUCIDE_FALLBACK_MAP[icon.toLowerCase()] || DefaultLucideIcon;
+
+  // Render icon (Lottie if loaded, Lucide fallback if failed/not loaded yet)
+  const renderIcon = () => {
+    if (animationData) {
+      return (
+        <Lottie
+          animationData={animationData}
+          style={{ width: 120, height: 120 }}
+        />
+      );
+    }
+    // Fallback to Lucide icon (shows immediately in Studio)
+    return (
+      <LucideFallback
+        size={120}
+        color={ACCENT_COLOR}
+        strokeWidth={2}
+      />
+    );
+  };
 
   return (
     <AbsoluteFill
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
       <div
         style={{
-          transform: [
-            { scale: containerScale },
-            { translateX: containerTranslateX },
-            { translateY: containerTranslateY },
-          ],
-          opacity: containerOpacity,
-          transformOrigin: "center",
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          top: "50%",
+          left: padding,
+          right: padding,
+          transform: "translateY(-50%)",
+          width: availableWidth,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
         }}
       >
-        {/* 
-          IconText container: centered vertically in the screen.
-          Uses top: 50% + translateY(-50%) for true vertical centering.
-        */}
+        {/* Card container - explicit dimensions matching card outer size */}
         <div
           style={{
-            position: "absolute",
-            top: "50%",
-            left: 120,
-            right: 120,
-            transform: "translateY(-50%)",
-            width: width - 240,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
+            position: "relative",
+            width: containerWidth,
+            minHeight: containerHeight,
           }}
         >
-          {/* Icon with elevated card + glow */}
+          {/* Slider animation - black border circling the card with matching curved corners */}
           <div
             style={{
-              position: "relative",
-              zIndex: 2,
+              position: "absolute",
+              top: -sliderPadding,
+              left: -sliderPadding,
+              right: -sliderPadding,
+              bottom: -sliderPadding,
+              pointerEvents: "none",
+              opacity: sliderProgress,
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              borderRadius: sliderBorderRadius,
             }}
           >
-            {/* Glow behind icon card */}
+            <svg
+              width={sliderWidth}
+              height={sliderHeight}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <rect
+                x={sliderStrokeWidth / 2}
+                y={sliderStrokeWidth / 2}
+                width={sliderWidth - sliderStrokeWidth}
+                height={sliderHeight - sliderStrokeWidth}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke={SLIDER_COLOR}
+                strokeWidth={sliderStrokeWidth}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+
+          {/* Elevated card for the icon + text - with prominent curved borders */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "white",
+              borderRadius: cardBorderRadius,
+              padding: cardPadding,
+              boxShadow: CARD_SHADOW,
+              border: `1px solid ${CARD_BORDER}`,
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              gap: 24,
+            }}
+          >
+            {/* Accent top bar with matching curved corners */}
             <div
               style={{
                 position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: `translate(-50%, -50%) scale(${glowPulse})`,
-                width: "140%",
-                height: "140%",
-                borderRadius: 32,
-                background: `radial-gradient(ellipse at center, ${GLOW_COLOR} 0%, transparent 70%)`,
-                opacity: iconOpacity * glowOpacity,
-                filter: `blur(${GLOW_BLUR}px)`,
-                pointerEvents: "none",
-                zIndex: -1,
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
-            {/* Icon card */}
+
+            {/* Subtle background pattern - diagonal lines */}
             <div
               style={{
-                transform: `scale(${iconScale}) rotate(${iconIdleRotation}deg)`,
-                opacity: iconOpacity,
-                transformOrigin: "center",
-                marginBottom: 32,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "white",
-                borderRadius: 24,
-                padding: 24,
-                boxShadow: CARD_SHADOW,
-                position: "relative",
-                zIndex: 1,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                opacity: 0.03,
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
+                  transparent 1px,
+                  transparent 20px
+                )`,
+                pointerEvents: "none",
               }}
-            >
-              <IconComponent
-                size={100}
-                color={ACCENT_COLOR}
-                strokeWidth={2}
-              />
-            </div>
-          </div>
-          
-          {/* Text with word-by-word animation + glow */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 2,
-            }}
-          >
-            {/* Glow behind text card */}
+            />
+
+            {/* Subtle radial gradient overlay for depth */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Glow behind card */}
             <div
               style={{
                 position: "absolute",
@@ -262,55 +403,131 @@ export const IconText: React.FC<IconTextProps> = ({
                 transform: `translate(-50%, -50%) scale(${glowPulse})`,
                 width: "110%",
                 height: "110%",
-                borderRadius: 32,
-                background: `radial-gradient(ellipse at center, ${GLOW_COLOR} 0%, transparent 70%)`,
-                opacity: (isExit ? exitOpacity : 1) * glowOpacity * 0.7,
-                filter: `blur(${GLOW_BLUR}px)`,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
+                opacity: glowOpacity,
+                filter: `blur(60px)`,
                 pointerEvents: "none",
                 zIndex: -1,
               }}
             />
-            {/* Text card */}
+
+            {/* Content */}
             <div
               style={{
-                maxWidth: width - 240,
-                backgroundColor: "white",
-                borderRadius: 24,
-                padding: "32px 48px",
-                boxShadow: CARD_SHADOW,
                 position: "relative",
                 zIndex: 1,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 24,
               }}
             >
+              {/* Icon with entrance animation (Lottie or Lucide fallback) */}
               <div
                 style={{
-                  fontSize: 48,
-                  fontWeight: 600,
-                  fontFamily: "system-ui, sans-serif",
-                  color: DARK_TEXT,
-                  lineHeight: 1.4,
-                  letterSpacing: -0.5,
-                  textAlign: "center",
+                  transform: [
+                    { scale: interpolate(iconProgress, [0, 1], [0.5, 1], {
+                      easing: Easing.spring({ damping: 200 }),
+                      output: "perceptual-scale",
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    }) },
+                    { rotate: isIdle ? `${2 * Math.sin(frame * 0.04)}deg` : "0deg" },
+                  ],
+                  opacity: iconProgress,
+                  transformOrigin: "center",
+                  willChange: "transform, opacity",
+                }}
+              >
+                {renderIcon()}
+              </div>
+
+              {/* Text with word-by-word animation + rough-notation highlights */}
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
                 {words.map((word, wordIndex) => {
-                  const wordStartFrame = textStartDelay + wordIndex * wordStaggerFrames;
-                  const wordEndFrame = wordStartFrame + wordDurationFrames;
-                  
+                  const wordStartFrame = textStartDelay + iconDuration + wordIndex * wordStagger;
+                  const wordEndFrame = wordStartFrame + wordDuration;
+
                   const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                    easing: easeOut,
+                    easing: easeOutExpo,
                     extrapolateLeft: "clamp",
                     extrapolateRight: "clamp",
                   });
-                  
-                  const wordOpacity = isExit ? exitOpacity : wordProgress;
-                  const wordY = interpolate(wordProgress, [0, 1], [20, 0], {
+
+                  const wordOpacity = wordProgress;
+                  const wordY = interpolate(wordProgress, [0, 1], [30, 0], {
                     extrapolateLeft: "clamp",
                     extrapolateRight: "clamp",
                   });
-                  
+                  const wordScale = interpolate(wordProgress, [0, 1], [0.8, 1], {
+                    extrapolateLeft: "clamp",
+                    extrapolateRight: "clamp",
+                  });
+
                   // Idle animation for words: subtle vertical drift
                   const wordIdleDrift = isIdle ? 2 * Math.sin(frame * 0.05 + wordIndex * 0.5) : 0;
+                  const wordIdleScale = isIdle ? 1 + 0.01 * Math.sin(frame * 0.07 + wordIndex) : 1;
+
+                  const annotation = wordAnnotations[wordIndex];
+                  const wordHasEmphasis = !!annotation;
+
+                  const wordContent = (
+                    <span
+                      style={{
+                        fontSize: baseFontSize,
+                        fontWeight: wordHasEmphasis ? 700 : 500,
+                        color: DARK_TEXT,
+                        fontFamily: "system-ui, sans-serif",
+                        lineHeight: 1.4,
+                        letterSpacing: -1,
+                        textAlign: "center",
+                        textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + wordIndex) * 2}px rgba(232, 108, 0, 0.15)` : "none",
+                        ...(wordHasEmphasis
+                          ? {
+                              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                              WebkitBackgroundClip: "text",
+                              backgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                            }
+                          : {}),
+                      }}
+                    >
+                      {word}
+                    </span>
+                  );
+
+                  const renderedWord = wordHasEmphasis && annotation ? (
+                    <annotation.Component
+                      key={wordIndex}
+                      color={annotation.color}
+                      strokeWidth={3}
+                      padding={6}
+                      progress={interpolate(
+                        frame,
+                        [wordStartFrame, wordEndFrame + 5],
+                        [0, 1],
+                        {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        }
+                      )}
+                    >
+                      {wordContent}
+                    </annotation.Component>
+                  ) : (
+                    <span key={wordIndex}>{wordContent}</span>
+                  );
 
                   return (
                     <span
@@ -318,16 +535,33 @@ export const IconText: React.FC<IconTextProps> = ({
                       style={{
                         display: "inline-block",
                         opacity: wordOpacity,
-                        transform: `translateY(${wordY + wordIdleDrift}px)`,
+                        transform: `translateY(${wordY + wordIdleDrift}px) scale(${wordScale * wordIdleScale})`,
+                        transformOrigin: "center",
+                        willChange: "transform, opacity",
                         margin: "0 2px",
                       }}
                     >
-                      {word}{wordIndex < totalWords - 1 ? " " : ""}
+                      {renderedWord}{wordIndex < totalWords - 1 ? " " : ""}
                     </span>
                   );
                 })}
               </div>
             </div>
+
+            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(shimmerStart),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(shimmerStart),
+                borderRadius: cardBorderRadius,
+                pointerEvents: "none",
+              }}
+            />
           </div>
         </div>
       </div>
@@ -340,16 +574,15 @@ export const IconTextTestComposition: React.FC = () => (
   <Composition
     id="IconTextTest"
     component={IconText}
-    durationInFrames={120}
+    durationInFrames={150}
     fps={30}
     width={1080}
     height={1920}
     defaultProps={{
       icon: "risk",
       text: "Broadcom only guarantees part of the loan",
-      durationInFrames: 120,
-      startFrame: 0,
-      exitDirection: "up",
+      emphasisWords: ["guarantees", "part"],
+      durationInFrames: 150,
     }}
   />
 );

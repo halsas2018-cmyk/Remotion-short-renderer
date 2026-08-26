@@ -260,6 +260,9 @@ export const IconText: React.FC<IconTextProps> = ({
   const idleTimeSeconds = isIdle ? (frame - textEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
+  // Card bounce animation (idle) - 6px vertical bounce matching other components
+  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+
   // Glow pulse animation (idle)
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
@@ -342,12 +345,13 @@ export const IconText: React.FC<IconTextProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: "translateY(-50%)",
+          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
           width: availableWidth,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           textAlign: "center",
+          willChange: "transform",
         }}
       >
         {/* Card container - explicit dimensions matching card outer size */}

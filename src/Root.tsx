@@ -91,19 +91,6 @@ export const RemotionRoot = () => (
       }}
     />
     <Composition
-      id="VersusCardTestShort"
-      component={VersusCard}
-      durationInFrames={90}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        left: { label: "Broadcom", value: "$70B debt" },
-        right: { label: "Nvidia", value: "$500B exposure" },
-        durationInFrames: 90,
-      }}
-    />
-    <Composition
       id="BeforeAfterTest"
       component={BeforeAfter}
       durationInFrames={90}

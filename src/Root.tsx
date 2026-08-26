@@ -3,6 +3,8 @@ import { Composition } from "remotion";
 import { ChartCounter } from "./ChartCounter";
 import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
+import { BeforeAfter } from "./BeforeAfter";
+import { PlainText } from "./PlainText";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -98,6 +100,54 @@ export const RemotionRoot = () => (
       defaultProps={{
         left: { label: "Broadcom", value: "$70B debt" },
         right: { label: "Nvidia", value: "$500B exposure" },
+        durationInFrames: 90,
+      }}
+    />
+    <Composition
+      id="BeforeAfterTest"
+      component={BeforeAfter}
+      durationInFrames={90}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        beforeLabel: "Manual Chip Procurement",
+        afterLabel: "Automated Lease-Back Model",
+      }}
+    />
+    <Composition
+      id="PlainTextTest"
+      component={PlainText}
+      durationInFrames={120}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        text: "The gamble works while AI chips are scarce",
+        durationInFrames: 120,
+      }}
+    />
+    <Composition
+      id="PlainTextLongTest"
+      component={PlainText}
+      durationInFrames={180}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        text: "People who are really serious about software should make their own hardware",
+        durationInFrames: 180,
+      }}
+    />
+    <Composition
+      id="PlainTextShortTest"
+      component={PlainText}
+      durationInFrames={90}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        text: "The future is already here",
         durationInFrames: 90,
       }}
     />

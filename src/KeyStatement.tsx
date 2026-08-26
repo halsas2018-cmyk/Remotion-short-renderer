@@ -7,120 +7,15 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight } from "@remotion/rough-notation";
+import { loadFont } from "@remotion/google-fonts/Inter";
+import { fitText } from "@remotion/layout-utils";
 
-// Custom Highlight component - pure CSS/SVG, no refs or measurements needed
-// Creates a beautiful animated highlight effect using CSS clip-path and SVG stroke animation
-const Highlight: React.FC<{
-  children: React.ReactNode;
-  color?: string;
-  strokeWidth?: number;
-  padding?: number;
-  cornerRadius?: number;
-  progress?: number;
-  animationDuration?: number;
-}> = ({
-  children,
-  color = "rgba(232, 108, 0, 0.25)",
-  strokeWidth = 3,
-  padding = 6,
-  cornerRadius = 8,
-  progress = 1,
-  animationDuration = 0,
-}) => {
-  // If progress is 0, just render children without highlight
-  if (progress <= 0) {
-    return <span style={{ display: "inline" }}>{children}</span>;
-  }
-
-  // Use CSS clip-path to animate the highlight reveal (grows from left to right)
-  const clipPath = `inset(0 ${100 - progress * 100}% 0 0)`;
-  
-  // Convert color to opaque stroke color
-  const strokeColor = color.replace(/[\d.]+\)$/, "1)").replace("rgba", "rgb");
-  const strokeColorTransparent = color.replace(/[\d.]+\)$/, "0.6)").replace("rgba", "rgb");
-
-  return (
-    <span
-      style={{
-        display: "inline",
-        position: "relative",
-        lineHeight: 1.3,
-      }}
-    >
-      {/* Animated highlight background - CSS clip-path animation */}
-      <span
-        style={{
-          position: "absolute",
-          top: -padding,
-          left: -padding,
-          right: -padding,
-          bottom: -padding,
-          backgroundColor: color,
-          borderRadius: cornerRadius,
-          clipPath,
-          pointerEvents: "none",
-          zIndex: -1,
-          opacity: 0.6,
-        }}
-      />
-      
-      {/* Hand-drawn stroke animation using SVG - fixed dimensions via viewBox */}
-      <svg
-        style={{
-          position: "absolute",
-          top: -padding,
-          left: -padding,
-          right: -padding,
-          bottom: -padding,
-          pointerEvents: "none",
-          overflow: "visible",
-          zIndex: -1,
-        }}
-        viewBox={`0 0 100 100`}
-        preserveAspectRatio="none"
-      >
-        <rect
-          x={strokeWidth / 2}
-          y={strokeWidth / 2}
-          width={100 - strokeWidth}
-          height={100 - strokeWidth}
-          rx={cornerRadius}
-          ry={cornerRadius}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray="1000"
-          strokeDashoffset={1000 * (1 - progress)}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={progress}
-          filter="drop-shadow(0 0 2px rgba(232, 108, 0, 0.3))"
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Second rough stroke for more hand-drawn feel */}
-        <rect
-          x={strokeWidth / 2 + 1.5}
-          y={strokeWidth / 2 + 1.5}
-          width={100 - strokeWidth - 3}
-          height={100 - strokeWidth - 3}
-          rx={Math.max(0, cornerRadius - 1.5)}
-          ry={Math.max(0, cornerRadius - 1.5)}
-          fill="none"
-          stroke={strokeColorTransparent}
-          strokeWidth={strokeWidth * 0.5}
-          strokeDasharray="1100"
-          strokeDashoffset={1100 * (1 - progress) + 10}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={progress * 0.7}
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      
-      {children}
-    </span>
-  );
-};
+// Google Font — type-safe, blocks rendering until the font is ready
+const { fontFamily } = loadFont("normal", {
+  weights: ["700", "900"],
+  subsets: ["latin"],
+});
 
 interface KeyStatementProps {
   text: string;
@@ -136,15 +31,10 @@ interface KeyStatementProps {
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
-const easeOutBack = Easing.bezier(0.34, 1.56, 0.64, 1);
 const ACCENT_COLOR = "#e86c00";
-const ACCENT_LIGHT = "#fff4ed";
 const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#525252";
-const LIGHT_TEXT = "#a3a3a3";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
-const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
@@ -177,19 +67,11 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const sliderStart = textEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
-  // Idle pulse — time-based
-  const allAnimationsDone = textEndFrame;
-  const isIdle = frame > allAnimationsDone;
-  const idleTimeSeconds = (frame - allAnimationsDone) / fps;
-  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
-
-  // Shimmer timing
-  const shimmerSpeed = 25;
-  const shimmerStart = textEndFrame;
+  // Idle state — everything time-based from here on
+  const isIdle = frame > textEndFrame;
 
   // Split text into words and mark emphasis
   const emphasisSet = new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")));
-  const totalWordsCount = words.length;
 
   // Card bounce during idle
   const cardBounceFrequency = 0.08;
@@ -216,14 +98,28 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
   const containerWidth = availableWidth;
   const containerHeight = 400; // Approximate card height
   const sliderPadding = 24;
-  const sliderWidth = containerWidth + 2 * sliderPadding;
-  const sliderHeight = containerHeight + 2 * sliderPadding;
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  // Responsive font sizes (following video-layout.md minimums)
-  const baseFontSize = Math.max(64, width * 0.059); // Main headline: 84px minimum
-  const emphasisFontSize = Math.max(76, width * 0.07);
+  // Auto-fit text sizing — the longest word must fit the card's text area.
+  // Responsive defaults act as caps; fitted size shrinks them if needed.
+  const textAreaWidth = containerWidth - 2 * cardPadding;
+  const longestWord = words.reduce(
+    (longest, current) => (current.length > longest.length ? current : longest),
+    ""
+  );
+  const fittedSize = fitText({
+    text: longestWord,
+    withinWidth: textAreaWidth,
+    fontFamily,
+    fontWeight: "900",
+  }).fontSize;
+  const baseFontSize = Math.min(Math.max(64, width * 0.059), fittedSize * 0.85);
+  const emphasisFontSize = Math.min(Math.max(76, width * 0.07), fittedSize);
+
+  // Shimmer timing
+  const shimmerSpeed = 25;
+  const shimmerStart = textEndFrame;
 
   // Shimmer position calculation - relative to card (0-100% of card height)
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -238,37 +134,17 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
     return 1;
   };
 
-  // Slider path animation
-  const sliderPerimeter = 2 * (sliderWidth + sliderHeight) - 8 * sliderBorderRadius + Math.PI * 2 * sliderBorderRadius;
-  const sliderDashArray = `${sliderPerimeter} ${sliderPerimeter}`;
-  const sliderDashOffset = sliderPerimeter * (1 - interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  }));
-
-  // Slider progress
-  const sliderProgress = interpolate(frame, [sliderStart, sliderStart + sliderDuration], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
   // Decorative accent elements
-  const AccentDot = ({ 
-    size = 8, 
-    color = ACCENT_COLOR, 
-    baseDelay = 0, 
+  const AccentDot = ({
+    size = 8,
+    color = ACCENT_COLOR,
+    baseDelay = 0,
     opacity = 1,
-    animate = false 
+    animate = false,
   }) => {
-    const pulse = animate && isIdle 
-      ? 1 + 0.3 * Math.sin(frame * 0.2 + baseDelay) 
-      : 1;
-    const float = animate && isIdle 
-      ? 4 * Math.sin(frame * 0.15 + baseDelay) 
-      : 0;
-    
+    const pulse = animate && isIdle ? 1 + 0.3 * Math.sin(frame * 0.2 + baseDelay) : 1;
+    const float = animate && isIdle ? 4 * Math.sin(frame * 0.15 + baseDelay) : 0;
+
     return (
       <div
         style={{
@@ -277,36 +153,39 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
           borderRadius: "50%",
           backgroundColor: color,
           opacity: opacity * pulse,
-          transform: `translateY(${float}px)`,
+          translate: `0px ${float}px`,
           flexShrink: 0,
-          filter: animate && isIdle ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1 + baseDelay)}px ${ACCENT_GLOW})` : "none",
+          filter:
+            animate && isIdle
+              ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1 + baseDelay)}px ${ACCENT_GLOW})`
+              : "none",
         }}
       />
     );
   };
 
   // Decorative line separator
-  const DecorativeLine = ({ 
-    width = 60, 
-    height = 2, 
-    color = ACCENT_COLOR, 
-    opacity = 1,
-    animate = false 
+  const DecorativeLine = ({
+    width: lineWidth = 60,
+    height: lineHeight = 2,
+    color = ACCENT_COLOR,
+    opacity: lineOpacity = 1,
+    animate = false,
   }) => {
-    const pulse = animate && isIdle 
-      ? 0.6 + 0.2 * Math.sin(frame * 0.08) 
-      : opacity;
-    const glow = animate && isIdle 
-      ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1)}px ${ACCENT_GLOW})` 
-      : "none";
-    
+    const pulse =
+      animate && isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.08) : lineOpacity;
+    const glow =
+      animate && isIdle
+        ? `drop-shadow(0 0 ${4 + 2 * Math.sin(frame * 0.1)}px ${ACCENT_GLOW})`
+        : "none";
+
     return (
       <div
         style={{
-          width,
-          height,
+          width: lineWidth,
+          height: lineHeight,
           background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-          borderRadius: height / 2,
+          borderRadius: lineHeight / 2,
           opacity: pulse,
           filter: glow,
         }}
@@ -328,7 +207,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: "translateY(-50%)",
+          translate: "0px -50%",
           width: availableWidth,
           display: "flex",
           flexDirection: "column",
@@ -344,7 +223,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
             minHeight: containerHeight,
           }}
         >
-          {/* Slider animation - black border circling the card with matching curved corners */}
+          {/* Slider border — pure CSS: fades in, then springs to full scale */}
           <div
             style={{
               position: "absolute",
@@ -353,39 +232,28 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               right: -sliderPadding,
               bottom: -sliderPadding,
               pointerEvents: "none",
-              opacity: sliderProgress,
-              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
               borderRadius: sliderBorderRadius,
+              boxSizing: "border-box",
+              opacity: interpolate(frame, [sliderStart, sliderStart + 10], [0, 1], {
+                easing: easeOut,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+              scale: interpolate(
+                frame,
+                [sliderStart, sliderStart + sliderDuration],
+                [0.94, 1],
+                {
+                  easing: Easing.spring({ damping: 200 }),
+                  output: "perceptual-scale",
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                }
+              ),
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
             }}
-          >
-            <svg
-              width={sliderWidth}
-              height={sliderHeight}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-              }}
-            >
-              <rect
-                x={sliderStrokeWidth / 2}
-                y={sliderStrokeWidth / 2}
-                width={sliderWidth - sliderStrokeWidth}
-                height={sliderHeight - sliderStrokeWidth}
-                rx={sliderBorderRadius}
-                ry={sliderBorderRadius}
-                fill="none"
-                stroke={SLIDER_COLOR}
-                strokeWidth={sliderStrokeWidth}
-                strokeDasharray={sliderDashArray}
-                strokeDashoffset={sliderDashOffset}
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-          </div>
+          />
 
           {/* Elevated card for the key statement - with prominent curved borders */}
           <div
@@ -406,9 +274,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
-              transform: [
-                { translateY: cardBounceOffset },
-              ],
+              translate: `0px ${cardBounceOffset}px`,
             }}
           >
             {/* Accent top bar with matching curved corners */}
@@ -459,23 +325,33 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               }}
             />
 
-            {/* Glow behind card */}
+            {/* Glow behind card — flex-centered wrapper instead of transform */}
             <div
               style={{
                 position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: `translate(-50%, -50%) scale(${glowPulse})`,
-                width: "110%",
-                height: "110%",
-                borderRadius: cardBorderRadius,
-                background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
-                opacity: glowOpacity,
-                filter: `blur(60px)`,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 pointerEvents: "none",
                 zIndex: -1,
               }}
-            />
+            >
+              <div
+                style={{
+                  width: "110%",
+                  height: "110%",
+                  borderRadius: cardBorderRadius,
+                  background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
+                  opacity: glowOpacity,
+                  filter: `blur(60px)`,
+                  scale: glowPulse,
+                }}
+              />
+            </div>
 
             {/* Decorative accent dots at top */}
             <div
@@ -483,7 +359,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                 position: "absolute",
                 top: cardPadding - 10,
                 left: "50%",
-                transform: "translateX(-50%)",
+                translate: "-50% 0px",
                 display: "flex",
                 gap: 8,
                 pointerEvents: "none",
@@ -510,7 +386,7 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                 style={{
                   fontSize: baseFontSize,
                   fontWeight: 700,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   color: DARK_TEXT,
                   lineHeight: 1.3,
                   letterSpacing: -1.5,
@@ -524,83 +400,74 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                 {words.map((word, i) => {
                   const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
                   const isEmphasized = emphasisSet.has(cleanWord);
-                  
-                  // Word entrance animation
+
+                  // Word entrance window
                   const wordStartFrame = textStartDelay + i * wordStagger;
                   const wordEndFrame = wordStartFrame + wordDuration;
-                  
-                  const wordProgress = interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                    easing: easeOutExpo,
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-                  
-                  const wordOpacity = wordProgress;
-                  const wordY = interpolate(wordProgress, [0, 1], [40, 0], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-                  const wordScale = interpolate(wordProgress, [0, 1], [0.7, 1], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-                  const wordRotation = interpolate(wordProgress, [0, 1], [-5, 0], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  });
-                  
-                  // Fast bouncing animation for emphasized words (idle loop)
-                  const bounceOffset = isIdle && isEmphasized 
-                    ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude 
-                    : 0;
-                  
-                  // Idle animation for emphasized words: subtle scale pulse
-                  const idlePulse = isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
-                  
-                  // Base font size - emphasized words are larger
-                  const wordFontSize = isEmphasized ? emphasisFontSize : baseFontSize;
-                  const wordFontWeight = isEmphasized ? 900 : 700;
-                  const wordColor = isEmphasized ? ACCENT_COLOR : DARK_TEXT;
 
-                  // Emphasized word idle animations
-                  const emphasisGlow = isIdle && isEmphasized 
-                    ? `0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW}, 0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW}` 
-                    : "none";
-                  const emphasisFloat = isIdle && isEmphasized 
-                    ? 3 * Math.sin(frame * 0.08 + i) 
-                    : 0;
-
-                  // Rough-notation highlight progress - animates in with the word
-                  const highlightProgress = isEmphasized 
-                    ? interpolate(frame, [wordStartFrame, wordEndFrame + 5], [0, 1], {
-                        easing: easeOutExpo,
-                        extrapolateLeft: "clamp",
-                        extrapolateRight: "clamp",
-                      })
-                    : 1;
+                  // Idle animations for emphasized words
+                  const bounceOffset =
+                    isIdle && isEmphasized
+                      ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude
+                      : 0;
+                  const idleScalePulse =
+                    isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
+                  const emphasisFloat =
+                    isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
+                  const emphasisGlow =
+                    isIdle && isEmphasized
+                      ? `0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW}, 0 0 ${
+                          16 + 8 * Math.sin(frame * 0.1 + i)
+                        }px ${ACCENT_GLOW}`
+                      : "none";
 
                   const wordContent = (
                     <span
                       style={{
                         display: "inline-block",
-                        opacity: wordOpacity,
-                        transform: `translateY(${wordY + bounceOffset + emphasisFloat}px) scale(${wordScale * idlePulse}) rotate(${wordRotation}deg)`,
+                        opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        }),
+                        translate: `0px ${
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                          }) +
+                          bounceOffset +
+                          emphasisFloat
+                        }px`,
+                        scale:
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                            output: "perceptual-scale",
+                          }) * idleScalePulse,
+                        rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        })}deg`,
                         transformOrigin: "center bottom",
-                        fontSize: wordFontSize,
-                        fontWeight: wordFontWeight,
-                        color: wordColor,
-                        fontFamily: "system-ui, sans-serif",
+                        fontSize: isEmphasized ? emphasisFontSize : baseFontSize,
+                        fontWeight: isEmphasized ? 900 : 700,
+                        color: isEmphasized ? ACCENT_COLOR : DARK_TEXT,
+                        fontFamily,
                         lineHeight: 1.3,
                         margin: "0 0.04em",
                         textShadow: emphasisGlow,
-                        willChange: "transform, opacity, text-shadow",
+                        willChange: "transform, opacity",
                       }}
                     >
-                      {word}{i < totalWordsCount - 1 ? " " : ""}
+                      {word}
+                      {i < totalWords - 1 ? " " : ""}
                     </span>
                   );
 
-                  // Wrap emphasized words with custom Highlight component
+                  // Wrap emphasized words with rough-notation Highlight
                   if (isEmphasized) {
                     return (
                       <Highlight
@@ -608,9 +475,16 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
                         color="rgba(232, 108, 0, 0.25)"
                         strokeWidth={3}
                         padding={6}
-                        cornerRadius={8}
-                        progress={highlightProgress}
-                        animationDuration={0}
+                        progress={interpolate(
+                          frame,
+                          [wordStartFrame, wordEndFrame + 5],
+                          [0, 1],
+                          {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                          }
+                        )}
                       >
                         {wordContent}
                       </Highlight>
@@ -622,12 +496,12 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               </div>
 
               {/* Decorative separator line */}
-              <DecorativeLine 
-                width={80} 
-                height={3} 
-                color={ACCENT_COLOR} 
-                opacity={isIdle ? 0.7 : 0.4} 
-                animate={true} 
+              <DecorativeLine
+                width={80}
+                height={3}
+                color={ACCENT_COLOR}
+                opacity={isIdle ? 0.7 : 0.4}
+                animate={true}
               />
 
               {/* Accent dots below text */}

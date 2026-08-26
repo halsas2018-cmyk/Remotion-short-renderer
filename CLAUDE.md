@@ -94,10 +94,10 @@ output/
 | `KeyStatement` | ✅ **COMPLETE** | `key_statement` | Word-by-word reveal, emphasis highlighting, glow, slider border |
 | `MapLocation` | ✅ **COMPLETE** | `map_location` | Abstract world map, animated pin drop, coordinate label, slider border |
 | `PlainText` | ✅ **COMPLETE** | `plain_text` | Line-by-line reveal (4-5 words/line), star bullets, glow, slider border |
+| `IconText` | ✅ **COMPLETE** | `icon_text` | Lottie icon + wrapped text, word-by-word reveal, rough-notation highlights, card bounce, slider border |
 | `ChartCounter` | ⏳ TODO | `chart_counter` | |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
-| `IconText` | ⏳ TODO | `icon_text` | |
 | `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
 | `PersistentBackground` | ⏳ TODO | — | Global background |
 | `MotionGraphicsVideo` | ⏳ TODO | — | Main composition orchestrator |
@@ -179,7 +179,7 @@ All card components **must** complete their entrance animations within a specifi
 
 | Card Type | Animation Completion Threshold | Calculation |
 |-----------|-------------------------------|-------------|
-| **Cards WITH text animation** (KeyStatement, PlainText, QuoteCard, etc.) | **50%** of `durationInFrames` | `Math.round(durationInFrames * 0.5)` |
+| **Cards WITH text animation** (KeyStatement, PlainText, QuoteCard, IconText, etc.) | **50%** of `durationInFrames` | `Math.round(durationInFrames * 0.5)` |
 | **Cards WITHOUT text animation** (BeforeAfter, VersusCard, Timeline, ProgressMeter, ProcessFlow, MapLocation, etc.) | **25–30%** of `durationInFrames` | `Math.round(durationInFrames * 0.25)` to `Math.round(durationInFrames * 0.3)` |
 
 **Implementation pattern:**
@@ -396,6 +396,29 @@ The black slider border (SVG `stroke-dashoffset` animation) **must start drawing
 - **Test compositions**: `PlainTextTest` (120 frames), `PlainTextLongTest` (180 frames), `PlainTextShortTest` (90 frames)
 - **Props**: `text` (string)
 
+### IconText Component Details (`src/IconText.tsx`)
+- **Animation timeline** (proportional to `durationInFrames`):
+  - 0–15%: Icon scales in with spring (Lottie or Lucide fallback)
+  - 5–50%: Words reveal sequentially (8% duration each, 3% stagger) with text wrapping via `fillTextBox`/`measureText`
+  - 50–60%: Black slider border draws around card (SVG stroke-dashoffset, 45% duration)
+  - 60%+: Hold (idle pulse, glow, card bounce 6px, word drift)
+- **Visual effects**:
+  - Light orange (ACCENT_COLOR) top-to-bottom shimmer on card (18% height, 25%/sec)
+  - Accent top bar (gradient)
+  - Subtle diagonal line background pattern
+  - Radial glow behind card (animated pulse during idle)
+  - Lottie animation from `/public/icons/{icon}.json` with Lucide React fallback for Studio
+  - Rough-notation highlights cycling: Highlight → Circle → Underline for emphasis words
+  - Word entrance: slide up (30px) + scale (0.8→1) with `easeOutExpo`
+  - Text wrapping using `@remotion/layout-utils` `fitText` + `measureText` for responsive line breaks
+  - Black slider border with drop shadow animates drawing around card
+  - Responsive sizing (scales with width/height)
+  - Font sizes follow video-layout.md minimums (base ≥56px)
+- **No exit animation** — designed to be wrapped by `SceneTransition`
+- **Test composition**: `IconTextTest` (150 frames, 30fps, 1080×1920)
+- **Props**: `icon` (string), `text` (string), `emphasisWords` (string[])
+- **Commits**: `47160b4` (text wrapping), `6ee6b68` (measureText fix), `6f0a277` (card bounce)
+
 ---
 
 ## Remotion Architecture Fixes (Latest)
@@ -421,7 +444,10 @@ The black slider border (SVG `stroke-dashoffset` animation) **must start drawing
 ---
 
 ## Next Steps
-1. Implement remaining beat components per the table above
+1. Implement remaining beat components per the table above:
+   - `ChartCounter`, `ChartComparison`, `ChartLine`
+   - `KineticCaptions`
+   - `PersistentBackground`
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
 3. Add `SceneTransition` wrapper for entrance/exit
 4. Integrate narration audio + `KineticCaptions`
@@ -443,16 +469,17 @@ my-video/
 │   ├── KeyStatement.tsx     # ✅ Complete
 │   ├── MapLocation.tsx      # ✅ Complete
 │   ├── PlainText.tsx        # ✅ Complete
+│   ├── IconText.tsx         # ✅ Complete (Lottie + Lucide fallback, text wrapping, bounce)
 │   ├── ChartCounter.tsx
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
-│   ├── IconText.tsx
 │   ├── KineticCaptions.tsx
 │   ├── PersistentBackground.tsx
 │   ├── MotionGraphicsVideo.tsx
 │   ├── index.tsx            # Entry point: registerRoot(RemotionRoot)
 │   └── Root.tsx             # Defines RemotionRoot fragment with all Compositions
 ├── public/
+│   └── icons/               # Lottie files for IconText (warning.json, risk.json, etc.)
 ├── package.json
 └── remotion.config.ts
 ```

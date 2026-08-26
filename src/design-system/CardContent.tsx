@@ -141,12 +141,12 @@ export const CardContentFooter: React.FC<CardContentFooterProps> = ({
   </div>
 );
 
-/** Divider — decorative line */
+/** Divider — decorative line matching KeyStatement separator */
 export const CardContentDivider: React.FC<CardContentDividerProps> = ({
-  width = 80,
-  height = 3,
+  width = tokens.card.separatorWidth,
+  height = tokens.card.separatorHeight,
   color = tokens.colors.accent,
-  opacity = 0.7,
+  opacity = tokens.card.separatorOpacityIdle,
   animate = false,
   style,
 }) => {
@@ -165,7 +165,7 @@ export const CardContentDivider: React.FC<CardContentDividerProps> = ({
   );
 };
 
-/** Accent dots — decorative */
+/** Accent dots — decorative, matching KeyStatement */
 export const CardContentAccentDots: React.FC<CardContentAccentDotsProps> = ({
   count = 3,
   size = 8,
@@ -204,7 +204,7 @@ export const CardContentAccentDots: React.FC<CardContentAccentDotsProps> = ({
 export const CardContentShimmer: React.FC<CardContentShimmerProps> = ({
   startFrame = 0,
   height = "18%",
-  color = `${tokens.colors.accent}33`,
+  color = tokens.colors.shimmerColor,
   style,
 }) => {
   // This needs frame context — typically used inside a component with useCurrentFrame

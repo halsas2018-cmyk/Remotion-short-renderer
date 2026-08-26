@@ -4,6 +4,7 @@ import { PersistentBackground } from "./PersistentBackground";
 import { KineticCaptions } from "./KineticCaptions";
 import { ChartCounter } from "./ChartCounter";
 import { ChartComparison } from "./ChartComparison";
+import { ChartComparison3D } from "./ChartComparison3D";
 import { IconText } from "./IconText";
 import { KeyStatement } from "./KeyStatement";
 import { KeyStatement3D } from "./KeyStatement3D";
@@ -152,6 +153,52 @@ export const RemotionRoot = () => (
           { label: "Nvidia", value: 500000000000 },
         ],
         durationInFrames: 90,
+      }}
+    />
+    {/* 3D chart experiment — extruded bars, floor grid, orbiting camera */}
+    <Composition
+      id="ChartComparison3DTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Broadcom", value: 70000000000 },
+          { label: "Nvidia", value: 500000000000 },
+        ],
+      }}
+    />
+    <Composition
+      id="ChartComparison3DThreeTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Meta", value: 27000000000 },
+          { label: "Google", value: 85000000000 },
+          { label: "Microsoft", value: 310000000000 },
+        ],
+      }}
+    />
+    <Composition
+      id="ChartComparison3DFourTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Q1", value: 12000000000 },
+          { label: "Q2", value: 18000000000 },
+          { label: "Q3", value: 15000000000 },
+          { label: "Q4", value: 27000000000 },
+        ],
       }}
     />
     <Composition

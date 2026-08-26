@@ -14,3 +14,6 @@ Config.setOverwriteOutput(true);
 Config.overrideBundlerConfig(enableTailwind);
 Config.setBrowserExecutable("/usr/bin/chromium");
 Config.setChromiumOpenGlRenderer("swiftshader");
+
+// Optional: Explicitly set entry point (default is ./src/index.tsx)
+// Config.setEntryPoint("./src/index.tsx");

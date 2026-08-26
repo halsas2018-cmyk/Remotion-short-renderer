@@ -8,6 +8,7 @@ import { ChartComparison3D } from "./ChartComparison3D";
 import { IconText } from "./IconText";
 import { KeyStatement } from "./KeyStatement";
 import { KeyStatement3D } from "./KeyStatement3D";
+import { Card3DTest } from "./CardTest";
 import { Timeline } from "./Timeline";
 import { ProcessFlow } from "./ProcessFlow";
 import { VersusCard } from "./VersusCard";
@@ -287,6 +288,15 @@ export const RemotionRoot = () => (
         text: "The future is already here",
         emphasisWords: ["future"],
       }}
+    />
+    {/* Centralized 3D Card base — fly-in from beyond the borders + recessed interior */}
+    <Composition
+      id="Card3DTest"
+      component={Card3DTest}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
     />
     <Composition
       id="TimelineTest"

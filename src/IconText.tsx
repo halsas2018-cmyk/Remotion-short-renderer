@@ -12,7 +12,7 @@ import {
 } from "remotion";
 import { Lottie, LottieAnimationData } from "@remotion/lottie";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
-import { fitText, fillTextBox } from "@remotion/layout-utils";
+import { fitText, fillTextBox, measureText } from "@remotion/layout-utils";
 import * as LucideIcons from "lucide-react";
 
 interface IconTextProps {
@@ -200,15 +200,15 @@ export const IconText: React.FC<IconTextProps> = ({
   const wordDuration = Math.round(durationInFrames * wordDurPct);
   const wordStagger = Math.round(durationInFrames * wordStaggerPct);
 
-  // First, determine line breaks by simulating fillTextBox
-  // We'll use a simpler approach: measure each potential line
+  // First, determine line breaks by simulating fillTextBox using the add() method
+  // We'll use measureText to check line widths instead
   let testLineWords: string[] = [];
   const lineBreaks: number[] = []; // Indices where lines break
 
   for (let i = 0; i < words.length; i++) {
     testLineWords.push(words[i]);
     const testText = testLineWords.join(" ");
-    const { width: lineWidth } = textBox.measure({
+    const { width: lineWidth } = measureText({
       text: testText,
       fontFamily: "system-ui, sans-serif",
       fontSize: baseFontSize,

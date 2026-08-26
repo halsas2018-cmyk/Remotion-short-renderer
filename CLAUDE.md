@@ -136,7 +136,81 @@ All card-based components now share a consistent visual language:
 - Safe area: 80px minimum from edges
 - Font sizes follow video-layout.md minimums (headline ≥84px, supporting ≥44px)
 
-### BeforeAfter Component Details (`src/BeforeAfter.tsx`)
+---
+
+## KeyStatement Reference Implementation Analysis
+
+**KeyStatement.tsx** is the reference implementation — it demonstrates full compliance across all five skill areas:
+
+| Skill | Compliance | Key Pattern |
+|-------|------------|-------------|
+| **Google Fonts** | ✅ 100% | `loadFont()` at module top-level, minimal weights/subsets |
+| **Measuring Text** | ✅ 100% | `fitText()` with matching `fontFamily`/`fontWeight`, capped by responsive min/max |
+| **Text Highlights** | ✅ 100% | `@remotion/rough-notation` components driven by `interpolate(frame, ...)` progress |
+| **Timing & Animation** | ✅ 100% | Frame-driven, inline `interpolate` in style props, Bézier/spring easing, `perceptual-scale` on scale |
+| **Responsive Design** | ✅ 100% | All dimensions derived from `width` with `Math.max(min, width * ratio)` formulas |
+
+### Architectural Highlights (Codified Design System)
+
+1. **Single source of truth** for colors, shadows, easing constants
+2. **Deterministic timeline** — everything derived from `useCurrentFrame()`
+3. **Studio-editable** — all `interpolate()` calls inline in JSX style props
+4. **Idle loop** — clean `isIdle` flag separates entrance from perpetual animations
+5. **Performance** — `willChange` on animated elements, no layout thrashing
+
+### Animation Timeline Structure (Reference)
+
+```
+0                    textEndFrame                    durationInFrames
+|----------------------|------------------------------|
+  Word-by-word          Slider draws              Hold idle
+  entrance              around card               animations
+  (staggered)           (spring scale)            (bounce, tilt,
+                                                    glow pulse,
+                                                    shimmer)
+```
+
+---
+
+## Card Animation Rules (MANDATORY)
+
+### Rule 1: Animation Completion Thresholds
+All card components **must** complete their entrance animations within a specific percentage of `durationInFrames`, dynamically calculated:
+
+| Card Type | Animation Completion Threshold | Calculation |
+|-----------|-------------------------------|-------------|
+| **Cards WITH text animation** (KeyStatement, PlainText, QuoteCard, etc.) | **50%** of `durationInFrames` | `Math.round(durationInFrames * 0.5)` |
+| **Cards WITHOUT text animation** (BeforeAfter, VersusCard, Timeline, ProgressMeter, ProcessFlow, MapLocation, etc.) | **25–30%** of `durationInFrames` | `Math.round(durationInFrames * 0.25)` to `Math.round(durationInFrames * 0.3)` |
+
+**Implementation pattern:**
+```tsx
+const { durationInFrames } = useVideoConfig();
+// or from props: const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
+
+const textEndFrame = textStartDelay + (totalWords - 1) * wordStagger + wordDuration;
+// For non-text cards, define entranceEndFrame = Math.round(durationInFrames * 0.25);
+// All entrance interpolate() ranges must end by entranceEndFrame
+```
+
+### Rule 2: No Exit Transitions in Cards
+**No card component shall include exit animations or transitions.**
+
+- Entrance animations only (fade in, slide in, scale in, draw in)
+- Hold/idle phase after entrance completes (bounce, glow pulse, shimmer, subtle tilt)
+- **No fade out, slide out, scale out, or any exit animation**
+- Exit transitions are handled exclusively by a **`SceneTransition` wrapper component** (to be implemented)
+- Cards are designed to be wrapped: `<SceneTransition><CardComponent /></SceneTransition>`
+
+### Rule 3: Slider Border Timing
+The black slider border (SVG `stroke-dashoffset` animation) **must start drawing after content entrance completes** and finish by the animation completion threshold:
+
+- **Text cards**: Slider starts at `textEndFrame`, duration = ~45% of `durationInFrames`
+- **Non-text cards**: Slider starts at `entranceEndFrame`, duration = ~45% of `durationInFrames`
+- Uses `Easing.spring({ damping: 200 })` with `output: "perceptual-scale"` for scale component
+
+---
+
+## BeforeAfter Component Details (`src/BeforeAfter.tsx`)
 - **Animation timeline** (proportional to `durationInFrames`):
   - 0–15%: BEFORE card slides in from left
   - 18–28%: AFTER card slides in from right (3% stagger)
@@ -322,7 +396,9 @@ All card-based components now share a consistent visual language:
 - **Test compositions**: `PlainTextTest` (120 frames), `PlainTextLongTest` (180 frames), `PlainTextShortTest` (90 frames)
 - **Props**: `text` (string)
 
-### Remotion Architecture Fixes (Latest)
+---
+
+## Remotion Architecture Fixes (Latest)
 
 #### Fixed: Duplicate `registerRoot()` Calls & Entry Point Structure
 **Problem**: Both `src/index.tsx` and `src/Root.tsx` called `registerRoot()` with the same compositions, causing "Element type is invalid" and "Waiting for registerRoot()" errors.
@@ -342,7 +418,9 @@ All card-based components now share a consistent visual language:
 - `032e0de` — Added optional entry point comment to `remotion.config.ts`
 - `69c5566` — **Final fix**: Moved all compositions to `Root.tsx` as `RemotionRoot` fragment; `index.tsx` only calls `registerRoot(RemotionRoot)`
 
-### Next Steps
+---
+
+## Next Steps
 1. Implement remaining beat components per the table above
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
 3. Add `SceneTransition` wrapper for entrance/exit

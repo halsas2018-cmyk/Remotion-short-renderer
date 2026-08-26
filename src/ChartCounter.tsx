@@ -7,11 +7,14 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Card, CardContent, tokens } from "./design-system";
 
 interface ChartCounterProps {
   value: number;
   label: string;
   durationInFrames: number;
+  /** Card variant from design system */
+  cardVariant?: "elevated" | "accent" | "glass" | "accentGlass" | "filled" | "outlined" | "minimal";
 }
 
 // Number formatting with suffixes
@@ -33,19 +36,16 @@ function formatNumber(num: number): string {
   return `$${num.toLocaleString()}`;
 }
 
-// Ease-out bezier curve (fast start, slow finish) - same as Material Design
-const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-
-// Accent color for emphasis
-const ACCENT_COLOR = "#e86c00";
-const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#4a4a4a";
-const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
+const easeOut = Easing.bezier(...tokens.easing.easeOut);
+const ACCENT_COLOR = tokens.colors.accent;
+const DARK_TEXT = tokens.colors.dark;
+const MEDIUM_TEXT = tokens.colors.darkMuted;
 
 export const ChartCounter: React.FC<ChartCounterProps> = ({
   value,
   label,
   durationInFrames,
+  cardVariant = "filled",
 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
@@ -68,13 +68,6 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   // Current animated value
   const currentValue = value * countProgress;
   const displayValue = formatNumber(currentValue);
-
-  // Entrance transform
-  const entranceScale = interpolate(entranceProgress, [0, 1], [0.85, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceOpacity = entranceProgress;
 
   // Exit animation
   const exitStart = durationInFrames - 15;
@@ -99,96 +92,58 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Combined transform
-  const scale = isExit ? exitScale : entranceScale;
-  const opacity = isExit ? exitOpacity : entranceOpacity;
-  const translateY = isExit ? exitTranslateY : 0;
+  // Combined transform for exit
+  const exitTransform = isExit
+    ? `translateY(${exitTranslateY}px) scale(${exitScale})`
+    : "none";
 
   return (
     <AbsoluteFill
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
         backgroundColor: "transparent",
       }}
     >
-      <div
+      <Card
+        variant={cardVariant}
+        entrance="scale"
+        idle="breathe"
+        entranceDuration={entranceFrames}
         style={{
-          transform: [
-            { scale },
-            { translateY },
-          ],
-          opacity,
+          transform: exitTransform,
+          opacity: isExit ? exitOpacity : 1,
           transformOrigin: "center",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
         }}
       >
-        {/* 
-          ChartCounter container: centered vertically in the screen.
-          Uses top: 50% + translateY(-50%) for true vertical centering.
-        */}
-        <div
+        <CardContent.Header
           style={{
-            position: "absolute",
-            top: "50%",
-            left: 120,
-            right: 120,
-            transform: "translateY(-50%)",
-            width: width - 240,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
+            fontSize: 140,
+            fontWeight: 900,
+            fontFamily: "system-ui, sans-serif",
+            color: cardVariant === "filled" ? tokens.colors.white : ACCENT_COLOR,
+            lineHeight: 1,
+            letterSpacing: -4,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {displayValue}
+        </CardContent.Header>
+        <CardContent.Body
+          style={{
+            marginTop: tokens.space.lg,
+            fontSize: 48,
+            fontWeight: 500,
+            fontFamily: "system-ui, sans-serif",
+            color: cardVariant === "filled" ? "rgba(255, 255, 255, 0.8)" : DARK_TEXT,
+            lineHeight: 1.2,
+            maxWidth: width - 240,
             textAlign: "center",
           }}
         >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: 24,
-              padding: "48px 64px",
-              boxShadow: CARD_SHADOW,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 400,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 140,
-                fontWeight: 900,
-                fontFamily: "system-ui, sans-serif",
-                color: ACCENT_COLOR,
-                lineHeight: 1,
-                letterSpacing: -4,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {displayValue}
-            </div>
-            <div
-              style={{
-                marginTop: 32,
-                fontSize: 48,
-                fontWeight: 500,
-                fontFamily: "system-ui, sans-serif",
-                color: DARK_TEXT,
-                lineHeight: 1.2,
-                maxWidth: width - 240,
-                textAlign: "center",
-              }}
-            >
-              {label}
-            </div>
-          </div>
-        </div>
-      </div>
+          {label}
+        </CardContent.Body>
+      </Card>
     </AbsoluteFill>
   );
 };

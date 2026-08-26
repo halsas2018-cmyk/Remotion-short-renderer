@@ -7,7 +7,6 @@ import {
   interpolate,
   Easing,
 } from "remotion";
-import { Card, CardContent, tokens } from "./design-system";
 
 interface QuoteCardProps {
   quote: string;
@@ -19,19 +18,17 @@ interface QuoteCardProps {
   attrDurPct?: number;
   markDurPct?: number;
   sliderDurPct?: number;
-  /** Card variant from design system */
-  cardVariant?: "elevated" | "accent" | "glass" | "accentGlass" | "filled" | "outlined" | "minimal";
 }
 
-const easeOut = Easing.bezier(...tokens.easing.easeOut);
-const easeOutExpo = Easing.bezier(...tokens.easing.easeOutExpo);
-const ACCENT_COLOR = tokens.colors.accent;
-const ACCENT_LIGHT = tokens.colors.accentLight;
-const DARK_TEXT = tokens.colors.dark;
-const MEDIUM_TEXT = tokens.colors.darkMuted;
-const LIGHT_TEXT = tokens.colors.darkFaint;
-const CARD_BORDER = tokens.colors.cardBorder;
-const SLIDER_COLOR = tokens.colors.dark;
+const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const ACCENT_COLOR = "#e86c00";
+const ACCENT_LIGHT = "#f97316";
+const DARK_TEXT = "#1a1a1a";
+const MEDIUM_TEXT = "rgba(26, 26, 26, 0.62)";
+const LIGHT_TEXT = "rgba(26, 26, 26, 0.38)";
+const CARD_BORDER = "#e8e8e8";
+const SLIDER_COLOR = "#1a1a1a";
 
 export const QuoteCard: React.FC<QuoteCardProps> = ({
   quote,
@@ -42,7 +39,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   attrDurPct = 0.10,
   markDurPct = 0.10,
   sliderDurPct = 0.45,
-  cardVariant = "accent",
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -175,209 +171,252 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      <Card
-        variant={cardVariant}
-        entrance="fly-in"
-        idle="float"
-        borderRadius={cardBorderRadius}
-        padding={cardPadding}
-        minHeight={cardContentHeight}
-        width={cardWidth}
-        // Disable built-in decorative elements since QuoteCard has its own custom slider/shimmer
-        disableSlider={true}
-        disableShimmer={true}
-        disableGlow={true}
-        disablePattern={true}
-        disableRadialOverlay={true}
-        disableTopAccentDots={true}
-        disableAccentBar={false} // Keep the orange accent bar
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: padding,
+          right: padding,
+          translate: "0px -50%",
+          width: availableWidth,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+        }}
       >
-        {/* Custom SVG Slider animation - black border drawing around the card */}
+        {/* Wrapper — in-flow, grows with the card's natural content height */}
         <div
           style={{
-            position: "absolute",
-            top: -sliderPadding,
-            left: -sliderPadding,
-            right: -sliderPadding,
-            bottom: -sliderPadding,
-            pointerEvents: "none",
-            opacity: sliderProgress,
-            filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
-            borderRadius: sliderBorderRadius,
+            position: "relative",
+            width: cardWidth,
+            perspective: 1200,
           }}
         >
-          <svg
-            width={sliderWidth}
-            height={sliderHeight}
+          {/* Slider border — pure CSS: negative insets track the wrapper's REAL size */}
+          <div
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
+              top: -sliderPadding,
+              left: -sliderPadding,
+              right: -sliderPadding,
+              bottom: -sliderPadding,
+              pointerEvents: "none",
+              border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
+              borderRadius: sliderBorderRadius,
+              boxSizing: "border-box",
+              opacity: sliderProgress,
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              borderRadius: sliderBorderRadius,
             }}
           >
-            <rect
-              x={sliderStrokeWidth / 2}
-              y={sliderStrokeWidth / 2}
-              width={sliderWidth - sliderStrokeWidth}
-              height={sliderHeight - sliderStrokeWidth}
-              rx={sliderBorderRadius}
-              ry={sliderBorderRadius}
-              fill="none"
-              stroke={SLIDER_COLOR}
-              strokeWidth={sliderStrokeWidth}
-              strokeDasharray={sliderDashArray}
-              strokeDashoffset={sliderDashOffset}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-        </div>
-
-        {/* Content using CardContent slots */}
-        <CardContent.Header
-          style={{
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: tokens.space.sm,
-          }}
-        >
-          {/* Opening quotation mark */}
-          <div
-            style={{
-              fontSize: markFontSize,
-              fontWeight: 800,
-              color: ACCENT_COLOR,
-              fontFamily: "Georgia, serif",
-              lineHeight: 1,
-              marginBottom: -30,
-              transformOrigin: "center bottom",
-              transform: [{ scale: markProgress * idlePulse }],
-              opacity: markProgress,
-              textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
-            }}
-          >
-            &ldquo;
+            <svg
+              width={sliderWidth}
+              height={sliderHeight}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <rect
+                x={sliderStrokeWidth / 2}
+                y={sliderStrokeWidth / 2}
+                width={sliderWidth - sliderStrokeWidth}
+                height={sliderHeight - sliderStrokeWidth}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke={SLIDER_COLOR}
+                strokeWidth={sliderStrokeWidth}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           </div>
 
-          {/* Quote text with animated underline */}
+          {/* Elevated card for the quote — normal flow child, height follows content */}
           <div
             style={{
-              fontSize: quoteFontSize,
-              fontWeight: 700,
-              color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.35,
-              letterSpacing: -1,
-              marginBottom: 32,
-              minHeight: Math.max(minQuoteHeight, quoteTextHeight),
+              position: "relative",
+              minHeight: cardContentHeight,
+              backgroundColor: "white",
+              borderRadius: cardBorderRadius,
+              padding: cardPadding,
+              boxShadow: "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)",
+              border: `1px solid ${CARD_BORDER}`,
+              boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
-              flex: 1,
-              position: "relative",
-              width: "100%",
-            }}
-          >
-            {/* Animated underline that grows with text */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: -16,
-                left: "50%",
-                transform: `translateX(-50%) scaleX(${lineProgress})`,
-                transformOrigin: "left center",
-                width: Math.min(cardWidth * 0.6, 400),
-                height: 3,
-                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
-                borderRadius: 2,
-                opacity: quoteProgress,
-              }}
-            />
-            
-            <span
-              style={{
-                opacity: quoteProgress,
-                transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
-              }}
-            >
-              {displayWords.join(" ")}
-            </span>
-          </div>
-
-          {/* Closing quotation mark */}
-          <div
-            style={{
-              fontSize: markFontSize,
-              fontWeight: 800,
-              color: ACCENT_COLOR,
-              fontFamily: "Georgia, serif",
-              lineHeight: 1,
-              marginTop: -30,
-              transformOrigin: "center top",
-              transform: [{ scale: markProgress * idlePulse }],
-              opacity: markProgress,
-              textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
-            }}
-          >
-            &rdquo;
-          </div>
-
-          {/* Attribution with decorative separator */}
-          <div
-            style={{
-              fontSize: attrFontSize,
-              fontWeight: 600,
-              color: MEDIUM_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              marginTop: 24,
-              opacity: attrProgress,
-              transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
-              position: "relative",
-              paddingTop: 20,
-              width: "100%",
               textAlign: "center",
             }}
           >
-            {/* Separator line above attribution */}
+            {/* Accent top bar with matching curved corners */}
             <div
               style={{
                 position: "absolute",
                 top: 0,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 60,
-                height: 2,
-                background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
-                borderRadius: 1,
-                opacity: attrProgress,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
-            &mdash; {attribution}
-          </div>
-        </CardContent.Header>
 
-        {/* Custom shimmer animation on card - properly positioned within card, only visible after start */}
-        <div
-          style={{
-            position: "absolute",
-            top: getShimmerTop(quoteShimmerStart),
-            left: 0,
-            width: "100%",
-            height: "18%",
-            background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-            opacity: getShimmerOpacity(quoteShimmerStart),
-            borderRadius: cardBorderRadius,
-            pointerEvents: "none",
-          }}
-        />
-      </Card>
+            {/* Content */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              {/* Opening quotation mark */}
+              <div
+                style={{
+                  fontSize: markFontSize,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "Georgia, serif",
+                  lineHeight: 1,
+                  marginBottom: -30,
+                  transformOrigin: "center bottom",
+                  transform: [{ scale: markProgress * idlePulse }],
+                  opacity: markProgress,
+                  textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
+                }}
+              >
+                &ldquo;
+              </div>
+
+              {/* Quote text with animated underline */}
+              <div
+                style={{
+                  fontSize: quoteFontSize,
+                  fontWeight: 700,
+                  color: DARK_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1.35,
+                  letterSpacing: -1,
+                  marginBottom: 32,
+                  minHeight: Math.max(minQuoteHeight, quoteTextHeight),
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flex: 1,
+                  position: "relative",
+                  width: "100%",
+                }}
+              >
+                {/* Animated underline that grows with text */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: -16,
+                    left: "50%",
+                    transform: `translateX(-50%) scaleX(${lineProgress})`,
+                    transformOrigin: "left center",
+                    width: Math.min(cardWidth * 0.6, 400),
+                    height: 3,
+                    background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                    borderRadius: 2,
+                    opacity: quoteProgress,
+                  }}
+                />
+                
+                <span
+                  style={{
+                    opacity: quoteProgress,
+                    transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+                  }}
+                >
+                  {displayWords.join(" ")}
+                </span>
+              </div>
+
+              {/* Closing quotation mark */}
+              <div
+                style={{
+                  fontSize: markFontSize,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "Georgia, serif",
+                  lineHeight: 1,
+                  marginTop: -30,
+                  transformOrigin: "center top",
+                  transform: [{ scale: markProgress * idlePulse }],
+                  opacity: markProgress,
+                  textShadow: `0 4px 20px ${ACCENT_COLOR}40`,
+                }}
+              >
+                &rdquo;
+              </div>
+
+              {/* Attribution with decorative separator */}
+              <div
+                style={{
+                  fontSize: attrFontSize,
+                  fontWeight: 600,
+                  color: MEDIUM_TEXT,
+                  fontFamily: "system-ui, sans-serif",
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase",
+                  marginTop: 24,
+                  opacity: attrProgress,
+                  transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
+                  position: "relative",
+                  paddingTop: 20,
+                  width: "100%",
+                  textAlign: "center",
+                }}
+              >
+                {/* Separator line above attribution */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 60,
+                    height: 2,
+                    background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
+                    borderRadius: 1,
+                    opacity: attrProgress,
+                  }}
+                />
+                &mdash; {attribution}
+              </div>
+            </div>
+
+            {/* Shimmer animation on card - properly positioned within card, only visible after start */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(quoteShimmerStart),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(quoteShimmerStart),
+                borderRadius: cardBorderRadius,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };

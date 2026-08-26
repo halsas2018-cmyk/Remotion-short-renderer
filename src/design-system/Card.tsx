@@ -40,6 +40,20 @@ export interface CardProps {
   idleStartFrame?: number;
   /** Video width for responsive calculations (optional, uses useVideoConfig if not provided) */
   videoWidth?: number;
+  /** Disable variant's built-in slider border */
+  disableSlider?: boolean;
+  /** Disable variant's built-in glow behind card */
+  disableGlow?: boolean;
+  /** Disable variant's built-in background pattern */
+  disablePattern?: boolean;
+  /** Disable variant's built-in radial overlay */
+  disableRadialOverlay?: boolean;
+  /** Disable variant's built-in top accent dots */
+  disableTopAccentDots?: boolean;
+  /** Disable variant's built-in shimmer animation */
+  disableShimmer?: boolean;
+  /** Disable variant's built-in accent bar */
+  disableAccentBar?: boolean;
 }
 
 /**
@@ -63,6 +77,13 @@ export const Card: React.FC<CardProps> = ({
   entranceDuration,
   idleStartFrame,
   videoWidth: providedVideoWidth,
+  disableSlider = false,
+  disableGlow = false,
+  disablePattern = false,
+  disableRadialOverlay = false,
+  disableTopAccentDots = false,
+  disableShimmer = false,
+  disableAccentBar = false,
 }) => {
   const frame = useCurrentFrame();
   const { fps, width: videoWidth, height: videoHeight } = useVideoConfig();
@@ -265,7 +286,7 @@ export const Card: React.FC<CardProps> = ({
           }}
         >
           {/* Slider border — pure CSS: negative insets track the wrapper's REAL size */}
-          {v.slider && (
+          {v.slider && !disableSlider && (
             <div
               style={{
                 position: "absolute",
@@ -322,7 +343,7 @@ export const Card: React.FC<CardProps> = ({
             }}
           >
             {/* Accent top bar with matching curved corners */}
-            {v.accentBar && (
+            {v.accentBar && !disableAccentBar && (
               <div
                 style={{
                   position: "absolute",
@@ -337,7 +358,7 @@ export const Card: React.FC<CardProps> = ({
             )}
 
             {/* Subtle background pattern - diagonal lines — exact KeyStatement */}
-            {v.backgroundPattern && (
+            {v.backgroundPattern && !disablePattern && (
               <div
                 style={{
                   position: "absolute",
@@ -360,7 +381,7 @@ export const Card: React.FC<CardProps> = ({
             )}
 
             {/* Subtle radial gradient overlay for depth — exact KeyStatement */}
-            {v.radialOverlay && (
+            {v.radialOverlay && !disableRadialOverlay && (
               <div
                 style={{
                   position: "absolute",
@@ -376,7 +397,7 @@ export const Card: React.FC<CardProps> = ({
             )}
 
             {/* Glow behind card — flex-centered wrapper instead of transform — exact KeyStatement */}
-            {v.glow && !isStatic && (
+            {v.glow && !disableGlow && !isStatic && (
               <div
                 style={{
                   position: "absolute",
@@ -406,7 +427,7 @@ export const Card: React.FC<CardProps> = ({
             )}
 
             {/* Decorative accent dots at top — exact KeyStatement */}
-            {v.topAccentDots && (
+            {v.topAccentDots && !disableTopAccentDots && (
               <div
                 style={{
                   position: "absolute",
@@ -452,7 +473,7 @@ export const Card: React.FC<CardProps> = ({
             </div>
 
             {/* Shimmer animation on card — exact KeyStatement */}
-            {v.shimmer && !isStatic && (
+            {v.shimmer && !disableShimmer && !isStatic && (
               <div
                 style={{
                   position: "absolute",

@@ -183,8 +183,16 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
         padding={cardPadding}
         minHeight={cardContentHeight}
         width={cardWidth}
+        // Disable built-in decorative elements since QuoteCard has its own custom slider/shimmer
+        disableSlider={true}
+        disableShimmer={true}
+        disableGlow={true}
+        disablePattern={true}
+        disableRadialOverlay={true}
+        disableTopAccentDots={true}
+        disableAccentBar={false} // Keep the orange accent bar
       >
-        {/* Slider animation - black border circling the card with matching curved corners */}
+        {/* Custom SVG Slider animation - black border drawing around the card */}
         <div
           style={{
             position: "absolute",
@@ -355,7 +363,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
           </div>
         </CardContent.Header>
 
-        {/* Shimmer animation on card - properly positioned within card, only visible after start */}
+        {/* Custom shimmer animation on card - properly positioned within card, only visible after start */}
         <div
           style={{
             position: "absolute",

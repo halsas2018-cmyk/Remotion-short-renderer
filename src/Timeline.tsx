@@ -6,7 +6,11 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
+  delayRender,
+  continueRender,
+  cancelRender,
 } from "remotion";
+import { Lottie, LottieAnimationData } from "@remotion/lottie";
 
 interface TimelineEvent {
   marker: string;
@@ -51,6 +55,30 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Use prop override if provided, otherwise fall back to composition duration
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
+
+  // ============================================
+  // LOTTIE ARROW LOADING
+  // ============================================
+  const [arrowHandle] = React.useState(() => delayRender("Loading arrow Lottie"));
+  const [arrowAnimationData, setArrowAnimationData] = React.useState<LottieAnimationData | null>(null);
+  const [arrowFailed, setArrowFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch("/icons/arrow-right.json")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load arrow: ${res.status}`);
+        return res.json();
+      })
+      .then((json) => {
+        setArrowAnimationData(json);
+        continueRender(arrowHandle);
+      })
+      .catch((err) => {
+        console.warn("Arrow Lottie not found, using CSS fallback");
+        setArrowFailed(true);
+        continueRender(arrowHandle);
+      });
+  }, [arrowHandle]);
 
   // ============================================
   // INTERNAL TIMELINE — completes by ~30%, then holds
@@ -148,8 +176,19 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Marker center Y position (above the center line)
   const markerCenterY = `calc(50% - ${labelOffset + markerRadius}px)`;
-  // Description card top position (below the marker)
-  const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 16}px)`;
+  // Description card top position (below the marker) - moved down more
+  const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 32}px)`;
+
+  // Arrow animation timing - appears after marker
+  const arrowProgresses = events.slice(0, -1).map((_, i) => {
+    const markerStart = markersStart + i * markerStagger;
+    const arrowStart = markerStart + markerDuration;
+    return interpolate(frame, [arrowStart, arrowStart + markerDuration], [0, 1], {
+      easing: easeOutExpo,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  });
 
   return (
     <AbsoluteFill
@@ -216,6 +255,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               const xPos = getMarkerX(i);
               const markerProg = markerProgresses[i];
               const isActive = markerProg > 0;
+              const isLast = i === events.length - 1;
 
               const descPos = getDescPosition(xPos);
 
@@ -278,6 +318,66 @@ export const Timeline: React.FC<TimelineProps> = ({
                       {event.marker}
                     </span>
                   </div>
+
+                  {/* Lottie Arrow to next marker */}
+                  {!isLast && arrowAnimationData && !arrowFailed && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: xPos + markerRadius,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: getMarkerX(i + 1) - xPos - markerRadius * 2,
+                        height: 60,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity: arrowProgresses[i],
+                        transformOrigin: "left center",
+                        transform: [{ scaleX: arrowProgresses[i] }],
+                      }}
+                    >
+                      <Lottie
+                        animationData={arrowAnimationData}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* CSS Fallback Arrow */}
+                  {!isLast && (!arrowAnimationData || arrowFailed) && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: xPos + markerRadius,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: getMarkerX(i + 1) - xPos - markerRadius * 2,
+                        height: 2,
+                        backgroundColor: ACCENT_COLOR,
+                        transformOrigin: "left center",
+                        transform: [{ scaleX: arrowProgresses[i] }],
+                        opacity: arrowProgresses[i],
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        paddingRight: 10,
+                      }}
+                    >
+                      {/* Arrowhead */}
+                      <div
+                        style={{
+                          width: 0,
+                          height: 0,
+                          borderTop: "12px solid transparent",
+                          borderBottom: "12px solid transparent",
+                          borderLeft: "18px solid " + ACCENT_COLOR,
+                          transform: [{ scaleX: arrowProgresses[i] }],
+                          transformOrigin: "left center",
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Event description below marker - elevated card, centered under marker, constrained to screen */}
                   <div
@@ -358,7 +458,7 @@ export const Timeline3EventsTest: React.FC = () => (
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 4 events
@@ -378,7 +478,7 @@ export const Timeline4EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 5 events
@@ -399,5 +499,5 @@ export const Timeline5EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  />
+  );
 );

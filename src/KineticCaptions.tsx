@@ -102,8 +102,22 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     return frame >= wordStartFrame && frame < nextWordStartFrame;
   });
 
-  // For each word, compute its visibility progress
-  const wordStates = allWords.map((w, i) => {
+  // Only show 5 words at a time: current word + 2 before + 2 after
+  const windowSize = 5;
+  const halfWindow = Math.floor(windowSize / 2);
+  const startIndex = Math.max(0, currentWordIndex - halfWindow);
+  const endIndex = Math.min(allWords.length - 1, currentWordIndex + halfWindow);
+  
+  // Adjust start if we're near the end
+  const adjustedStart = Math.max(0, endIndex - windowSize + 1);
+  const visibleWordIndices = [];
+  for (let i = adjustedStart; i <= endIndex; i++) {
+    visibleWordIndices.push(i);
+  }
+
+  // For each visible word, compute its visibility progress
+  const wordStates = visibleWordIndices.map((i) => {
+    const w = allWords[i];
     const wordStartFrame = Math.round(w.start * fps);
     const wordEndFrame = Math.round(w.end * fps);
     const nextWord = allWords[i + 1];
@@ -157,11 +171,6 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     };
   });
 
-  // Only show words that have started (progress > 0) plus a few upcoming
-  const visibleWords = wordStates
-    .filter((s) => s.progress > 0 || (s.index <= currentWordIndex + 2 && s.index >= currentWordIndex - 10))
-    .slice(-15); // Limit to last 15 words for performance
-
   return (
     <AbsoluteFill
       style={{
@@ -180,7 +189,6 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
           left: CONFIG.paddingHorizontal,
           right: CONFIG.paddingHorizontal,
           display: "flex",
-          flexWrap: "wrap",
           justifyContent: "center",
           alignItems: "center",
           gap: CONFIG.wordGap,
@@ -188,7 +196,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
           pointerEvents: "none",
         }}
       >
-        {visibleWords.map(({ word: w, progress, isCurrent, currentProgress, index }) => {
+        {wordStates.map(({ word: w, progress, isCurrent, currentProgress, index }) => {
           const isPast = index < currentWordIndex;
           const isFuture = index > currentWordIndex;
 

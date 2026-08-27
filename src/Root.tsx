@@ -12,6 +12,7 @@ import { ChartComparison3D } from "./ChartComparison3D";
 import { Map3D } from "./Map3D";
 import { ChartLine } from "./ChartLine";
 import { KineticCaptions } from "./KineticCaptions";
+import { PersistentBackground } from "./PersistentBackground";
 import timestampsData from "./timestamps.json";
 import timedBeats from "./sample-timed-beats.json";
 
@@ -377,6 +378,15 @@ export const RemotionRoot = () => (
         beats: [],
         words: timestampsData,
       }}
+    />
+    <Composition
+      id="PersistentBackgroundTest"
+      component={PersistentBackground}
+      durationInFrames={180}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{}}
     />
     <Composition
       id="MotionGraphicsVideo"

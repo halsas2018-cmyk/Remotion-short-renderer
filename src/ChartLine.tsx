@@ -6,6 +6,7 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
+  Interactive,
 } from "remotion";
 
 interface ChartLinePoint {
@@ -57,12 +58,13 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
-  const entranceFrames = 15;
-  const exitStart = durationInFrames - 15;
+  // Internal animations complete by 30% of duration
+  const entranceFrames = Math.round(durationInFrames * 0.3);
+  const lineStart = entranceFrames;
+  const lineDuration = Math.round(durationInFrames * 0.2);
 
   const isEntrance = frame < entranceFrames;
-  const isExit = frame > exitStart;
-  const isIdle = !isEntrance && !isExit;
+  const isIdle = frame >= entranceFrames;
 
   // Entrance animation for whole component
   const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
@@ -76,36 +78,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   });
   const entranceOpacity = entranceProgress;
 
-  // Exit animation
-  const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.85], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitTranslateY = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "up" ? -60 : exitDirection === "down" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const exitTranslateX = interpolate(
-    frame,
-    [exitStart, durationInFrames],
-    [0, exitDirection === "left" ? -60 : exitDirection === "right" ? 60 : 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
   // Line drawing animation
-  const lineStart = entranceFrames;
-  const lineDuration = 30;
   const lineProgress = interpolate(frame, [lineStart, lineStart + lineDuration], [0, 1], {
     easing: easeOut,
     extrapolateLeft: "clamp",
@@ -127,10 +100,8 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   // Idle animation: subtle pulse on line
   const idlePulse = 1 + 0.01 * Math.sin(frame * 0.05);
 
-  const scale = isEntrance ? entranceScale : isExit ? exitScale : 1;
-  const opacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
-  const translateX = isExit ? exitTranslateX : 0;
-  const translateY = isExit ? exitTranslateY : 0;
+  const scale = isEntrance ? entranceScale : 1;
+  const opacity = isEntrance ? entranceOpacity : 1;
 
   // Card dimensions - the chart IS the card
   const padding = 120;
@@ -188,13 +159,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      <div
+      <Interactive.Div
+        name="ChartLine"
         style={{
-          transform: [
-            { scale },
-            { translateX },
-            { translateY },
-          ],
+          scale,
           opacity,
           transformOrigin: "center",
           position: "absolute",
@@ -206,7 +174,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
       >
         {/* 
           Chart container: centered vertically in the screen.
-          Uses top: 50% + translateY(-50%) for true vertical centering.
+          Uses top: 50% + translate for true vertical centering.
         */}
         <div
           style={{
@@ -214,7 +182,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
             top: "50%",
             left: padding,
             right: padding,
-            transform: "translateY(-50%)",
+            translate: "0px -50%",
             width: cardWidth,
             height: cardHeight,
             display: "flex",
@@ -427,7 +395,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
             </svg>
           </div>
         </div>
-      </div>
+      </Interactive.Div>
     </AbsoluteFill>
   );
 };

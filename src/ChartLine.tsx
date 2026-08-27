@@ -9,6 +9,10 @@ import {
   Interactive,
 } from "remotion";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
+
 interface ChartLinePoint {
   label: string;
   value: number;
@@ -20,18 +24,44 @@ interface ChartLineProps {
   exitDirection?: "up" | "down" | "left" | "right";
 }
 
-const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const ACCENT_COLOR = "#e86c00";
-const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#4a4a4a";
-const LIGHT_TEXT = "#6a6a6a";
-const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
-const LINE_COLOR = ACCENT_COLOR;
-const DOT_COLOR = ACCENT_COLOR;
-const GRID_COLOR = "#e8e8e8";
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
 
+const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+
+// Color palette
+const COLORS = {
+  accent: "#e86c00",
+  accentLight: "#f97316",
+  darkText: "#1a1a1a",
+  mediumText: "#4a4a4a",
+  lightText: "#6a6a6a",
+  grid: "#e8e8e8",
+  line: "#e86c00",
+  dot: "#e86c00",
+  background: "transparent",
+  card: "white",
+} as const;
+
+// Shadow definitions for depth
+const SHADOWS = {
+  card: "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)",
+  dot: "0 0 6px rgba(232, 108, 0, 0.6)",
+  line: "0 0 8px rgba(232, 108, 0, 0.3)",
+  label: "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)",
+} as const;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Formats large numbers into human-readable strings with appropriate suffixes
+ */
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
+  
   if (absNum >= 1e12) {
     return `$${(num / 1e12).toFixed(absNum >= 1e13 ? 0 : 1).replace(/\.0$/, "")}T`;
   }
@@ -47,8 +77,14 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-// Generate unique ID for gradient to avoid conflicts
+/**
+ * Generates a unique gradient ID to prevent conflicts
+ */
 const gradientId = `chart-line-gradient-${Math.random().toString(36).slice(2, 9)}`;
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export const ChartLine: React.FC<ChartLineProps> = ({
   points,
@@ -58,6 +94,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
+  // =========================================================================
+  // ANIMATION TIMING
+  // =========================================================================
+  
   // Internal animations complete by 30% of duration
   const entranceFrames = Math.round(durationInFrames * 0.3);
   const lineStart = entranceFrames;
@@ -72,18 +112,25 @@ export const ChartLine: React.FC<ChartLineProps> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  
   const entranceScale = interpolate(entranceProgress, [0, 1], [0.85, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  
   const entranceOpacity = entranceProgress;
 
   // Line drawing animation
-  const lineProgress = interpolate(frame, [lineStart, lineStart + lineDuration], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const lineProgress = interpolate(
+    frame, 
+    [lineStart, lineStart + lineDuration], 
+    [0, 1], 
+    {
+      easing: easeOut,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
+  );
 
   // Dot appearance stagger
   const dotStagger = 8;
@@ -103,6 +150,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const scale = isEntrance ? entranceScale : 1;
   const opacity = isEntrance ? entranceOpacity : 1;
 
+  // =========================================================================
+  // LAYOUT CALCULATIONS
+  // =========================================================================
+  
   // Card dimensions - the chart IS the card
   const padding = 120;
   const cardWidth = width - 2 * padding;
@@ -124,6 +175,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const maxValue = Math.max(...values);
   const valueRange = maxValue - minValue || 1;
 
+  // =========================================================================
+  // PATH GENERATION
+  // =========================================================================
+  
   // Generate SVG path for the line
   const pathPoints = points.map((point, i) => {
     const x = chartLeft + (i / (points.length - 1)) * chartWidth;
@@ -150,13 +205,16 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const dashArray = totalLength;
   const dashOffset = totalLength * (1 - lineProgress);
 
+  // =========================================================================
+  // RENDER
+  // =========================================================================
+  
   return (
     <AbsoluteFill
       style={{
         width,
         height,
-        // Transparent background so PersistentBackground grid shows through
-        backgroundColor: "transparent",
+        backgroundColor: COLORS.background,
       }}
     >
       <Interactive.Div
@@ -196,9 +254,9 @@ export const ChartLine: React.FC<ChartLineProps> = ({
               position: "relative",
               width: "100%",
               height: "100%",
-              backgroundColor: "white",
+              backgroundColor: COLORS.card,
               borderRadius: 24,
-              boxShadow: CARD_SHADOW,
+              boxShadow: SHADOWS.card,
               overflow: "visible",
             }}
           >
@@ -215,8 +273,8 @@ export const ChartLine: React.FC<ChartLineProps> = ({
             >
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={ACCENT_COLOR} stopOpacity={0.15} />
-                  <stop offset="100%" stopColor={ACCENT_COLOR} stopOpacity={0} />
+                  <stop offset="0%" stopColor={COLORS.accent} stopOpacity={0.15} />
+                  <stop offset="100%" stopColor={COLORS.accent} stopOpacity={0} />
                 </linearGradient>
               </defs>
 
@@ -228,7 +286,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                   x2={chartLeft + chartWidth}
                   y1={chartBottom - frac * chartHeight}
                   y2={chartBottom - frac * chartHeight}
-                  stroke={GRID_COLOR}
+                  stroke={COLORS.grid}
                   strokeWidth={1}
                   opacity={entranceProgress}
                 />
@@ -249,10 +307,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                   >
                     <div
                       style={{
-                        backgroundColor: "white",
+                        backgroundColor: COLORS.card,
                         borderRadius: 8,
                         padding: "2px 8px",
-                        boxShadow: CARD_SHADOW,
+                        boxShadow: SHADOWS.label,
                         textAlign: "right",
                         display: "flex",
                         alignItems: "center",
@@ -264,7 +322,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                         style={{
                           fontSize: 16,
                           fontWeight: 600,
-                          color: DARK_TEXT,
+                          color: COLORS.darkText,
                           fontFamily: "system-ui, sans-serif",
                           whiteSpace: "nowrap",
                         }}
@@ -282,10 +340,11 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                 fill={`url(#${gradientId})`}
                 opacity={entranceProgress}
               />
+              
               {/* Line */}
               <path
                 d={pathData}
-                stroke={LINE_COLOR}
+                stroke={COLORS.line}
                 strokeWidth={3}
                 fill="none"
                 strokeLinecap="round"
@@ -293,7 +352,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                 strokeDasharray={dashArray}
                 strokeDashoffset={dashOffset}
                 style={{
-                  filter: "drop-shadow(0 0 8px rgba(232, 108, 0, 0.3))",
+                  filter: `drop-shadow(0 0 8px rgba(232, 108, 0, 0.3))`,
                 }}
               />
 
@@ -309,9 +368,9 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                       cx={point.x}
                       cy={point.y}
                       r={6 * dotProg}
-                      fill={DOT_COLOR}
+                      fill={COLORS.dot}
                       style={{
-                        filter: "drop-shadow(0 0 6px rgba(232, 108, 0, 0.6))",
+                        filter: `drop-shadow(0 0 6px rgba(232, 108, 0, 0.6))`,
                         transformOrigin: `${point.x}px ${point.y}px`,
                       }}
                     />
@@ -326,10 +385,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                     >
                       <div
                         style={{
-                          backgroundColor: "white",
+                          backgroundColor: COLORS.card,
                           borderRadius: 8,
                           padding: "2px 10px",
-                          boxShadow: CARD_SHADOW,
+                          boxShadow: SHADOWS.label,
                           textAlign: "center",
                           transform: `scale(${dotProg})`,
                           transformOrigin: "bottom center",
@@ -343,7 +402,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                           style={{
                             fontSize: 16,
                             fontWeight: 700,
-                            color: ACCENT_COLOR,
+                            color: COLORS.accent,
                             fontFamily: "system-ui, sans-serif",
                             whiteSpace: "nowrap",
                           }}
@@ -363,10 +422,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                     >
                       <div
                         style={{
-                          backgroundColor: "white",
+                          backgroundColor: COLORS.card,
                           borderRadius: 8,
                           padding: "2px 6px",
-                          boxShadow: CARD_SHADOW,
+                          boxShadow: SHADOWS.label,
                           textAlign: "center",
                           transform: `scale(${dotProg})`,
                           transformOrigin: "top center",
@@ -380,7 +439,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                           style={{
                             fontSize: 14,
                             fontWeight: 500,
-                            color: MEDIUM_TEXT,
+                            color: COLORS.mediumText,
                             fontFamily: "system-ui, sans-serif",
                             whiteSpace: "nowrap",
                           }}
@@ -399,6 +458,10 @@ export const ChartLine: React.FC<ChartLineProps> = ({
     </AbsoluteFill>
   );
 };
+
+// ============================================================================
+// TEST COMPOSITION
+// ============================================================================
 
 export const ChartLineTestComposition: React.FC = () => (
   <Composition

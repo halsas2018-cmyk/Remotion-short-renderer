@@ -247,7 +247,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             </svg>
           </div>
 
-          {/* Elevated card background - WHITE with prominent curved borders */}
+          {/* Elevated card background - TRANSPARENT with prominent curved borders */}
           <div
             style={{
               position: "absolute",
@@ -255,7 +255,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "white",
+              backgroundColor: "transparent",
               borderRadius: cardBorderRadius,
               boxShadow: CARD_SHADOW,
               border: `1px solid ${CARD_BORDER}`,
@@ -293,20 +293,6 @@ export const Timeline: React.FC<TimelineProps> = ({
                   transparent 1px,
                   transparent 20px
                 )`,
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Subtle radial gradient overlay for depth */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: cardBorderRadius,
-                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
                 pointerEvents: "none",
               }}
             />

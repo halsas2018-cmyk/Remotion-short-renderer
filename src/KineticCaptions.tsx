@@ -46,6 +46,14 @@ const CONFIG = {
   highlightPadding: "4px 8px",
   highlightBorderRadius: 8,
 
+  // Card style for current word
+  cardBgColor: "rgba(255, 255, 255, 0.95)",
+  cardBorderColor: "#e86c00",
+  cardBorderWidth: 2,
+  cardBorderRadius: 12,
+  cardPadding: "6px 12px",
+  cardShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+
   // Fade for past words
   pastWordOpacity: 0.6,
   pastWordColor: "#4a4a4a",
@@ -257,6 +265,27 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
               ...wordStyles,
               color: CONFIG.textColor,
             };
+          }
+
+          // Wrap current word in a card
+          if (isCurrent) {
+            return (
+              <div
+                key={`${w.start}-${w.word}-${index}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  backgroundColor: CONFIG.cardBgColor,
+                  border: `${CONFIG.cardBorderWidth}px solid ${CONFIG.cardBorderColor}`,
+                  borderRadius: CONFIG.cardBorderRadius,
+                  padding: CONFIG.cardPadding,
+                  boxShadow: CONFIG.cardShadow,
+                  transform: `scale(${highlightPulse})`,
+                }}
+              >
+                <span style={wordStyles}>{w.word}</span>
+              </div>
+            );
           }
 
           return (

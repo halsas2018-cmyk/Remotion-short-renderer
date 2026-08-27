@@ -102,7 +102,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Larger marker radius to accommodate year text (4 digits need more space)
   const markerRadius = Math.max(36, width * 0.033);
   const labelOffset = Math.max(100, height * 0.05);
-  const labelCardHeight = 56;
   const cardHeight = Math.min(520, height * 0.48);
 
   // Card dimensions (for slider and card styling)
@@ -126,23 +125,31 @@ export const Timeline: React.FC<TimelineProps> = ({
     return (index / (events.length - 1)) * cardWidth;
   };
 
-  // Calculate description card position (constrained to container)
-  const getDescPosition = (xPos: number, cardWidth: number) => {
-    const halfCardWidth = cardWidth / 2;
-    if (xPos + halfCardWidth > cardWidth) {
-      return { left: cardWidth, transform: "translateX(-100%)" };
-    } else if (xPos - halfCardWidth < 0) {
-      return { left: 0, transform: "translateX(0)" };
-    } else {
-      return { left: xPos, transform: "translateX(-50%)" };
-    }
-  };
-
-  // Description card width (responsive, based on number of events)
+  // Description card width (responsive, based on number of events and available space)
   const descCardWidth = Math.min(
     cardWidth / Math.max(events.length, 2) * 0.9,
     340
   );
+
+  // Calculate description card position - centered under marker, constrained to container
+  const getDescPosition = (markerX: number) => {
+    const halfCardWidth = descCardWidth / 2;
+    let left = markerX - halfCardWidth;
+    
+    // Constrain to container bounds
+    if (left < 0) {
+      left = 0;
+    } else if (left + descCardWidth > cardWidth) {
+      left = cardWidth - descCardWidth;
+    }
+    
+    return { left };
+  };
+
+  // Marker center Y position (above the center line)
+  const markerCenterY = `calc(50% - ${labelOffset + markerRadius}px)`;
+  // Description card top position (below the marker)
+  const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 16}px)`;
 
   return (
     <AbsoluteFill
@@ -210,12 +217,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               const markerProg = markerProgresses[i];
               const isActive = markerProg > 0;
 
-              const descPos = getDescPosition(xPos, descCardWidth);
-
-              // Marker center Y position (above the center line)
-              const markerCenterY = `calc(50% - ${labelOffset + markerRadius}px)`;
-              // Description card top position (below the marker)
-              const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 16}px)`;
+              const descPos = getDescPosition(xPos);
 
               return (
                 <React.Fragment key={i}>
@@ -277,13 +279,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </span>
                   </div>
 
-                  {/* Event description below marker - elevated card, constrained to screen */}
+                  {/* Event description below marker - elevated card, centered under marker, constrained to screen */}
                   <div
                     style={{
                       position: "absolute",
                       left: descPos.left,
                       top: descCardTop,
-                      transform: descPos.transform,
                       width: descCardWidth,
                       textAlign: "center",
                       opacity: markerProg,
@@ -357,7 +358,7 @@ export const Timeline3EventsTest: React.FC = () => (
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 4 events
@@ -377,7 +378,7 @@ export const Timeline4EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 5 events
@@ -398,5 +399,5 @@ export const Timeline5EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  />
+  );
 );

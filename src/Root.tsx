@@ -9,6 +9,7 @@ import { IconText } from "./IconText";
 import { ProgressMeter } from "./ProgressMeter";
 import { Timeline } from "./Timeline";
 import { ChartComparison3D } from "./ChartComparison3D";
+import { Map3D } from "./Map3D";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -287,6 +288,48 @@ export const RemotionRoot = () => (
           { label: "Q3", value: 15000000000 },
           { label: "Q4", value: 27000000000 },
         ],
+      }}
+    />
+    <Composition
+      id="Map3DTest"
+      component={Map3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        locationName: "San Francisco",
+        latitude: 37.7749,
+        longitude: -122.4194,
+        buildings: 8,
+      }}
+    />
+    <Composition
+      id="Map3DTokyoTest"
+      component={Map3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        locationName: "Tokyo",
+        latitude: 35.6762,
+        longitude: 139.6503,
+        buildings: 12,
+      }}
+    />
+    <Composition
+      id="Map3DLondonTest"
+      component={Map3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        locationName: "London",
+        latitude: 51.5074,
+        longitude: -0.1278,
+        buildings: 6,
       }}
     />
     <Composition

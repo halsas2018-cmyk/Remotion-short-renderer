@@ -8,6 +8,7 @@ import { PlainText } from "./PlainText";
 import { IconText } from "./IconText";
 import { ProgressMeter } from "./ProgressMeter";
 import { Timeline } from "./Timeline";
+import { ChartComparison3D } from "./ChartComparison3D";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -240,6 +241,51 @@ export const RemotionRoot = () => (
           { marker: "2026", label: "Broadcom acquires VMware" },
           { marker: "2029", label: "Exposure could hit $370B" },
           { marker: "2032", label: "AI chip market matures" },
+        ],
+      }}
+    />
+    <Composition
+      id="ChartComparison3DTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Broadcom", value: 70000000000 },
+          { label: "Nvidia", value: 500000000000 },
+        ],
+      }}
+    />
+    <Composition
+      id="ChartComparison3DThreeTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Meta", value: 27000000000 },
+          { label: "Google", value: 85000000000 },
+          { label: "Microsoft", value: 310000000000 },
+        ],
+      }}
+    />
+    <Composition
+      id="ChartComparison3DFourTest"
+      component={ChartComparison3D}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        items: [
+          { label: "Q1", value: 12000000000 },
+          { label: "Q2", value: 18000000000 },
+          { label: "Q3", value: 15000000000 },
+          { label: "Q4", value: 27000000000 },
         ],
       }}
     />

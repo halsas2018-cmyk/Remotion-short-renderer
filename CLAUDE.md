@@ -45,4 +45,52 @@ Automated pipeline for creating YouTube Shorts from news stories.
    - Robust parsing handles both MODE A (type + metadata only) and MODE B (full beat objects) formats
    - Auto-splits long beats (>3.7s) for splittable types (key_statement, icon_text, versus)
    - Frame alignment via Whisper timestamps + sequential continuity fix
-   - Output: `
+   - Output: `beats.json` — array of `{type, startFrame, durationInFrames, metadata}`
+
+### Output Format
+Each beat object contains:
+- `type`: Component type (key_statement, icon_text, chart_line, versus, etc.)
+- `startFrame`: Frame number where the beat begins
+- `durationInFrames`: Duration in frames
+- `metadata`: Type-specific data (text, emphasisWords, points, etc.)
+
+---
+
+## Phase 2: Remotion Rendering (In Progress)
+
+### Component Library
+Components are located in `src/` and follow these conventions:
+
+#### KeyStatement.tsx
+- Displays text with word-by-word entrance animations
+- Supports emphasis words with cycling annotations (Highlight, Circle, Underline)
+- Idle animations: card bounce, 3D tilt, glow pulse, shimmer
+- Responsive sizing with `fitText` for optimal text scaling
+- **Timing**: Internal animations complete by ~50% of duration, then holds idle state
+- **No exit animation**: Designed to be wrapped by SceneTransition
+
+#### ChartLine.tsx
+- Renders line charts with animated drawing
+- Supports value formatting (K, M, B, T suffixes)
+- Grid lines, axis labels, and data point dots
+- **Timing**: Internal animations complete by 30% of duration
+- **No exit animation**: Designed to be wrapped by SceneTransition
+- Uses `Interactive.Div` for Studio editability
+
+### Best Practices
+1. **Animation**: Use `useCurrentFrame()` + `interpolate()` — no CSS transitions
+2. **Timing**: Keep `interpolate()` calls inline in style props for Studio interactivity
+3. **Transforms**: Use individual CSS properties (`scale`, `translate`, `rotate`) over `transform` strings
+4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
+5. **Assets**: Place in `public/` folder, reference with `staticFile()`
+6. **Transitions**: Use `SceneTransition` component for entrance/exit animations between beats
+
+### Running the Renderer
+```bash
+npx remotion render
+```
+
+### Preview
+```bash
+npx remotion studio --no-open
+```

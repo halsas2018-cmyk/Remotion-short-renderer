@@ -67,10 +67,20 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
-  const { currentBeatType } = useBeatContext();
+  
+  // Safely get beat context - default to showing captions if no context
+  let currentBeatType: string | null = null;
+  try {
+    const beatContext = useBeatContext();
+    currentBeatType = beatContext?.currentBeatType ?? null;
+  } catch (e) {
+    // No BeatContext provider - default to showing captions
+    currentBeatType = null;
+  }
 
   // Determine if captions should show for current beat
-  const shouldShowCaptions = currentBeatType ? captionEnabledTypes.has(currentBeatType) : false;
+  // If no currentBeatType (no context), show captions by default
+  const shouldShowCaptions = currentBeatType ? captionEnabledTypes.has(currentBeatType) : true;
 
   // Use dynamic words if provided
   const allWords: Word[] = React.useMemo(() => {

@@ -40,6 +40,11 @@ export const CasiumMap3D: React.FC<Map3DProps> = ({
 
 	useEffect(() => {
 		if (!containerRef.current) return;
+		if (!maplibregl) {
+			// MapLibre is not available, cancel render with a clear error
+			cancelRender(new Error('maplibre-gl is not installed or failed to load'));
+			return;
+		}
 
 		const map = new maplibregl.Map({
 			container: containerRef.current,

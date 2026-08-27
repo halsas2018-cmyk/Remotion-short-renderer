@@ -5,26 +5,52 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import { useFrame } from "@react-three/fiber";
+import { Mesh, MeshStandardMaterial, TorusGeometry } from "three";
+
+interface RotatingCurveProps {
+  color?: string;
+  speed?: number;
+  count?: number;
+}
+
+const RotatingCurve: React.FC<RotatingCurveProps> = ({
+  color = "#64748b",
+  speed = 0.02,
+  count = 3,
+}) => {
+  const frame = useCurrentFrame();
+  
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => {
+        const radius = 0.8 + i * 0.3;
+        const rotationY = frame * speed * (i + 1);
+        const rotationX = frame * speed * 0.7 * (i + 1);
+        
+        return (
+          <mesh
+            key={i}
+            rotation={[rotationX, rotationY, 0]}
+          >
+            <torusGeometry args={[radius, 0.03, 16, 100]} />
+            <meshStandardMaterial 
+              color={color} 
+              emissive={color}
+              emissiveIntensity={0.3}
+              transparent
+              opacity={0.6}
+            />
+          </mesh>
+        );
+      })}
+    </>
+  );
+};
 
 export const PersistentBackground: React.FC = () => {
-  const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
-
-  // Grid configuration
-  const gridSize = 50;
-  const lineColor = "#cbd5e1"; // slate-300
-  const lineWidth = 1.5;
-
-  // Diagonal drift speed (pixels per frame)
-  const driftSpeed = 1.2;
-
-  // Calculate offset based on frame - continuous, no reset
-  const offsetX = (frame * driftSpeed) % gridSize;
-  const offsetY = (frame * driftSpeed) % gridSize;
-
-  // Number of lines needed to cover the screen with offset
-  const numLinesX = Math.ceil(width / gridSize) + 2;
-  const numLinesY = Math.ceil(height / gridSize) + 2;
 
   return (
     <AbsoluteFill
@@ -35,70 +61,11 @@ export const PersistentBackground: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Vertical grid lines */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-        }}
-      >
-        {Array.from({ length: numLinesX }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: `calc(${i} * ${gridSize}px - ${offsetX}px)`,
-              top: 0,
-              width: `${lineWidth}px`,
-              height: "100%",
-              backgroundColor: lineColor,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Horizontal grid lines */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-        }}
-      >
-        {Array.from({ length: numLinesY }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: `calc(${i} * ${gridSize}px - ${offsetY}px)`,
-              left: 0,
-              height: `${lineWidth}px`,
-              width: "100%",
-              backgroundColor: lineColor,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Vignette overlay - transparent center, faint slate shadow at edges */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse at center, transparent 40%, rgba(226, 232, 240, 0.6) 100%)",
-        }}
-      />
+      <ThreeCanvas width={width} height={height}>
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[5, 5, 5]} intensity={0.8} />
+        <RotatingCurve color="#64748b" speed={0.015} count={4} />
+      </ThreeCanvas>
     </AbsoluteFill>
   );
 };

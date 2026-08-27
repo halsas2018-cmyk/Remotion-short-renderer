@@ -61,6 +61,24 @@ Each beat object contains:
 ### Component Library
 Components are located in `src/` and follow these conventions:
 
+#### KineticCaptions.tsx
+- Displays word-by-word captions synced to narration
+- Current word is highlighted with orange color and background
+- **Card Style**: Current word is wrapped in a card with white background, orange border, and subtle shadow
+- Past words fade to gray, future words are hidden
+- Supports emphasis words with cycling annotations (Highlight, Circle, Underline)
+- Idle animations: card bounce, 3D tilt, glow pulse, shimmer
+- Responsive sizing with `fitText` for optimal text scaling
+- **Timing**: Internal animations complete by ~50% of duration, then holds idle state
+- **No exit animation**: Designed to be wrapped by SceneTransition
+- **Card Configuration**:
+  - `cardBgColor`: White background with slight transparency
+  - `cardBorderColor`: Orange border matching highlight color
+  - `cardBorderWidth`: 2px border
+  - `cardBorderRadius`: 12px rounded corners
+  - `cardPadding`: 6px 12px padding
+  - `cardShadow`: Subtle shadow for depth
+
 #### KeyStatement.tsx
 - Displays text with word-by-word entrance animations
 - Supports emphasis words with cycling annotations (Highlight, Circle, Underline)

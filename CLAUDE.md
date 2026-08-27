@@ -95,7 +95,7 @@ output/
 | `MapLocation` | ✅ **COMPLETE** | `map_location` | Abstract world map, animated pin drop, coordinate label, slider border |
 | `PlainText` | ✅ **COMPLETE** | `plain_text` | Line-by-line reveal (4-5 words/line), star bullets, glow, slider border |
 | `IconText` | ✅ **COMPLETE** | `icon_text` | Lottie icon + wrapped text, word-by-word reveal, rough-notation highlights, card bounce, slider border |
-| `ChartCounter` | ⏳ TODO | `chart_counter` | |
+| `ChartCounter` | ✅ **COMPLETE** | `chart_counter` | Animated number count-up, label reveal, slider border, shimmer, glow |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
 | `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
@@ -445,7 +445,7 @@ The black slider border (SVG `stroke-dashoffset` animation) **must start drawing
 
 ## Next Steps
 1. Implement remaining beat components per the table above:
-   - `ChartCounter`, `ChartComparison`, `ChartLine`
+   - `ChartComparison`, `ChartLine`
    - `KineticCaptions`
    - `PersistentBackground`
 2. Build `MotionGraphicsVideo` to sequence beats from `beats.json`
@@ -470,7 +470,7 @@ my-video/
 │   ├── MapLocation.tsx      # ✅ Complete
 │   ├── PlainText.tsx        # ✅ Complete
 │   ├── IconText.tsx         # ✅ Complete (Lottie + Lucide fallback, text wrapping, bounce)
-│   ├── ChartCounter.tsx
+│   ├── ChartCounter.tsx     # ✅ Complete
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
 │   ├── KineticCaptions.tsx

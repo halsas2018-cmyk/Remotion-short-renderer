@@ -35,8 +35,8 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
         const rotationY = frame * rotationSpeed * 1.3;
         const rotationZ = frame * rotationSpeed * 0.7;
         
-        // Larger scale for bigger cuboids
-        const scale = 0.2 + (i % 5) * 0.1;
+        // Bigger scale to fill the screen
+        const scale = 0.3 + (i % 5) * 0.15;
         
         return (
           <mesh
@@ -45,7 +45,7 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
             rotation={[rotationX, rotationY, rotationZ]}
             scale={scale}
           >
-            <boxGeometry args={[0.15, 0.15, 0.15]} />
+            <boxGeometry args={[0.2, 0.2, 0.2]} />
             <meshStandardMaterial 
               color={color} 
               emissive={color}

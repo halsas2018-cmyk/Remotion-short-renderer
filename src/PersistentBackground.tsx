@@ -24,9 +24,10 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
   return (
     <>
       {Array.from({ length: count }, (_, i) => {
-        // Position cuboids across the entire screen (cover all positions)
-        const x = ((i % 10) / 10) * 2 - 1;
-        const y = (Math.floor(i / 10) / 10) * 2 - 1;
+        // Position cuboids to fill the entire screen
+        // Use a grid that covers the full screen dimensions
+        const x = ((i % 20) / 10 - 1) * 1.5;
+        const y = (Math.floor(i / 20) / 10 - 1) * 1.5;
         const z = 0;
         
         // Rotation speed and direction
@@ -35,8 +36,8 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
         const rotationY = frame * rotationSpeed * 1.3;
         const rotationZ = frame * rotationSpeed * 0.7;
         
-        // Bigger scale to fill the screen
-        const scale = 0.3 + (i % 5) * 0.15;
+        // Much larger scale to fill the screen
+        const scale = 0.5 + (i % 5) * 0.3;
         
         return (
           <mesh
@@ -45,7 +46,7 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
             rotation={[rotationX, rotationY, rotationZ]}
             scale={scale}
           >
-            <boxGeometry args={[0.2, 0.2, 0.2]} />
+            <boxGeometry args={[0.4, 0.4, 0.4]} />
             <meshStandardMaterial 
               color={color} 
               emissive={color}

@@ -358,7 +358,7 @@ export const Timeline3EventsTest: React.FC = () => (
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
     }}
-  );
+  />
 );
 
 // Test composition with 4 events
@@ -378,7 +378,7 @@ export const Timeline4EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  );
+  />
 );
 
 // Test composition with 5 events
@@ -399,5 +399,5 @@ export const Timeline5EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  );
+  />
 );

@@ -24,9 +24,9 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
   return (
     <>
       {Array.from({ length: count }, (_, i) => {
-        // Position cuboids across the entire screen
-        const x = ((i % 6) / 6) * 2 - 1;
-        const y = (Math.floor(i / 6) / 10) * 2 - 1;
+        // Position cuboids across the entire screen (cover all positions)
+        const x = ((i % 10) / 10) * 2 - 1;
+        const y = (Math.floor(i / 10) / 10) * 2 - 1;
         const z = 0;
         
         // Rotation speed and direction
@@ -75,7 +75,7 @@ export const PersistentBackground: React.FC = () => {
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
-        <RotatingCuboids color="#64748b" speed={0.015} count={30} />
+        <RotatingCuboids color="#64748b" speed={0.015} count={100} />
       </ThreeCanvas>
     </AbsoluteFill>
   );

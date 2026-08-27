@@ -3,10 +3,35 @@ import {
   AbsoluteFill,
   Composition,
   useVideoConfig,
+  useCurrentFrame,
 } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import { Mesh, MeshStandardMaterial, BoxGeometry } from "three";
+
+const SmallCuboid: React.FC<{
+  position: [number, number, number];
+  color: string;
+  frame: number;
+}> = ({ position, color, frame }) => {
+  const rotationSpeed = 0.05;
+  const rotationX = frame * rotationSpeed;
+  const rotationY = frame * rotationSpeed * 1.3;
+
+  return (
+    <mesh position={position} rotation={[rotationX, rotationY, 0]}>
+      <boxGeometry args={[50, 50, 50]} />
+      <meshStandardMaterial 
+        color={color} 
+        emissive={color} 
+        emissiveIntensity={0.5}
+      />
+    </mesh>
+  );
+};
 
 export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
+  const frame = useCurrentFrame();
 
   return (
     <AbsoluteFill
@@ -14,8 +39,21 @@ export const PersistentBackground: React.FC = () => {
         backgroundColor: "white",
         width,
         height,
+        overflow: "hidden",
       }}
-    />
+    >
+      <ThreeCanvas width={width} height={height}>
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[5, 5, 5]} intensity={0.8} />
+        
+        {/* Small cuboid in upper right corner */}
+        <SmallCuboid 
+          position={[width / 2 - 75, -height / 2 + 75, 0]} 
+          color="#3b82f6" 
+          frame={frame}
+        />
+      </ThreeCanvas>
+    </AbsoluteFill>
   );
 };
 

@@ -323,80 +323,85 @@ export const Timeline: React.FC<TimelineProps> = ({
   );
 };
 
-export const TimelineTestComposition: React.FC = () => (
-  <Composition
-    id="TimelineTest"
-    component={Timeline}
-    durationInFrames={120}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      events: [
-        { marker: "2024", label: "Meta raised $27B" },
-        { marker: "2029", label: "Exposure could hit $370B" },
-      ],
-    }}
-  />
-);
-
-// Test composition with 3 events
-export const Timeline3EventsTest: React.FC = () => (
-  <Composition
-    id="Timeline3EventsTest"
-    component={Timeline}
-    durationInFrames={150}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      events: [
-        { marker: "2024", label: "Meta raised $27B" },
-        { marker: "2026", label: "Broadcom acquires VMware" },
-        { marker: "2029", label: "Exposure could hit $370B" },
-      ],
-    }}
+// Test compositions
+export const TimelineTestComposition = () => {
+  return (
+    <Composition
+      id="TimelineTest"
+      component={Timeline}
+      durationInFrames={120}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+        ],
+      }}
+    />
   );
-);
+};
 
-// Test composition with 4 events
-export const Timeline4EventsTest: React.FC = () => (
-  <Composition
-    id="Timeline4EventsTest"
-    component={Timeline}
-    durationInFrames={180}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      events: [
-        { marker: "2024", label: "Meta raised $27B" },
-        { marker: "2026", label: "Broadcom acquires VMware" },
-        { marker: "2029", label: "Exposure could hit $370B" },
-        { marker: "2032", label: "AI chip market matures" },
-      ],
-    }}
+export const Timeline3EventsTest = () => {
+  return (
+    <Composition
+      id="Timeline3EventsTest"
+      component={Timeline}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+        ],
+      }}
+    />
   );
-);
+};
 
-// Test composition with 5 events
-export const Timeline5EventsTest: React.FC = () => (
-  <Composition
-    id="Timeline5EventsTest"
-    component={Timeline}
-    durationInFrames={210}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      events: [
-        { marker: "2024", label: "Meta raised $27B" },
-        { marker: "2025", label: "AI infrastructure boom begins" },
-        { marker: "2026", label: "Broadcom acquires VMware" },
-        { marker: "2029", label: "Exposure could hit $370B" },
-        { marker: "2032", label: "AI chip market matures" },
-      ],
-    }}
+export const Timeline4EventsTest = () => {
+  return (
+    <Composition
+      id="Timeline4EventsTest"
+      component={Timeline}
+      durationInFrames={180}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+          { marker: "2032", label: "AI chip market matures" },
+        ],
+      }}
+    />
   );
-);
-```
+};
+
+export const Timeline5EventsTest = () => {
+  return (
+    <Composition
+      id="Timeline5EventsTest"
+      component={Timeline}
+      durationInFrames={210}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2025", label: "AI infrastructure boom begins" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+          { marker: "2032", label: "AI chip market matures" },
+        ],
+      }}
+    />
+  );
+};

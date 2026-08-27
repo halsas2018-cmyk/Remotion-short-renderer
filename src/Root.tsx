@@ -10,7 +10,6 @@ import { ProgressMeter } from "./ProgressMeter";
 import { Timeline } from "./Timeline";
 import { ChartComparison3D } from "./ChartComparison3D";
 import { Map3D } from "./Map3D";
-import { CasiumMap3D } from "./CasiumMap3D";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -322,48 +321,6 @@ export const RemotionRoot = () => (
     <Composition
       id="Map3DLondonTest"
       component={Map3D}
-      durationInFrames={150}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        locationName: "London",
-        latitude: 51.5074,
-        longitude: -0.1278,
-        buildings: 6,
-      }}
-    />
-    <Composition
-      id="CasiumMap3DTest"
-      component={CasiumMap3D}
-      durationInFrames={150}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        locationName: "San Francisco",
-        latitude: 37.7749,
-        longitude: -122.4194,
-        buildings: 8,
-      }}
-    />
-    <Composition
-      id="CasiumMap3DTokyoTest"
-      component={CasiumMap3D}
-      durationInFrames={150}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        locationName: "Tokyo",
-        latitude: 35.6762,
-        longitude: 139.6503,
-        buildings: 12,
-      }}
-    />
-    <Composition
-      id="CasiumMap3DLondonTest"
-      component={CasiumMap3D}
       durationInFrames={150}
       fps={30}
       width={1080}

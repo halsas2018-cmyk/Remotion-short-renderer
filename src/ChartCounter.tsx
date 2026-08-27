@@ -307,4 +307,3 @@ export const ChartCounterTestComposition: React.FC = () => (
     }}
   />
 );
-```

@@ -10,6 +10,7 @@ import { ProgressMeter } from "./ProgressMeter";
 import { Timeline } from "./Timeline";
 import { ChartComparison3D } from "./ChartComparison3D";
 import { Map3D } from "./Map3D";
+import { ChartLine } from "./ChartLine";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -330,6 +331,24 @@ export const RemotionRoot = () => (
         latitude: 51.5074,
         longitude: -0.1278,
         buildings: 6,
+      }}
+    />
+    <Composition
+      id="ChartLineTest"
+      component={ChartLine}
+      durationInFrames={90}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        points: [
+          { label: "Q1", value: 12000000000 },
+          { label: "Q2", value: 18000000000 },
+          { label: "Q3", value: 15000000000 },
+          { label: "Q4", value: 27000000000 },
+        ],
+        durationInFrames: 90,
+        exitDirection: "up",
       }}
     />
     <Composition

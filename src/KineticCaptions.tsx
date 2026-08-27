@@ -6,6 +6,7 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
+  Interactive,
 } from "remotion";
 import { useBeatContext } from "./MotionGraphicsVideo";
 
@@ -161,7 +162,8 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
         pointerEvents: "none",
       }}
     >
-      <div
+      <Interactive.Div
+        name="KineticCaptions"
         style={{
           position: "absolute",
           bottom: CONFIG.bottomMargin,
@@ -209,9 +211,9 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
             lineHeight: CONFIG.lineHeight,
             whiteSpace: "nowrap",
             opacity,
-            transform: `translateY(${yOffset}px) scale(${scale * highlightPulse})`,
+            scale,
+            translate: `${yOffset}px 0px`,
             transformOrigin: "center bottom",
-            transition: "none",
           };
 
           let wordStyles: React.CSSProperties = { ...baseStyles };
@@ -248,7 +250,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
             </span>
           );
         })}
-      </div>
+      </Interactive.Div>
     </AbsoluteFill>
   );
 };

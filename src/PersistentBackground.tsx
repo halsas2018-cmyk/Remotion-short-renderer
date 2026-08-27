@@ -24,19 +24,19 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
   return (
     <>
       {Array.from({ length: count }, (_, i) => {
-        // Random position across the screen
-        const x = (i % 5) * 0.4 - 0.8;
-        const y = Math.floor(i / 5) * 0.4 - 0.8;
+        // Position cuboids across the entire screen
+        const x = ((i % 6) / 6) * 2 - 1;
+        const y = (Math.floor(i / 6) / 10) * 2 - 1;
         const z = 0;
         
-        // Random rotation speed and direction
+        // Rotation speed and direction
         const rotationSpeed = speed * (0.5 + (i % 10) / 10);
         const rotationX = frame * rotationSpeed;
         const rotationY = frame * rotationSpeed * 1.3;
         const rotationZ = frame * rotationSpeed * 0.7;
         
-        // Random scale for variety
-        const scale = 0.1 + (i % 5) * 0.05;
+        // Larger scale for bigger cuboids
+        const scale = 0.2 + (i % 5) * 0.1;
         
         return (
           <mesh
@@ -45,7 +45,7 @@ const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
             rotation={[rotationX, rotationY, rotationZ]}
             scale={scale}
           >
-            <boxGeometry args={[0.1, 0.1, 0.1]} />
+            <boxGeometry args={[0.15, 0.15, 0.15]} />
             <meshStandardMaterial 
               color={color} 
               emissive={color}
@@ -75,7 +75,7 @@ export const PersistentBackground: React.FC = () => {
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
-        <RotatingCuboids color="#64748b" speed={0.015} count={25} />
+        <RotatingCuboids color="#64748b" speed={0.015} count={30} />
       </ThreeCanvas>
     </AbsoluteFill>
   );
@@ -87,8 +87,4 @@ export const BackgroundTestComposition: React.FC = () => (
     component={PersistentBackground}
     durationInFrames={180}
     fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{}}
-  />
-);
+    width

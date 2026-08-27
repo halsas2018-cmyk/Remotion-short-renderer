@@ -7,6 +7,14 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
+import { fitText } from "@remotion/layout-utils";
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 interface ChartCounterProps {
   value: number;
@@ -96,7 +104,15 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  const valueFontSize = Math.max(72, width * 0.065);
+  // Responsive font sizes using fitText for the value
+  const valueText = formatNumber(value);
+  const valueFit = fitText({
+    text: valueText,
+    withinWidth: cardWidth - 2 * 24,
+    fontFamily,
+    fontWeight: "700",
+  });
+  const valueFontSize = Math.min(Math.max(72, width * 0.065), valueFit.fontSize);
   const labelFontSize = Math.max(28, width * 0.026);
 
   const shimmerStart = entranceEnd;
@@ -236,9 +252,9 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
               <div
                 style={{
                   fontSize: valueFontSize,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: ACCENT_COLOR,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   lineHeight: 1,
                   letterSpacing: -2,
                   opacity: countProgress,
@@ -259,7 +275,7 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
                   fontSize: labelFontSize,
                   fontWeight: 700,
                   color: DARK_TEXT,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   letterSpacing: 2,
                   textTransform: "uppercase",
                   marginTop: 16,

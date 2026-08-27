@@ -1,1 +1,0 @@
-        print(f"Put it in .env: {key_env}=your_key")

@@ -13,7 +13,6 @@ Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
 Config.overrideBundlerConfig(enableTailwind);
 Config.setBrowserExecutable("/usr/bin/chromium");
-Config.setChromiumOpenGlRenderer("swiftshader");
-
+Config.setChromiumOpenGlRenderer("swangle");
 // Entry point is ./src/index.tsx (default) which calls registerRoot(RemotionRoot)
 // RemotionRoot is defined in ./src/Root.tsx (separate file per best practice)

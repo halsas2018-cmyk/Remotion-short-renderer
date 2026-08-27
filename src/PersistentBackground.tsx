@@ -49,14 +49,14 @@ export const PersistentBackground: React.FC = () => {
         
         {/* Top edge cuboid */}
         <EdgeCuboid 
-          position={[-width / 2 + 100, -height / 2 + 50, 0]} 
+          position={[-width / 2 + 100, -height / 2 + 100, 0]} 
           color="#3b82f6" 
           frame={frame}
         />
         
         {/* Bottom edge cuboid */}
         <EdgeCuboid 
-          position={[-width / 2 + 100, height / 2 - 50, 0]} 
+          position={[-width / 2 + 100, height / 2 - 100, 0]} 
           color="#ef4444" 
           frame={frame}
         />

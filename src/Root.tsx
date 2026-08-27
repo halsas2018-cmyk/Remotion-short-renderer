@@ -11,6 +11,8 @@ import { Timeline } from "./Timeline";
 import { ChartComparison3D } from "./ChartComparison3D";
 import { Map3D } from "./Map3D";
 import { ChartLine } from "./ChartLine";
+import { KineticCaptions } from "./KineticCaptions";
+import timestampsData from "./timestamps.json";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -349,6 +351,31 @@ export const RemotionRoot = () => (
         ],
         durationInFrames: 90,
         exitDirection: "up",
+      }}
+    />
+    <Composition
+      id="KineticCaptionsTest"
+      component={KineticCaptions}
+      durationInFrames={300}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        captionEnabledTypes: new Set([
+          "chart_counter",
+          "chart_comparison",
+          "chart_line",
+          "progress_meter",
+          "map_location",
+          "timeline",
+          "process_flow",
+          "versus",
+          "icon_text",
+          "quote_card",
+          "before_after",
+        ]),
+        beats: [],
+        words: timestampsData,
       }}
     />
     <Composition

@@ -9,7 +9,7 @@ import {
 	interpolate,
 	Easing,
 } from 'remotion';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 type Map3DProps = {
@@ -40,7 +40,7 @@ export const CasiumMap3D: React.FC<Map3DProps> = ({
 
 	useEffect(() => {
 		if (!containerRef.current) return;
-		if (!maplibregl) {
+		if (!maplibregl || !maplibregl.Map) {
 			// MapLibre is not available, cancel render with a clear error
 			cancelRender(new Error('maplibre-gl is not installed or failed to load'));
 			return;

@@ -212,9 +212,14 @@ export const Timeline: React.FC<TimelineProps> = ({
 
               const descPos = getDescPosition(xPos, descCardWidth);
 
+              // Marker center Y position (above the center line)
+              const markerCenterY = `calc(50% - ${labelOffset + markerRadius}px)`;
+              // Description card top position (below the marker)
+              const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 16}px)`;
+
               return (
                 <React.Fragment key={i}>
-                  {/* Vertical line from center line to marker */}
+                  {/* Vertical line from center line up to marker */}
                   {isActive && (
                     <div
                       style={{
@@ -222,13 +227,13 @@ export const Timeline: React.FC<TimelineProps> = ({
                         left: xPos,
                         top: "50%",
                         width: 2,
-                        height: labelOffset,
-                        transformOrigin: "top center",
+                        height: labelOffset + markerRadius,
+                        transformOrigin: "bottom center",
                         transform: [
-                          { translateY: "-50%" },
+                          { translateY: "-100%" },
                           { scaleY: markerProg },
                         ],
-                        background: `linear-gradient(180deg, ${LINE_COLOR}, ${ACCENT_COLOR})`,
+                        background: `linear-gradient(180deg, ${ACCENT_COLOR}, ${LINE_COLOR})`,
                         opacity: markerProg,
                       }}
                     />
@@ -239,10 +244,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                     style={{
                       position: "absolute",
                       left: xPos - markerRadius,
-                      top: "50%",
+                      top: markerCenterY,
                       transform: [
-                        { translateY: "-50%" },
-                        { translateY: `-${labelOffset + markerRadius}px` },
                         { scale: markerProg * (isIdle ? idlePulse : 1) },
                       ],
                       transformOrigin: "center",
@@ -274,17 +277,13 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </span>
                   </div>
 
-                  {/* Event description below - elevated card, constrained to screen */}
+                  {/* Event description below marker - elevated card, constrained to screen */}
                   <div
                     style={{
                       position: "absolute",
                       left: descPos.left,
-                      top: "50%",
-                      transform: [
-                        { translateY: "-50%" },
-                        { translateY: `${labelOffset + markerRadius + 16}px` },
-                        descPos.transform,
-                      ],
+                      top: descCardTop,
+                      transform: descPos.transform,
                       width: descCardWidth,
                       textAlign: "center",
                       opacity: markerProg,
@@ -358,7 +357,7 @@ export const Timeline3EventsTest: React.FC = () => (
         { marker: "2029", label: "Exposure could hit $370B" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 4 events
@@ -378,7 +377,7 @@ export const Timeline4EventsTest: React.FC = () => (
         { marker: "2032", label: "AI chip market matures" },
       ],
     }}
-  />
+  );
 );
 
 // Test composition with 5 events

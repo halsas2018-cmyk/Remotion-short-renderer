@@ -24,7 +24,7 @@ interface ProgressMeterProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
-const ACCENT_LIGHT = "#fff4ed";
+const ACCENT_LIGHT = "#f97316";
 const DARK_TEXT = "#1a1a1a";
 const MEDIUM_TEXT = "#525252";
 const LIGHT_TEXT = "#a3a3a3";
@@ -115,6 +115,9 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
   const idleGlow = isIdle ? 0.3 + 0.2 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 0.3;
 
+  // Card bounce animation (idle) - 6px vertical bounce matching other components
+  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+
   // Subtitle bounce during idle
   const subtitleBounceFrequency = 0.15;
   const subtitleBounceAmplitude = 6;
@@ -164,6 +167,9 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const labelFontSize = Math.max(28, width * 0.026); // Important supporting text: 44px minimum
   const subtitleFontSize = Math.max(18, width * 0.017);
 
+  // Card border radius (circular)
+  const cardBorderRadius = size / 2;
+
   // Shimmer position calculation - relative to card (0-100% of card height)
   // Only visible after shimmer start frame
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -197,12 +203,13 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: "translateY(-50%)",
+          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
           width: availableWidth,
           height: size,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          willChange: "transform",
         }}
       >
         {/* Card container - explicit dimensions matching card outer size */}
@@ -274,7 +281,21 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
               border: `1px solid ${CARD_BORDER}`,
             }}
           >
-            {/* Subtle background pattern - radial gradient */}
+            {/* Accent top bar - 4px gradient at top of circular card */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
+                clipPath: `polygon(0 0, 100% 0, 100% 4px, 0 4px)`,
+              }}
+            />
+
+            {/* Subtle background pattern - diagonal lines (3% opacity) */}
             <div
               style={{
                 position: "absolute",
@@ -283,9 +304,48 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                 right: 0,
                 bottom: 0,
                 borderRadius: "50%",
-                opacity: 0.02,
-                background: `radial-gradient(circle at center, ${ACCENT_COLOR} 0%, transparent 70%)`,
+                opacity: 0.03,
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
+                  transparent 1px,
+                  transparent 20px
+                )`,
                 pointerEvents: "none",
+              }}
+            />
+
+            {/* Subtle radial gradient overlay for depth */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: "50%",
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Radial glow behind card (animated pulse during idle) */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${1 + idleGlow * 0.3})`,
+                width: "120%",
+                height: "120%",
+                borderRadius: "50%",
+                background: `radial-gradient(ellipse at center, rgba(232, 108, 0, ${0.15 * idleGlow}) 0%, transparent 70%)`,
+                opacity: isIdle ? idleGlow : 0,
+                filter: `blur(80px)`,
+                pointerEvents: "none",
+                zIndex: -1,
+                transition: "opacity 0.3s ease",
               }}
             />
 
@@ -346,7 +406,14 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                     lineHeight: 1,
                     letterSpacing: -2,
                     opacity: numberProgress,
-                    transform: [{ scale: numberProgress }],
+                    transform: [{ scale: interpolate(numberProgress, [0, 1], [0.5, 1], {
+                      easing: Easing.spring({ damping: 200 }),
+                      output: "perceptual-scale",
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    }) }],
+                    transformOrigin: "center",
+                    willChange: "transform, opacity",
                   }}
                 >
                   {value >= 1000 || maxValue >= 1000 ? (

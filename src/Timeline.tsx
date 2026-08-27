@@ -53,7 +53,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
   // ============================================
-  // INTERNAL TIMELINE — completes by ~70%, then holds
+  // INTERNAL TIMELINE — completes by ~30%, then holds
   // No exit animation — designed to be wrapped by SceneTransition
   // ============================================
   const lineDuration = Math.round(durationInFrames * lineDurPct);
@@ -94,6 +94,13 @@ export const Timeline: React.FC<TimelineProps> = ({
   const idleTimeSeconds = (frame - allAnimationsDone) / fps;
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
+  // Card bounce animation (idle) - 6px vertical bounce matching other components
+  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+
+  // Glow pulse animation (idle)
+  const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
+  const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
+
   // Shimmer timing
   const shimmerSpeed = 25;
   const lineShimmerStart = lineStart + lineDuration;
@@ -104,32 +111,37 @@ export const Timeline: React.FC<TimelineProps> = ({
   const availableWidth = width - 2 * padding;
   
   // Larger marker radius to accommodate year text (4 digits need more space)
-  const markerRadius = Math.max(36, width * 0.033); // Increased from 18/0.0165
-  const labelOffset = Math.max(100, height * 0.05); // Increased offset for larger markers
+  const markerRadius = Math.max(36, width * 0.033);
+  const labelOffset = Math.max(100, height * 0.05);
   const labelCardHeight = 56;
   const cardHeight = Math.min(520, height * 0.48);
 
-  // Container dimensions (for slider)
-  const containerWidth = availableWidth;
-  const containerHeight = cardHeight;
+  // Card dimensions (for slider and card styling)
+  const cardWidth = availableWidth;
+  const cardBorderRadius = Math.max(28, width * 0.026);
   const sliderPadding = 24;
-  const sliderWidth = containerWidth + 2 * sliderPadding;
-  const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = Math.max(28, width * 0.026);
+  const sliderWidth = cardWidth + 2 * sliderPadding;
+  const sliderHeight = cardHeight + 2 * sliderPadding;
+  const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Responsive font sizes (following video-layout.md minimums)
-  // Marker font size scales with marker radius for proper fit
-  const markerFontSize = Math.max(24, markerRadius * 0.55); // ~55% of radius for good fit
+  const markerFontSize = Math.max(24, markerRadius * 0.55);
   const yearFontSize = Math.max(32, width * 0.03);
   const labelFontSize = Math.max(28, width * 0.026);
-  const cardBorderRadius = Math.max(16, width * 0.015);
+  const descCardBorderRadius = Math.max(16, width * 0.015);
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {
     if (frame < shimmerStartFrame) return "-100%";
     const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
+
+  // Shimmer opacity - 0 before start, then follows progress
+  const getShimmerOpacity = (shimmerStartFrame: number, progress: number) => {
+    if (frame < shimmerStartFrame) return 0;
+    return progress;
   };
 
   // Slider path animation
@@ -139,15 +151,15 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Calculate marker X positions (evenly distributed)
   const getMarkerX = (index: number) => {
-    if (events.length === 1) return availableWidth / 2;
-    return (index / (events.length - 1)) * availableWidth;
+    if (events.length === 1) return cardWidth / 2;
+    return (index / (events.length - 1)) * cardWidth;
   };
 
   // Calculate description card position (constrained to container)
   const getDescPosition = (xPos: number, cardWidth: number) => {
     const halfCardWidth = cardWidth / 2;
-    if (xPos + halfCardWidth > availableWidth) {
-      return { left: availableWidth, transform: "translateX(-100%)" };
+    if (xPos + halfCardWidth > cardWidth) {
+      return { left: cardWidth, transform: "translateX(-100%)" };
     } else if (xPos - halfCardWidth < 0) {
       return { left: 0, transform: "translateX(0)" };
     } else {
@@ -157,7 +169,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Description card width (responsive, based on number of events)
   const descCardWidth = Math.min(
-    availableWidth / Math.max(events.length, 2) * 0.9,
+    cardWidth / Math.max(events.length, 2) * 0.9,
     340
   );
 
@@ -169,254 +181,405 @@ export const Timeline: React.FC<TimelineProps> = ({
         backgroundColor: "transparent",
       }}
     >
-      {/* Slider animation - black border circling the timeline */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: sliderWidth,
-          height: sliderHeight,
-          pointerEvents: "none",
-          opacity: sliderProgress,
-          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
-        }}
-      >
-        <svg
-          width={sliderWidth}
-          height={sliderHeight}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <rect
-            x={sliderStrokeWidth / 2}
-            y={sliderStrokeWidth / 2}
-            width={sliderWidth - sliderStrokeWidth}
-            height={sliderHeight - sliderStrokeWidth}
-            rx={sliderBorderRadius}
-            ry={sliderBorderRadius}
-            fill="none"
-            stroke={SLIDER_COLOR}
-            strokeWidth={sliderStrokeWidth}
-            strokeDasharray={sliderDashArray}
-            strokeDashoffset={sliderDashOffset}
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      </div>
-
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: padding,
           right: padding,
-          transform: "translateY(-50%)",
+          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
           width: availableWidth,
           height: cardHeight,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          willChange: "transform",
         }}
       >
-        {/* Horizontal line - draws from left to right */}
+        {/* Card container - explicit dimensions matching card outer size */}
         <div
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: `${lineProgress * 100}%`,
-            height: 3,
-            background: `linear-gradient(90deg, ${LINE_COLOR}, ${ACCENT_COLOR}, ${LINE_COLOR})`,
-            transformOrigin: "left center",
-            borderRadius: 2,
+            position: "relative",
+            width: cardWidth,
+            height: cardHeight,
           }}
-        />
+        >
+          {/* Slider animation - black border circling the card with matching curved corners */}
+          <div
+            style={{
+              position: "absolute",
+              top: -sliderPadding,
+              left: -sliderPadding,
+              right: -sliderPadding,
+              bottom: -sliderPadding,
+              pointerEvents: "none",
+              opacity: sliderProgress,
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+              borderRadius: sliderBorderRadius,
+            }}
+          >
+            <svg
+              width={sliderWidth}
+              height={sliderHeight}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <rect
+                x={sliderStrokeWidth / 2}
+                y={sliderStrokeWidth / 2}
+                width={sliderWidth - sliderStrokeWidth}
+                height={sliderHeight - sliderStrokeWidth}
+                rx={sliderBorderRadius}
+                ry={sliderBorderRadius}
+                fill="none"
+                stroke={SLIDER_COLOR}
+                strokeWidth={sliderStrokeWidth}
+                strokeDasharray={sliderDashArray}
+                strokeDashoffset={sliderDashOffset}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
 
-        {/* Line shimmer */}
-        <div
-          style={{
-            position: "absolute",
-            top: getShimmerTop(lineShimmerStart),
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
-            opacity: lineProgress,
-            borderRadius: 2,
-            pointerEvents: "none",
-          }}
-        />
+          {/* Elevated card background - WHITE with prominent curved borders */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "white",
+              borderRadius: cardBorderRadius,
+              boxShadow: CARD_SHADOW,
+              border: `1px solid ${CARD_BORDER}`,
+              boxSizing: "border-box",
+              overflow: "hidden",
+            }}
+          >
+            {/* Accent top bar with matching curved corners */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
+              }}
+            />
 
-        {/* Markers and labels */}
-        {events.map((event, i) => {
-          const xPos = getMarkerX(i);
-          const markerProg = markerProgresses[i];
-          const isActive = markerProg > 0;
-          const markerShimmerStart = markerShimmerStarts[i];
+            {/* Subtle background pattern - diagonal lines (3% opacity) */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                opacity: 0.03,
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
+                  transparent 1px,
+                  transparent 20px
+                )`,
+                pointerEvents: "none",
+              }}
+            />
 
-          const descPos = getDescPosition(xPos, descCardWidth);
+            {/* Subtle radial gradient overlay for depth */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
 
-          return (
-            <React.Fragment key={i}>
-              {/* Vertical line from center line to marker */}
-              {isActive && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: xPos,
-                    top: 0,
-                    width: 2,
-                    height: labelOffset,
-                    background: `linear-gradient(180deg, ${LINE_COLOR}, ${ACCENT_COLOR})`,
-                    transformOrigin: "top center",
-                    transform: [{ scaleY: markerProg }],
-                    opacity: markerProg,
-                  }}
-                />
-              )}
+            {/* Radial glow behind card (animated pulse during idle) */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${glowPulse})`,
+                width: "110%",
+                height: "110%",
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
+                opacity: glowOpacity,
+                filter: `blur(60px)`,
+                pointerEvents: "none",
+                zIndex: -1,
+              }}
+            />
 
-              {/* Marker circle - elevated card style (shows the marker/year) */}
+            {/* Timeline content */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* Horizontal line - draws from left to right */}
               <div
                 style={{
                   position: "absolute",
-                  left: xPos - markerRadius,
-                  top: -labelOffset - markerRadius,
-                  width: markerRadius * 2,
-                  height: markerRadius * 2,
-                  borderRadius: "50%",
-                  backgroundColor: MARKER_BG,
-                  border: `4px solid ${MARKER_BORDER}`, // Thicker border for prominence
-                  transformOrigin: "center",
-                  transform: [
-                    { scale: markerProg * (isIdle ? idlePulse : 1) },
-                  ],
-                  opacity: markerProg,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  zIndex: 10,
-                  boxShadow: `0 8px 32px rgba(232, 108, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1)`,
-                  willChange: "transform, opacity",
+                  top: "50%",
+                  left: 0,
+                  width: `${lineProgress * 100}%`,
+                  height: 3,
+                  background: `linear-gradient(90deg, ${LINE_COLOR}, ${ACCENT_COLOR}, ${LINE_COLOR})`,
+                  transformOrigin: "left center",
+                  transform: "translateY(-50%)",
+                  borderRadius: 2,
+                  opacity: lineProgress,
                 }}
-              >
-                <span
-                  style={{
-                    fontSize: markerFontSize,
-                    fontWeight: 800,
-                    color: ACCENT_COLOR,
-                    fontFamily: "system-ui, sans-serif",
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {event.marker}
-                </span>
-              </div>
+              />
 
-              {/* Marker shimmer - subtle radial glow */}
+              {/* Line shimmer */}
               <div
                 style={{
                   position: "absolute",
-                  left: xPos - markerRadius,
-                  top: -labelOffset - markerRadius,
-                  width: markerRadius * 2,
-                  height: markerRadius * 2,
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle at center, transparent 50%, ${ACCENT_COLOR}22 80%)`,
-                  opacity: markerProg,
+                  top: "50%",
+                  left: 0,
+                  width: "100%",
+                  height: 3,
+                  transform: "translateY(-50%)",
+                  background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
+                  opacity: getShimmerOpacity(lineShimmerStart, lineProgress),
+                  borderRadius: 2,
                   pointerEvents: "none",
                 }}
               >
                 <div
                   style={{
                     position: "absolute",
-                    top: getShimmerTop(markerShimmerStart),
+                    top: getShimmerTop(lineShimmerStart),
                     left: 0,
                     width: "100%",
-                    height: "30%",
-                    background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
-                    borderRadius: "50%",
-                  }}
-                />
-              </div>
-
-              {/* Event description below - elevated card, constrained to screen */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: descPos.left,
-                  top: labelOffset + markerRadius + 16,
-                  transform: descPos.transform,
-                  width: descCardWidth,
-                  textAlign: "center",
-                  opacity: markerProg,
-                  zIndex: 5,
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: cardBorderRadius,
-                    padding: "18px 24px",
-                    boxShadow: CARD_SHADOW,
-                    transform: `scale(${markerProg})`,
-                    transformOrigin: "top center",
-                    border: `1px solid ${CARD_BORDER}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: labelFontSize,
-                      fontWeight: 600,
-                      color: DARK_TEXT,
-                      fontFamily: "system-ui, sans-serif",
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {event.label}
-                  </span>
-                </div>
-              </div>
-
-              {/* Description card shimmer */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: descPos.left,
-                  top: labelOffset + markerRadius + 16,
-                  transform: descPos.transform,
-                  width: descCardWidth,
-                  height: "auto",
-                  minHeight: 80,
-                  borderRadius: cardBorderRadius,
-                  background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}22, transparent)`,
-                  opacity: markerProg,
-                  pointerEvents: "none",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: getShimmerTop(markerShimmerStart),
-                    left: 0,
-                    width: "100%",
-                    height: "25%",
+                    height: "100%",
                     background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
-                    borderRadius: cardBorderRadius,
+                    borderRadius: 2,
                   }}
                 />
               </div>
-            </React.Fragment>
-          );
-        })}
+
+              {/* Markers and labels */}
+              {events.map((event, i) => {
+                const xPos = getMarkerX(i);
+                const markerProg = markerProgresses[i];
+                const isActive = markerProg > 0;
+                const markerShimmerStart = markerShimmerStarts[i];
+
+                const descPos = getDescPosition(xPos, descCardWidth);
+
+                return (
+                  <React.Fragment key={i}>
+                    {/* Vertical line from center line to marker */}
+                    {isActive && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: xPos,
+                          top: "50%",
+                          width: 2,
+                          height: labelOffset,
+                          transformOrigin: "top center",
+                          transform: [
+                            { translateY: "-50%" },
+                            { scaleY: markerProg },
+                          ],
+                          background: `linear-gradient(180deg, ${LINE_COLOR}, ${ACCENT_COLOR})`,
+                          opacity: markerProg,
+                        }}
+                      />
+                    )}
+
+                    {/* Marker circle - elevated card style (shows the marker/year) */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: xPos - markerRadius,
+                        top: "50%",
+                        transform: [
+                          { translateY: "-50%" },
+                          { translateY: `-${labelOffset + markerRadius}px` },
+                          { scale: markerProg * (isIdle ? idlePulse : 1) },
+                        ],
+                        transformOrigin: "center",
+                        width: markerRadius * 2,
+                        height: markerRadius * 2,
+                        borderRadius: "50%",
+                        backgroundColor: MARKER_BG,
+                        border: `4px solid ${MARKER_BORDER}`,
+                        opacity: markerProg,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 10,
+                        boxShadow: `0 8px 32px rgba(232, 108, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1)`,
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: markerFontSize,
+                          fontWeight: 800,
+                          color: ACCENT_COLOR,
+                          fontFamily: "system-ui, sans-serif",
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {event.marker}
+                      </span>
+                    </div>
+
+                    {/* Marker shimmer - subtle radial glow */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: xPos - markerRadius,
+                        top: "50%",
+                        transform: `translateY(-50%) translateY(-${labelOffset + markerRadius}px)`,
+                        width: markerRadius * 2,
+                        height: markerRadius * 2,
+                        borderRadius: "50%",
+                        background: `radial-gradient(circle at center, transparent 50%, ${ACCENT_COLOR}22 80%)`,
+                        opacity: markerProg,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: getShimmerTop(markerShimmerStart),
+                          left: 0,
+                          width: "100%",
+                          height: "30%",
+                          background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                          borderRadius: "50%",
+                        }}
+                      />
+                    </div>
+
+                    {/* Event description below - elevated card, constrained to screen */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: descPos.left,
+                        top: "50%",
+                        transform: [
+                          { translateY: "-50%" },
+                          { translateY: `${labelOffset + markerRadius + 16}px` },
+                          descPos.transform,
+                        ],
+                        width: descCardWidth,
+                        textAlign: "center",
+                        opacity: markerProg,
+                        zIndex: 5,
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "white",
+                          borderRadius: descCardBorderRadius,
+                          padding: "18px 24px",
+                          boxShadow: CARD_SHADOW,
+                          transform: `scale(${markerProg})`,
+                          transformOrigin: "top center",
+                          border: `1px solid ${CARD_BORDER}`,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: labelFontSize,
+                            fontWeight: 600,
+                            color: DARK_TEXT,
+                            fontFamily: "system-ui, sans-serif",
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {event.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Description card shimmer */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: descPos.left,
+                        top: "50%",
+                        transform: [
+                          { translateY: "-50%" },
+                          { translateY: `${labelOffset + markerRadius + 16}px` },
+                          descPos.transform,
+                        ],
+                        width: descCardWidth,
+                        height: "auto",
+                        minHeight: 80,
+                        borderRadius: descCardBorderRadius,
+                        background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}22, transparent)`,
+                        opacity: getShimmerOpacity(markerShimmerStart, markerProg),
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: getShimmerTop(markerShimmerStart),
+                          left: 0,
+                          width: "100%",
+                          height: "25%",
+                          background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}44, transparent)`,
+                          borderRadius: descCardBorderRadius,
+                        }}
+                      />
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* Card shimmer animation - full card sweep after all content animation */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(allAnimationsDone),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(allAnimationsDone, 1),
+                borderRadius: cardBorderRadius,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        </div>
       </div>
     </AbsoluteFill>
   );

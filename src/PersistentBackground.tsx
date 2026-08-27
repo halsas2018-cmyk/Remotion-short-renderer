@@ -6,35 +6,46 @@ import {
   useVideoConfig,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
-import { useFrame } from "@react-three/fiber";
-import { Mesh, MeshStandardMaterial, TorusGeometry } from "three";
+import { Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 
-interface RotatingCurveProps {
+interface RotatingCuboidProps {
   color?: string;
   speed?: number;
   count?: number;
 }
 
-const RotatingCurve: React.FC<RotatingCurveProps> = ({
+const RotatingCuboids: React.FC<RotatingCuboidProps> = ({
   color = "#64748b",
   speed = 0.02,
-  count = 3,
+  count = 20,
 }) => {
   const frame = useCurrentFrame();
   
   return (
     <>
       {Array.from({ length: count }, (_, i) => {
-        const radius = 0.8 + i * 0.3;
-        const rotationY = frame * speed * (i + 1);
-        const rotationX = frame * speed * 0.7 * (i + 1);
+        // Random position across the screen
+        const x = (i % 5) * 0.4 - 0.8;
+        const y = Math.floor(i / 5) * 0.4 - 0.8;
+        const z = 0;
+        
+        // Random rotation speed and direction
+        const rotationSpeed = speed * (0.5 + (i % 10) / 10);
+        const rotationX = frame * rotationSpeed;
+        const rotationY = frame * rotationSpeed * 1.3;
+        const rotationZ = frame * rotationSpeed * 0.7;
+        
+        // Random scale for variety
+        const scale = 0.1 + (i % 5) * 0.05;
         
         return (
           <mesh
             key={i}
-            rotation={[rotationX, rotationY, 0]}
+            position={[x, y, z]}
+            rotation={[rotationX, rotationY, rotationZ]}
+            scale={scale}
           >
-            <torusGeometry args={[radius, 0.03, 16, 100]} />
+            <boxGeometry args={[0.1, 0.1, 0.1]} />
             <meshStandardMaterial 
               color={color} 
               emissive={color}
@@ -64,7 +75,7 @@ export const PersistentBackground: React.FC = () => {
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
-        <RotatingCurve color="#64748b" speed={0.015} count={4} />
+        <RotatingCuboids color="#64748b" speed={0.015} count={25} />
       </ThreeCanvas>
     </AbsoluteFill>
   );

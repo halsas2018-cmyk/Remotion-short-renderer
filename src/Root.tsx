@@ -6,6 +6,8 @@ import { VersusCard } from "./VersusCard";
 import { BeforeAfter } from "./BeforeAfter";
 import { PlainText } from "./PlainText";
 import { IconText } from "./IconText";
+import { ProgressMeter } from "./ProgressMeter";
+import { Timeline } from "./Timeline";
 import timedBeats from "./sample-timed-beats.json";
 
 interface TimedBeatsData {
@@ -151,6 +153,94 @@ export const RemotionRoot = () => (
         text: "Broadcom only guarantees part of the loan",
         emphasisWords: ["guarantees", "part"],
         durationInFrames: 150,
+      }}
+    />
+    <Composition
+      id="ProgressMeterTest"
+      component={ProgressMeter}
+      durationInFrames={120}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        value: 70000000000,
+        maxValue: 100000000000,
+        label: "Funding Secured",
+      }}
+    />
+    <Composition
+      id="ProgressMeterLongLabelTest"
+      component={ProgressMeter}
+      durationInFrames={120}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        value: 50000000000,
+        maxValue: 100000000000,
+        label: "Quarterly Revenue Target",
+      }}
+    />
+    <Composition
+      id="TimelineTest"
+      component={Timeline}
+      durationInFrames={120}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+        ],
+      }}
+    />
+    <Composition
+      id="Timeline3EventsTest"
+      component={Timeline}
+      durationInFrames={150}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+        ],
+      }}
+    />
+    <Composition
+      id="Timeline4EventsTest"
+      component={Timeline}
+      durationInFrames={180}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+          { marker: "2032", label: "AI chip market matures" },
+        ],
+      }}
+    />
+    <Composition
+      id="Timeline5EventsTest"
+      component={Timeline}
+      durationInFrames={210}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{
+        events: [
+          { marker: "2024", label: "Meta raised $27B" },
+          { marker: "2025", label: "AI infrastructure boom begins" },
+          { marker: "2026", label: "Broadcom acquires VMware" },
+          { marker: "2029", label: "Exposure could hit $370B" },
+          { marker: "2032", label: "AI chip market matures" },
+        ],
       }}
     />
     <Composition

@@ -96,6 +96,8 @@ output/
 | `PlainText` | ✅ **COMPLETE** | `plain_text` | Line-by-line reveal (4-5 words/line), star bullets, glow, slider border |
 | `IconText` | ✅ **COMPLETE** | `icon_text` | Lottie icon + wrapped text, word-by-word reveal, rough-notation highlights, card bounce, slider border |
 | `ChartCounter` | ✅ **COMPLETE** | `chart_counter` | Animated number count-up, label reveal, slider border, shimmer, glow |
+| `ChartComparison3D` | ✅ **COMPLETE** | `chart_comparison_3d` | 3D bar chart with CSS perspective, extruded bars, shimmer, slider border |
+| `Map3D` | ✅ **COMPLETE** | `map_3d` | Stylized 3D map with CSS perspective, extruded buildings, animated pin drop, slider border |
 | `ChartComparison` | ⏳ TODO | `chart_comparison` | |
 | `ChartLine` | ⏳ TODO | `chart_line` | |
 | `KineticCaptions` | ⏳ TODO | `kinetic_captions` | |
@@ -471,6 +473,8 @@ my-video/
 │   ├── PlainText.tsx        # ✅ Complete
 │   ├── IconText.tsx         # ✅ Complete (Lottie + Lucide fallback, text wrapping, bounce)
 │   ├── ChartCounter.tsx     # ✅ Complete
+│   ├── ChartComparison3D.tsx # ✅ Complete
+│   ├── Map3D.tsx            # ✅ Complete
 │   ├── ChartComparison.tsx
 │   ├── ChartLine.tsx
 │   ├── KineticCaptions.tsx

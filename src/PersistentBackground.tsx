@@ -87,4 +87,8 @@ export const BackgroundTestComposition: React.FC = () => (
     component={PersistentBackground}
     durationInFrames={180}
     fps={30}
-    width
+    width={1080}
+    height={1920}
+    defaultProps={{}}
+  />
+);

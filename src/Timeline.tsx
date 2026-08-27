@@ -146,8 +146,10 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Marker center Y position (above the center line)
   const markerCenterY = `calc(50% - ${labelOffset + markerRadius}px)`;
-  // Description card top position (below the marker) - moved down more
-  const descCardTop = `calc(50% - ${labelOffset + markerRadius}px + ${markerRadius * 2 + 32}px)`;
+  // Description card top position (below the vertical line, not below the marker)
+  // The vertical line goes from center line up to marker. We want the card to start
+  // directly below the vertical line, i.e., at the center line (50%).
+  const descCardTop = `calc(50% + ${markerRadius * 2 + 32}px)`;
 
   return (
     <AbsoluteFill
@@ -277,7 +279,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </span>
                   </div>
 
-                  {/* Event description below marker - elevated card, centered under marker, constrained to screen */}
+                  {/* Event description below vertical line - elevated card, centered under marker, constrained to screen */}
                   <div
                     style={{
                       position: "absolute",

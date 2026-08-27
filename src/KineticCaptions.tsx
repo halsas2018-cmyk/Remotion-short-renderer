@@ -50,8 +50,8 @@ const CONFIG = {
   pastWordOpacity: 0.6,
   pastWordColor: "#4a4a4a",
 
-  // Layout - bottom of screen
-  bottomMargin: 180,
+  // Layout - moved up to 1/3 of screen height
+  bottomMargin: "33vh",
   maxWidth: "90%",
   paddingHorizontal: 80,
 

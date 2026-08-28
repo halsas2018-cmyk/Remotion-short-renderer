@@ -101,11 +101,13 @@ export const PersistentBackground: React.FC = () => {
   // across the whole video instead of resetting every beat.
   const frame = useCurrentFrame();
 
-  // More cubes — denser grid
-  const cols = 8;
-  const rows = 14;
-  const xSpacing = 0.55;
-  const ySpacing = 0.55;
+  // Halved grid: 6 cols x 10 rows = 60 main + 5x9 = 45 intersection = 105 total.
+  // Spacing is increased to keep visual coverage roughly the same as the
+  // previous 8x14 layout.
+  const cols = 6;
+  const rows = 10;
+  const xSpacing = 0.7;
+  const ySpacing = 0.7;
   const xStart = -((cols - 1) / 2) * xSpacing;
   const yStart = -((rows - 1) / 2) * ySpacing;
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import {
   AbsoluteFill,
   Audio,
@@ -9,6 +9,31 @@ import {
 import { Beat, TimedBeats } from "./beats/types";
 import { RenderBeat } from "./beats/renderBeat";
 import type { Word } from "./beats/words";
+
+/* ------------------------------------------------------------------ */
+/*  Beat context                                                      */
+/*  KineticCaptions imports `useBeatContext` from this module.        */
+/*  When a beat is mounted via <RenderBeat>, it provides this context  */
+/*  with the current beat's type and words so KineticCaptions can     */
+/*  filter captions to the active beat. Outside of a beat (e.g. in   */
+/*  *Test compositions), the hook returns null values.                */
+/* ------------------------------------------------------------------ */
+
+export type BeatContextValue = {
+  currentBeatType: string | null;
+  currentBeatText: string | null;
+  currentWords: Word[];
+};
+
+const defaultBeatContext: BeatContextValue = {
+  currentBeatType: null,
+  currentBeatText: null,
+  currentWords: [],
+};
+
+const BeatContext = createContext<BeatContextValue>(defaultBeatContext);
+
+export const useBeatContext = (): BeatContextValue => useContext(BeatContext);
 
 /* ------------------------------------------------------------------ */
 /*  Props for the orchestrator                                         */

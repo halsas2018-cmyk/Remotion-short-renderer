@@ -5,6 +5,7 @@ import {
   useVideoConfig,
   interpolate,
 } from "remotion";
+import { Logo } from "./Logo";
 
 /* ------------------------------------------------------------------ */
 /*  Tuning constants                                                  */
@@ -165,6 +166,9 @@ export const PersistentBackground: React.FC = () => {
         frame={frame}
         periodFrames={120}
       />
+
+      {/* 3D orange S-NEWS voxel logo (re-added at the user's request) */}
+      <Logo size={1} />
     </AbsoluteFill>
   );
 };

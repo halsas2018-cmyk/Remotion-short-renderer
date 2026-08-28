@@ -98,12 +98,12 @@ Components are located in `src/` and follow these conventions:
 - Uses `Interactive.Div` for Studio editability
 
 ### Best Practices
-1. **Animation**: Use `useCurrentFrame()` + `interpolate()` — no CSS transitions
+1. **Animation**: Use `useCurrentFrame()` + `interpolate()` with `Easing.bezier` / `Easing.spring` for timing — no CSS transitions
 2. **Timing**: Keep `interpolate()` calls inline in style props for Studio interactivity
 3. **Transforms**: Use individual CSS properties (`scale`, `translate`, `rotate`) over `transform` strings
 4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
 5. **Assets**: Place in `public/` folder, reference with `staticFile()`
-6. **Transitions**: Use `SceneTransition` component for entrance/exit animations between beats
+6. **Transitions**: Use `<TransitionSeries>` + `fade()` (from `@remotion/transitions`) for cross-fades between beats. Use `SceneTransition` for per-beat entrance/exit.
 
 ### Running the Renderer
 ```bash
@@ -125,17 +125,17 @@ beats.json (Phase 1 output)
   ↓
 MotionGraphicsVideo.tsx (orchestrator)
   ↓
-calculateMetadata (dynamic duration)
+calculateMetadata (dynamic duration; subtracts transition frames)
   ↓
-RenderBeat per beat (hard-coded <Sequence>)
+<TransitionSeries> (per-beat <Sequence> with cross-fade between)
   ↓
   adaptMetadata() (Python shape → component shape)
   ↓
   validateBeatMetadata() (Zod)
   ↓
-  PersistentBackground (behind)
+  PersistentBackground (root, behind everything)
   ↓
-  SceneTransition (entrance/exit)
+  SceneTransition (per-beat entrance/exit with Easing.bezier)
   ↓
   Beat component (KeyStatement, ChartLine, etc.) [from registry]
   ↓
@@ -155,7 +155,7 @@ src/
 │   ├── types.ts                      # Beat type definitions ✅ DONE
 │   ├── words.ts                      # Word timestamp type ✅ DONE
 │   └── beats.json                    # Phase 1 output (currently src/beats/beats.json)
-├── SceneTransition.tsx               # Entrance/exit wrapper ✅ DONE
+├── SceneTransition.tsx               # Per-beat entrance/exit with Easing.bezier ✅ DONE
 ├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
 ├── components/
@@ -174,10 +174,12 @@ src/
 ├── audio/
 │   ├── BeatKineticCaptions.tsx       # Per-beat wrapper ✅ DONE
 │   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
+├── lib/
+│   ├── totalDuration.ts              # Sums beat durations
+│   └── transitionDuration.ts         # Dynamic cross-fade frames ✅ NEW
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
-└── lib/
-    └── totalDuration.ts              # Sums beat durations
+└── …
 ```
 
 ### Step 1: Beat Type System (`src/beats/types.ts`) — ✅ DONE (commit 78e3f69)
@@ -217,16 +219,17 @@ Maps each `BeatType` to:
 ### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`) — ✅ DONE
 - Root composition: `MotionGraphicsVideo`
 - Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />`
-- Maps over `beats.beats` (data array) and produces one `<RenderBeat>` per beat
-- Each beat is a single authored `<Sequence>` (the JSX tree inside `RenderBeat` is hardcoded, so durations stay editable in Studio per the Remotion video-editing rule)
-- `calculateMetadata` reads `props.beats` and returns `durationInFrames = lastBeat.startFrame + lastBeat.durationInFrames` so the composition auto-resizes when `beats.json` changes
-- White background; `PersistentBackground` per-beat composes on top
+- Wraps `PersistentBackground` once at the root (so its frame counter is global)
+- Renders beats inside a single `<TransitionSeries>` (see Step 4) with a `<TransitionSeries.Transition presentation={fade()} />` between every adjacent pair
+- `calculateMetadata` returns `sum(beatDurations) - sum(transitionFrames)` so the composition auto-resizes when `beats.json` changes (see Step 4b for the duration math)
+- White background
 
 ### Step 4: Render a Single Beat (`src/beats/renderBeat.tsx`) — ✅ DONE
-Each beat's `<Sequence>` contains three layers, in z-order:
-1. `<PersistentBackground />` (logo + 2D scrolling grid) — drawn behind
-2. `<SceneTransition>` → `<BeatComponent {...validatedMetadata} durationInFrames={...} />` — the typed component from the registry
-3. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} />` — per-beat word-sync caption overlay, **only rendered for data-vis beat types** (see below)
+Each beat is wrapped in `<TransitionSeries.Sequence durationInFrames={...}>`. The cross-fade between adjacent sequences is rendered by `<TransitionSeries.Transition presentation={fade()} timing={linearTiming({...})} />` (in the orchestrator, see Step 4b).
+
+Inside each `<TransitionSeries.Sequence>`:
+1. `<SceneTransition>` → `<BeatComponent {...validatedMetadata} durationInFrames={...} />` — the typed component from the registry
+2. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} />` — per-beat word-sync caption overlay, **only rendered for data-vis beat types** (see below)
 
 **Per-beat word slicing:** The orchestrator filters `allWords` to `[startFrame/fps, (startFrame + durationInFrames)/fps]` so captions stay in sync with the current beat.
 
@@ -268,12 +271,48 @@ const showCaptions = shouldShowKineticCaptions(beat.type);
 - `process_flow`: `["a", "b"]` → `[{marker: "1", label: "a"}, ...]` (Timeline fallback)
 - all others: pass through
 
+### Step 4b: Dynamic Cross-Fade Between Beats — ✅ DONE
+Adjacent beats are joined with `<TransitionSeries.Transition presentation={fade()} />` (from `@remotion/transitions/fade`). The transition **duration** is computed dynamically per pair, so short beats get a short cross-fade and long beats don't drag through a long one.
+
+**Helper: `src/lib/transitionDuration.ts`**
+
+```ts
+export const TRANSITION_PCT = 0.15;
+export const TRANSITION_MIN_FRAMES = 4;
+export const TRANSITION_MAX_FRAMES = 15;
+
+export const computeTransitionFrames = (
+  outgoingDurationInFrames: number,
+  incomingDurationInFrames: number,
+): number => {
+  const shorter = Math.min(outgoingDurationInFrames, incomingDurationInFrames);
+  const pctBased = Math.round(TRANSITION_PCT * shorter);
+  return Math.max(
+    TRANSITION_MIN_FRAMES,
+    Math.min(TRANSITION_MAX_FRAMES, pctBased),
+  );
+};
+```
+
+Formula: `transitionFrames = clamp(round(0.15 * min(out, in)), 4, 15)`. The shorter side is the bottleneck (you can't cross-fade longer than the shorter side has idle time), and the `[4, 15]` clamp keeps very short beats visible and very long beats snappy (≤0.5s at 30 fps).
+
+**Composition duration:** `calculateMetadata` uses the same helper to compute the total:
+
+```ts
+total = sum(beatDurations) - sum(transitionFrames[i] for i in 0..n-2)
+```
+
+`computeTransitionFrames` is the single source of truth — both the orchestrator and `calculateMetadata` call it so the rendered timeline and the declared total duration are guaranteed to match.
+
+**Studio editability trade-off:** `<TransitionSeries.Sequence>` supports `durationInFrames` but NOT `from`. Beat ordering is therefore determined by array order in `beats.json`, not by per-beat `startFrame` (which the Python pipeline still emits for reference but the orchestrator now ignores). Cross-fade duration is also derived, not editable in Studio.
+
 ### Step 5: Dynamic Duration (`calculateMetadata`) — ✅ DONE
-Lives inside `src/MotionGraphicsVideo.tsx`. Reads `props.beats` and returns the last beat's `startFrame + durationInFrames`. Composition auto-resizes.
+Lives inside `src/MotionGraphicsVideo.tsx`. Sums beat durations and subtracts the sum of `computeTransitionFrames` per adjacent pair. Composition auto-resizes and stays in sync with the rendered timeline.
 
 ### Step 6: Scene Transitions (`src/SceneTransition.tsx`) — ✅ DONE
 - Wraps a beat's content in a `SceneTransitionContext` with `entranceProgress`, `exitProgress`, `idleProgress`, `overallProgress`, `isIdle`
 - Phase budgets: 18% entrance / 64% idle / 18% exit (tuned for 1.5s–4s beats)
+- **Easing**: `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) on entrance; `Easing.bezier(0.7, 0, 0.84, 0)` on exit; same entrance easing on the default `translateY` slide-up
 - Default wrapper behavior: gentle fade + slide-up entrance, fade exit
 - Children can read context via `useSceneTransition()` to layer their own animations
 - Default context (when used outside a `<SceneTransition>`) provides identity values so existing `*Test` compositions still work
@@ -298,10 +337,12 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 7. ~~Fix orchestrator prop mismatches (`adaptMetadata` + drop `text` prop)~~ ✅
 8. ~~Fix import path in `Root.tsx` (`./beats.json` → `./beats/beats.json`)~~ ✅
 9. ~~Gate `BeatKineticCaptions` to data-vis beat types only~~ ✅
-10. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+10. ~~Add `Easing.bezier` to `SceneTransition` entrance/exit~~ ✅
+11. ~~Switch orchestrator to `<TransitionSeries>` with dynamic cross-fade~~ ✅
+12. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
-1. **Per-beat `<Sequence>`** vs **`<TransitionSeries>`** — Using per-beat `<Sequence>` (cut-based, easier to edit in Studio). No cross-fade transitions between beats for now.
+1. **`<TransitionSeries>` for cross-fade + per-beat `<Sequence>` was replaced.** Now using `<TransitionSeries>` with `<TransitionSeries.Sequence>` and `<TransitionSeries.Transition presentation={fade()} />` between adjacent beats. Cross-fade duration is computed dynamically per pair. Trade-off: per-beat `from` is no longer editable in Studio (only `durationInFrames`).
 2. **Where to load `beats.json`?** — Build-time import in `Root.tsx` (chosen for now; runtime fetch can be added later via `calculateMetadata` if needed). File lives at `src/beats/beats.json`.
 3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
 4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.
@@ -312,6 +353,8 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
 10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption. The gate is centralized in `RenderBeat` via `CAPTION_VISIBLE_BEAT_TYPES` (see Step 4 for the code snippet).
 11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
+12. **Easing on per-beat entrance/exit** — `SceneTransition` uses `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) for entrance and `Easing.bezier(0.7, 0, 0.84, 0)` for exit. Same entrance easing on the default `translateY` slide-up.
+13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. Used by both the orchestrator and `calculateMetadata` as the single source of truth.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -328,4 +371,4 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
   ]
 }
 ```
-Total duration: **1143 frames @ 30fps = 38.1 seconds** (within YouTube Shorts' 60s cap).
+With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap).

@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import {
+  Easing,
+  useCurrentFrame,
+  useVideoConfig,
+  interpolate,
+} from "remotion";
 
 export type SceneTransitionContextValue = {
   isIdle: boolean;
@@ -37,6 +42,15 @@ const ENTRANCE_FRACTION = 0.18; // first 18% = entrance animation
 const EXIT_FRACTION = 0.18; // last 18% = exit animation
 // middle (~64%) is the idle hold, where the beat sits at rest
 
+/**
+ * Easing curves.
+ * - ENTRANCE_EASING: snappy "out" curve, matches the Remotion best-practice
+ *   `Easing.bezier(0.16, 1, 0.3, 1)` (the skill's default).
+ * - EXIT_EASING: gentle "in" curve, fades out smoothly.
+ */
+const ENTRANCE_EASING = Easing.bezier(0.16, 1, 0.3, 1);
+const EXIT_EASING = Easing.bezier(0.7, 0, 0.84, 0);
+
 type SceneTransitionProps = {
   children: React.ReactNode;
   /** Override the entrance phase budget (frames). If set, ENTRANCE_FRACTION is ignored. */
@@ -49,9 +63,9 @@ type SceneTransitionProps = {
  * Wraps a beat's content in entrance / idle / exit animation context.
  *
  * Children can use `useSceneTransition()` to read the four progress values
- * and `interpolate()` against them. Most existing components do not yet use
- * this hook, so the default behavior is a gentle opacity-driven entrance
- * + exit baked into the wrapper itself.
+ * and `interpolate()` against them. The default wrapper behavior is a
+ * gentle opacity-driven entrance (fade + slide-up) and exit (fade),
+ * with Easing.bezier timing for a snappier feel.
  */
 export const SceneTransition: React.FC<SceneTransitionProps> = ({
   children,
@@ -70,19 +84,26 @@ export const SceneTransition: React.FC<SceneTransitionProps> = ({
       frame,
       [0, Math.max(1, entranceDuration)],
       [0, 1],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: ENTRANCE_EASING,
+      },
     );
 
     const exitProgress = interpolate(
       frame,
       [exitStart, Math.max(exitStart + 1, durationInFrames)],
       [0, 1],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: EXIT_EASING,
+      },
     );
 
     const idleStart = entranceDuration;
     const idleEnd = exitStart;
-    const idleDuration = Math.max(1, idleEnd - idleStart);
     const idleProgress = interpolate(
       frame,
       [idleStart, idleEnd],
@@ -107,7 +128,7 @@ export const SceneTransition: React.FC<SceneTransitionProps> = ({
       idleProgress,
       overallProgress,
     };
-  }, [frame, durationInFrames, entranceDuration, exitStart, exitFrames]);
+  }, [frame, durationInFrames, entranceDuration, exitStart]);
 
   // Default wrapper behavior: a gentle entrance (fade + slide-up) and exit (fade).
   // Children that read useSceneTransition() can layer their own animations on top.
@@ -116,7 +137,11 @@ export const SceneTransition: React.FC<SceneTransitionProps> = ({
     value.entranceProgress,
     [0, 1],
     [24, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: ENTRANCE_EASING,
+    },
   );
 
   return (

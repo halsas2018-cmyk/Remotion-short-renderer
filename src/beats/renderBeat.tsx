@@ -1,5 +1,5 @@
 import React from "react";
-import { Sequence } from "remotion";
+import { TransitionSeries } from "@remotion/transitions";
 import { Beat } from "./types";
 import { SceneTransition } from "../SceneTransition";
 import { BeatKineticCaptions } from "../audio/BeatKineticCaptions";
@@ -36,13 +36,23 @@ const shouldShowKineticCaptions = (beatType: string): boolean =>
   CAPTION_VISIBLE_BEAT_TYPES.has(beatType);
 
 /**
- * Render a single beat as a hard-coded <Sequence>.
+ * Render a single beat as a <TransitionSeries.Sequence>.
+ *
+ * Inside the orchestrator, beats are arranged in a <TransitionSeries>
+ * with a <fade()> cross-fade between each pair of adjacent beats (see
+ * src/MotionGraphicsVideo.tsx). Each beat is therefore wrapped in a
+ * <TransitionSeries.Sequence> with a `durationInFrames` prop.
  *
  * Per Remotion best practices, each beat is its own authored JSX node
- * (not generated via .map()) so its `from` and `durationInFrames` are
+ * (not generated via .map() of JSX) so its `durationInFrames` is
  * editable in Studio.
  *
- * Each beat's <Sequence> contains:
+ * NOTE: <TransitionSeries.Sequence> does NOT support a `from` prop —
+ * beat ordering is determined by array order in beats.json, not by
+ * per-beat `startFrame`. The Python pipeline still emits `startFrame`
+ * for reference, but the orchestrator ignores it.
+ *
+ * Each <TransitionSeries.Sequence> contains:
  *   - <SceneTransition>                  (entrance/exit wrapper)
  *     -> <BeatComponent {...props} />   (the typed component)
  *   - <BeatKineticCaptions />            (per-beat word-sync overlay;
@@ -77,12 +87,10 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
     >;
   } catch (err) {
     return (
-      <Sequence
+      <TransitionSeries.Sequence
         key={`beat-${beatIndex}`}
-        from={beat.startFrame}
         durationInFrames={beat.durationInFrames}
         name={`Beat ${beatIndex} (invalid)`}
-        layout="absolute-fill"
       >
         <SceneTransition>
           <InvalidBeatMessage
@@ -91,7 +99,7 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
             error={err instanceof Error ? err.message : String(err)}
           />
         </SceneTransition>
-      </Sequence>
+      </TransitionSeries.Sequence>
     );
   }
 
@@ -104,17 +112,15 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
 
   if (!BeatComponent || !isBeatTypeSupported(beat.type)) {
     return (
-      <Sequence
+      <TransitionSeries.Sequence
         key={`beat-${beatIndex}`}
-        from={beat.startFrame}
         durationInFrames={beat.durationInFrames}
         name={`Beat ${beatIndex} (unsupported)`}
-        layout="absolute-fill"
       >
         <SceneTransition>
           <UnsupportedBeatMessage beatType={beat.type} text={beat.text} />
         </SceneTransition>
-      </Sequence>
+      </TransitionSeries.Sequence>
     );
   }
 
@@ -130,12 +136,10 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
   const showCaptions = shouldShowKineticCaptions(beat.type);
 
   return (
-    <Sequence
+    <TransitionSeries.Sequence
       key={`beat-${beatIndex}`}
-      from={beat.startFrame}
       durationInFrames={beat.durationInFrames}
       name={`Beat ${beatIndex}: ${beat.type}`}
-      layout="absolute-fill"
     >
       <SceneTransition>
         <BeatComponent
@@ -152,7 +156,7 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
           beatType={beat.type}
         />
       ) : null}
-    </Sequence>
+    </TransitionSeries.Sequence>
   );
 };
 

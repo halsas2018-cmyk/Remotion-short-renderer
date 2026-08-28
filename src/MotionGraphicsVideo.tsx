@@ -10,6 +10,9 @@ import { Beat, TimedBeats } from "./beats/types";
 import { RenderBeat } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
 import type { Word } from "./beats/words";
+import { TransitionSeries, linearTiming } from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
+import { computeTransitionFrames } from "./lib/transitionDuration";
 
 /* ------------------------------------------------------------------ */
 /*  Beat context                                                      */
@@ -51,6 +54,11 @@ export type MotionGraphicsVideoProps = {
 
 /* ------------------------------------------------------------------ */
 /*  The composition itself                                            */
+/*                                                                     */
+/*  Beats are arranged in a <TransitionSeries> with a <fade()> cross-  */
+/*  fade between each pair of adjacent beats. The transition duration */
+/*  is computed dynamically as a percentage of the shorter adjacent   */
+/*  beat (see src/lib/transitionDuration.ts).                         */
 /* ------------------------------------------------------------------ */
 
 export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
@@ -59,6 +67,8 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
   narrationSrc,
 }) => {
   const { fps } = useVideoConfig();
+
+  const allBeats = beats.beats as Beat[];
 
   return (
     <AbsoluteFill
@@ -69,10 +79,10 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
     >
       {/*
         PersistentBackground is mounted ONCE at the root, OUTSIDE any
-        <Sequence>. This means `useCurrentFrame()` inside it returns
-        the global composition frame, so the background animates
-        continuously across all beats instead of restarting at 0
-        every time a new beat starts.
+        <Sequence>/<TransitionSeries>. This means `useCurrentFrame()`
+        inside it returns the global composition frame, so the background
+        animates continuously across all beats (and through cross-fades)
+        instead of restarting at 0 every time a new beat starts.
       */}
       <PersistentBackground />
 
@@ -87,41 +97,78 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
       {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
 
       {/*
-        Render each beat as a hard-coded <Sequence>. Each <Sequence>
-        is its own JSX node (per the Remotion video-editing rule) so
-        its `from` and `durationInFrames` are editable in Studio.
+        Render beats as alternating <TransitionSeries.Sequence> and
+        <TransitionSeries.Transition> children. The .map() indexes
+        the data; the JSX tree is authored so each beat's
+        durationInFrames is editable in Studio (per the Remotion
+        video-editing rule).
 
-        The .map() iterates over the *data* (beats.beats), not over
-        the JSX tree. The JSX tree per beat is hardcoded inside
-        <RenderBeat>, so each beat is fully editable in Studio.
+        NOTE: <TransitionSeries.Sequence> does NOT support a `from`
+        prop — only `durationInFrames`. Beat ordering is therefore
+        determined by array order in beats.json, not by per-beat
+        `startFrame`. `calculateMetadata` derives the composition
+        duration from sum(beatDurations) - sum(transitionFrames).
       */}
-      {beats.beats.map((beat, index) => (
-        <RenderBeat
-          key={`beat-${index}`}
-          beat={beat as Beat}
-          allWords={words}
-          beatIndex={index}
-          fps={fps}
-        />
-      ))}
+      <TransitionSeries>
+        {allBeats.map((beat, index) => {
+          const next = allBeats[index + 1];
+          const isLast = !next;
+
+          return (
+            <React.Fragment key={`beat-${index}`}>
+              <RenderBeat
+                beat={beat}
+                allWords={words}
+                beatIndex={index}
+                fps={fps}
+              />
+              {!isLast ? (
+                <TransitionSeries.Transition
+                  presentation={fade()}
+                  timing={linearTiming({
+                    durationInFrames: computeTransitionFrames(
+                      beat.durationInFrames,
+                      next.durationInFrames,
+                    ),
+                  })}
+                />
+              ) : null}
+            </React.Fragment>
+          );
+        })}
+      </TransitionSeries>
     </AbsoluteFill>
   );
 };
 
 /* ------------------------------------------------------------------ */
 /*  Dynamic duration via calculateMetadata                             */
+/*                                                                     */
+/*  totalDuration = sum(beatDurations) - sum(transitionFrames)         */
+/*  The transition frames must match what the orchestrator renders,   */
+/*  so we use the SAME computeTransitionFrames() helper.               */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<
   MotionGraphicsVideoProps
 > = ({ props }) => {
-  if (!props.beats || props.beats.beats.length === 0) {
+  const allBeats = (props.beats?.beats ?? []) as Beat[];
+  if (allBeats.length === 0) {
     return { durationInFrames: 1 };
   }
 
-  const lastBeat = props.beats.beats[props.beats.beats.length - 1];
-  const total =
-    (lastBeat as Beat).startFrame + (lastBeat as Beat).durationInFrames;
+  const sumDurations = allBeats.reduce(
+    (acc, b) => acc + b.durationInFrames,
+    0,
+  );
 
-  return { durationInFrames: total };
+  let sumTransitions = 0;
+  for (let i = 0; i < allBeats.length - 1; i++) {
+    sumTransitions += computeTransitionFrames(
+      allBeats[i].durationInFrames,
+      allBeats[i + 1].durationInFrames,
+    );
+  }
+
+  return { durationInFrames: Math.max(1, sumDurations - sumTransitions) };
 };

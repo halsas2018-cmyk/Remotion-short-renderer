@@ -14,3 +14,17 @@ import { Config } from "@remotion/cli/config";
  * `"desktop"` (or remove the call entirely) for much faster renders.
  */
 Config.setChromiumOpenGlRenderer("angle");
+
+/**
+ * Increase the per-frame delayRender timeout from the default 28s to 2 minutes.
+ *
+ * Software WebGL (SwiftShader) on CPU is significantly slower than hardware
+ * WebGL. The first frame in particular can take a while to compile shaders
+ * and upload geometry. 28s is not enough margin for a 203-cube scene on CPU.
+ *
+ * 2 minutes (120_000 ms) is plenty for any frame in this project.
+ *
+ * If you ever switch to hardware WebGL (Config.setChromiumOpenGlRenderer("desktop")
+ * on a machine with a GPU), you can lower this back to 28_000.
+ */
+Config.setDelayRenderTimeoutInMilliseconds(120_000);

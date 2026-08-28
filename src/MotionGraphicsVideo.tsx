@@ -1,11 +1,11 @@
 import React, { createContext, useContext } from "react";
 import {
   AbsoluteFill,
-  Audio,
   CalculateMetadataFunction,
   staticFile,
   useVideoConfig,
 } from "remotion";
+import { Audio } from "@remotion/media";
 import { Beat, TimedBeats } from "./beats/types";
 import { RenderBeat } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
@@ -78,7 +78,11 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
       {/*
         Narration plays once for the whole composition. Mounted at the
-        root so it isn't re-mounted per beat.
+        root so it isn't re-mounted per beat. Uses <Audio> from
+        @remotion/media — this works in BOTH server-side rendering
+        (the default `npx remotion render`) AND client-side rendering
+        (e.g. <Player> / web-renderer), unlike <Audio> from `remotion`
+        which becomes <Html5Audio> and is unsupported client-side.
       */}
       {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
 

@@ -91,6 +91,47 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
   const allBeats = beats.beats as Beat[];
 
+  // Build a flat list of <TransitionSeries.Sequence /> and
+  // <TransitionSeries.Transition /> children. <TransitionSeries> does
+  // NOT allow wrappers (Fragments, divs, etc.) between its direct
+  // children — it inspects each child and throws on anything that
+  // isn't a Sequence / Transition / Overlay. We therefore iterate
+  // over each beat and push the Sequence plus the (optional) following
+  // Transition into a flat array, which is what we render as the
+  // direct children of <TransitionSeries>. React supports array
+  // children, and the parent flattens them into <TransitionSeries>'s
+  // direct children list.
+  const sequenceAndTransition: React.ReactNode[] = [];
+  allBeats.forEach((beat, index) => {
+    const next = allBeats[index + 1];
+    const isLast = !next;
+    sequenceAndTransition.push(
+      <RenderBeat
+        key={`beat-${index}`}
+        beat={beat}
+        allWords={words}
+        beatIndex={index}
+        fps={fps}
+      />,
+    );
+    if (!isLast) {
+      sequenceAndTransition.push(
+        <TransitionSeries.Transition
+          key={`transition-${index}`}
+          presentation={fade()}
+          timing={linearTiming({
+            durationInFrames: computeTransitionFrames(
+              beat.durationInFrames,
+              next.durationInFrames,
+            ),
+          })}
+        >
+          <Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} />
+        </TransitionSeries.Transition>,
+      );
+    }
+  });
+
   return (
     <AbsoluteFill
       style={{
@@ -146,11 +187,10 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
       />
 
       {/*
-        Render beats as alternating <TransitionSeries.Sequence> and
-        <TransitionSeries.Transition> children. The .map() indexes
-        the data; the JSX tree is authored so each beat's
-        durationInFrames is editable in Studio (per the Remotion
-        video-editing rule).
+        Render beats as a flat list of <TransitionSeries.Sequence> and
+        <TransitionSeries.Transition> children. The list is built in
+        the .forEach() above so each beat's `durationInFrames` is
+        editable in Studio (per the Remotion video-editing rule).
 
         NOTE: <TransitionSeries.Sequence> does NOT support a `from`
         prop — only `durationInFrames`. Beat ordering is therefore
@@ -164,39 +204,7 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         last transition's tail is the final beat's exit — also marked
         with a whoosh for symmetry.
       */}
-      <TransitionSeries>
-        {allBeats.map((beat, index) => {
-          const next = allBeats[index + 1];
-          const isLast = !next;
-
-          return (
-            <React.Fragment key={`beat-${index}`}>
-              <RenderBeat
-                beat={beat}
-                allWords={words}
-                beatIndex={index}
-                fps={fps}
-              />
-              {!isLast ? (
-                <TransitionSeries.Transition
-                  presentation={fade()}
-                  timing={linearTiming({
-                    durationInFrames: computeTransitionFrames(
-                      beat.durationInFrames,
-                      next.durationInFrames,
-                    ),
-                  })}
-                >
-                  <Audio
-                    src={TRANSITION_SFX_URL}
-                    volume={TRANSITION_SFX_VOLUME}
-                  />
-                </TransitionSeries.Transition>
-              ) : null}
-            </React.Fragment>
-          );
-        })}
-      </TransitionSeries>
+      <TransitionSeries>{sequenceAndTransition}</TransitionSeries>
     </AbsoluteFill>
   );
 };

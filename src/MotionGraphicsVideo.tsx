@@ -61,7 +61,12 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "white" }}>
+    <AbsoluteFill
+      style={{
+        backgroundColor: "white",
+        translate: "0px 38.8px",
+      }}
+    >
       {/*
         PersistentBackground is mounted ONCE at the root, OUTSIDE any
         <Sequence>. This means `useCurrentFrame()` inside it returns

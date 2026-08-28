@@ -18,7 +18,7 @@ const SmallCuboid: React.FC<{
 
   return (
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
-      <boxGeometry args={[0.6, 0.6, 0.6]} />
+      <boxGeometry args={[0.4, 0.4, 0.4]} />
       <meshStandardMaterial
         color={color}
         emissive={color}
@@ -45,9 +45,24 @@ export const PersistentBackground: React.FC = () => {
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
 
-        {/* Small cuboid in upper right corner (camera-space units: +Y is up) */}
+        {/* Small cuboids in all four corners (camera-space units: +Y is up) */}
         <SmallCuboid
-          position={[1.7, 3.2, 0]}
+          position={[1.75, 3.4, 0]}
+          color="#3b82f6"
+          frame={frame}
+        />
+        <SmallCuboid
+          position={[-1.75, 3.4, 0]}
+          color="#3b82f6"
+          frame={frame}
+        />
+        <SmallCuboid
+          position={[1.75, -3.4, 0]}
+          color="#3b82f6"
+          frame={frame}
+        />
+        <SmallCuboid
+          position={[-1.75, -3.4, 0]}
           color="#3b82f6"
           frame={frame}
         />

@@ -18,7 +18,7 @@ const SmallCuboid: React.FC<{
 
   return (
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
-      <boxGeometry args={[0.4, 0.4, 0.4]} />
+      <boxGeometry args={[0.25, 0.25, 0.25]} />
       <meshStandardMaterial
         color={color}
         emissive={color}
@@ -32,6 +32,30 @@ export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
   const frame = useCurrentFrame();
 
+  // Grid of cuboids filling the screen (camera-space units: +Y is up)
+  const cols = 5;
+  const rows = 9;
+  const xSpacing = 0.85;
+  const ySpacing = 0.85;
+  const xStart = -((cols - 1) / 2) * xSpacing;
+  const yStart = -((rows - 1) / 2) * ySpacing;
+
+  const cuboids: React.ReactElement[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = xStart + col * xSpacing;
+      const y = yStart + row * ySpacing;
+      cuboids.push(
+        <SmallCuboid
+          key={`${row}-${col}`}
+          position={[x, y, 0]}
+          color="#3b82f6"
+          frame={frame}
+        />,
+      );
+    }
+  }
+
   return (
     <AbsoluteFill
       style={{
@@ -44,28 +68,7 @@ export const PersistentBackground: React.FC = () => {
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
-
-        {/* Small cuboids in all four corners (camera-space units: +Y is up) */}
-        <SmallCuboid
-          position={[1.75, 3.4, 0]}
-          color="#3b82f6"
-          frame={frame}
-        />
-        <SmallCuboid
-          position={[-1.75, 3.4, 0]}
-          color="#3b82f6"
-          frame={frame}
-        />
-        <SmallCuboid
-          position={[1.75, -3.4, 0]}
-          color="#3b82f6"
-          frame={frame}
-        />
-        <SmallCuboid
-          position={[-1.75, -3.4, 0]}
-          color="#3b82f6"
-          frame={frame}
-        />
+        {cuboids}
       </ThreeCanvas>
     </AbsoluteFill>
   );

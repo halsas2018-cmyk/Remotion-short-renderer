@@ -13,8 +13,14 @@ import { Map3D } from "./Map3D";
 import { ChartLine } from "./ChartLine";
 import { KineticCaptions } from "./KineticCaptions";
 import { PersistentBackground } from "./PersistentBackground";
+import {
+  MotionGraphicsVideo,
+  calculateMetadata,
+} from "./MotionGraphicsVideo";
+import type { Word } from "./beats/words";
+import type { TimedBeats } from "./beats/types";
 import timestampsData from "./timestamps.json";
-import timedBeats from "./sample-timed-beats.json";
+import timedBeats from "./beats.json";
 
 interface TimedBeatsData {
   fps: number;
@@ -24,6 +30,14 @@ interface TimedBeatsData {
 
 const beatsData = timedBeats as TimedBeatsData;
 const { fps, totalDurationInFrames } = beatsData;
+
+const words = timestampsData as unknown as Word[];
+
+const motionGraphicsProps = {
+  beats: timedBeats as TimedBeats,
+  words,
+  narrationSrc: "narration.mp3",
+};
 
 // Root component - returns all compositions in a fragment
 // This file should NOT call registerRoot()
@@ -388,14 +402,19 @@ export const RemotionRoot = () => (
       height={1920}
       defaultProps={{}}
     />
+    {/*
+      The full video. calculateMetadata reads props.beats and
+      overrides the static durationInFrames below.
+    */}
     <Composition
       id="MotionGraphicsVideo"
-      component={() => <div style={{ width: "100%", height: "100%", background: "#000", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>MotionGraphicsVideo - TODO</div>}
+      component={MotionGraphicsVideo}
       durationInFrames={totalDurationInFrames}
       fps={fps}
       width={1080}
       height={1920}
-      defaultProps={{}}
+      defaultProps={motionGraphicsProps}
+      calculateMetadata={calculateMetadata}
     />
   </>
 );

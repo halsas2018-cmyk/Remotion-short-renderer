@@ -1,157 +1,133 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 
-interface SceneTransitionContextValue {
+export type SceneTransitionContextValue = {
   isIdle: boolean;
-  entranceProgress: number;
-  exitProgress: number;
-  idleProgress: number;
-  overallProgress: number;
-}
-
-const SceneTransitionContext = createContext<SceneTransitionContextValue | null>(null);
-
-export const useSceneTransition = (): SceneTransitionContextValue => {
-  const context = useContext(SceneTransitionContext);
-  if (!context) {
-    throw new Error("useSceneTransition must be used within a SceneTransition provider");
-  }
-  return context;
+  entranceProgress: number; // 0 -> 1 during entrance
+  exitProgress: number; // 0 -> 1 during exit
+  idleProgress: number; // 0 -> 1 during idle hold
+  overallProgress: number; // 0 -> 1 across the whole beat
 };
 
-interface SceneTransitionProps {
-  durationInFrames: number;
-  exitDirection: "up" | "down" | "left" | "right";
-  entryDirection: "up" | "down" | "left" | "right";
+/**
+ * Default context — when a component is rendered outside a SceneTransition
+ * (e.g. a *Test composition in Studio), it gets identity values so it still
+ * works in isolation.
+ */
+const defaultContextValue: SceneTransitionContextValue = {
+  isIdle: true,
+  entranceProgress: 1,
+  exitProgress: 0,
+  idleProgress: 0,
+  overallProgress: 1,
+};
+
+const SceneTransitionContext = createContext<SceneTransitionContextValue>(
+  defaultContextValue,
+);
+
+export const useSceneTransition = (): SceneTransitionContextValue =>
+  useContext(SceneTransitionContext);
+
+/**
+ * Phase budgets (in % of the beat's duration).
+ * Tuned for short-form YouTube Shorts (1.5s - 4s beats).
+ */
+const ENTRANCE_FRACTION = 0.18; // first 18% = entrance animation
+const EXIT_FRACTION = 0.18; // last 18% = exit animation
+// middle (~64%) is the idle hold, where the beat sits at rest
+
+type SceneTransitionProps = {
   children: React.ReactNode;
-}
-
-const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const easeIn = Easing.bezier(0.7, 0, 0.84, 0);
-
-const DIRECTION_TRANSLATES: Record<"up" | "down" | "left" | "right", { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
+  /** Override the entrance phase budget (frames). If set, ENTRANCE_FRACTION is ignored. */
+  entranceFrames?: number;
+  /** Override the exit phase budget (frames). If set, EXIT_FRACTION is ignored. */
+  exitFrames?: number;
 };
 
+/**
+ * Wraps a beat's content in entrance / idle / exit animation context.
+ *
+ * Children can use `useSceneTransition()` to read the four progress values
+ * and `interpolate()` against them. Most existing components do not yet use
+ * this hook, so the default behavior is a gentle opacity-driven entrance
+ * + exit baked into the wrapper itself.
+ */
 export const SceneTransition: React.FC<SceneTransitionProps> = ({
-  durationInFrames,
-  exitDirection,
-  entryDirection,
   children,
+  entranceFrames,
+  exitFrames,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
 
-  // Phase calculations using percentages with clamping
-  const ENTRANCE_PCT = 0.15;
-  const EXIT_PCT = 0.15;
-  const MIN_PHASE_FRAMES = 8;
-  const MAX_PHASE_FRAMES = 15;
+  const entranceDuration = entranceFrames ?? Math.round(durationInFrames * ENTRANCE_FRACTION);
+  const exitDuration = exitFrames ?? Math.round(durationInFrames * EXIT_FRACTION);
+  const exitStart = Math.max(0, durationInFrames - exitDuration);
 
-  const entranceFrames = Math.min(MAX_PHASE_FRAMES, Math.max(MIN_PHASE_FRAMES, Math.round(durationInFrames * ENTRANCE_PCT)));
-  const exitFrames = Math.min(MAX_PHASE_FRAMES, Math.max(MIN_PHASE_FRAMES, Math.round(durationInFrames * EXIT_PCT)));
-  const exitStartFrame = durationInFrames - exitFrames;
+  const value = useMemo<SceneTransitionContextValue>(() => {
+    const entranceProgress = interpolate(
+      frame,
+      [0, Math.max(1, entranceDuration)],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
 
-  // Entrance progress (0 to 1)
-  const entranceProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+    const exitProgress = interpolate(
+      frame,
+      [exitStart, Math.max(exitStart + 1, durationInFrames)],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
 
-  // Exit progress (0 to 1)
-  const exitProgress = interpolate(frame, [exitStartFrame, durationInFrames], [0, 1], {
-    easing: easeIn,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+    const idleStart = entranceDuration;
+    const idleEnd = exitStart;
+    const idleDuration = Math.max(1, idleEnd - idleStart);
+    const idleProgress = interpolate(
+      frame,
+      [idleStart, idleEnd],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
 
-  // Overall progress (0 to 1) for reference
-  const overallProgress = frame / durationInFrames;
+    const overallProgress = interpolate(
+      frame,
+      [0, Math.max(1, durationInFrames - 1)],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
 
-  // Idle progress (0 to 1 during idle phase)
-  const idleProgress = interpolate(frame, [entranceFrames, exitStartFrame], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+    const isIdle =
+      frame >= entranceDuration && frame < exitStart;
 
-  // Phase detection
-  const isEntrance = frame < entranceFrames;
-  const isExit = frame > exitStartFrame;
-  const isIdle = !isEntrance && !isExit;
-
-  // Entrance transform: slide from entryDirection + fade in
-  const entryTranslate = DIRECTION_TRANSLATES[entryDirection];
-  const entranceTranslateX = interpolate(entranceProgress, [0, 1], [entryTranslate.x * 80, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceTranslateY = interpolate(entranceProgress, [0, 1], [entryTranslate.y * 80, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceScale = interpolate(entranceProgress, [0, 1], [0.9, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const entranceOpacity = entranceProgress;
-
-  // Exit transform: slide toward exitDirection + fade out
-  const exitTranslate = DIRECTION_TRANSLATES[exitDirection];
-  const exitTranslateX = interpolate(exitProgress, [0, 1], [0, exitTranslate.x * 80], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitTranslateY = interpolate(exitProgress, [0, 1], [0, exitTranslate.y * 80], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitScale = interpolate(exitProgress, [0, 1], [1, 0.9], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity = interpolate(exitProgress, [0, 1], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Combined transform values
-  const scale = isEntrance ? entranceScale : isExit ? exitScale : 1;
-  const opacity = isEntrance ? entranceOpacity : isExit ? exitOpacity : 1;
-  const translateX = isEntrance ? entranceTranslateX : isExit ? exitTranslateX : 0;
-  const translateY = isEntrance ? entranceTranslateY : isExit ? exitTranslateY : 0;
-
-  // Context value for children
-  const contextValue = useMemo<SceneTransitionContextValue>(
-    () => ({
+    return {
       isIdle,
       entranceProgress,
       exitProgress,
       idleProgress,
       overallProgress,
-    }),
-    [isIdle, entranceProgress, exitProgress, idleProgress, overallProgress]
+    };
+  }, [frame, durationInFrames, entranceDuration, exitStart, exitFrames]);
+
+  // Default wrapper behavior: a gentle entrance (fade + slide-up) and exit (fade).
+  // Children that read useSceneTransition() can layer their own animations on top.
+  const opacity = value.entranceProgress * (1 - value.exitProgress);
+  const translateY = interpolate(
+    value.entranceProgress,
+    [0, 1],
+    [24, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
   return (
-    <SceneTransitionContext.Provider value={contextValue}>
+    <SceneTransitionContext.Provider value={value}>
       <div
         style={{
-          transform: [
-            { scale },
-            { translateX },
-            { translateY },
-          ],
-          opacity,
-          transformOrigin: "center",
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          inset: 0,
+          opacity,
+          translate: `0 ${translateY}px`,
+          pointerEvents: "none",
         }}
       >
         {children}

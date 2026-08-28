@@ -25,7 +25,7 @@ import type { Word } from "./words";
  *   - <BeatKineticCaptions />                 (per-beat word-sync overlay)
  */
 type RenderBeatProps = {
-  beat: Beat & { text: string };
+  beat: Beat;
   allWords: Word[];
   beatIndex: number;
   fps: number;
@@ -37,20 +37,15 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
   beatIndex,
   fps,
 }) => {
-  // 0) Per-type metadata adapter. The Python pipeline emits
-  //    a *minimal* shape (e.g. `left: "..."` for versus) but the
-  //    existing components expect a *rich* shape (`left: {label, value, items}`).
-  //    We expand the minimal shape into the rich shape here so the
-  //    components don't need to know about the Python output format.
-  const adaptedMetadata = adaptMetadata(beat.type, beat.metadata, beat.text);
-
-  // 1) Validate the metadata against the Zod schema for this beat type.
-  let validatedMetadata: Record<string, unknown>;
+  // 1) Validate the WHOLE beat (top-level fields) against the Zod schema
+  //    for this beat type. The Python pipeline puts per-type props at
+  //    the top level — not inside a `metadata` field.
+  let validatedBeat: Record<string, unknown>;
   try {
-    validatedMetadata = validateBeatMetadata(
-      beat.type,
-      adaptedMetadata,
-    ) as Record<string, unknown>;
+    validatedBeat = validateBeatMetadata(beat.type, beat) as Record<
+      string,
+      unknown
+    >;
   } catch (err) {
     return (
       <Sequence
@@ -72,7 +67,11 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
     );
   }
 
-  // 2) Look up the component for this beat type.
+  // 2) Adapt the top-level Python shape into the rich shape the
+  //    existing components expect (e.g. `left: "..."` → `left: {label: "..."}`).
+  const adaptedProps = adaptMetadata(beat.type, validatedBeat);
+
+  // 3) Look up the component for this beat type.
   const BeatComponent = getBeatComponent(beat.type);
 
   if (!BeatComponent || !isBeatTypeSupported(beat.type)) {
@@ -92,7 +91,7 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
     );
   }
 
-  // 3) Slice the word list to the window this beat narrates.
+  // 4) Slice the word list to the window this beat narrates.
   const startSec = beat.startFrame / fps;
   const endSec = (beat.startFrame + beat.durationInFrames) / fps;
   const beatWords = allWords.filter(
@@ -111,7 +110,7 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
 
       <SceneTransition>
         <BeatComponent
-          {...validatedMetadata}
+          {...adaptedProps}
           durationInFrames={beat.durationInFrames}
         />
       </SceneTransition>
@@ -131,80 +130,66 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
 /* ------------------------------------------------------------------ */
 
 /**
- * Adapts the minimal Python pipeline shape into the rich shape the
- * existing components expect, and merges top-level `text` into the
- * metadata for any text-driven component.
+ * Adapts the top-level Python pipeline shape into the rich shape the
+ * existing components expect.
  *
- * If a future beat type needs custom mapping, add a case here.
+ * The Python pipeline emits flat fields at the top level of each beat:
+ *   - versus: {left: "string", right: "string"}
+ *   - timeline: {events: ["a", "b", "c"]}
+ *   - process_flow: {steps: ["a", "b"]}
+ *
+ * The existing components expect rich objects:
+ *   - VersusCard: {left: {label, value, items}, right: {...}}
+ *   - Timeline: {events: [{marker, label}]}
+ *
+ * This function converts the flat shape into the rich shape.
  */
 const adaptMetadata = (
   type: string,
-  rawMetadata: Record<string, unknown>,
-  topLevelText: string,
+  beat: Record<string, unknown>,
 ): Record<string, unknown> => {
-  // Always make `text` available to the component.
-  const base: Record<string, unknown> = { ...rawMetadata, text: topLevelText };
-
   switch (type) {
     case "versus": {
-      // beats.json: {left: "string", right: "string"}
+      // Python: {left: "string", right: "string"}
       // VersusCard expects: {left: {label, value, items}, right: {label, value, items}}
-      const leftStr = typeof rawMetadata.left === "string" ? rawMetadata.left : "";
-      const rightStr = typeof rawMetadata.right === "string" ? rawMetadata.right : "";
+      const leftStr = typeof beat.left === "string" ? beat.left : "";
+      const rightStr = typeof beat.right === "string" ? beat.right : "";
       return {
-        ...base,
+        ...beat,
         left: { label: leftStr, value: "", items: [] },
         right: { label: rightStr, value: "", items: [] },
       };
     }
 
     case "timeline": {
-      // beats.json: {events: ["a", "b", "c"]} (strings)
+      // Python: {events: ["a", "b", "c"]} (strings)
       // Timeline expects: {events: [{marker, label}]}
-      const events = Array.isArray(rawMetadata.events)
-        ? (rawMetadata.events as unknown[]).map((e, i) => {
+      const events = Array.isArray(beat.events)
+        ? (beat.events as unknown[]).map((e, i) => {
             if (typeof e === "string") {
               return { marker: `Step ${i + 1}`, label: e };
             }
             return e;
           })
         : [];
-      return { ...base, events };
+      return { ...beat, events };
     }
 
     case "process_flow": {
-      // beats.json: {steps: ["a", "b"]} (strings)
+      // Python: {steps: ["a", "b"]} (strings)
       // Timeline (fallback) expects: {events: [{marker, label}]}
-      const steps = Array.isArray(rawMetadata.steps)
-        ? (rawMetadata.steps as unknown[]).map((s, i) => {
+      const steps = Array.isArray(beat.steps)
+        ? (beat.steps as unknown[]).map((s, i) => {
             const labelStr = typeof s === "string" ? s : "";
             return { marker: `${i + 1}`, label: labelStr };
           })
         : [];
-      return { ...base, events: steps };
-    }
-
-    case "before_after": {
-      // beats.json: {beforeLabel, afterLabel}
-      // BeforeAfter props need to be confirmed; pass through plus `text`.
-      return base;
-    }
-
-    case "map_location":
-    case "map_3d": {
-      // beats.json: {locationName, latitude, longitude, buildings?}
-      // Pass through; no extra shaping.
-      return base;
-    }
-
-    case "icon_text": {
-      // beats.json: {icon, text}
-      // text is already merged above.
-      return base;
+      return { ...beat, events: steps };
     }
 
     default:
-      return base;
+      // All other beat types pass through unchanged.
+      return beat;
   }
 };
 

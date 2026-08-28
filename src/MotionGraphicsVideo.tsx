@@ -79,9 +79,7 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
       {beats.beats.map((beat, index) => (
         <RenderBeat
           key={`beat-${index}`}
-          // `RenderBeat` reads top-level `text` from the beat itself
-          // (no need to pass it as a separate prop).
-          beat={beat as Beat & { text: string }}
+          beat={beat as Beat}
           allWords={words}
           beatIndex={index}
           fps={fps}

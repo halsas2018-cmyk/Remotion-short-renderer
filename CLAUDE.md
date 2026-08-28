@@ -50,7 +50,9 @@ Automated pipeline for creating YouTube Shorts from news stories.
 ### Output Format
 Each beat object contains:
 - `type`: Component type (key_statement, icon_text, chart_line, versus, etc.)
+- `text`: The narration chunk for this beat (top-level)
 - `startFrame`: Frame number where the beat begins
+- `endFrame`: Frame number where the beat ends (redundant with `startFrame + durationInFrames`; ignored by the orchestrator)
 - `durationInFrames`: Duration in frames
 - `metadata`: Type-specific data (text, emphasisWords, points, etc.)
 
@@ -142,9 +144,9 @@ src/
 ├── Root.tsx                          # Compositions registry
 ├── MotionGraphicsVideo.tsx           # Main orchestrator
 ├── beats/
-│   ├── registry.ts                   # Maps beat.type → React component + Zod schema
+│   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.ts                 # Renders a single beat with SceneTransition
-│   └── types.ts                      # Beat type definitions
+│   └── types.ts                      # Beat type definitions ✅ DONE
 ├── SceneTransition.tsx               # Entrance/exit wrapper
 ├── PersistentBackground.tsx          # Background (logo + grid + cubes)
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
@@ -171,19 +173,46 @@ src/
     └── totalDuration.ts              # Sums beat durations
 ```
 
-### Step 1: Beat Type System (`src/beats/types.ts`)
-Mirror the Python `beat_generator.py` output:
-- `BeatType` union of all supported types
+### Step 1: Beat Type System (`src/beats/types.ts`) — ✅ DONE (commit 78e3f69)
+- `BeatType` union of all 15 supported types
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
+- `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
 
-Supported types: `key_statement`, `plain_text`, `icon_text`, `chart_line`, `chart_counter`, `chart_comparison`, `chart_comparison_3d`, `progress_meter`, `timeline`, `versus`, `before_after`, `map_location`, `map_3d`, `process_flow`, `quote_card`.
-
-### Step 2: Component Registry (`src/beats/registry.ts`)
+### Step 2: Component Registry (`src/beats/registry.ts`) — ✅ DONE
 Maps each `BeatType` to:
-- The React component
-- A Zod schema that validates the `metadata` shape
+- The React component (`getBeatComponent(type)`)
+- A Zod schema that validates the `metadata` shape (`validateBeatMetadata(type, metadata)`)
+- A support check (`isBeatTypeSupported(type)`)
+
+**Zod schemas** (per-beat-type metadata contracts):
+- `key_statement` → `{text, emphasisWords?}`
+- `plain_text` → `{text}`
+- `icon_text` → `{text, icon, emphasisWords?}`
+- `chart_line` → `{points[{label,value}], durationInFrames?, exitDirection?}`
+- `chart_counter` → `{value, label, durationInFrames?}`
+- `chart_comparison` / `chart_comparison_3d` → `{items[{label,value}]}`
+- `progress_meter` → `{value, maxValue, label}`
+- `timeline` → `{events[{marker,label}]}`
+- `versus` → `{left, right}`
+- `before_after` → `{beforeLabel, afterLabel}`
+- `map_location` / `map_3d` → `{locationName, latitude, longitude, buildings?}`
+- `process_flow` → `{steps[]}`
+- `quote_card` → `{quote, author?}`
 
 **Why Zod:** When Python's LLM-driven `beat_generator.py` outputs bad data, the registry fails fast in Remotion Studio with a clear error instead of a deep `undefined` crash during render.
+
+**Fallback mappings** (types that don't yet have a dedicated component):
+- `chart_comparison` → `ChartComparison3D` (reuses the 3D variant)
+- `map_location` → `Map3D` (no dedicated 2D map yet)
+- `process_flow` → `Timeline` (timeline works as a step list)
+- `quote_card` → `KeyStatement` (key statement works for a single quote line)
+
+**Key data shape notes** (learned from inspecting `beats.json`):
+- `text` is at the top level of every beat (NOT inside `metadata`). The orchestrator must pass `text` separately to `KineticCaptions`.
+- `endFrame` is redundant with `startFrame + durationInFrames`; the registry ignores it.
+- `emphasisWords` is optional everywhere it appears.
+- `icon_text` requires an `icon` string (used for the icon component's icon picker).
+- `versus` uses `left`/`right` strings directly, NOT the `[{label, value, items?}]` shape the `VersusCardTest` composition uses. The orchestrator must map them to the right prop names.
 
 ### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`)
 - Uses `<Sequence from={beat.startFrame} durationInFrames={beat.durationInFrames}>` per beat
@@ -214,7 +243,7 @@ Maps each `BeatType` to:
 - `MotionGraphicsVideo` uses `calculateMetadata` for dynamic duration.
 
 ### Step 8: Build Order
-1. `beats/types.ts` + `beats/registry.ts` — type foundation
+1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
 2. `MotionGraphicsVideo.tsx` — orchestrator (single-beat render first to prove the loop)
 3. `SceneTransition.tsx` — entrance/exit wrapper
 4. `calculateMetadata.ts` — dynamic duration
@@ -227,3 +256,5 @@ Maps each `BeatType` to:
 2. **Where to load `beats.json`?** — Runtime fetch via `calculateMetadata` so Phase 1 output updates do not require a rebuild.
 3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
 4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.
+5. **Fallback components** — Confirmed; `chart_comparison`, `map_location`, `process_flow`, `quote_card` reuse existing components (ChartComparison3D, Map3D, Timeline, KeyStatement) until dedicated variants are built.
+6. **Top-level `text` vs `metadata.text`** — Orchestrator will treat top-level `text` as the per-beat narration source for `KineticCaptions`, and ignore any `metadata.text` (some Zod schemas still require it for the inner component to render).

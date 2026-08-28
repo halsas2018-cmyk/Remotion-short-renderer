@@ -144,6 +144,8 @@ calculateMetadata (dynamic duration; subtracts transition frames)
   ↓
   BeatKineticCaptions (word-sync overlay; only for data-vis types)
   ↓
+  <Audio src=mouse-click>     (one per word; typing SFX; data-vis beats only)
+  ↓
 Audio narration (root)
 ```
 
@@ -175,12 +177,12 @@ src/
 │   ├── Map3D.tsx                     # Only `map_3d` is used
 │   └── KineticCaptions.tsx
 ├── audio/
-│   ├── BeatKineticCaptions.tsx       # Per-beat wrapper ✅ DONE
+│   ├── BeatKineticCaptions.tsx       # Per-beat wrapper + typing SFX ✅ DONE
 │   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
 ├── lib/
 │   ├── totalDuration.ts              # Sums beat durations
 │   ├── transitionDuration.ts         # Dynamic cross-fade frames ✅ DONE
-│   └── sceneSfx.ts                   # SFX URLs + defaults ✅ NEW
+│   └── sceneSfx.ts                   # SFX URLs + defaults (whoosh, click) ✅ DONE
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
 └── …
@@ -234,7 +236,7 @@ Each beat is wrapped in `<TransitionSeries.Sequence durationInFrames={...}>`. Th
 
 Inside each `<TransitionSeries.Sequence>`:
 1. `<SceneTransition>` → `<BeatComponent {...validatedMetadata} durationInFrames={...} />` — the typed component from the registry
-2. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} />` — per-beat word-sync caption overlay, **only rendered for data-vis beat types** (see below)
+2. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} fps={fps} />` — per-beat word-sync caption overlay, **only rendered for data-vis beat types** (see below). The `fps` prop is forwarded so the click track is frame-accurate.
 
 **Per-beat word slicing:** The orchestrator filters `allWords` to `[startFrame/fps, (startFrame + durationInFrames)/fps]` so captions stay in sync with the current beat.
 
@@ -347,8 +349,34 @@ Code shape inside the orchestrator's `<TransitionSeries>`:
 </TransitionSeries.Transition>
 ```
 
+### Step 6c: Typing SFX on Kinetic Captions — ✅ DONE
+Whenever `<BeatKineticCaptions>` renders (i.e. for data-vis beats), it also renders a click track — one short `<Audio>` per word, placed at the word's start frame inside the beat's local timeline. The click gives the typing a tactile feel without competing with the narration.
+
+- **URL**: `https://remotion.media/mouse-click.wav` (from the project's `sfx.md` skill).
+- **Volume**: 0.15 (intentionally quiet — doesn't fight the narration or the whoosh).
+- **Gating**: same `CAPTION_VISIBLE_BEAT_TYPES` set as the visual captions. Text/card beats don't get the click track because they don't show words ticking through.
+- **Implementation**: in `src/audio/BeatKineticCaptions.tsx`. For each `word` in the beat's word list, the wrapper renders a 1-frame `<Sequence from={wordStartFrame} durationInFrames={1}>` containing the click. The 1-frame sequence is enough to start the audio; the click itself is a short blip that stops on its own. The parent `<TransitionSeries.Sequence>` bounds the whole track to the beat's `durationInFrames`.
+- **Prop change**: `RenderBeat` now forwards `fps` to `<BeatKineticCaptions fps={fps} />` so the click track is frame-accurate.
+
+Code shape inside `BeatKineticCaptions`:
+
+```tsx
+{words.map((w, i) => {
+  const wordStartFrame = Math.max(0, Math.round(w.start * fps));
+  return (
+    <Sequence
+      key={`type-${i}-${w.start}`}
+      from={wordStartFrame}
+      durationInFrames={1}
+    >
+      <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
+    </Sequence>
+  );
+})}
+```
+
 ### Step 7: Per-beat Captions Wrapper (`src/audio/BeatKineticCaptions.tsx`) — ✅ DONE
-Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`) to the existing `KineticCaptions` API (`{captionEnabledTypes, beats, words}`). Used so the orchestrator can pass already-sliced `words` per beat without modifying `KineticCaptions.tsx`.
+Bridges the new orchestrator props (`{text, words, durationInFrames, beatType, fps}`) to the existing `KineticCaptions` API (`{captionEnabledTypes, beats, words}`). Used so the orchestrator can pass already-sliced `words` per beat without modifying `KineticCaptions.tsx`. Also hosts the typing-click track (see Step 6c).
 
 ### Step 8: Wire Up `Root.tsx` — ✅ DONE (commit 589dc92)
 - The `MotionGraphicsVideo` composition is now wired to the real `MotionGraphicsVideo` component (was a TODO stub)
@@ -370,7 +398,8 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 10. ~~Add `Easing.bezier` to `SceneTransition` entrance/exit~~ ✅
 11. ~~Switch orchestrator to `<TransitionSeries>` with dynamic cross-fade~~ ✅
 12. ~~Add whoosh SFX to every `<TransitionSeries.Transition>`~~ ✅
-13. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+13. ~~Add typing click SFX on every word in kinetic captions~~ ✅
+14. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **`<TransitionSeries>` for cross-fade + per-beat `<Sequence>` was replaced.** Now using `<TransitionSeries>` with `<TransitionSeries.Sequence>` and `<TransitionSeries.Transition presentation={fade()} />` between adjacent beats. Cross-fade duration is computed dynamically per pair. Trade-off: per-beat `from` is no longer editable in Studio (only `durationInFrames`).
@@ -387,6 +416,7 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 12. **Easing on per-beat entrance/exit** — `SceneTransition` uses `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) for entrance and `Easing.bezier(0.7, 0, 0.84, 0)` for exit. Same entrance easing on the default `translateY` slide-up.
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. Used by both the orchestrator and `calculateMetadata` as the single source of truth.
 14. **Transition SFX** — A whoosh.wav from the Remotion CDN plays at the start of every `<TransitionSeries.Transition>`, mounted as a child of the transition (its local clock is bounded by the transition's own `durationInFrames`). Volume 0.5. URL and volume centralized in `src/lib/sceneSfx.ts`. First beat has no incoming transition, so no SFX plays for it; final beat's exit is silent.
+15. **Typing SFX** — A mouse-click.wav from the Remotion CDN plays at the start of every word inside `<BeatKineticCaptions>`, gated to the same data-vis beat types as the visual captions. Volume 0.15. Each click lives inside a 1-frame `<Sequence from={wordStartFrame} durationInFrames={1}>`; the parent `<TransitionSeries.Sequence>` bounds the whole track to the beat. `fps` is forwarded from `RenderBeat` to `BeatKineticCaptions` so the click track is frame-accurate.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -403,4 +433,4 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
   ]
 }
 ```
-With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap). Each of the 5 cross-fades plays a whoosh at the start.
+With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap). Each of the 5 cross-fades plays a whoosh at the start; data-vis beats (`timeline` in this example) play a mouse-click per word in their captions.

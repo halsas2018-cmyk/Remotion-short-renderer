@@ -154,6 +154,7 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
           words={beatWords}
           durationInFrames={beat.durationInFrames}
           beatType={beat.type}
+          fps={fps}
         />
       ) : null}
     </TransitionSeries.Sequence>

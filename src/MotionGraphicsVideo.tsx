@@ -8,6 +8,7 @@ import {
 } from "remotion";
 import { Beat, TimedBeats } from "./beats/types";
 import { RenderBeat } from "./beats/renderBeat";
+import { PersistentBackground } from "./PersistentBackground";
 import type { Word } from "./beats/words";
 
 /* ------------------------------------------------------------------ */
@@ -61,6 +62,15 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: "white" }}>
+      {/*
+        PersistentBackground is mounted ONCE at the root, OUTSIDE any
+        <Sequence>. This means `useCurrentFrame()` inside it returns
+        the global composition frame, so the background animates
+        continuously across all beats instead of restarting at 0
+        every time a new beat starts.
+      */}
+      <PersistentBackground />
+
       {/*
         Narration plays once for the whole composition. Mounted at the
         root so it isn't re-mounted per beat.

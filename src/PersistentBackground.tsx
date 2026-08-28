@@ -1,21 +1,28 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  Composition,
-  useVideoConfig,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { Logo } from "./Logo";
+
+/* ------------------------------------------------------------------ */
+/*  Tuning constants                                                  */
+/*                                                                     */
+/*  These speeds are tuned for short-form YouTube Shorts (~30-60s).   */
+/*  Speeds are in radians per frame, so at 30 fps a value of 0.02    */
+/*  means a full rotation every ~10.5 seconds.                        */
+/* ------------------------------------------------------------------ */
+
+const MAIN_CUBOID_ROTATION_SPEED = 0.02; // ~10.5s per full rotation
+const INTERSECT_CUBOID_ROTATION_SPEED = 0.035; // faster, ~6s per full rotation
+const CUBOID_ROTATION_SPEED_RATIO_Y = 1.3; // Y axis spins 1.3x faster than X
 
 const SmallCuboid: React.FC<{
   position: [number, number, number];
   size: number;
   frame: number;
-}> = ({ position, size, frame }) => {
-  const rotationSpeed = 0.05;
+  rotationSpeed: number;
+}> = ({ position, size, frame, rotationSpeed }) => {
   const rotationX = frame * rotationSpeed;
-  const rotationY = frame * rotationSpeed * 1.3;
+  const rotationY = frame * rotationSpeed * CUBOID_ROTATION_SPEED_RATIO_Y;
 
   return (
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
@@ -88,6 +95,10 @@ const Gridlines2D: React.FC<{
 
 export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
+  // This component is mounted at the ROOT of the composition, OUTSIDE
+  // any <Sequence>, so `useCurrentFrame()` returns the GLOBAL composition
+  // frame. This is what makes the cubes and logo animate continuously
+  // across the whole video instead of resetting every beat.
   const frame = useCurrentFrame();
 
   // More cubes — denser grid
@@ -111,6 +122,7 @@ export const PersistentBackground: React.FC = () => {
           position={[x, y, 0]}
           size={0.18}
           frame={frame}
+          rotationSpeed={MAIN_CUBOID_ROTATION_SPEED}
         />,
       );
     }
@@ -127,6 +139,7 @@ export const PersistentBackground: React.FC = () => {
           position={[x, y, 0]}
           size={0.1}
           frame={frame}
+          rotationSpeed={INTERSECT_CUBOID_ROTATION_SPEED}
         />,
       );
     }
@@ -155,15 +168,3 @@ export const PersistentBackground: React.FC = () => {
     </AbsoluteFill>
   );
 };
-
-export const BackgroundTestComposition: React.FC = () => (
-  <Composition
-    id="BackgroundTest"
-    component={PersistentBackground}
-    durationInFrames={180}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{}}
-  />
-);

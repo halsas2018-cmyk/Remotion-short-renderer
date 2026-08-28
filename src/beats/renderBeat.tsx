@@ -2,7 +2,6 @@ import React from "react";
 import { Sequence } from "remotion";
 import { Beat } from "./types";
 import { SceneTransition } from "../SceneTransition";
-import { PersistentBackground } from "../PersistentBackground";
 import { BeatKineticCaptions } from "../audio/BeatKineticCaptions";
 import {
   getBeatComponent,
@@ -19,10 +18,14 @@ import type { Word } from "./words";
  * editable in Studio.
  *
  * Each beat's <Sequence> contains:
- *   - <PersistentBackground />               (behind the content)
- *   - <SceneTransition>                       (entrance/exit wrapper)
- *     -> <BeatComponent {...adaptedProps} />  (the typed component)
- *   - <BeatKineticCaptions />                 (per-beat word-sync overlay)
+ *   - <SceneTransition>                  (entrance/exit wrapper)
+ *     -> <BeatComponent {...props} />   (the typed component)
+ *   - <BeatKineticCaptions />            (per-beat word-sync overlay)
+ *
+ * NOTE: <PersistentBackground /> is NOT rendered here — it lives at the
+ * root of <MotionGraphicsVideo> so its frame counter is the global
+ * composition frame (not the per-beat local frame, which would reset
+ * to 0 every beat and make the background appear frozen).
  */
 type RenderBeatProps = {
   beat: Beat;
@@ -55,7 +58,6 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
         name={`Beat ${beatIndex} (invalid)`}
         layout="absolute-fill"
       >
-        <PersistentBackground />
         <SceneTransition>
           <InvalidBeatMessage
             beatType={beat.type}
@@ -83,7 +85,6 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
         name={`Beat ${beatIndex} (unsupported)`}
         layout="absolute-fill"
       >
-        <PersistentBackground />
         <SceneTransition>
           <UnsupportedBeatMessage beatType={beat.type} text={beat.text} />
         </SceneTransition>
@@ -106,8 +107,6 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
       name={`Beat ${beatIndex}: ${beat.type}`}
       layout="absolute-fill"
     >
-      <PersistentBackground />
-
       <SceneTransition>
         <BeatComponent
           {...adaptedProps}

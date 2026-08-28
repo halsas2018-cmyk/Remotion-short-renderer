@@ -10,15 +10,16 @@ import { ThreeCanvas } from "@remotion/three";
 const SmallCuboid: React.FC<{
   position: [number, number, number];
   color: string;
+  size: number;
   frame: number;
-}> = ({ position, color, frame }) => {
+}> = ({ position, color, size, frame }) => {
   const rotationSpeed = 0.05;
   const rotationX = frame * rotationSpeed;
   const rotationY = frame * rotationSpeed * 1.3;
 
   return (
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
-      <boxGeometry args={[0.25, 0.25, 0.25]} />
+      <boxGeometry args={[size, size, size]} />
       <meshStandardMaterial
         color={color}
         emissive={color}
@@ -41,15 +42,35 @@ export const PersistentBackground: React.FC = () => {
   const yStart = -((rows - 1) / 2) * ySpacing;
 
   const cuboids: React.ReactElement[] = [];
+
+  // Main grid cuboids
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const x = xStart + col * xSpacing;
       const y = yStart + row * ySpacing;
       cuboids.push(
         <SmallCuboid
-          key={`${row}-${col}`}
+          key={`main-${row}-${col}`}
           position={[x, y, 0]}
           color="#3b82f6"
+          size={0.25}
+          frame={frame}
+        />,
+      );
+    }
+  }
+
+  // Smaller cuboids at each intersection (between every 4 main cuboids)
+  for (let row = 0; row < rows - 1; row++) {
+    for (let col = 0; col < cols - 1; col++) {
+      const x = xStart + (col + 0.5) * xSpacing;
+      const y = yStart + (row + 0.5) * ySpacing;
+      cuboids.push(
+        <SmallCuboid
+          key={`intersect-${row}-${col}`}
+          position={[x, y, 0]}
+          color="#3b82f6"
+          size={0.15}
           frame={frame}
         />,
       );

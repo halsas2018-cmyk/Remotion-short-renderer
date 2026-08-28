@@ -2,6 +2,7 @@ import React, { createContext, useContext } from "react";
 import {
   AbsoluteFill,
   CalculateMetadataFunction,
+  interpolate,
   staticFile,
   useVideoConfig,
 } from "remotion";
@@ -13,7 +14,13 @@ import type { Word } from "./beats/words";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { computeTransitionFrames } from "./lib/transitionDuration";
-import { TRANSITION_SFX_URL, TRANSITION_SFX_VOLUME } from "./lib/sceneSfx";
+import {
+  AMBIENT_SFX_FADE_IN_FRAMES,
+  AMBIENT_SFX_URL,
+  AMBIENT_SFX_VOLUME,
+  TRANSITION_SFX_URL,
+  TRANSITION_SFX_VOLUME,
+} from "./lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
 /*  Beat context                                                      */
@@ -62,6 +69,11 @@ export type MotionGraphicsVideoProps = {
 /*  beat (see src/lib/transitionDuration.ts). Each transition plays  */
 /*  a short whoosh.wav (see src/lib/sceneSfx.ts) as a UI feedback    */
 /*  sound — see Step 6b in CLAUDE.md.                                */
+/*                                                                     */
+/*  A looping ambient track plays underneath the narration for the    */
+/*  whole composition. Volume fades in over the first second and then */
+/*  holds at AMBIENT_SFX_VOLUME so it stays a quiet bed under the     */
+/*  narration, the whoosh, and the typing clicks — see Step 6d.      */
 /* ------------------------------------------------------------------ */
 
 export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
@@ -98,6 +110,34 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         which becomes <Html5Audio> and is unsupported client-side.
       */}
       {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
+
+      {/*
+        Ambient SFX — a looping bed underneath the narration. Plays for
+        the entire composition. Volume fades in over the first second
+        and then holds at AMBIENT_SFX_VOLUME (0.15). Per audio.md best
+        practices for ambient sound: `loop` + `loopVolumeCurveBehavior=
+        "extend"` so the volume callback's `f` keeps incrementing across
+        loops instead of resetting to 0 each cycle. The fade-in only
+        happens once at the very start of the composition.
+
+        Mounted at the root so it isn't re-mounted per beat.
+      */}
+      <Audio
+        src={staticFile(AMBIENT_SFX_URL)}
+        loop
+        loopVolumeCurveBehavior="extend"
+        volume={(f) =>
+          interpolate(
+            f,
+            [0, AMBIENT_SFX_FADE_IN_FRAMES],
+            [0, AMBIENT_SFX_VOLUME],
+            {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            },
+          )
+        }
+      />
 
       {/*
         Render beats as alternating <TransitionSeries.Sequence> and

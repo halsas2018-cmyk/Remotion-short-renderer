@@ -6,7 +6,6 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
-import { Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 
 const SmallCuboid: React.FC<{
   position: [number, number, number];
@@ -19,10 +18,10 @@ const SmallCuboid: React.FC<{
 
   return (
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
-      <boxGeometry args={[50, 50, 50]} />
-      <meshStandardMaterial 
-        color={color} 
-        emissive={color} 
+      <boxGeometry args={[0.6, 0.6, 0.6]} />
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
         emissiveIntensity={0.5}
       />
     </mesh>
@@ -45,11 +44,11 @@ export const PersistentBackground: React.FC = () => {
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
-        
-        {/* Small cuboid in upper right corner */}
-        <SmallCuboid 
-          position={[width / 2 - 75, -height / 2 + 75, 0]} 
-          color="#3b82f6" 
+
+        {/* Small cuboid in upper right corner (camera-space units: +Y is up) */}
+        <SmallCuboid
+          position={[1.7, 3.2, 0]}
+          color="#3b82f6"
           frame={frame}
         />
       </ThreeCanvas>

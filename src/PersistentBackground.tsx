@@ -9,10 +9,9 @@ import { ThreeCanvas } from "@remotion/three";
 
 const SmallCuboid: React.FC<{
   position: [number, number, number];
-  color: string;
   size: number;
   frame: number;
-}> = ({ position, color, size, frame }) => {
+}> = ({ position, size, frame }) => {
   const rotationSpeed = 0.05;
   const rotationX = frame * rotationSpeed;
   const rotationY = frame * rotationSpeed * 1.3;
@@ -21,11 +20,68 @@ const SmallCuboid: React.FC<{
     <mesh position={position} rotation={[rotationX, rotationY, 0]}>
       <boxGeometry args={[size, size, size]} />
       <meshStandardMaterial
-        color={color}
-        emissive={color}
+        color="#000000"
+        emissive="#000000"
         emissiveIntensity={0.5}
       />
     </mesh>
+  );
+};
+
+const Gridlines2D: React.FC<{
+  width: number;
+  height: number;
+}> = ({ width, height }) => {
+  const spacing = 40;
+  const lines: React.ReactElement[] = [];
+
+  // Vertical lines
+  const vCount = Math.ceil(width / spacing) + 1;
+  for (let i = 0; i < vCount; i++) {
+    const x = i * spacing;
+    lines.push(
+      <line
+        key={`v-${i}`}
+        x1={x}
+        y1={0}
+        x2={x}
+        y2={height}
+        stroke="rgba(0, 0, 0, 0.08)"
+        strokeWidth={1}
+      />,
+    );
+  }
+
+  // Horizontal lines
+  const hCount = Math.ceil(height / spacing) + 1;
+  for (let i = 0; i < hCount; i++) {
+    const y = i * spacing;
+    lines.push(
+      <line
+        key={`h-${i}`}
+        x1={0}
+        y1={y}
+        x2={width}
+        y2={y}
+        stroke="rgba(0, 0, 0, 0.08)"
+        strokeWidth={1}
+      />,
+    );
+  }
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        pointerEvents: "none",
+      }}
+    >
+      {lines}
+    </svg>
   );
 };
 
@@ -33,11 +89,11 @@ export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
   const frame = useCurrentFrame();
 
-  // Grid of cuboids filling the screen (camera-space units: +Y is up)
-  const cols = 5;
-  const rows = 9;
-  const xSpacing = 0.85;
-  const ySpacing = 0.85;
+  // More cubes — denser grid
+  const cols = 8;
+  const rows = 14;
+  const xSpacing = 0.55;
+  const ySpacing = 0.55;
   const xStart = -((cols - 1) / 2) * xSpacing;
   const yStart = -((rows - 1) / 2) * ySpacing;
 
@@ -52,8 +108,7 @@ export const PersistentBackground: React.FC = () => {
         <SmallCuboid
           key={`main-${row}-${col}`}
           position={[x, y, 0]}
-          color="#3b82f6"
-          size={0.25}
+          size={0.18}
           frame={frame}
         />,
       );
@@ -69,8 +124,7 @@ export const PersistentBackground: React.FC = () => {
         <SmallCuboid
           key={`intersect-${row}-${col}`}
           position={[x, y, 0]}
-          color="#3b82f6"
-          size={0.15}
+          size={0.1}
           frame={frame}
         />,
       );
@@ -86,6 +140,9 @@ export const PersistentBackground: React.FC = () => {
         overflow: "hidden",
       }}
     >
+      {/* 2D gridline layer (behind 3D cubes) */}
+      <Gridlines2D width={width} height={height} />
+
       <ThreeCanvas width={width} height={height}>
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />

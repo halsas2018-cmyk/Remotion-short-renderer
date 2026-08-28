@@ -214,6 +214,11 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 /*  (which fetches beats.json + timestamps.json from /public and      */
 /*  injects them into props). The orchestrator then takes the         */
 /*  already-resolved props and produces the final duration.           */
+/*                                                                     */
+/*  If the upstream fetch in Root.tsx failed, `props.beats.beats`     */
+/*  will be empty and this function returns `durationInFrames: 1` —   */
+/*  which makes the render a single-frame "still". We warn loudly in  */
+/*  that case so the user knows the public JSONs are missing.         */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<
@@ -221,6 +226,14 @@ export const calculateMetadata: CalculateMetadataFunction<
 > = ({ props }) => {
   const allBeats = (props.beats?.beats ?? []) as Beat[];
   if (allBeats.length === 0) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[MotionGraphicsVideo] props.beats is empty when calculateMetadata ` +
+        `ran. This usually means public/beats.json was not found or the ` +
+        `upstream fetch in Root.tsx failed. The video will render as a ` +
+        `single frame. Check that public/beats.json and ` +
+        `public/timestamps.json exist and are valid JSON.`,
+    );
     return { durationInFrames: 1 };
   }
 

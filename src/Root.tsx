@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition, staticFile } from "remotion";
+import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { ChartCounter } from "./ChartCounter";
 import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
@@ -15,6 +15,7 @@ import { KineticCaptions } from "./KineticCaptions";
 import { PersistentBackground } from "./PersistentBackground";
 import {
   MotionGraphicsVideo,
+  MotionGraphicsVideoProps,
   calculateMetadata,
 } from "./MotionGraphicsVideo";
 import type { Word } from "./beats/words";
@@ -49,9 +50,15 @@ interface TimestampsDataShape {
   end: number;
 }
 
-// Asynchronously fetch the four data files at composition mount. The
+// Asynchronously fetch the two JSON files at composition mount. The
 // `abortSignal` cancels stale requests when the user changes props in
 // Studio before the previous fetch has resolved.
+//
+// IMPORTANT: this function is best-effort. If the fetch fails (file
+// missing, network error, non-2xx status), it returns null and the
+// caller falls back to whatever is already in `defaultProps`. This
+// prevents a missing JSON from collapsing the entire video to a
+// single frame.
 const fetchRenderData = async (
   abortSignal: AbortSignal,
 ): Promise<{
@@ -60,37 +67,77 @@ const fetchRenderData = async (
   narrationSrc: string;
   fps: number;
   totalDurationInFrames: number;
-}> => {
-  const [beatsResp, wordsResp] = await Promise.all([
-    fetch(staticFile("beats.json"), { signal: abortSignal }),
-    fetch(staticFile("timestamps.json"), { signal: abortSignal }),
-  ]);
-  if (!beatsResp.ok) {
-    throw new Error(
-      `Failed to fetch beats.json (${beatsResp.status}). Make sure public/beats.json exists.`,
+} | null> => {
+  try {
+    const [beatsResp, wordsResp] = await Promise.all([
+      fetch(staticFile("beats.json"), { signal: abortSignal }),
+      fetch(staticFile("timestamps.json"), { signal: abortSignal }),
+    ]);
+    if (!beatsResp.ok || !wordsResp.ok) {
+      // Surface a clear warning in render logs so the user can fix the
+      // missing file without having to guess.
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[MotionGraphicsVideo] runtime data fetch failed — ` +
+          `beats.json=${beatsResp.status}, timestamps.json=${wordsResp.status}. ` +
+          `Make sure public/beats.json and public/timestamps.json exist. ` +
+          `Falling back to defaultProps (which means the composition will be 1 frame).`,
+      );
+      return null;
+    }
+    const beats = (await beatsResp.json()) as TimedBeatsData;
+    const words = (await wordsResp.json()) as TimestampsDataShape[];
+
+    if (
+      !beats ||
+      typeof beats.fps !== "number" ||
+      typeof beats.totalDurationInFrames !== "number" ||
+      !Array.isArray(beats.beats)
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[MotionGraphicsVideo] public/beats.json is missing required fields ` +
+          `({ fps: number, totalDurationInFrames: number, beats: array }). ` +
+          `Falling back to defaultProps.`,
+      );
+      return null;
+    }
+
+    return {
+      beats: beats as unknown as TimedBeats,
+      words: words as unknown as Word[],
+      narrationSrc: "narration.mp3",
+      fps: beats.fps,
+      totalDurationInFrames: beats.totalDurationInFrames,
+    };
+  } catch (err) {
+    // AbortError is normal when the user changes props in Studio mid-fetch;
+    // we don't need to warn for that.
+    if (err instanceof Error && err.name === "AbortError") {
+      return null;
+    }
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[MotionGraphicsVideo] runtime data fetch threw: ${err instanceof Error ? err.message : String(err)}. ` +
+        `Falling back to defaultProps.`,
     );
+    return null;
   }
-  if (!wordsResp.ok) {
-    throw new Error(
-      `Failed to fetch timestamps.json (${wordsResp.status}). Make sure public/timestamps.json exists.`,
-    );
-  }
-  const beats = (await beatsResp.json()) as TimedBeatsData;
-  const words = (await wordsResp.json()) as TimestampsDataShape[];
-  return {
-    beats: beats as unknown as TimedBeats,
-    words: words as unknown as Word[],
-    narrationSrc: "narration.mp3",
-    fps: beats.fps,
-    totalDurationInFrames: beats.totalDurationInFrames,
-  };
 };
 
-const renderDataCalculateMetadata: typeof calculateMetadata = async ({
-  props,
-  abortSignal,
-}) => {
+const renderDataCalculateMetadata: CalculateMetadataFunction<
+  MotionGraphicsVideoProps
+> = async ({ props, abortSignal }) => {
   const data = await fetchRenderData(abortSignal);
+  if (!data) {
+    // Return the static duration. MotionGraphicsVideo's own
+    // calculateMetadata will run afterwards and warn if the
+    // beats prop is still empty.
+    return {
+      durationInFrames: 1,
+      props,
+    };
+  }
   return {
     durationInFrames: data.totalDurationInFrames,
     props: {
@@ -469,6 +516,9 @@ export const RemotionRoot = () => (
 
       The "1" duration is a placeholder; the async calculateMetadata runs
       before the composition is registered and supplies the real number.
+      If the fetch fails (missing file, network error, bad JSON), the
+      fetch falls back to defaultProps and warns to the render log — the
+      render will still proceed, just as a 1-frame video.
     */}
     <Composition
       id="MotionGraphicsVideo"
@@ -481,7 +531,7 @@ export const RemotionRoot = () => (
         // `beats` and `words` are injected by calculateMetadata below.
         // `narrationSrc` is also injected by calculateMetadata; the
         // placeholder is only used in the brief window before the fetch
-        // resolves.
+        // resolves (or permanently, if the fetch fails).
         beats: { fps: 30, totalDurationInFrames: 1, beats: [] } as TimedBeats,
         words: [] as Word[],
         narrationSrc: "narration.mp3",

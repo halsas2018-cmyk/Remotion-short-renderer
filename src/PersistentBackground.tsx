@@ -5,7 +5,6 @@ import {
   useVideoConfig,
   interpolate,
 } from "remotion";
-import { Logo } from "./Logo";
 
 /* ------------------------------------------------------------------ */
 /*  Tuning constants                                                  */
@@ -134,8 +133,8 @@ export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
   // This component is mounted at the ROOT of the composition, OUTSIDE
   // any <Sequence>, so `useCurrentFrame()` returns the GLOBAL composition
-  // frame. This is what makes the grid and logo animate continuously
-  // across the whole video instead of resetting every beat.
+  // frame. This is what makes the grid animate continuously across the
+  // whole video instead of restarting at 0 every beat.
   const frame = useCurrentFrame();
 
   // Continuous downward scroll, wraps every (GRID_SPACING / SCROLL_SPEED)
@@ -166,9 +165,6 @@ export const PersistentBackground: React.FC = () => {
         frame={frame}
         periodFrames={120}
       />
-
-      {/* Animated 3D orange S-NEWS logo at top center (kept 3D as requested) */}
-      <Logo size={1} />
     </AbsoluteFill>
   );
 };

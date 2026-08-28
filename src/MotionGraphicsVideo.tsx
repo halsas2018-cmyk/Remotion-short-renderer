@@ -13,6 +13,7 @@ import type { Word } from "./beats/words";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { computeTransitionFrames } from "./lib/transitionDuration";
+import { TRANSITION_SFX_URL, TRANSITION_SFX_VOLUME } from "./lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
 /*  Beat context                                                      */
@@ -58,7 +59,9 @@ export type MotionGraphicsVideoProps = {
 /*  Beats are arranged in a <TransitionSeries> with a <fade()> cross-  */
 /*  fade between each pair of adjacent beats. The transition duration */
 /*  is computed dynamically as a percentage of the shorter adjacent   */
-/*  beat (see src/lib/transitionDuration.ts).                         */
+/*  beat (see src/lib/transitionDuration.ts). Each transition plays  */
+/*  a short whoosh.wav (see src/lib/sceneSfx.ts) as a UI feedback    */
+/*  sound — see Step 6b in CLAUDE.md.                                */
 /* ------------------------------------------------------------------ */
 
 export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
@@ -108,6 +111,12 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         determined by array order in beats.json, not by per-beat
         `startFrame`. `calculateMetadata` derives the composition
         duration from sum(beatDurations) - sum(transitionFrames).
+
+        SFX: each <TransitionSeries.Transition> also renders a short
+        whoosh.wav at its start (volume 0.5, no loop). The first beat
+        has no incoming transition, so no SFX is played for it. The
+        last transition's tail is the final beat's exit — also marked
+        with a whoosh for symmetry.
       */}
       <TransitionSeries>
         {allBeats.map((beat, index) => {
@@ -131,7 +140,12 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
                       next.durationInFrames,
                     ),
                   })}
-                />
+                >
+                  <Audio
+                    src={TRANSITION_SFX_URL}
+                    volume={TRANSITION_SFX_VOLUME}
+                  />
+                </TransitionSeries.Transition>
               ) : null}
             </React.Fragment>
           );

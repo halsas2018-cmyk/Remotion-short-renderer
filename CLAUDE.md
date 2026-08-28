@@ -104,6 +104,7 @@ Components are located in `src/` and follow these conventions:
 4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
 5. **Assets**: Place in `public/` folder, reference with `staticFile()`
 6. **Transitions**: Use `<TransitionSeries>` + `fade()` (from `@remotion/transitions`) for cross-fades between beats. Use `SceneTransition` for per-beat entrance/exit.
+7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs in `src/lib/sceneSfx.ts`.
 
 ### Running the Renderer
 ```bash
@@ -128,6 +129,8 @@ MotionGraphicsVideo.tsx (orchestrator)
 calculateMetadata (dynamic duration; subtracts transition frames)
   ↓
 <TransitionSeries> (per-beat <Sequence> with cross-fade between)
+  ↓
+  <Audio src=whoosh>          (UI feedback on each cross-fade; inside Transition)
   ↓
   adaptMetadata() (Python shape → component shape)
   ↓
@@ -176,7 +179,8 @@ src/
 │   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
 ├── lib/
 │   ├── totalDuration.ts              # Sums beat durations
-│   └── transitionDuration.ts         # Dynamic cross-fade frames ✅ NEW
+│   ├── transitionDuration.ts         # Dynamic cross-fade frames ✅ DONE
+│   └── sceneSfx.ts                   # SFX URLs + defaults ✅ NEW
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
 └── …
@@ -221,6 +225,7 @@ Maps each `BeatType` to:
 - Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />`
 - Wraps `PersistentBackground` once at the root (so its frame counter is global)
 - Renders beats inside a single `<TransitionSeries>` (see Step 4) with a `<TransitionSeries.Transition presentation={fade()} />` between every adjacent pair
+- Each `<TransitionSeries.Transition>` also contains a `<Audio src={whoosh}>` for UI feedback (see Step 4b/6b)
 - `calculateMetadata` returns `sum(beatDurations) - sum(transitionFrames)` so the composition auto-resizes when `beats.json` changes (see Step 4b for the duration math)
 - White background
 
@@ -317,6 +322,31 @@ Lives inside `src/MotionGraphicsVideo.tsx`. Sums beat durations and subtracts th
 - Children can read context via `useSceneTransition()` to layer their own animations
 - Default context (when used outside a `<SceneTransition>`) provides identity values so existing `*Test` compositions still work
 
+### Step 6b: Scene Transition SFX — ✅ DONE
+Each `<TransitionSeries.Transition>` in the orchestrator contains a `<Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} />` that plays a short whoosh at the start of the cross-fade. The SFX is mounted as a *child* of `<TransitionSeries.Transition>`, so it starts when the transition starts and stops when the transition ends — the local clock is bounded by the transition's own `durationInFrames`, no need for `from`/`durationInFrames` props on the audio.
+
+- **URL**: `https://remotion.media/whoosh.wav` (from the project's `sfx.md` skill).
+- **Volume**: 0.5.
+- **Behavior**: same whoosh for every transition; no loop; first beat has no incoming transition so no SFX plays for it; the final beat has no outgoing transition so the closing fade-out is silent.
+- **Centralized**: `src/lib/sceneSfx.ts` exports `TRANSITION_SFX_URL` and `TRANSITION_SFX_VOLUME` so tweaks happen in one place.
+- **Compatibility**: `<Audio>` from `@remotion/media` works in both server-side render and `<Player>` (unlike `<Audio>` from `remotion` which becomes `<Html5Audio>`).
+
+Code shape inside the orchestrator's `<TransitionSeries>`:
+
+```tsx
+<TransitionSeries.Transition
+  presentation={fade()}
+  timing={linearTiming({
+    durationInFrames: computeTransitionFrames(
+      beat.durationInFrames,
+      next.durationInFrames,
+    ),
+  })}
+>
+  <Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} />
+</TransitionSeries.Transition>
+```
+
 ### Step 7: Per-beat Captions Wrapper (`src/audio/BeatKineticCaptions.tsx`) — ✅ DONE
 Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`) to the existing `KineticCaptions` API (`{captionEnabledTypes, beats, words}`). Used so the orchestrator can pass already-sliced `words` per beat without modifying `KineticCaptions.tsx`.
 
@@ -339,7 +369,8 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 9. ~~Gate `BeatKineticCaptions` to data-vis beat types only~~ ✅
 10. ~~Add `Easing.bezier` to `SceneTransition` entrance/exit~~ ✅
 11. ~~Switch orchestrator to `<TransitionSeries>` with dynamic cross-fade~~ ✅
-12. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+12. ~~Add whoosh SFX to every `<TransitionSeries.Transition>`~~ ✅
+13. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **`<TransitionSeries>` for cross-fade + per-beat `<Sequence>` was replaced.** Now using `<TransitionSeries>` with `<TransitionSeries.Sequence>` and `<TransitionSeries.Transition presentation={fade()} />` between adjacent beats. Cross-fade duration is computed dynamically per pair. Trade-off: per-beat `from` is no longer editable in Studio (only `durationInFrames`).
@@ -355,6 +386,7 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
 12. **Easing on per-beat entrance/exit** — `SceneTransition` uses `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) for entrance and `Easing.bezier(0.7, 0, 0.84, 0)` for exit. Same entrance easing on the default `translateY` slide-up.
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. Used by both the orchestrator and `calculateMetadata` as the single source of truth.
+14. **Transition SFX** — A whoosh.wav from the Remotion CDN plays at the start of every `<TransitionSeries.Transition>`, mounted as a child of the transition (its local clock is bounded by the transition's own `durationInFrames`). Volume 0.5. URL and volume centralized in `src/lib/sceneSfx.ts`. First beat has no incoming transition, so no SFX plays for it; final beat's exit is silent.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -371,4 +403,4 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
   ]
 }
 ```
-With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap).
+With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap). Each of the 5 cross-fades plays a whoosh at the start.

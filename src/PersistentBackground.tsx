@@ -46,7 +46,7 @@ const ScrollingGrid2D: React.FC<{
         y1={0}
         x2={x}
         y2={totalH}
-        stroke="rgba(0, 0, 0, 0.08)"
+        stroke="rgba(0, 0, 0, 0.25)"
         strokeWidth={1}
       />,
     );
@@ -62,7 +62,7 @@ const ScrollingGrid2D: React.FC<{
         y1={y}
         x2={width}
         y2={y}
-        stroke="rgba(0, 0, 0, 0.08)"
+        stroke="rgba(0, 0, 0, 0.25)"
         strokeWidth={1}
       />,
     );
@@ -125,7 +125,7 @@ const SweepLine: React.FC<{
         width,
         height: y,
         background:
-          "linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.06) 50%, rgba(0, 0, 0, 0) 100%)",
+          "linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.18) 50%, rgba(0, 0, 0, 0) 100%)",
         pointerEvents: "none",
       }}
     />

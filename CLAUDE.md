@@ -112,3 +112,118 @@ npx remotion render
 ```bash
 npx remotion studio --no-open
 ```
+
+---
+
+## Phase 2: Video Generator Plan (IN PROGRESS)
+
+### Architecture
+```
+beats.json (Phase 1 output)
+  ↓
+MotionGraphicsVideo.tsx (orchestrator)
+  ↓
+DynamicDuration wrapper (calculateMetadata)
+  ↓
+SceneTransition (entrance/exit)
+  ↓
+Beat component (KeyStatement, ChartLine, etc.)
+  ↓
+KineticCaptions (word-level sync)
+  ↓
+PersistentBackground (logo + grid + cubes)
+  ↓
+Audio narration
+```
+
+### Project Structure
+```
+src/
+├── Root.tsx                          # Compositions registry
+├── MotionGraphicsVideo.tsx           # Main orchestrator
+├── beats/
+│   ├── registry.ts                   # Maps beat.type → React component + Zod schema
+│   ├── renderBeat.ts                 # Renders a single beat with SceneTransition
+│   └── types.ts                      # Beat type definitions
+├── SceneTransition.tsx               # Entrance/exit wrapper
+├── PersistentBackground.tsx          # Background (logo + grid + cubes)
+├── Logo.tsx                          # 3D S-NEWS voxel logo
+├── components/
+│   ├── KeyStatement.tsx
+│   ├── PlainText.tsx
+│   ├── IconText.tsx
+│   ├── ChartLine.tsx
+│   ├── ChartCounter.tsx
+│   ├── ChartComparison.tsx
+│   ├── ChartComparison3D.tsx
+│   ├── ProgressMeter.tsx
+│   ├── Timeline.tsx
+│   ├── VersusCard.tsx
+│   ├── BeforeAfter.tsx
+│   ├── Map3D.tsx
+│   └── KineticCaptions.tsx
+├── audio/
+│   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
+├── schemas/
+│   └── beatMetadata.ts               # Zod schemas for metadata validation
+├── calculateMetadata.ts              # Dynamic duration/width/height
+└── lib/
+    └── totalDuration.ts              # Sums beat durations
+```
+
+### Step 1: Beat Type System (`src/beats/types.ts`)
+Mirror the Python `beat_generator.py` output:
+- `BeatType` union of all supported types
+- `Beat` object: `{type, startFrame, durationInFrames, metadata}`
+
+Supported types: `key_statement`, `plain_text`, `icon_text`, `chart_line`, `chart_counter`, `chart_comparison`, `chart_comparison_3d`, `progress_meter`, `timeline`, `versus`, `before_after`, `map_location`, `map_3d`, `process_flow`, `quote_card`.
+
+### Step 2: Component Registry (`src/beats/registry.ts`)
+Maps each `BeatType` to:
+- The React component
+- A Zod schema that validates the `metadata` shape
+
+**Why Zod:** When Python's LLM-driven `beat_generator.py` outputs bad data, the registry fails fast in Remotion Studio with a clear error instead of a deep `undefined` crash during render.
+
+### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`)
+- Uses `<Sequence from={beat.startFrame} durationInFrames={beat.durationInFrames}>` per beat
+- Each sequence wraps:
+  - `<PersistentBackground />` (always behind)
+  - `<SceneTransition>` → the beat component
+  - `<KineticCaptions>` overlay (respects `captionEnabledTypes` to skip on chart beats)
+- Per-beat `<Sequence>` (NOT `.map()`) keeps durations editable in Studio per the Remotion video-editing rule.
+
+### Step 4: Dynamic Duration (`src/calculateMetadata.ts`)
+- `calculateMetadata` reads `props.beats` and returns `durationInFrames = lastBeat.startFrame + lastBeat.durationInFrames`
+- Composition auto-resizes when `beats.json` changes.
+- Optionally load `beats.json` at runtime via `staticFile()` + `fetch` so Phase 1 output updates do not require a Remotion rebuild.
+
+### Step 5: Audio + Word Sync (`src/audio/NarrationLayer.tsx`)
+- Single `<Audio src={staticFile("narration.mp3")} />` for the full track
+- Volume ramp-out over the last 0.3s to avoid pop
+- `KineticCaptions` already consumes `word_timestamps.json` via `words[]` with `{word, start, end}` in seconds; sync is driven by `useCurrentFrame()` / fps.
+
+### Step 6: Scene Transitions (`src/SceneTransition.tsx`)
+- Provides the `SceneTransitionContextValue` (`isIdle`, `entranceProgress`, `exitProgress`, `idleProgress`, `overallProgress`) that existing components already expect.
+- Hardcoded `<Sequence>` per beat with internal `entranceProgress` interpolation (cut-based Shorts) is preferred over `<TransitionSeries>` cross-fade for editability.
+
+### Step 7: Wire Up `Root.tsx`
+- Replace the `MotionGraphicsVideo` TODO stub with the real composition.
+- Pass `beats`, `words`, `narrationSrc` via `defaultProps`.
+- Keep all `*Test` compositions in their own folder for Studio component preview.
+- `MotionGraphicsVideo` uses `calculateMetadata` for dynamic duration.
+
+### Step 8: Build Order
+1. `beats/types.ts` + `beats/registry.ts` — type foundation
+2. `MotionGraphicsVideo.tsx` — orchestrator (single-beat render first to prove the loop)
+3. `SceneTransition.tsx` — entrance/exit wrapper
+4. `calculateMetadata.ts` — dynamic duration
+5. `audio/NarrationLayer.tsx` — narration audio
+6. Wire up `Root.tsx` properly (replace TODO stub)
+7. Run `npx remotion studio` and fix component prop mismatches beat-by-beat
+
+### Critical Decisions
+1. **Per-beat `<Sequence>`** vs **`<TransitionSeries>`** — Using per-beat `<Sequence>` (cut-based, easier to edit in Studio). No cross-fade transitions between beats for now.
+2. **Where to load `beats.json`?** — Runtime fetch via `calculateMetadata` so Phase 1 output updates do not require a rebuild.
+3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
+4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.

@@ -6,6 +6,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
+import { Logo } from "./Logo";
 
 const SmallCuboid: React.FC<{
   position: [number, number, number];
@@ -148,6 +149,9 @@ export const PersistentBackground: React.FC = () => {
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
         {cuboids}
       </ThreeCanvas>
+
+      {/* Animated 3D orange S-NEWS logo at top center */}
+      <Logo size={1} />
     </AbsoluteFill>
   );
 };

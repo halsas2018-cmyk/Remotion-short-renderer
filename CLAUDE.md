@@ -147,15 +147,16 @@ Audio narration (root)
 ### Project Structure
 ```
 src/
-├── Root.tsx                          # Compositions registry
+├── Root.tsx                          # Compositions registry ✅ DONE
 ├── MotionGraphicsVideo.tsx           # Main orchestrator ✅ DONE
 ├── beats/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
 │   ├── types.ts                      # Beat type definitions ✅ DONE
-│   └── words.ts                      # Word timestamp type ✅ DONE
+│   ├── words.ts                      # Word timestamp type ✅ DONE
+│   └── beats.json                    # Phase 1 output (currently src/beats/beats.json)
 ├── SceneTransition.tsx               # Entrance/exit wrapper ✅ DONE
-├── PersistentBackground.tsx          # Background (logo + grid + cubes)
+├── PersistentBackground.tsx          # Background (logo + grid + cubes) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
 ├── components/
 │   ├── KeyStatement.tsx
@@ -175,6 +176,7 @@ src/
 │   ├── BeatKineticCaptions.tsx       # Per-beat wrapper ✅ DONE
 │   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
+├── Composition.tsx                   # Template file (unused; placeholder)
 └── lib/
     └── totalDuration.ts              # Sums beat durations
 ```
@@ -248,11 +250,12 @@ Lives inside `src/MotionGraphicsVideo.tsx`. Reads `props.beats` and returns the 
 ### Step 7: Per-beat Captions Wrapper (`src/audio/BeatKineticCaptions.tsx`) — ✅ DONE
 Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`) to the existing `KineticCaptions` API (`{captionEnabledTypes, beats, words}`). Used so the orchestrator can pass already-sliced `words` per beat without modifying `KineticCaptions.tsx`.
 
-### Step 8: Wire Up `Root.tsx` — ✅ DONE
+### Step 8: Wire Up `Root.tsx` — ✅ DONE (commit 589dc92)
 - The `MotionGraphicsVideo` composition is now wired to the real `MotionGraphicsVideo` component (was a TODO stub)
-- `defaultProps` passes `beats` (from `beats.json`), `words` (from `timestamps.json`), and `narrationSrc: "narration.mp3"`
+- `defaultProps` passes `beats` (from `src/beats/beats.json`), `words` (from `timestamps.json`), and `narrationSrc: "narration.mp3"`
 - `calculateMetadata` from the orchestrator overrides the static `durationInFrames`
 - All existing `*Test` compositions are preserved in the same root file
+- **Bug fix**: import path corrected from `./beats.json` → `./beats/beats.json` (the file lives at `src/beats/beats.json`)
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -262,11 +265,12 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 5. ~~Per-beat `RenderBeat` + `BeatKineticCaptions` wrapper~~ ✅
 6. ~~Wire up `Root.tsx` (replace TODO stub)~~ ✅
 7. ~~Fix orchestrator prop mismatches (`adaptMetadata` + drop `text` prop)~~ ✅
-8. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+8. ~~Fix import path in `Root.tsx` (`./beats.json` → `./beats/beats.json`)~~ ✅
+9. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **Per-beat `<Sequence>`** vs **`<TransitionSeries>`** — Using per-beat `<Sequence>` (cut-based, easier to edit in Studio). No cross-fade transitions between beats for now.
-2. **Where to load `beats.json`?** — Build-time import in `Root.tsx` (chosen for now; runtime fetch can be added later via `calculateMetadata` if needed).
+2. **Where to load `beats.json`?** — Build-time import in `Root.tsx` (chosen for now; runtime fetch can be added later via `calculateMetadata` if needed). File lives at `src/beats/beats.json`.
 3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
 4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.
 5. **Fallback components** — Confirmed; `chart_comparison`, `map_location`, `process_flow`, `quote_card` reuse existing components until dedicated variants are built.
@@ -274,3 +278,20 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component.
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
+
+### Real `beats.json` Example (current reference)
+```json
+{
+  "fps": 30,
+  "totalDurationInFrames": 1143,
+  "beats": [
+    { "type": "key_statement", "text": "Bank of America just warned...", "emphasisWords": ["Bank of America", "warned"], "startFrame": 4, "endFrame": 81, "durationInFrames": 77 },
+    { "type": "icon_text", "text": "ignoring value stocks...", "icon": "warning", "startFrame": 81, "endFrame": 162, "durationInFrames": 81 },
+    { "type": "versus", "text": "sitting on the sidelines...", "left": "value stocks sitting on sidelines", "right": "everyone chasing flashy tech", "startFrame": 257, "endFrame": 337, "durationInFrames": 80 },
+    { "type": "timeline", "text": "costs rise...", "events": ["costs rise", "inflation stays high", "grocery‑store chain example"], "startFrame": 466, "endFrame": 565, "durationInFrames": 99 },
+    { "type": "before_after", "text": "or a utility firm...", "beforeLabel": "utility firm quiet", "afterLabel": "utility firm pulling ahead", "startFrame": 565, "endFrame": 647, "durationInFrames": 82 },
+    { "type": "process_flow", "text": "If you bought...", "steps": ["identify under‑the‑radar stocks", "buy a handful"], "startFrame": 878, "endFrame": 944, "durationInFrames": 66 }
+  ]
+}
+```
+Total duration: **1143 frames @ 30fps = 38.1 seconds** (within YouTube Shorts' 60s cap).

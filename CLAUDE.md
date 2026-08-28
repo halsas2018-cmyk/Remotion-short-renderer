@@ -129,6 +129,10 @@ calculateMetadata (dynamic duration)
   ↓
 RenderBeat per beat (hard-coded <Sequence>)
   ↓
+  adaptMetadata() (Python shape → component shape)
+  ↓
+  validateBeatMetadata() (Zod)
+  ↓
   PersistentBackground (behind)
   ↓
   SceneTransition (entrance/exit)
@@ -207,13 +211,6 @@ Maps each `BeatType` to:
 - `process_flow` → `Timeline`
 - `quote_card` → `KeyStatement`
 
-**Key data shape notes** (learned from inspecting `beats.json`):
-- `text` is at the top level of every beat (NOT inside `metadata`). The orchestrator merges top-level `text` into `metadata` before Zod validation, then passes `text` to `KineticCaptions` separately.
-- `endFrame` is redundant with `startFrame + durationInFrames`; the registry ignores it.
-- `emphasisWords` is optional everywhere it appears.
-- `icon_text` requires an `icon` string.
-- `versus` uses `left`/`right` strings directly.
-
 ### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`) — ✅ DONE
 - Root composition: `MotionGraphicsVideo`
 - Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />`
@@ -232,10 +229,16 @@ Each beat's `<Sequence>` contains three layers, in z-order:
 
 **Failure handling:** If Zod validation fails OR no component is registered, the beat renders a labeled fallback message inside its sequence (red for invalid, blue for unsupported) — this keeps the timeline readable and makes Python pipeline bugs visible.
 
+**Metadata adapter (`adaptMetadata`):** Python emits a *minimal* shape per beat (`versus.left` is a string, `timeline.events` is a string array) but the existing components expect a *rich* shape (`VersusCard` wants `{label, value, items}` objects; `Timeline` wants `{marker, label}` objects). `adaptMetadata(type, raw, text)` runs before Zod validation and converts the minimal shape into the rich shape. Adapters:
+- `versus`: `{left: "..."}` → `{left: {label: "..."}}` (same for `right`)
+- `timeline`: `["a", "b"]` → `[{marker: "Step 1", label: "a"}, ...]`
+- `process_flow`: `["a", "b"]` → `[{marker: "1", label: "a"}, ...]` (Timeline fallback)
+- all others: pass through
+
 ### Step 5: Dynamic Duration (`calculateMetadata`) — ✅ DONE
 Lives inside `src/MotionGraphicsVideo.tsx`. Reads `props.beats` and returns the last beat's `startFrame + durationInFrames`. Composition auto-resizes.
 
-### Step 6: Scene Transitions (`src/SceneTransition.tsx`) — ✅ DONE (built ahead of order to keep the orchestrator self-contained)
+### Step 6: Scene Transitions (`src/SceneTransition.tsx`) — ✅ DONE
 - Wraps a beat's content in a `SceneTransitionContext` with `entranceProgress`, `exitProgress`, `idleProgress`, `overallProgress`, `isIdle`
 - Phase budgets: 18% entrance / 64% idle / 18% exit (tuned for 1.5s–4s beats)
 - Default wrapper behavior: gentle fade + slide-up entrance, fade exit
@@ -258,7 +261,8 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 4. ~~`calculateMetadata` — dynamic duration~~ ✅
 5. ~~Per-beat `RenderBeat` + `BeatKineticCaptions` wrapper~~ ✅
 6. ~~Wire up `Root.tsx` (replace TODO stub)~~ ✅
-7. `npx remotion studio` + fix component prop mismatches beat-by-beat (NEXT)
+7. ~~Fix orchestrator prop mismatches (`adaptMetadata` + drop `text` prop)~~ ✅
+8. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **Per-beat `<Sequence>`** vs **`<TransitionSeries>`** — Using per-beat `<Sequence>` (cut-based, easier to edit in Studio). No cross-fade transitions between beats for now.
@@ -269,3 +273,4 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 6. **Top-level `text` vs `metadata.text`** — Orchestrator merges top-level `text` into `metadata` before Zod validation, then passes top-level `text` to `KineticCaptions` separately.
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component.
+9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.

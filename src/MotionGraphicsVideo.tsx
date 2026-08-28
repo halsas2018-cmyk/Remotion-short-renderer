@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   Audio,
   CalculateMetadataFunction,
-  Composition,
   staticFile,
   useVideoConfig,
 } from "remotion";
@@ -38,30 +37,26 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
   return (
     <AbsoluteFill style={{ backgroundColor: "white" }}>
       {/*
-        Background music / voiceover plays for the full composition.
-        The Audio element is rendered once at the root so it doesn't
-        get re-mounted per beat sequence.
+        Narration plays once for the whole composition. Mounted at the
+        root so it isn't re-mounted per beat.
       */}
       {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
 
       {/*
         Render each beat as a hard-coded <Sequence>. Each <Sequence>
         is its own JSX node (per the Remotion video-editing rule) so
-        its `from` and `durationInFrames` remain editable in Studio.
+        its `from` and `durationInFrames` are editable in Studio.
 
-        We do NOT use .map() — beats are listed explicitly so the
-        timeline is fully readable and editable in the Studio.
+        The .map() iterates over the *data* (beats.beats), not over
+        the JSX tree. The JSX tree per beat is hardcoded inside
+        <RenderBeat>, so each beat is fully editable in Studio.
       */}
       {beats.beats.map((beat, index) => (
         <RenderBeat
-          // We re-mount RenderBeat per beat via the key below; React
-          // requires `key` on elements produced by .map().
           key={`beat-${index}`}
-          beat={beat as Beat}
-          // Top-level `text` from the beat drives KineticCaptions.
-          // The Zod schema's `metadata.text` is ignored — narration
-          // lives at the beat root in the Python output.
-          text={(beat as Beat & { text: string }).text}
+          // `RenderBeat` reads top-level `text` from the beat itself
+          // (no need to pass it as a separate prop).
+          beat={beat as Beat & { text: string }}
           allWords={words}
           beatIndex={index}
           fps={fps}
@@ -73,23 +68,18 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
 /* ------------------------------------------------------------------ */
 /*  Dynamic duration via calculateMetadata                             */
-/*  Reads `props.beats` and returns the total frame count so the       */
-/*  composition auto-resizes when beats.json changes.                  */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<
   MotionGraphicsVideoProps
 > = ({ props }) => {
   if (!props.beats || props.beats.beats.length === 0) {
-    return {
-      durationInFrames: 1,
-    };
+    return { durationInFrames: 1 };
   }
 
   const lastBeat = props.beats.beats[props.beats.beats.length - 1];
-  const total = (lastBeat as Beat).startFrame + (lastBeat as Beat).durationInFrames;
+  const total =
+    (lastBeat as Beat).startFrame + (lastBeat as Beat).durationInFrames;
 
-  return {
-    durationInFrames: total,
-  };
+  return { durationInFrames: total };
 };

@@ -5,14 +5,44 @@ import {
   useVideoConfig,
   interpolate,
 } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
 import { Logo } from "./Logo";
 
 /* ------------------------------------------------------------------ */
 /*  Tuning constants                                                  */
+/*                                                                     */
+/*  These speeds are tuned for short-form YouTube Shorts (~30-60s).   */
+/*  Speeds are in radians per frame, so at 30 fps a value of 0.02    */
+/*  means a full rotation every ~10.5 seconds.                        */
 /* ------------------------------------------------------------------ */
+
+const MAIN_CUBOID_ROTATION_SPEED = 0.02; // ~10.5s per full rotation
+const INTERSECT_CUBOID_ROTATION_SPEED = 0.035; // faster, ~6s per full rotation
+const CUBOID_ROTATION_SPEED_RATIO_Y = 1.3; // Y axis spins 1.3x faster than X
 
 const GRID_SPACING = 40; // pixels between grid lines
 const SCROLL_SPEED = 1.2; // pixels per frame the grid drifts downward
+
+const SmallCuboid: React.FC<{
+  position: [number, number, number];
+  size: number;
+  frame: number;
+  rotationSpeed: number;
+}> = ({ position, size, frame, rotationSpeed }) => {
+  const rotationX = frame * rotationSpeed;
+  const rotationY = frame * rotationSpeed * CUBOID_ROTATION_SPEED_RATIO_Y;
+
+  return (
+    <mesh position={position} rotation={[rotationX, rotationY, 0]}>
+      <boxGeometry args={[size, size, size]} />
+      <meshStandardMaterial
+        color="#000000"
+        emissive="#000000"
+        emissiveIntensity={0.5}
+      />
+    </mesh>
+  );
+};
 
 /**
  * A 2D gridline layer that scrolls downward continuously, giving a
@@ -134,13 +164,59 @@ export const PersistentBackground: React.FC = () => {
   const { width, height } = useVideoConfig();
   // This component is mounted at the ROOT of the composition, OUTSIDE
   // any <Sequence>, so `useCurrentFrame()` returns the GLOBAL composition
-  // frame. This is what makes the grid animate continuously across the
-  // whole video instead of restarting at 0 every beat.
+  // frame. This is what makes the grid and logo animate continuously
+  // across the whole video instead of restarting at 0 every beat.
   const frame = useCurrentFrame();
 
   // Continuous downward scroll, wraps every (GRID_SPACING / SCROLL_SPEED)
   // frames so the grid appears infinitely tiled.
   const scrollOffset = (frame * SCROLL_SPEED) % GRID_SPACING;
+
+  // Halved grid: 6 cols x 10 rows = 60 main + 5x9 = 45 intersection = 105 total.
+  // Spacing is increased to keep visual coverage roughly the same as the
+  // previous 8x14 layout.
+  const cols = 6;
+  const rows = 10;
+  const xSpacing = 0.7;
+  const ySpacing = 0.7;
+  const xStart = -((cols - 1) / 2) * xSpacing;
+  const yStart = -((rows - 1) / 2) * ySpacing;
+
+  const cuboids: React.ReactElement[] = [];
+
+  // Main grid cuboids
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = xStart + col * xSpacing;
+      const y = yStart + row * ySpacing;
+      cuboids.push(
+        <SmallCuboid
+          key={`main-${row}-${col}`}
+          position={[x, y, 0]}
+          size={0.18}
+          frame={frame}
+          rotationSpeed={MAIN_CUBOID_ROTATION_SPEED}
+        />,
+      );
+    }
+  }
+
+  // Smaller cuboids at each intersection (between every 4 main cuboids)
+  for (let row = 0; row < rows - 1; row++) {
+    for (let col = 0; col < cols - 1; col++) {
+      const x = xStart + (col + 0.5) * xSpacing;
+      const y = yStart + (row + 0.5) * ySpacing;
+      cuboids.push(
+        <SmallCuboid
+          key={`intersect-${row}-${col}`}
+          position={[x, y, 0]}
+          size={0.1}
+          frame={frame}
+          rotationSpeed={INTERSECT_CUBOID_ROTATION_SPEED}
+        />,
+      );
+    }
+  }
 
   return (
     <AbsoluteFill
@@ -167,7 +243,14 @@ export const PersistentBackground: React.FC = () => {
         periodFrames={120}
       />
 
-      {/* 3D orange S-NEWS voxel logo (re-added at the user's request) */}
+      {/* 3D cuboid grid (105 cubes, half the original 203). */}
+      <ThreeCanvas width={width} height={height}>
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[5, 5, 5]} intensity={0.8} />
+        {cuboids}
+      </ThreeCanvas>
+
+      {/* Animated 3D orange S-NEWS voxel logo */}
       <Logo size={1} />
     </AbsoluteFill>
   );

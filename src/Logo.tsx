@@ -22,8 +22,12 @@ import {
  * caller can scale it without touching the inner geometry.
  *
  * Replace with the real voxel logo when it's ready.
+ *
+ * The file is exported as BOTH a named export (`Logo`) and a default
+ * export so it can be imported either way without surprising rspack's
+ * module resolver.
  */
-type LogoProps = {
+export type LogoProps = {
   size?: number;
 };
 
@@ -36,15 +40,10 @@ export const Logo: React.FC<LogoProps> = ({ size = 1 }) => {
   const boxSize = baseSize * size;
 
   // Slow rotation: full turn every 6 seconds at 30fps = 180 frames.
-  const rotateY = interpolate(
-    frame,
-    [0, 180],
-    [0, 360],
-    {
-      extrapolateRight: "clamp",
-      easing: Easing.linear,
-    },
-  );
+  const rotateY = interpolate(frame, [0, 180], [0, 360], {
+    extrapolateRight: "clamp",
+    easing: Easing.linear,
+  });
 
   // Gentle vertical bob.
   const bob = Math.sin(frame * 0.05) * 6;
@@ -89,3 +88,5 @@ export const Logo: React.FC<LogoProps> = ({ size = 1 }) => {
     </AbsoluteFill>
   );
 };
+
+export default Logo;

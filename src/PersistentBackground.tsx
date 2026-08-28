@@ -154,6 +154,7 @@ export const PersistentBackground: React.FC = () => {
         width,
         height,
         overflow: "hidden",
+        translate: "0px 38.8px",
       }}
     >
       {/* 2D gridline layer (behind 3D cubes) */}

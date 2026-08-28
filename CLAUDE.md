@@ -238,6 +238,30 @@ Each beat's `<Sequence>` contains three layers, in z-order:
 It is suppressed for text/card heavy beat types (the on-screen text is already the caption):
 `key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`.
 
+The gate is implemented in `src/beats/renderBeat.tsx` as:
+
+```ts
+const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
+  "map_3d",
+  "chart_line",
+  "chart_comparison_3d",
+  "chart_counter",
+  "progress_meter",
+  "timeline",
+]);
+
+const shouldShowKineticCaptions = (beatType: string): boolean =>
+  CAPTION_VISIBLE_BEAT_TYPES.has(beatType);
+```
+
+…and used inside `RenderBeat` after word-slicing:
+
+```ts
+const showCaptions = shouldShowKineticCaptions(beat.type);
+// …
+{showCaptions ? <BeatKineticCaptions … /> : null}
+```
+
 **Metadata adapter (`adaptMetadata`):** Python emits a *minimal* shape per beat (`versus.left` is a string, `timeline.events` is a string array) but the existing components expect a *rich* shape (`VersusCard` wants `{label, value, items}` objects; `Timeline` wants `{marker, label}` objects). `adaptMetadata(type, raw, text)` runs before Zod validation and converts the minimal shape into the rich shape. Adapters:
 - `versus`: `{left: "..."}` → `{left: {label: "..."}}` (same for `right`)
 - `timeline`: `["a", "b"]` → `[{marker: "Step 1", label: "a"}, ...]`
@@ -286,7 +310,7 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component.
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
-10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption. The gate is centralized in `RenderBeat` (see Step 4).
+10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption. The gate is centralized in `RenderBeat` via `CAPTION_VISIBLE_BEAT_TYPES` (see Step 4 for the code snippet).
 11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
 
 ### Real `beats.json` Example (current reference)

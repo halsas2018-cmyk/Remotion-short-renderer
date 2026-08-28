@@ -7,6 +7,26 @@ Automated pipeline for creating YouTube Shorts from news stories.
 
 ---
 
+## Render Data (single-folder input)
+
+The renderer reads **four** files at composition-mount time. Drop them in `public/` and run `npx remotion render MotionGraphicsVideo out/movie.mp4`. No code change required.
+
+```
+public/
+├── narration.mp3       # TTS narration (mounted by the orchestrator)
+├── beats.json          # Beat plan from Phase 1 (fetched via calculateMetadata)
+├── timestamps.json     # WhisperX word-level timestamps (fetched via calculateMetadata)
+└── sfx-ambient.mp3     # Looping ambient bed (mounted by the orchestrator)
+```
+
+The orchestrator **never** imports these files at build time. They are loaded at runtime:
+- `narration.mp3` and `sfx-ambient.mp3` are read directly by `MotionGraphicsVideo` via `<Audio src={staticFile("…")} />`.
+- `beats.json` and `timestamps.json` are fetched in `Root.tsx`'s `renderDataCalculateMetadata` via `fetch(staticFile("…"))` and injected into `props.beats` / `props.words`. The orchestrator's own `calculateMetadata` then derives `durationInFrames` from those props.
+
+To render a different story, copy the four files above into `public/` and re-run the render command. The `*Test` compositions in Studio still use hard-coded `defaultProps` (no fetch needed).
+
+---
+
 ## Completed Work (Phase 1)
 
 ### Pipeline Stages
@@ -102,13 +122,16 @@ Components are located in `src/` and follow these conventions:
 2. **Timing**: Keep `interpolate()` calls inline in style props for Studio interactivity
 3. **Transforms**: Use individual CSS properties (`scale`, `translate`, `rotate`) over `transform` strings
 4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
-5. **Assets**: Place in `public/` folder, reference with `staticFile()`
+5. **Assets**: Place in `public/` folder, reference with `staticFile()`. For **runtime** JSON data, use `fetch(staticFile("…"))` inside `calculateMetadata` (see Step 8).
 6. **Transitions**: Use `<TransitionSeries>` + `fade()` (from `@remotion/transitions`) for cross-fades between beats. Use `SceneTransition` for per-beat entrance/exit.
 7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs in `src/lib/sceneSfx.ts`.
+8. **Ambient SFX**: A looping bed under the narration uses `<Audio loop loopVolumeCurveBehavior="extend" volume={(f) => interpolate(f, [0, FADE_FRAMES], [0, TARGET_VOLUME], {extrapolateRight: "clamp"})} />`. Mounted at the root, not per-beat, so it spans the whole composition.
 
 ### Running the Renderer
 ```bash
-npx remotion render
+# 1. Drop the four files into public/ (see top of this doc)
+# 2. Render
+npx remotion render MotionGraphicsVideo out/movie.mp4
 ```
 
 ### Preview
@@ -122,11 +145,17 @@ npx remotion studio --no-open
 
 ### Architecture
 ```
-beats.json (Phase 1 output)
+public/   (single source of render data)
+  narration.mp3
+  beats.json
+  timestamps.json
+  sfx-ambient.mp3
+  ↓
+Root.tsx::renderDataCalculateMetadata (async fetch via staticFile)
   ↓
 MotionGraphicsVideo.tsx (orchestrator)
   ↓
-calculateMetadata (dynamic duration; subtracts transition frames)
+calculateMetadata (sync; subtracts transition frames)
   ↓
 <TransitionSeries> (per-beat <Sequence> with cross-fade between)
   ↓
@@ -147,19 +176,19 @@ calculateMetadata (dynamic duration; subtracts transition frames)
   <Audio src=mouse-click>     (one per word; typing SFX; data-vis beats only)
   ↓
 Audio narration (root)
+Audio ambient SFX (root, looping, fades in over 1s)
 ```
 
 ### Project Structure
 ```
 src/
-├── Root.tsx                          # Compositions registry ✅ DONE
+├── Root.tsx                          # Compositions registry + renderDataCalculateMetadata ✅ DONE
 ├── MotionGraphicsVideo.tsx           # Main orchestrator ✅ DONE
 ├── beats/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
 │   ├── types.ts                      # Beat type definitions ✅ DONE
-│   ├── words.ts                      # Word timestamp type ✅ DONE
-│   └── beats.json                    # Phase 1 output (currently src/beats/beats.json)
+│   └── words.ts                      # Word timestamp type ✅ DONE
 ├── SceneTransition.tsx               # Per-beat entrance/exit with Easing.bezier ✅ DONE
 ├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
@@ -182,10 +211,15 @@ src/
 ├── lib/
 │   ├── totalDuration.ts              # Sums beat durations
 │   ├── transitionDuration.ts         # Dynamic cross-fade frames ✅ DONE
-│   └── sceneSfx.ts                   # SFX URLs + defaults (whoosh, click) ✅ DONE
+│   └── sceneSfx.ts                   # SFX URLs + defaults (whoosh, click, ambient) ✅ DONE
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
 └── …
+public/                                # All render data lives here (single-folder input)
+├── narration.mp3
+├── beats.json
+├── timestamps.json
+└── sfx-ambient.mp3
 ```
 
 ### Step 1: Beat Type System (`src/beats/types.ts`) — ✅ DONE (commit 78e3f69)
@@ -228,6 +262,7 @@ Maps each `BeatType` to:
 - Wraps `PersistentBackground` once at the root (so its frame counter is global)
 - Renders beats inside a single `<TransitionSeries>` (see Step 4) with a `<TransitionSeries.Transition presentation={fade()} />` between every adjacent pair
 - Each `<TransitionSeries.Transition>` also contains a `<Audio src={whoosh}>` for UI feedback (see Step 4b/6b)
+- Renders the `sfx-ambient.mp3` once at the root as a looping ambient bed (see Step 6d)
 - `calculateMetadata` returns `sum(beatDurations) - sum(transitionFrames)` so the composition auto-resizes when `beats.json` changes (see Step 4b for the duration math)
 - White background
 
@@ -375,15 +410,42 @@ Code shape inside `BeatKineticCaptions`:
 })}
 ```
 
+### Step 6d: Ambient SFX Bed — ✅ DONE (commit 36433c8)
+A looping ambient track plays underneath the narration for the entire composition. It is the third audio source in the mix (narration + ambient + per-transition whoosh + per-word click) and is intended to sit quietly under everything else.
+
+- **URL**: `sfx-ambient.mp3` — local file in `/public`. Drop the file in `public/`; the orchestrator mounts it via `<Audio src={staticFile(AMBIENT_SFX_URL)} />`.
+- **Volume**: 0.15, with a 1-second fade-in from 0 → 0.15 at the start of the composition. Steady-state volume is low so the ambient doesn't compete with the narration, the whoosh, or the typing clicks. Per `.agents/skills/remotion-markup/audio.md` best practices for ambient sound: low steady volume + `loop` + `loopVolumeCurveBehavior="extend"`.
+- **Mounted at the root** of `MotionGraphicsVideo`, NOT per-beat, so it spans the whole composition without restarting at every cross-fade.
+- **Centralized**: `src/lib/sceneSfx.ts` exports `AMBIENT_SFX_URL`, `AMBIENT_SFX_VOLUME`, and `AMBIENT_SFX_FADE_IN_FRAMES`.
+- **Compatibility**: `<Audio>` from `@remotion/media` works in both server-side render and `<Player>` (unlike `<Audio>` from `remotion` which becomes `<Html5Audio>`).
+
+Code shape inside the orchestrator:
+
+```tsx
+<Audio
+  src={staticFile(AMBIENT_SFX_URL)}
+  loop
+  loopVolumeCurveBehavior="extend"
+  volume={(f) =>
+    interpolate(
+      f,
+      [0, AMBIENT_SFX_FADE_IN_FRAMES],
+      [0, AMBIENT_SFX_VOLUME],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    )
+  }
+/>
+```
+
 ### Step 7: Per-beat Captions Wrapper (`src/audio/BeatKineticCaptions.tsx`) — ✅ DONE
 Bridges the new orchestrator props (`{text, words, durationInFrames, beatType, fps}`) to the existing `KineticCaptions` API (`{captionEnabledTypes, beats, words}`). Used so the orchestrator can pass already-sliced `words` per beat without modifying `KineticCaptions.tsx`. Also hosts the typing-click track (see Step 6c).
 
-### Step 8: Wire Up `Root.tsx` — ✅ DONE (commit 589dc92)
-- The `MotionGraphicsVideo` composition is now wired to the real `MotionGraphicsVideo` component (was a TODO stub)
-- `defaultProps` passes `beats` (from `src/beats/beats.json`), `words` (from `timestamps.json`), and `narrationSrc: "narration.mp3"`
-- `calculateMetadata` from the orchestrator overrides the static `durationInFrames`
-- All existing `*Test` compositions are preserved in the same root file
-- **Bug fix**: import path corrected from `./beats.json` → `./beats/beats.json` (the file lives at `src/beats/beats.json`)
+### Step 8: Wire Up `Root.tsx` — ✅ DONE
+- `renderDataCalculateMetadata` (in `Root.tsx`) is the **async** `calculateMetadata` for the `MotionGraphicsVideo` composition. It fetches `public/beats.json` and `public/timestamps.json` via `fetch(staticFile("…"))` in parallel, injects the parsed JSON into `props.beats` / `props.words`, and returns both the resolved `durationInFrames` (from `beats.totalDurationInFrames`) and the populated props.
+- The **sync** `calculateMetadata` in `MotionGraphicsVideo.tsx` then runs on the now-populated `props.beats` to compute the actual rendered duration (`sum - sum(transitionFrames)`) — this is the value Remotion actually uses to size the composition.
+- `defaultProps` passes only placeholder values (`beats: empty, words: [], narrationSrc: "narration.mp3"`) because the real values come from the fetch.
+- The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and run `npx remotion render`. No code change required.
+- All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -399,11 +461,13 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType, f
 11. ~~Switch orchestrator to `<TransitionSeries>` with dynamic cross-fade~~ ✅
 12. ~~Add whoosh SFX to every `<TransitionSeries.Transition>`~~ ✅
 13. ~~Add typing click SFX on every word in kinetic captions~~ ✅
-14. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+14. ~~Add looping ambient SFX bed under narration~~ ✅ (commit 36433c8)
+15. ~~Single-folder data input: read all 4 render files from `public/` via runtime fetch~~ ✅
+16. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **`<TransitionSeries>` for cross-fade + per-beat `<Sequence>` was replaced.** Now using `<TransitionSeries>` with `<TransitionSeries.Sequence>` and `<TransitionSeries.Transition presentation={fade()} />` between adjacent beats. Cross-fade duration is computed dynamically per pair. Trade-off: per-beat `from` is no longer editable in Studio (only `durationInFrames`).
-2. **Where to load `beats.json`?** — Build-time import in `Root.tsx` (chosen for now; runtime fetch can be added later via `calculateMetadata` if needed). File lives at `src/beats/beats.json`.
+2. **Where to load render data?** — Runtime fetch from `public/`. `Root.tsx::renderDataCalculateMetadata` fetches `public/beats.json` + `public/timestamps.json` via `fetch(staticFile("…"))`, injects them into `props`. `MotionGraphicsVideo` reads `public/narration.mp3` and `public/sfx-ambient.mp3` directly via `staticFile("…")`. No build-time imports. Trade-off: a small startup cost at composition mount (the JSONs need to fetch) and a single `MotionGraphicsVideo` `defaultProps` placeholder. Benefit: drop the four files in `public/` and render — no source edit.
 3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
 4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.
 5. **Fallback components** — Confirmed; `process_flow` and `quote_card` reuse existing components until dedicated variants are built.
@@ -417,6 +481,8 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType, f
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. Used by both the orchestrator and `calculateMetadata` as the single source of truth.
 14. **Transition SFX** — A whoosh.wav from the Remotion CDN plays at the start of every `<TransitionSeries.Transition>`, mounted as a child of the transition (its local clock is bounded by the transition's own `durationInFrames`). Volume 0.5. URL and volume centralized in `src/lib/sceneSfx.ts`. First beat has no incoming transition, so no SFX plays for it; final beat's exit is silent.
 15. **Typing SFX** — A mouse-click.wav from the Remotion CDN plays at the start of every word inside `<BeatKineticCaptions>`, gated to the same data-vis beat types as the visual captions. Volume 0.15. Each click lives inside a 1-frame `<Sequence from={wordStartFrame} durationInFrames={1}>`; the parent `<TransitionSeries.Sequence>` bounds the whole track to the beat. `fps` is forwarded from `RenderBeat` to `BeatKineticCaptions` so the click track is frame-accurate.
+16. **Single-folder render data** — All four data files (`public/narration.mp3`, `public/beats.json`, `public/timestamps.json`, `public/sfx-ambient.mp3`) are loaded at composition mount time. `Root.tsx` fetches the two JSONs in `renderDataCalculateMetadata` and injects them into `props`. The audio files are read directly by the orchestrator via `staticFile("…")`. This replaces the previous build-time import in `Root.tsx`. To render a different story, copy the four files into `public/` and run `npx remotion render` — no source edits required.
+17. **Ambient SFX** — A local `public/sfx-ambient.mp3` plays on `loop` with `loopVolumeCurveBehavior="extend"` underneath the narration. Volume is a callback `(f) => interpolate(f, [0, 30], [0, 0.15], {extrapolateRight: "clamp"})` so it fades in over the first second and then holds at 0.15 for the rest of the composition. Per `audio.md` best practices for ambient sound. Mounted at the root of `MotionGraphicsVideo` (not per-beat) so it spans the whole composition without restarting at every cross-fade. URL and volume centralized in `src/lib/sceneSfx.ts`.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -433,4 +499,4 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType, f
   ]
 }
 ```
-With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap). Each of the 5 cross-fades plays a whoosh at the start; data-vis beats (`timeline` in this example) play a mouse-click per word in their captions.
+With the new `<TransitionSeries>` + dynamic cross-fade, the rendered composition duration is `sum(durations) - sum(transitionFrames)` where each `transitionFrames` is `clamp(round(0.15 * min(out, in)), 4, 15)`. For the example above (sum of durations = 485, 5 transitions): 5 transitions × ~12 frames each ≈ 60 frames. Total ≈ **425 frames @ 30fps = 14.2 seconds** (within YouTube Shorts' 60s cap). Each of the 5 cross-fades plays a whoosh at the start; data-vis beats (`timeline` in this example) play a mouse-click per word in their captions. The ambient track loops under everything for the full 14.2 seconds.

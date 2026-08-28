@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Composition,
   useCurrentFrame,
   useVideoConfig,
   interpolate,
@@ -9,9 +8,6 @@ import {
   Interactive,
 } from "remotion";
 import { useBeatContext } from "./MotionGraphicsVideo";
-
-// Import timestamps directly - webpack bundles it
-import timestampsData from "./timestamps.json";
 
 interface Word {
   word: string;
@@ -68,6 +64,20 @@ const CONFIG = {
   inactiveTextColor: "#4a4a4a",
 } as const;
 
+/**
+ * Single source of truth for which beat types show kinetic captions.
+ * Must stay in sync with `CAPTION_VISIBLE_BEAT_TYPES` in
+ * src/beats/renderBeat.tsx.
+ */
+const KINETIC_CAPTION_ENABLED_BEAT_TYPES = new Set<string>([
+  "map_3d",
+  "chart_line",
+  "chart_comparison_3d",
+  "chart_counter",
+  "progress_meter",
+  "timeline",
+]);
+
 export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   captionEnabledTypes,
   beats,
@@ -75,7 +85,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
-  
+
   // Safely get beat context - default to showing captions if no context
   let currentBeatType: string | null = null;
   try {
@@ -86,9 +96,17 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     currentBeatType = null;
   }
 
-  // Determine if captions should show for current beat
-  // If no currentBeatType (no context), show captions by default
-  const shouldShowCaptions = currentBeatType ? captionEnabledTypes.has(currentBeatType) : true;
+  // If a beat type is provided by the orchestrator, gate captions to the
+  // beat types the orchestrator considers data-vis. If no context (e.g. a
+  // *Test composition with no provider), use the caller-supplied
+  // `captionEnabledTypes` set so test compositions can still preview.
+  const effectiveEnabledTypes = currentBeatType
+    ? KINETIC_CAPTION_ENABLED_BEAT_TYPES
+    : captionEnabledTypes;
+
+  const shouldShowCaptions = currentBeatType
+    ? effectiveEnabledTypes.has(currentBeatType)
+    : true;
 
   // Use dynamic words if provided
   const allWords: Word[] = React.useMemo(() => {
@@ -115,7 +133,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   const halfWindow = Math.floor(windowSize / 2);
   const startIndex = Math.max(0, currentWordIndex - halfWindow);
   const endIndex = Math.min(allWords.length - 1, currentWordIndex + halfWindow);
-  
+
   // Adjust start if we're near the end
   const adjustedStart = Math.max(0, endIndex - windowSize + 1);
   const visibleWordIndices = [];
@@ -301,67 +319,3 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     </AbsoluteFill>
   );
 };
-
-// Test composition - import timestamps.json directly (works in Remotion)
-export const KineticCaptionsComposition: React.FC = () => (
-  <Composition
-    id="KineticCaptions"
-    component={KineticCaptions}
-    durationInFrames={300}
-    fps={30}
-    width={1080}
-    height={1920}
-    defaultProps={{
-      captionEnabledTypes: new Set([
-        "chart_counter",
-        "chart_comparison",
-        "chart_line",
-        "progress_meter",
-        "map_location",
-        "timeline",
-        "process_flow",
-        "versus",
-        "icon_text",
-        "quote_card",
-        "before_after",
-      ]),
-      beats: [],
-      words: timestampsData,
-    }}
-  />
-);
-
-// Dynamic composition factory - create compositions with custom captions
-export function createKineticCaptionsComposition(
-  id: string,
-  words: Word[],
-  durationInFrames: number = 300
-) {
-  return () => (
-    <Composition
-      id={id}
-      component={KineticCaptions}
-      durationInFrames={durationInFrames}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{
-        captionEnabledTypes: new Set([
-          "chart_counter",
-          "chart_comparison",
-          "chart_line",
-          "progress_meter",
-          "map_location",
-          "timeline",
-          "process_flow",
-          "versus",
-          "icon_text",
-          "quote_card",
-          "before_after",
-        ]),
-        beats: [],
-        words,
-      }}
-    />
-  );
-}

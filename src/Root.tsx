@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition } from "remotion";
+import { Composition, staticFile } from "remotion";
 import { ChartCounter } from "./ChartCounter";
 import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
@@ -19,8 +19,23 @@ import {
 } from "./MotionGraphicsVideo";
 import type { Word } from "./beats/words";
 import type { TimedBeats } from "./beats/types";
-import timestampsData from "./timestamps.json";
-import timedBeats from "../beats.json";
+
+/* ------------------------------------------------------------------ */
+/*  Render data                                                       */
+/*                                                                     */
+/*  The orchestrator reads four files from /public at composition     */
+/*  mount time (via calculateMetadata + staticFile + fetch):           */
+/*                                                                     */
+/*    - public/narration.mp3         → narrationSrc                    */
+/*    - public/beats.json            → beats (TimedBeats shape)        */
+/*    - public/timestamps.json       → words (WhisperX shape)          */
+/*    - public/sfx-ambient.mp3       → ambient SFX (read directly by   */
+/*                                     the orchestrator via sceneSfx)  */
+/*                                                                     */
+/*  To render a different video, copy those four files into public/    */
+/*  and run `npx remotion render MotionGraphicsVideo out/movie.mp4`.   */
+/*  No code change required.                                           */
+/* ------------------------------------------------------------------ */
 
 interface TimedBeatsData {
   fps: number;
@@ -28,15 +43,63 @@ interface TimedBeatsData {
   beats: unknown[];
 }
 
-const beatsData = timedBeats as TimedBeatsData;
-const { fps, totalDurationInFrames } = beatsData;
+interface TimestampsDataShape {
+  word: string;
+  start: number;
+  end: number;
+}
 
-const words = timestampsData as unknown as Word[];
+// Asynchronously fetch the four data files at composition mount. The
+// `abortSignal` cancels stale requests when the user changes props in
+// Studio before the previous fetch has resolved.
+const fetchRenderData = async (
+  abortSignal: AbortSignal,
+): Promise<{
+  beats: TimedBeats;
+  words: Word[];
+  narrationSrc: string;
+  fps: number;
+  totalDurationInFrames: number;
+}> => {
+  const [beatsResp, wordsResp] = await Promise.all([
+    fetch(staticFile("beats.json"), { signal: abortSignal }),
+    fetch(staticFile("timestamps.json"), { signal: abortSignal }),
+  ]);
+  if (!beatsResp.ok) {
+    throw new Error(
+      `Failed to fetch beats.json (${beatsResp.status}). Make sure public/beats.json exists.`,
+    );
+  }
+  if (!wordsResp.ok) {
+    throw new Error(
+      `Failed to fetch timestamps.json (${wordsResp.status}). Make sure public/timestamps.json exists.`,
+    );
+  }
+  const beats = (await beatsResp.json()) as TimedBeatsData;
+  const words = (await wordsResp.json()) as TimestampsDataShape[];
+  return {
+    beats: beats as unknown as TimedBeats,
+    words: words as unknown as Word[],
+    narrationSrc: "narration.mp3",
+    fps: beats.fps,
+    totalDurationInFrames: beats.totalDurationInFrames,
+  };
+};
 
-const motionGraphicsProps = {
-  beats: timedBeats as TimedBeats,
-  words,
-  narrationSrc: "narration.mp3",
+const renderDataCalculateMetadata: typeof calculateMetadata = async ({
+  props,
+  abortSignal,
+}) => {
+  const data = await fetchRenderData(abortSignal);
+  return {
+    durationInFrames: data.totalDurationInFrames,
+    props: {
+      ...props,
+      beats: data.beats,
+      words: data.words,
+      narrationSrc: data.narrationSrc,
+    },
+  };
 };
 
 // Root component - returns all compositions in a fragment
@@ -376,21 +439,18 @@ export const RemotionRoot = () => (
       width={1080}
       height={1920}
       defaultProps={{
+        // Active data-vis beat types — must match the gate in
+        // src/beats/renderBeat.tsx (CAPTION_VISIBLE_BEAT_TYPES).
         captionEnabledTypes: new Set([
-          "chart_counter",
-          "chart_comparison",
+          "map_3d",
           "chart_line",
+          "chart_comparison_3d",
+          "chart_counter",
           "progress_meter",
-          "map_location",
           "timeline",
-          "process_flow",
-          "versus",
-          "icon_text",
-          "quote_card",
-          "before_after",
         ]),
         beats: [],
-        words: timestampsData,
+        words: [],
       }}
     />
     <Composition
@@ -403,18 +463,30 @@ export const RemotionRoot = () => (
       defaultProps={{}}
     />
     {/*
-      The full video. calculateMetadata reads props.beats and
-      overrides the static durationInFrames below.
+      The full video. calculateMetadata (renderDataCalculateMetadata) fetches
+      beats.json + timestamps.json from /public and overrides the static
+      durationInFrames + populates beats/words/narrationSrc.
+
+      The "1" duration is a placeholder; the async calculateMetadata runs
+      before the composition is registered and supplies the real number.
     */}
     <Composition
       id="MotionGraphicsVideo"
       component={MotionGraphicsVideo}
-      durationInFrames={totalDurationInFrames}
-      fps={fps}
+      durationInFrames={1}
+      fps={30}
       width={1080}
       height={1920}
-      defaultProps={motionGraphicsProps}
-      calculateMetadata={calculateMetadata}
+      defaultProps={{
+        // `beats` and `words` are injected by calculateMetadata below.
+        // `narrationSrc` is also injected by calculateMetadata; the
+        // placeholder is only used in the brief window before the fetch
+        // resolves.
+        beats: { fps: 30, totalDurationInFrames: 1, beats: [] } as TimedBeats,
+        words: [] as Word[],
+        narrationSrc: "narration.mp3",
+      }}
+      calculateMetadata={renderDataCalculateMetadata}
     />
   </>
 );

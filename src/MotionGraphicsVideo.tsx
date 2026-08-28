@@ -74,6 +74,12 @@ export type MotionGraphicsVideoProps = {
 /*  whole composition. Volume fades in over the first second and then */
 /*  holds at AMBIENT_SFX_VOLUME so it stays a quiet bed under the     */
 /*  narration, the whoosh, and the typing clicks — see Step 6d.      */
+/*                                                                     */
+/*  Data inputs (all in /public, loaded at composition mount time):   */
+/*    - narration.mp3   → narrationSrc (this component)               */
+/*    - sfx-ambient.mp3 → AMBIENT_SFX_URL (read in sceneSfx.ts)       */
+/*    - beats.json      → beats prop (Root.tsx calculateMetadata)     */
+/*    - timestamps.json → words prop (Root.tsx calculateMetadata)     */
 /* ------------------------------------------------------------------ */
 
 export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
@@ -201,6 +207,13 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 /*  totalDuration = sum(beatDurations) - sum(transitionFrames)         */
 /*  The transition frames must match what the orchestrator renders,   */
 /*  so we use the SAME computeTransitionFrames() helper.               */
+/*                                                                     */
+/*  Note: in this orchestrator, calculateMetadata is intentionally    */
+/*  sync — it derives the duration from `props.beats` which is        */
+/*  already populated by Root.tsx's async renderDataCalculateMetadata */
+/*  (which fetches beats.json + timestamps.json from /public and      */
+/*  injects them into props). The orchestrator then takes the         */
+/*  already-resolved props and produces the final duration.           */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<

@@ -20,7 +20,7 @@ import {
 import type { Word } from "./beats/words";
 import type { TimedBeats } from "./beats/types";
 import timestampsData from "./timestamps.json";
-import timedBeats from "./beats.json";
+import timedBeats from "./beats/beats.json";
 
 interface TimedBeatsData {
   fps: number;

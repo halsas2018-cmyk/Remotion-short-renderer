@@ -139,7 +139,7 @@ RenderBeat per beat (hard-coded <Sequence>)
   ↓
   Beat component (KeyStatement, ChartLine, etc.) [from registry]
   ↓
-  BeatKineticCaptions (word-sync overlay)
+  BeatKineticCaptions (word-sync overlay; only for data-vis types)
   ↓
 Audio narration (root)
 ```
@@ -156,7 +156,7 @@ src/
 │   ├── words.ts                      # Word timestamp type ✅ DONE
 │   └── beats.json                    # Phase 1 output (currently src/beats/beats.json)
 ├── SceneTransition.tsx               # Entrance/exit wrapper ✅ DONE
-├── PersistentBackground.tsx          # Background (logo + grid + cubes) ✅ DONE
+├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
 ├── components/
 │   ├── KeyStatement.tsx
@@ -164,13 +164,12 @@ src/
 │   ├── IconText.tsx
 │   ├── ChartLine.tsx
 │   ├── ChartCounter.tsx
-│   ├── ChartComparison.tsx
-│   ├── ChartComparison3D.tsx
+│   ├── ChartComparison3D.tsx         # Only `chart_comparison_3d` is used
 │   ├── ProgressMeter.tsx
 │   ├── Timeline.tsx
 │   ├── VersusCard.tsx
 │   ├── BeforeAfter.tsx
-│   ├── Map3D.tsx
+│   ├── Map3D.tsx                     # Only `map_3d` is used
 │   └── KineticCaptions.tsx
 ├── audio/
 │   ├── BeatKineticCaptions.tsx       # Per-beat wrapper ✅ DONE
@@ -198,18 +197,20 @@ Maps each `BeatType` to:
 - `icon_text` → `{text, icon, emphasisWords?}`
 - `chart_line` → `{points[{label,value}], durationInFrames?, exitDirection?}`
 - `chart_counter` → `{value, label, durationInFrames?}`
-- `chart_comparison` / `chart_comparison_3d` → `{items[{label,value}]}`
+- `chart_comparison_3d` → `{items[{label,value}]}`
 - `progress_meter` → `{value, maxValue, label}`
 - `timeline` → `{events[{marker,label}]}`
 - `versus` → `{left, right}`
 - `before_after` → `{beforeLabel, afterLabel}`
-- `map_location` / `map_3d` → `{locationName, latitude, longitude, buildings?}`
+- `map_3d` → `{locationName, latitude, longitude, buildings?}`
 - `process_flow` → `{steps[]}`
 - `quote_card` → `{quote, author?}`
 
+**Active beat types** (what the Python pipeline currently emits):
+- `map_3d` (not `map_location`)
+- `chart_comparison_3d` (not `chart_comparison`)
+
 **Fallback mappings**:
-- `chart_comparison` → `ChartComparison3D`
-- `map_location` → `Map3D`
 - `process_flow` → `Timeline`
 - `quote_card` → `KeyStatement`
 
@@ -223,13 +224,19 @@ Maps each `BeatType` to:
 
 ### Step 4: Render a Single Beat (`src/beats/renderBeat.tsx`) — ✅ DONE
 Each beat's `<Sequence>` contains three layers, in z-order:
-1. `<PersistentBackground />` (logo + grid + 3D cubes) — drawn behind
+1. `<PersistentBackground />` (logo + 2D scrolling grid) — drawn behind
 2. `<SceneTransition>` → `<BeatComponent {...validatedMetadata} durationInFrames={...} />` — the typed component from the registry
-3. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} />` — per-beat word-sync caption overlay
+3. `<BeatKineticCaptions text={beat.text} words={beatWords} beatType={beat.type} />` — per-beat word-sync caption overlay, **only rendered for data-vis beat types** (see below)
 
 **Per-beat word slicing:** The orchestrator filters `allWords` to `[startFrame/fps, (startFrame + durationInFrames)/fps]` so captions stay in sync with the current beat.
 
 **Failure handling:** If Zod validation fails OR no component is registered, the beat renders a labeled fallback message inside its sequence (red for invalid, blue for unsupported) — this keeps the timeline readable and makes Python pipeline bugs visible.
+
+**Kinetic captions gate:** `BeatKineticCaptions` is rendered ONLY for these beat types (data-vis heavy — captions help the viewer follow numbers/visuals):
+`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`.
+
+It is suppressed for text/card heavy beat types (the on-screen text is already the caption):
+`key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`.
 
 **Metadata adapter (`adaptMetadata`):** Python emits a *minimal* shape per beat (`versus.left` is a string, `timeline.events` is a string array) but the existing components expect a *rich* shape (`VersusCard` wants `{label, value, items}` objects; `Timeline` wants `{marker, label}` objects). `adaptMetadata(type, raw, text)` runs before Zod validation and converts the minimal shape into the rich shape. Adapters:
 - `versus`: `{left: "..."}` → `{left: {label: "..."}}` (same for `right`)
@@ -266,18 +273,21 @@ Bridges the new orchestrator props (`{text, words, durationInFrames, beatType}`)
 6. ~~Wire up `Root.tsx` (replace TODO stub)~~ ✅
 7. ~~Fix orchestrator prop mismatches (`adaptMetadata` + drop `text` prop)~~ ✅
 8. ~~Fix import path in `Root.tsx` (`./beats.json` → `./beats/beats.json`)~~ ✅
-9. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
+9. ~~Gate `BeatKineticCaptions` to data-vis beat types only~~ ✅
+10. Run `npx remotion studio` to find next round of component-side mismatches (NEXT)
 
 ### Critical Decisions
 1. **Per-beat `<Sequence>`** vs **`<TransitionSeries>`** — Using per-beat `<Sequence>` (cut-based, easier to edit in Studio). No cross-fade transitions between beats for now.
 2. **Where to load `beats.json`?** — Build-time import in `Root.tsx` (chosen for now; runtime fetch can be added later via `calculateMetadata` if needed). File lives at `src/beats/beats.json`.
 3. **Keep `*Test` compositions in `Root.tsx`?** — Yes, in their own folder for Studio component preview.
 4. **Zod for metadata validation** — Confirmed; install via `npx remotion add zod`.
-5. **Fallback components** — Confirmed; `chart_comparison`, `map_location`, `process_flow`, `quote_card` reuse existing components until dedicated variants are built.
+5. **Fallback components** — Confirmed; `process_flow` and `quote_card` reuse existing components until dedicated variants are built.
 6. **Top-level `text` vs `metadata.text`** — Orchestrator merges top-level `text` into `metadata` before Zod validation, then passes top-level `text` to `KineticCaptions` separately.
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component.
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
+10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption. The gate is centralized in `RenderBeat` (see Step 4).
+11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
 
 ### Real `beats.json` Example (current reference)
 ```json

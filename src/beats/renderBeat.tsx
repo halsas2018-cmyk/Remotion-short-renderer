@@ -10,6 +10,31 @@ import {
 } from "./registry";
 import type { Word } from "./words";
 
+/* ------------------------------------------------------------------ */
+/*  Kinetic captions gate                                             */
+/*                                                                     */
+/*  Only data-vis beat types show word-sync captions on top of the   */
+/*  visual. Text/card heavy beat types already show the spoken text  */
+/*  on screen, so adding captions would be redundant.                */
+/*                                                                     */
+/*  Show:  map_3d, chart_line, chart_comparison_3d, chart_counter,    */
+/*         progress_meter, timeline                                    */
+/*  Hide:  key_statement, plain_text, icon_text, versus, before_after, */
+/*         process_flow, quote_card                                   */
+/* ------------------------------------------------------------------ */
+
+const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
+  "map_3d",
+  "chart_line",
+  "chart_comparison_3d",
+  "chart_counter",
+  "progress_meter",
+  "timeline",
+]);
+
+const shouldShowKineticCaptions = (beatType: string): boolean =>
+  CAPTION_VISIBLE_BEAT_TYPES.has(beatType);
+
 /**
  * Render a single beat as a hard-coded <Sequence>.
  *
@@ -20,7 +45,8 @@ import type { Word } from "./words";
  * Each beat's <Sequence> contains:
  *   - <SceneTransition>                  (entrance/exit wrapper)
  *     -> <BeatComponent {...props} />   (the typed component)
- *   - <BeatKineticCaptions />            (per-beat word-sync overlay)
+ *   - <BeatKineticCaptions />            (per-beat word-sync overlay;
+ *                                         only for data-vis beat types)
  *
  * NOTE: <PersistentBackground /> is NOT rendered here — it lives at the
  * root of <MotionGraphicsVideo> so its frame counter is the global
@@ -99,6 +125,10 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
     (w) => w.start >= startSec - 0.001 && w.start < endSec,
   );
 
+  // 5) Decide whether this beat should show kinetic captions on top of
+  //    its visual. Only data-vis beat types do.
+  const showCaptions = shouldShowKineticCaptions(beat.type);
+
   return (
     <Sequence
       key={`beat-${beatIndex}`}
@@ -114,12 +144,14 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
         />
       </SceneTransition>
 
-      <BeatKineticCaptions
-        text={beat.text}
-        words={beatWords}
-        durationInFrames={beat.durationInFrames}
-        beatType={beat.type}
-      />
+      {showCaptions ? (
+        <BeatKineticCaptions
+          text={beat.text}
+          words={beatWords}
+          durationInFrames={beat.durationInFrames}
+          beatType={beat.type}
+        />
+      ) : null}
     </Sequence>
   );
 };

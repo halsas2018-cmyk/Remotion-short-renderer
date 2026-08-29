@@ -78,6 +78,9 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE (commit a73dd19)
 - **Horizon 0.2 — Per-beat Zod validation in `src/beats/types.ts`** — ✅ DONE
 - **Horizon 0.3 — Per-word dedupe via `src/beats/words.ts::dedupeOverlappingWords`** — ✅ DONE
+- **Horizon 0.4 — Per-mount `<Audio>` `console.log` lines** — ~~CANCELLED~~ (per-mount `console.log` doesn't fire during a `still` render; see 0.4 / 1.4 entries below for the full reasoning)
+- **Horizon 0.5 — Last-render composition-hash cache + `--skip-if-unchanged`** — ✅ DONE (commits f432ced, f3d01f2, 7be612b, d75be97, 6c096fa, 5c7349c; see 0.5 entry below)
+- **Horizon 1.4 — File-based audio plan log** — ~~CANCELLED~~ (shipped, then dropped; `process.versions.node` guard was unreliable in the render context — see 1.4 entry below)
 
 ---
 
@@ -101,13 +104,32 @@ The render pipeline is now functioning but fragile. Lock in stability before add
 - `Root.tsx` calls the helper after Zod parsing and emits a `console.warn` if any words were dropped, pointing the user at the Python pipeline's WhisperX alignment step.
 - `scripts/render-smoke.sh` still passes.
 
-### 0.4 Add render-time logs around the audio streams — TODO
-- Each `<Audio>` in the orchestrator should emit a one-line `console.log` on mount with the resolved URL, volume, and (for typing clicks) the word's start frame. This makes it trivial to correlate render output with frame ranges when debugging.
-- Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once the upstream fetch becomes a hard error (0.1).
+### 0.4 Add render-time logs around the audio streams — ~~CANCELLED~~ (replaced by 1.4, which was also cancelled — see below)
+- The original spec was a per-mount `[audio] src=… volume=… frames=…` `console.log` line emitted from inside each `<Audio>` (narration, ambient, whoosh, click).
+- After four separate implementation attempts (sibling `<AudioMountLog>` with `useEffect(..., [])`, sibling with `useState(() => logAudioMount(...))`, `onMount` on the `<Audio>` itself, and `useRef(false)` + direct log in the function body) all of which produced zero output, it became clear that **Remotion's `still` (single-frame) render path never commits the React tree** — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data. The function body isn't even invoked. So there is no place inside the React tree from which to emit a per-mount log line during a `still`.
+- The diagnostic need 0.4 was meant to address was instead satisfied by **Horizon 1.4 — file-based audio plan log** (see below), which we also ultimately cancelled. **Both 0.4 and 1.4 are now dead code in spirit.** The audio streams (narration, ambient, per-transition whoosh, per-word click) are still observable through the React tree itself; per-mount observability would have to be a future horizon (likely tied to a real `npx remotion render` smoke test, not `still`).
 
-### 0.5 Cache the last-rendered composition hash — TODO
-- Write the SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render. The next render compares it and skips work if nothing changed (saves ~5 min of ffmpeg time on duplicate renders).
-- The smoke test from 0.1 grows a `--skip-if-unchanged` flag that uses this hash.
+### 0.5 Cache the last-rendered composition hash — ✅ DONE
+- New pure helper `scripts/lastRenderHash.mjs` (NOT in `src/lib/` — see the move note below) exports `computeLastRenderHash(beatsJson, wordsJson)`, `readLastRenderHash(outDir)`, `writeLastRenderHash(outDir, hash, extras?)`, and a `LAST_RENDER_HASH_VERSION` constant. Uses `node:crypto`'s built-in `sha256` (no new dependency).
+- Canonical input is the raw bytes of `public/beats.json` + `public/timestamps.json` concatenated with **NO separator** (matches what `cat beats.json timestamps.json | sha256sum` produces on the bash side). The hash is prefixed with `v<version>:` so future schema changes are backwards-incompatible by design — bump the version in one place to invalidate every old cache.
+- `scripts/render-smoke.sh --skip-if-unchanged` now:
+  1. Computes the SHA-256 of the input pair in bash and delegates the cache read to a Node one-liner that `import()`s the helper module. Schema parity is enforced by reusing the helper's `LAST_RENDER_HASH_VERSION` constant.
+  2. If the cache matches, prints `==> SKIP: input hash matches v1:<hash> (rendered <ISO>)` and exits 0 without re-rendering.
+  3. If the cache is missing, malformed, or stale-version, falls through to the render path (never fails on a missing cache — fresh checkouts just render).
+  4. After a successful render, writes `out/last-render.json` via `writeLastRenderHash`. The write is non-fatal: a failed cache write prints `==> WARN: …` and the render still exits 0.
+- **What is NOT in the cache key** (intentional): `public/narration.mp3` and `public/sfx-ambient.mp3`. The visible output is fully determined by beats + words, and MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes). If you change a SFX mapping in `sceneSfx.ts` in a way that affects the visible render, bump `LAST_RENDER_HASH_VERSION` to invalidate old caches automatically.
+- **The helper lives under `scripts/`, not `src/lib/`** (commit 7be612b). Webpack's bundle input is rooted at `src/Root.tsx`; it walks every sibling `.ts` file in any imported directory. The first attempt put the helper in `src/lib/`, and webpack discovered it via the directory walk even though nothing imported it — and then tried to resolve `node:fs` / `node:crypto` in a browser context, failing with "Module not found: Error: Can't resolve 'fs'". Moving to `scripts/` puts the file outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` (commit cd656a1) sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build.
+- **Bug fix: hash separator** (commit 5c7349c). An earlier version of the helper and the smoke script's Node one-liner inserted a single `0x0a` (LF) byte between the two file bodies in the digest. That was wrong on two counts: (a) `createHash().update(0x0a)` throws `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)` — Node doesn't accept raw numbers; you have to wrap them in `Buffer.from([0x0a])` or `"\n"`. (b) The bash side does NOT add a separator, so the two hashes would never have agreed even if (a) hadn't thrown. Both issues are fixed by dropping the separator entirely.
+- **Usage:**
+  ```bash
+  # First run: renders, writes the cache
+  ./scripts/render-smoke.sh
+  # Second run with identical inputs: skips, exits 0 in <1s
+  ./scripts/render-smoke.sh --skip-if-unchanged
+  # Force a re-render even if cache matches
+  ./scripts/render-smoke.sh              # default: always renders
+  ```
+- **Horizon 0 is now complete.** Next up: Horizon 2 (component coverage + visuals).
 
 ---
 
@@ -122,6 +144,7 @@ A single video takes ~2 minutes to render locally. You don't need a web UI to st
 - For each story: copy `narration.mp3` / `beats.json` / `timestamps.json` / `sfx-ambient.mp3` into `my-video/public/`, run `npx remotion render MotionGraphicsVideo out/{story_id}.mp4`, then move the output to `output/DD_MM_short_vids/{story_id}.mp4`.
 - Concurrency: render N videos in parallel where N = `min(stories_remaining, cpu_count - 1)`. Use `subprocess.Popen` + a `multiprocessing.Pool` of watchers.
 - Retry: up to 2 retries per story on transient failure (ffmpeg OOM, mediabunny chunk error).
+- **Reuse the 0.5 hash cache** to skip duplicate renders across batch invocations: read `out/last-render.json` keyed by `storyId` (extending `LastRenderRecord` to add a per-story entry rather than a single file). One-liner: store a `Record<storyId, LastRenderRecord>` instead of a single record.
 
 ### 1.2 Local monitoring via plain log files
 - Append one JSON line per render to `output/DD_MM_short_vids/_render_log.jsonl` (story_id, status, duration_seconds, error if any).
@@ -131,7 +154,16 @@ A single video takes ~2 minutes to render locally. You don't need a web UI to st
 - One daily cron entry runs `python -m run_pipeline && python -m render_batch`.
 - The local machine is the render farm. If the queue grows faster than one machine can render in a day, that's a problem for Horizon 6 (managed runners).
 
-### 1.4 Cost ceiling
+### 1.4 ~~File-based audio plan log + smoke test assertion~~ — CANCELLED
+- We shipped this (commits cd656a1 and earlier) but it never worked end-to-end. The plan was: compute the audio plan (whoosh slots + click count) in `Root.tsx::renderDataCalculateMetadata` and append one JSON line per render to `out/audio-mounts.log` via `writeAudioPlanLog`; the smoke test would read the file and assert one valid JSON line was present.
+- The implementation hit two unfixable problems:
+  1. **`process.versions.node` is unreliable in the render context.** Remotion's render path shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The "am I in real Node?" guard we added to gate the file write was the only thing standing between the function and a `require("fs")` that would have crashed the renderer. Once we removed the guard (or made it always throw when `process.versions.node` was undefined), every render surfaced a warn in the render log saying "not running in real Node" — meaning the cache file was never written.
+  2. **Webpack's static analysis reaches dynamic `require()` calls.** Even after we hid the `node:fs` import behind a `(0, eval)("require")("fs")` idiom, webpack's CommonJS analysis pass still followed it and tried to resolve `fs` for the browser bundle. The earlier "move the file to `scripts/`" escape worked for the helper, but `writeAudioPlanLog` had to live in `src/lib/sceneSfx.ts` (alongside the other SFX URL constants) so the orchestrator could import it. The two `remotion.config.ts` workarounds (the `resolve.fallback: { fs: false, ... }` map AND moving the helper to `scripts/`) were enough to make the render work, but the actual `writeAudioPlanLog` function still failed at runtime for reason (1).
+- **The fix we landed:** drop the entire 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`; `Root.tsx` no longer computes or writes the audio plan; `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams (narration, ambient, per-transition whoosh, per-word click) all mount correctly because they live in the React tree, not in a side-channel log.
+- **What we'd need to bring it back:** either (a) a runtime-only `import.meta.env` / `typeof window` check that runs the file-write code in a `<Sequence>` somewhere inside `Root.tsx`'s `renderDataCalculateMetadata` callback (Remotion runs the callback in real Node on every render, both `still` and full), OR (b) a `<AudioMountLog>` component that fires `onMount` only on the `npx remotion render` path (not `still`), gated by a new `process.env.REMOTION_RENDER_TYPE` check. Both are non-trivial; not worth it for the marginal observability gain.
+- **Do not re-litigate this.** If a future horizon (e.g. 9.x CI) needs per-mount audio observability, write the per-mount log lines from inside a wrapper that the orchestrator mounts unconditionally (e.g. a sibling `<AudioMountLog>` with `useEffect`) and gate the verification on a full `npx remotion render` smoke test, not on `npx remotion still`. The `still` path will never produce per-mount logs.
+
+### 1.5 Cost ceiling
 - 4 concurrent renders × 2 min = 30 videos/hour on a single machine.
 - Daily target: 6 videos → 12 minutes of wall time. Within budget on a laptop, no extra cost.
 

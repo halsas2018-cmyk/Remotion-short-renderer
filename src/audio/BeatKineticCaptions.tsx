@@ -7,7 +7,6 @@ import React, {
 import { Sequence } from "remotion";
 import { Audio } from "@remotion/media";
 import { KineticCaptions } from "../KineticCaptions";
-import { AudioMountLog } from "./AudioMountLog";
 import type { Word } from "../beats/words";
 import {
   TYPING_CLICK_HOLD_FRAMES,
@@ -173,14 +172,6 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
             durationInFrames={TYPING_CLICK_HOLD_FRAMES}
           >
             <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
-            <AudioMountLog
-              label="click"
-              src={TYPING_SFX_URL}
-              volume={TYPING_SFX_VOLUME}
-              from={localStartFrame}
-              durationInFrames={TYPING_CLICK_HOLD_FRAMES}
-              meta={{ wordIndex: i, word: w.word }}
-            />
           </Sequence>
         );
       })}

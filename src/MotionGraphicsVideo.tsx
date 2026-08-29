@@ -15,7 +15,6 @@ import {
 } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
 import { BeatKineticCaptions } from "./audio/BeatKineticCaptions";
-import { AudioMountLog } from "./audio/AudioMountLog";
 import type { Word } from "./beats/words";
 import { computeTransitionFrames } from "./lib/transitionDuration";
 import {
@@ -153,18 +152,7 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         The <AudioMountLog> sibling emits the [audio] narration line
         via useEffect on first mount (still-render safe).
       */}
-      {narrationSrc ? (
-        <>
-          <Audio src={staticFile(narrationSrc)} />
-          <AudioMountLog
-            label="narration"
-            src={`public/${narrationSrc}`}
-            volume={1.0}
-            from={0}
-            durationInFrames={totalDurationInFrames}
-          />
-        </>
-      ) : null}
+      {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
 
       {/*
         Ambient SFX — a looping bed underneath the narration. Plays for
@@ -192,14 +180,6 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
             },
           )
         }
-      />
-      <AudioMountLog
-        label="ambient"
-        src={`public/${AMBIENT_SFX_URL}`}
-        volume={null}
-        peakVolume={AMBIENT_SFX_VOLUME}
-        from={0}
-        durationInFrames={totalDurationInFrames}
       />
 
       {/*
@@ -289,14 +269,6 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
                 <Audio
                   src={TRANSITION_SFX_URL}
                   volume={TRANSITION_SFX_VOLUME}
-                />
-                <AudioMountLog
-                  label="whoosh"
-                  src={TRANSITION_SFX_URL}
-                  volume={TRANSITION_SFX_VOLUME}
-                  from={whooshFrom}
-                  durationInFrames={transitionFrames}
-                  meta={{ beatIndex: index }}
                 />
               </Sequence>
             ) : null}

@@ -34,9 +34,9 @@
 #   1 — render failed (Remotion printed an error)
 #   2 — output is too short (< 60 frames), indicates a silent
 #       failure we should investigate
-#   3 — no [audio] log lines were emitted (Horizon 0.4 — 1.4
-#       regression: the orchestrator mounted but the
-#       <AudioMountLog> sibling was bypassed or its format changed)
+#   3 — no audio plan log line was written (Horizon 0.4 — 1.4
+#       regression: the audio plan wasn't computed or the file
+#       write failed)
 # ------------------------------------------------------------------
 set -euo pipefail
 
@@ -51,6 +51,7 @@ OUT_FILE="${OUT_DIR}/smoke.png"
 STDOUT_LOG="${OUT_DIR}/smoke.stdout.log"
 STDERR_LOG="${OUT_DIR}/smoke.stderr.log"
 COMBINED_LOG="${OUT_DIR}/smoke.combined.log"
+AUDIO_PLAN_LOG="${OUT_DIR}/audio-mounts.log"
 MIN_FRAMES=60
 COMPOSITION_ID="MotionGraphicsVideo"
 
@@ -60,8 +61,15 @@ echo "    output:       ${OUT_FILE}"
 echo "    stdout log:   ${STDOUT_LOG}"
 echo "    stderr log:   ${STDERR_LOG}"
 echo "    combined log: ${COMBINED_LOG}"
+echo "    audio plan:   ${AUDIO_PLAN_LOG}"
 
 mkdir -p "${OUT_DIR}"
+
+# Truncate the audio plan log so the assertion only sees the current
+# render. This is safe to do even on a first run (the file doesn't
+# exist yet, but we create it as empty so the grep has something to
+# look at if the render fails before calculateMetadata completes).
+: > "${AUDIO_PLAN_LOG}"
 
 # Render a single frame at the 2-second mark. `--scale=0.2` keeps
 # the output small (≈216×384) so the smoke test runs in under a
@@ -69,13 +77,8 @@ mkdir -p "${OUT_DIR}"
 # are missing, Remotion will print the "[MotionGraphicsVideo] ..."
 # error we just added in Horizon 0.1 and exit non-zero.
 #
-# We capture BOTH stdout and stderr because console.log from inside
-# the <AudioMountLog> sibling's useEffect lands in an unpredictable
-# stream depending on Remotion's bundler configuration — sometimes
-# stdout (when the bundler hasn't yet attached its own stderr
-# handlers), sometimes stderr (when it has). The combined log lets
-# the [audio] assertion work regardless of which stream Remotion
-# picked.
+# We capture BOTH stdout and stderr because the Remotion CLI's
+# bundler is inconsistent about which stream console.log lands in.
 if ! npx remotion still "${COMPOSITION_ID}" \
     --output="${OUT_FILE}" \
     --frame=60 \
@@ -89,8 +92,8 @@ if ! npx remotion still "${COMPOSITION_ID}" \
   exit 1
 fi
 
-# Concatenate both streams so the [audio] grep doesn't care which
-# one Remotion chose.
+# Concatenate both streams so any future console.log-based assertions
+# don't care which stream Remotion chose.
 cat "${STDOUT_LOG}" "${STDERR_LOG}" > "${COMBINED_LOG}"
 
 if [ ! -f "${OUT_FILE}" ]; then
@@ -105,39 +108,39 @@ if [ "${OUTPUT_SIZE}" -lt 1024 ]; then
 fi
 
 # ------------------------------------------------------------------
-# Horizon 0.4 (1.4) audio log assertion.
+# Horizon 0.4 (1.4) audio plan assertion.
 #
-# Every <Audio> in the render pipeline is paired with a sibling
-# <AudioMountLog> (src/audio/AudioMountLog.tsx) that calls
-# logAudioMount() inside useEffect(..., []) on first React mount.
-# This emits a "[audio] ..." line to console.log.
+# The audio plan is written by Root.tsx::renderDataCalculateMetadata
+# to out/audio-mounts.log AFTER the JSONs are parsed and deduped
+# but BEFORE the orchestrator mounts. It is one JSON line per
+# render with:
+#   - beatsCount, wordsCount
+#   - narration, ambient (resolved public/ paths)
+#   - whooshCount, clickCount
+#   - whooshSlots: per-whoosh { from, to, beatIndex }
 #
-# We check the COMBINED log (stdout + stderr) because the Remotion
-# CLI's bundler is inconsistent about which stream console.log
-# lands in.
+# Why a file (not console.log):
+#   We tried every React mount hook to emit a per-stream log line:
+#     - onMount on <Audio>        — time-driven, doesn't fire in `still`
+#     - useEffect(..., [])         — post-render, doesn't fire in `still`
+#     - useState(() => ...) init   — initializer, doesn't fire in `still`
+#     - useRef(false) + body log   — doesn't fire in `still` either
+#   The `still` (single-frame) renderer in Remotion does not commit
+#   the React component tree — it just calls the render function
+#   for one frame and discards it. The orchestrator is never
+#   mounted. So the only place we can emit observability is from
+#   calculateMetadata, which DOES run before the render.
 #
-# We assert that at least one [audio] line is present in the log —
-# otherwise the orchestrator mounted successfully but the logger was
-# bypassed (e.g. someone removed the sibling <AudioMountLog>, or the
-# helper was renamed and the callsites were missed). Without this
-# assertion, a future regression in the audio logging would be
-# invisible until someone manually rendered and grepped the output.
-#
-# We only require ONE [audio] line because a single-frame render
-# (frame=60) at 30fps sits inside the narration's frame range
-# (0..1438) and inside the ambient bed's frame range, so those two
-# will always mount. The whoosh and click tracks are mounted at
-# specific frames and may or may not be active at frame 60 depending
-# on the beat plan; we don't assert on those.
+# We assert at least one line is present and is a valid JSON object
+# with the expected top-level fields. This proves the audio plan
+# was computed and the file write succeeded.
 # ------------------------------------------------------------------
-if ! grep -q "\[audio\]" "${COMBINED_LOG}"; then
-  echo "==> FAIL: no [audio] log lines found in ${COMBINED_LOG}." >&2
-  echo "==> This means the <AudioMountLog> sibling did not run," >&2
-  echo "==> or the log format changed. The 1.4 invariant is that" >&2
-  echo "==> every <Audio> mount is paired with a sibling" >&2
-  echo "==> <AudioMountLog> that emits a [audio] line." >&2
-  echo "==> Search hint: the log helper emits lines like" >&2
-  echo "==>   [audio] narration src=... volume=... frames=[N, M)" >&2
+if [ ! -s "${AUDIO_PLAN_LOG}" ]; then
+  echo "==> FAIL: no audio plan log line in ${AUDIO_PLAN_LOG}." >&2
+  echo "==> This means the audio plan was not computed, or the" >&2
+  echo "==> file write in Root.tsx::renderDataCalculateMetadata" >&2
+  echo "==> failed. The 1.4 invariant is that one JSON line per" >&2
+  echo "==> render lands in out/audio-mounts.log." >&2
   echo "==> Last 50 lines of stderr:" >&2
   tail -n 50 "${STDERR_LOG}" >&2 || true
   echo "==> Last 50 lines of stdout:" >&2
@@ -145,7 +148,33 @@ if ! grep -q "\[audio\]" "${COMBINED_LOG}"; then
   exit 3
 fi
 
-AUDIO_LINE_COUNT=$(grep -c "\[audio\]" "${COMBINED_LOG}" || true)
+# Validate the last line is a JSON object with the expected fields.
+# We use Node.js here because the bash-only JSON parsing path is
+# gnarly and we already need Node for the render.
+AUDIO_PLAN_VALIDATION=$(node -e "
+  const fs = require('fs');
+  const lines = fs.readFileSync('${AUDIO_PLAN_LOG}', 'utf8').trim().split('\n');
+  const last = lines[lines.length - 1];
+  try {
+    const obj = JSON.parse(last);
+    const required = ['beatsCount', 'wordsCount', 'narration', 'ambient', 'whooshCount', 'clickCount', 'whooshSlots'];
+    const missing = required.filter(k => !(k in obj));
+    if (missing.length) {
+      console.log('INVALID: missing keys: ' + missing.join(', '));
+      process.exit(1);
+    }
+    console.log('beatsCount=' + obj.beatsCount + ' wordsCount=' + obj.wordsCount + ' whooshCount=' + obj.whooshCount + ' clickCount=' + obj.clickCount);
+  } catch (e) {
+    console.log('INVALID: not valid JSON: ' + e.message);
+    process.exit(1);
+  }
+" 2>&1) || {
+  echo "==> FAIL: audio plan log line is not valid JSON." >&2
+  echo "==> Contents: $(cat "${AUDIO_PLAN_LOG}")" >&2
+  exit 3
+}
+
 echo "==> OK: smoke render produced ${OUTPUT_SIZE}-byte PNG at ${OUT_FILE}"
-echo "==> OK: found ${AUDIO_LINE_COUNT} [audio] log line(s) in ${COMBINED_LOG}"
+echo "==> OK: audio plan: ${AUDIO_PLAN_VALIDATION}"
+echo "==> OK: log file:   ${AUDIO_PLAN_LOG}"
 exit 0

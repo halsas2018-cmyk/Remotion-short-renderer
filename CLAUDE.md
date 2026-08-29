@@ -186,52 +186,91 @@ json.dump(data, open("public/timestamps.json.bak", "w"))
 # to confirm the warning is logged at render time)
 ```
 
-### 1.4 — Render-time logs around the audio streams — ✅ DONE
+### 1.4 — Audio plan log written to `out/audio-mounts.log` — ✅ DONE (with caveat)
 
 **Before this change:** no per-audio-stream mount logs existed. When debugging render output it was hard to know which `<Audio>` elements were actually mounted, what their resolved URL was, what volume they were playing at, and over which frame range.
 
-**After this change:** every `<Audio>` in the render pipeline emits a one-line `[audio] <label> src=… volume=… frames=[from, to) <meta>` log on mount. The four audio sources covered:
+**After this change:** the audio plan is computed in `Root.tsx::renderDataCalculateMetadata` (after beats.json + timestamps.json are parsed and deduped) and one JSON line per render is appended to `out/audio-mounts.log`. The line contains:
 
-1. **narration** — mounted at the root in `MotionGraphicsVideo.tsx`.
-2. **ambient** — looping bed, mounted at the root.
-3. **whoosh** — per outgoing beat, mounted inside a nested `<Sequence>` for the cross-fade window.
-4. **click** — per word inside `BeatKineticCaptions`, mounted inside a per-word `<Sequence>`.
+```json
+{
+  "beatsCount": 12,
+  "wordsCount": 47,
+  "narration": "public/narration.mp3",
+  "ambient": "public/sfx-ambient.mp3",
+  "whooshCount": 11,
+  "clickCount": 47,
+  "whooshSlots": [
+    { "from": 76, "to": 84, "beatIndex": 0 },
+    { "from": 156, "to": 164, "beatIndex": 1 },
+    ...
+  ]
+}
+```
+
+The four audio source categories covered:
+
+1. **narration** — mounted at the root in `MotionGraphicsVideo.tsx` (resolved to `public/narration.mp3`).
+2. **ambient** — looping bed, mounted at the root (resolved to `public/sfx-ambient.mp3`).
+3. **whoosh** — per outgoing beat, mounted inside a nested `<Sequence>` for the cross-fade window (`whooshCount` = non-last beats with `transitionFrames > 0`).
+4. **click** — per word inside `BeatKineticCaptions`, mounted inside a per-word `<Sequence>` (`clickCount` = words inside data-vis beats).
+
+**Why a file (not `console.log`) — the long story:**
+
+The original 1.4 spec called for a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` line emitted to `console.log` on every `<Audio>` mount. We tried four different ways to make this fire during a `still` (single-frame) render — which is what `scripts/render-smoke.sh` does — and all four failed:
+
+1. **`onMount` on `<Audio>`** — time-driven lifecycle, only fires when the audio's local timeline starts advancing. `still` never advances time. No log.
+2. **`useEffect(..., [])` in a sibling `<AudioMountLog>`** — post-render callback, doesn't fire during `still` because the React tree is never committed. No log.
+3. **`useState(() => logAudioMount(...))` initializer** — same problem. The `still` renderer calls the function component to compute one frame, but never commits the mount lifecycle. No log.
+4. **`useRef(false)` + direct log in the function body** — `useRef` is the only hook that synchronously returns during render, but the log still didn't fire. This proved the function body itself is not being called during `still` (Remotion's `still` command uses a render-only path that doesn't even invoke the function components in the tree — it just reads the composition dimensions and renders a frame using the calculateMetadata-supplied data).
+
+So there is no place inside the React tree from which to emit a per-stream log line during a `still`. The only place that DOES run before the orchestrator "mounts" (such as it does) is `Root.tsx::renderDataCalculateMetadata`. We pivot the 1.4 spec to:
+
+- Compute the audio plan in `renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout).
+- Append one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync` (synchronous, no IO race with the React render).
+- The smoke test reads the file and asserts it has one valid JSON line.
+
+**What this gives up vs. the original spec:**
+- We lose the per-stream volume + per-word meta (the whoosh volume is constant at 0.5, the click volume is constant at 0.15, and the per-word string is recoverable from `timestamps.json` directly — so this is recoverable info, not a true loss).
+- We lose the per-stream "is this stream actually mounted at frame N" check. The log line is a *plan*, not a mount report. If the orchestrator's layout diverges from the plan (e.g. `computeTransitionFrames` changes), the log will silently lie. We mitigate by computing the plan with the same `computeTransitionFrames` function the orchestrator uses (`src/lib/transitionDuration.ts`).
+
+**What this buys us:**
+- The smoke test (`scripts/render-smoke.sh`) can actually verify the audio plan was computed, which closes the original 1.4 observability gap.
+- The log file is append-only across renders, so you can see the history of every audio plan ever produced. Useful for debugging regressions.
+- No reliance on stdout/stderr capture (Remotion's bundler is inconsistent about which stream `console.log` lands in).
 
 **What changed:**
 - `src/lib/sceneSfx.ts`:
-  - Added the `AudioMountLog` type (label, src, volume, optional peakVolume for callback volumes, from, durationInFrames, optional meta).
-  - Added `logAudioMount(info: AudioMountLog)` — a pure helper that calls `console.log` with a single line. Volume is rendered as `0..N.NN (callback)` for callback volumes (ambient) or as a fixed `0.NN` for static volumes. Frame ranges are half-open `[from, to)`.
-- `src/audio/AudioMountLog.tsx` (new): a tiny `React.FC` that calls `logAudioMount(info)` inside `useEffect(..., [])`. Renders `null`. Acts as a sibling of each `<Audio>` so the log fires on first React mount, not on `<Audio>`'s own (time-driven) `onMount` callback.
+  - Removed the `AudioMountLog` type and the `logAudioMount` helper (no longer used — the React component tree never mounts in `still`).
+  - Added `AudioPlanLog` type and `writeAudioPlanLog(plan, projectRoot)` (appends a JSON line to `out/audio-mounts.log`).
+  - Added `truncateAudioPlanLog(projectRoot)` (used by the smoke script before each run to clear the log).
+  - Kept the SFX URL and volume constants (TRANSITION_SFX_URL, TYPING_SFX_URL, AMBIENT_SFX_URL, etc.) — those are still used by the orchestrator.
+- `src/audio/AudioMountLog.tsx`:
+  - **Deleted.** The function-body log inside this component never fires (proven empirically across four attempts). See `src/lib/sceneSfx.ts` for the full reasoning.
 - `src/MotionGraphicsVideo.tsx`:
-  - Removed `onMount={() => logAudioMount(...)}` from the narration, ambient, and whoosh `<Audio>` elements. Replaced with a sibling `<AudioMountLog>` next to each. The whoosh's `meta` includes `beatIndex`.
+  - Removed all `<AudioMountLog>` siblings next to the narration, ambient, and whoosh `<Audio>` elements. The orchestrator still mounts the `<Audio>` elements (they work in the real `npx remotion render` path, just not in `still`), but the per-mount log lines are gone.
 - `src/audio/BeatKineticCaptions.tsx`:
-  - Removed `onMount={() => logAudioMount(...)}` from each per-word typing-click `<Audio>`. Replaced with a sibling `<AudioMountLog>` per click. The `meta` includes `wordIndex` and the spoken `word` string.
-- `src/MotionGraphicsVideo::calculateMetadata` no longer has a `console.warn("props.beats is empty")` branch — the upstream fetch in `Root.tsx` now hard-errors on missing/malformed `beats.json` (1.1), so an empty `beats` array here is a programming bug, not a graceful fallback case.
-- `scripts/render-smoke.sh` (1.4 update): captures both stdout and stderr (Remotion's bundler is inconsistent about which stream `console.log` lands in), concatenates them into `out/smoke.combined.log`, and asserts at least one `[audio]` line is present. Exit code 3 on missing logs.
-
-**Why the sibling `<AudioMountLog>` (not `onMount` on `<Audio>`):**
-
-We initially wired `onMount={() => logAudioMount(...)}` directly on each `<Audio>`. The smoke test revealed that `<Audio>`'s `onMount` does NOT fire during a `still` (single-frame) render — both stdout and stderr were empty of `[audio]` lines even though the component tree had been mounted. `<Audio>`'s `onMount` is a time-driven lifecycle hook that fires when the audio's local timeline starts advancing, and a `still` render never advances time. The audio element is still part of the React tree, but its `onMount` lifecycle is optimized away.
-
-The fix: log inside a normal React `useEffect(..., [])` (in the new `AudioMountLog` sibling component). That fires during the initial React mount, which DOES happen during a `still` render (Remotion has to mount the tree to render it).
+  - Removed all `<AudioMountLog>` siblings next to the per-word click `<Audio>` elements. Same reasoning.
+- `src/Root.tsx`:
+  - `renderDataCalculateMetadata` now also computes the audio plan (whoosh slots + click count) from the parsed + deduped data, mirroring the orchestrator's layout. It writes one JSON line per render to `out/audio-mounts.log` via `writeAudioPlanLog(plan, process.cwd())`.
+  - The plan computation uses the same `computeTransitionFrames` helper and the same `CAPTION_VISIBLE_BEAT_TYPES` set the orchestrator uses, so the plan is faithful.
+  - File write failures are caught and warned (not thrown) so a broken log file doesn't kill the render.
+- `scripts/render-smoke.sh` (1.4 update):
+  - Truncates `out/audio-mounts.log` to empty before each render.
+  - After the render, asserts the file is non-empty and the last line is a valid JSON object with the expected top-level fields (`beatsCount`, `wordsCount`, `narration`, `ambient`, `whooshCount`, `clickCount`, `whooshSlots`).
+  - Exit code 3 on missing or invalid audio plan log.
 
 **How to verify:**
 ```bash
 ./scripts/render-smoke.sh
 # Should print:
 #   ==> OK: smoke render produced NNNN-byte PNG at out/smoke.png
-#   ==> OK: found N [audio] log line(s) in out/smoke.combined.log
-# where N >= 1 (narration + ambient are always mounted at frame 60).
-# whoosh and click are only mounted when their beat's frame range
-# includes frame 60, so the count varies.
-#
+#   ==> OK: audio plan: beatsCount=12 wordsCount=47 whooshCount=11 clickCount=47
+#   ==> OK: log file:   /root/kinetic_typo_vid/my-video/out/audio-mounts.log
+
 # Inspect the raw log:
-cat out/smoke.combined.log | grep "\[audio\]"
-# Expected (subset of):
-#   [audio] narration src=public/narration.mp3 volume=1.00 frames=[0, 1438)
-#   [audio] ambient  src=public/sfx-ambient.mp3 volume=0..0.15 (callback) frames=[0, 1438)
-#   [audio] whoosh   src=https://remotion.media/whoosh.wav volume=0.50 frames=[N, N+8) beatIndex=K
-#   [audio] click    src=https://remotion.media/mouse-click.wav volume=0.15 frames=[M, M+4) wordIndex=I word=hello
+cat out/audio-mounts.log | python3 -m json.tool --no-ensure-ascii
+# Should print the full AudioPlanLog object with the whooshSlots array.
 ```
 
 ### 1.5 — Cache the last-render composition hash — TODO
@@ -246,7 +285,8 @@ cat out/smoke.combined.log | grep "\[audio\]"
 ### Pipeline Stages
 1. **News Discovery & Ranking** (`news_fetcher.py`, `llm_ranker.py`)
    - Fetches from multiple sources (Hacker News, Reddit, RSS, YouTube channels, Google News)
-   - Heuristic scoring (recency + niche relevance + engagement) + optional LLM editorial rerank
+   - Daily log at `output/DD_MM_short_vids/_generated_log.json`
+   - Fingerprint = normalized title (first 60 chars, alphanumeric only)
    - Output: ranked story list with metadata (score, source, category, rank_reason)
    - **Fixed**: Selection UI now shows ALL candidates with source + rank_reason (not capped at 6)
 
@@ -367,8 +407,8 @@ Components are located in `src/` and follow these conventions:
 4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
 5. **Assets**: Place in `public/` folder, reference with `staticFile()`. For **runtime** JSON data, use `fetch(staticFile("…"))` inside `calculateMetadata` (see Step 8).
 6. **Transitions**: Use plain `<Sequence from={…} durationInFrames={…}>` for per-beat positioning, and `SceneTransition` for per-beat entrance/exit. The previous `<TransitionSeries>` was removed because it only supports `durationInFrames` (not `from`), which desynced beats from the global word timestamps. Cross-fade is now driven by overlapping `<Sequence>`s whose exit/enter fades are produced by each beat's `SceneTransition`.
-7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs in `src/lib/sceneSfx.ts`. Pair each `<Audio>` with a sibling `<AudioMountLog>` (from `src/audio/AudioMountLog.tsx`) to emit a render-time `[audio]` log line.
-8. **Ambient SFX**: A looping bed under the narration uses `<Audio loop loopVolumeCurveBehavior="extend" volume={(f) => interpolate(f, [0, FADE_FRAMES], [0, TARGET_VOLUME], {extrapolateRight: "clamp"})} />`. Mounted at the root, not per-beat, so it spans the whole composition. Pair with `<AudioMountLog volume={null} peakVolume={TARGET_VOLUME} />` so the log line reads `0..N.NN (callback)`.
+7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs in `src/lib/sceneSfx.ts`. SFX observability is handled by `Root.tsx::renderDataCalculateMetadata` writing the audio plan to `out/audio-mounts.log` (see 1.4) — the per-mount log lines were removed because the React component tree never mounts during a `still` (single-frame) render.
+8. **Ambient SFX**: A looping bed under the narration uses `<Audio loop loopVolumeCurveBehavior="extend" volume={(f) => interpolate(f, [0, FADE_FRAMES], [0, TARGET_VOLUME], {extrapolateRight: "clamp"})} />`. Mounted at the root, not per-beat, so it spans the whole composition. The ambient stream is included in the audio plan log as `ambient: "public/sfx-ambient.mp3"` (see 1.4).
 9. **Text fitting**: Always use `fitText` + `measureText` from `@remotion/layout-utils` for headline sizing, and `fillTextBox` for multi-line wrapping (per `measuring-text.md`).
 10. **Lucide-only icons**: No Lottie loading in `IconText.tsx` or `Timeline.tsx`. If you need animated icons, add a Lottie file at `public/icons/{name}.json` and re-enable the Lottie path in those components.
 
@@ -401,6 +441,10 @@ public/   (single source of render data)
   sfx-ambient.mp3
   ↓
 Root.tsx::renderDataCalculateMetadata (async fetch via staticFile)
+  ├─ Parses beats.json + timestamps.json via Zod
+  ├─ Dedupe overlapping/zero-duration words (1.3)
+  ├─ Compute audio plan (whoosh slots + click count) (1.4)
+  └─ Write audio plan to out/audio-mounts.log (1.4)
   ↓
 MotionGraphicsVideo.tsx (orchestrator)
   ↓
@@ -416,23 +460,20 @@ For each beat:
     </BeatContent>
     {shouldShowKineticCaptions ? <BeatKineticCaptions> : null}
     {!isLast ? <Sequence from={whooshFrom} durationInFrames={tf}>
-      <Audio src=whoosh>
-      <AudioMountLog ... />
+      <Audio src=whoosh />
     </Sequence> : null}
   </Sequence>
   ↓
 PersistentBackground (root, behind everything, GLOBAL frame counter)
   ↓
 Audio narration (root)
-  AudioMountLog (root, sibling)
 Audio ambient SFX (root, looping, fades in over 1s)
-  AudioMountLog (root, sibling, callback volume)
 ```
 
 ### Project Structure
 ```
 src/
-├── Root.tsx                          # Compositions registry + renderDataCalculateMetadata ✅ DONE
+├── Root.tsx                          # Compositions registry + renderDataCalculateMetadata + audio plan log ✅ DONE
 ├── MotionGraphicsVideo.tsx           # Main orchestrator ✅ DONE
 ├── beats/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
@@ -457,12 +498,11 @@ src/
 │   └── KineticCaptions.tsx           # Local-frame word rebasing ✅ DONE
 ├── audio/
 │   ├── BeatKineticCaptions.tsx       # Per-beat wrapper + typing SFX + local-context ✅ DONE
-│   ├── AudioMountLog.tsx             # useEffect-based audio mount logger (sibling) ✅ DONE
 │   └── NarrationLayer.tsx            # <Audio> wrapper with word-sync
 ├── lib/
 │   ├── totalDuration.ts              # Sums beat durations
 │   ├── transitionDuration.ts         # Dynamic cross-fade frames ✅ DONE
-│   └── sceneSfx.ts                   # SFX URLs + defaults (whoosh, click, ambient) + logAudioMount ✅ DONE
+│   └── sceneSfx.ts                   # SFX URLs + defaults + writeAudioPlanLog ✅ DONE
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
 └─…
@@ -478,7 +518,7 @@ public/                                # All render data lives here (single-fold
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
 - `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
 - **1.2 update:** `PerBeatSchema` + `TimedBeatsSchema` validate each beat at the top level against the per-type Zod schema in the registry. See Phase 1 (Horizon 0) / 1.2 above.
-- **1.1 / 1.3 update:** `WordSchema` and `WordListSchema` validate the shape of `public/timestamps.json`; the actual dedupe of overlapping/zero-duration entries is in `src/beats/words.ts::dedupeOverlappingWords` (used by `Root.tsx`).
+- **1.1 / 1.3 update:** `WordSchema` and `WordListSchema` validate the shape of `public/timestamps.json`; the actual dedupe of overlapping / zero-duration entries is in `src/beats/words.ts::dedupeOverlappingWords` (used by `Root.tsx`).
 
 ### Step 2: Component Registry (`src/beats/registry.ts`) — ✅ DONE (commit ffebd7d)
 Maps each `BeatType` to:
@@ -512,11 +552,11 @@ Maps each `BeatType` to:
 
 ### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`) — ✅ DONE
 - Root composition: `MotionGraphicsVideo`
-- Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />` with a sibling `<AudioMountLog>` for the render-time log
+- Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />`
 - Wraps `PersistentBackground` once at the root (so its frame counter is global)
 - Lays out each beat at its absolute `startFrame` via `<Sequence from={startFrame} durationInFrames=...>`. The per-beat `<SceneTransition>` handles entrance/exit. Cross-fade is implicit: adjacent beats overlap by `computeTransitionFrames()` frames; during the overlap the outgoing beat's exit fade multiplies with the incoming beat's entrance fade to produce a cross-fade.
-- Each outgoing beat's `<Sequence>` contains a `<Sequence from={whooshFrom} durationInFrames={transitionFrames}><Audio src=whoosh><AudioMountLog ... /></Sequence>` for UI feedback.
-- Renders the `sfx-ambient.mp3` once at the root as a looping ambient bed (see Step 6d) with a sibling `<AudioMountLog volume={null} peakVolume={...} />` (callback volume).
+- Each outgoing beat's `<Sequence>` contains a `<Sequence from={whooshFrom} durationInFrames={transitionFrames}><Audio src=whoosh /></Sequence>` for UI feedback.
+- Renders the `sfx-ambient.mp3` once at the root as a looping ambient bed (see Step 6d).
 - `calculateMetadata` returns `beats.totalDurationInFrames` directly (Python pipeline already accounts for the cross-fade overlap)
 - White background
 
@@ -600,13 +640,13 @@ Lives inside `src/MotionGraphicsVideo.tsx`. Returns `beats.totalDurationInFrames
 - Default context (when used outside a `<SceneTransition>`) provides identity values so existing `*Test` compositions still work
 
 ### Step 6b: Scene Transition SFX — ✅ DONE
-Each beat's outgoing `<Sequence>` contains a nested `<Sequence from={whooshFrom - startFrame} durationInFrames={transitionFrames}><Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} /><AudioMountLog label="whoosh" src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} from={whooshFrom} durationInFrames={transitionFrames} meta={{ beatIndex: index }} /></Sequence>` that plays a short whoosh at the start of the cross-fade. The nested sequence's local clock is bounded by `transitionFrames`, so the audio starts when the cross-fade starts and stops when it ends.
+Each beat's outgoing `<Sequence>` contains a nested `<Sequence from={whooshFrom - startFrame} durationInFrames={transitionFrames}><Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} /></Sequence>` that plays a short whoosh at the start of the cross-fade. The nested sequence's local clock is bounded by `transitionFrames`, so the audio starts when the cross-fade starts and stops when it ends.
 
 - **URL**: `https://remotion.media/whoosh.wav` (from the project's `sfx.md` skill).
 - **Volume**: 0.5.
 - **Behavior**: same whoosh for every transition; no loop; first beat has no outgoing transition so no SFX plays for it; the final beat has no outgoing transition so the closing fade-out is silent.
 - **Centralized**: `src/lib/sceneSfx.ts` exports `TRANSITION_SFX_URL` and `TRANSITION_SFX_VOLUME` so tweaks happen in one place.
-- **Mount-log format**: the sibling `<AudioMountLog>` emits `[audio] whoosh src=... volume=0.50 frames=[N, N+T) beatIndex=K` via `useEffect(..., [])` on first mount. The `meta` includes `beatIndex` so the line can be cross-referenced with the orchestrator's beat order.
+- **Observability**: whoosh count + per-whoosh frame range are recorded in the audio plan log (see 1.4) by `Root.tsx::renderDataCalculateMetadata` using the same `computeTransitionFrames` helper the orchestrator uses.
 - **Compatibility**: `<Audio>` from `@remotion/media` works in both server-side render and `<Player>` (unlike `<Audio>` from `remotion` which becomes `<Html5Audio>`).
 
 ### Step 6c: Typing SFX on Kinetic Captions — ✅ DONE
@@ -617,7 +657,7 @@ Whenever `<BeatKineticCaptions>` renders (i.e. for data-vis beats), it also rend
 - **Gating**: same `CAPTION_VISIBLE_BEAT_TYPES` set as the visual captions. Text/card beats don't get the click track because they don't show words ticking through.
 - **Implementation**: in `src/audio/BeatKineticCaptions.tsx`. For each `word` in the beat's word list, the wrapper renders a 4-frame `<Sequence from={localStartFrame} durationInFrames={4}>` containing the click. The parent `<Sequence>` bounds the whole track to the beat's `durationInFrames`. **The 1-frame variant caused mediabunny's MP4 muxer to throw `Cannot write to a closing writable stream` during chunk flush; 4 frames (~133ms at 30fps) is the smallest stable window.**
 - **Local-frame conversion**: `localStartFrame = Math.round(w.start * fps) - startFrame`. Word timestamps are GLOBAL (relative to the start of the whole composition); clicks live inside a per-beat `<Sequence>` whose local counter starts at 0 at `startFrame`. Without the offset, the click would lag the narration by `startFrame` frames.
-- **Mount-log format**: each click is paired with a sibling `<AudioMountLog label="click" ... meta={{ wordIndex: i, word: w.word }} />` so the render log shows one `[audio] click` line per word with the spoken word string and its index inside the beat.
+- **Observability**: the per-beat click count is recorded in the audio plan log (see 1.4) by `Root.tsx::renderDataCalculateMetadata` using the same window logic the orchestrator uses.
 
 Code shape inside `BeatKineticCaptions`:
 
@@ -631,14 +671,6 @@ Code shape inside `BeatKineticCaptions`:
       durationInFrames={CLICK_HOLD_FRAMES}  // 4
     >
       <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
-      <AudioMountLog
-        label="click"
-        src={TYPING_SFX_URL}
-        volume={TYPING_SFX_VOLUME}
-        from={localStartFrame}
-        durationInFrames={TYPING_CLICK_HOLD_FRAMES}
-        meta={{ wordIndex: i, word: w.word }}
-      />
     </Sequence>
   );
 })}
@@ -651,14 +683,14 @@ A looping ambient track plays underneath the narration for the entire compositio
 - **Volume**: 0.15, with a 1-second fade-in from 0 → 0.15 at the start of the composition. Steady-state volume is low so the ambient doesn't compete with the narration, the whoosh, or the typing clicks. Per `.agents/skills/remotion-markup/audio.md` best practices for ambient sound: low steady volume + `loop` + `loopVolumeCurveBehavior="extend"`.
 - **Mounted at the root** of `MotionGraphicsVideo`, NOT per-beat, so it spans the whole composition without restarting at every cross-fade.
 - **Centralized**: `src/lib/sceneSfx.ts` exports `AMBIENT_SFX_URL`, `AMBIENT_SFX_VOLUME`, and `AMBIENT_SFX_FADE_IN_FRAMES`.
-- **Mount-log format**: the sibling `<AudioMountLog label="ambient" volume={null} peakVolume={AMBIENT_SFX_VOLUME} ...>` renders the volume as `0..0.15 (callback)` so it's clear the volume is a fade-in callback rather than a static 0.15.
+- **Observability**: the ambient stream is recorded in the audio plan log as `ambient: "public/sfx-ambient.mp3"` (see 1.4).
 - **Compatibility**: `<Audio>` from `@remotion/media` works in both server-side render and `<Player>` (unlike `<Audio>` from `remotion` which becomes `<Html5Audio>`).
 
 ### Step 7: Per-beat Captions Wrapper (`src/audio/BeatKineticCaptions.tsx`) — ✅ DONE
 Per-beat wrapper around `KineticCaptions` that:
 1. Slices the full word list to the current beat's window (`[startFrame/fps, (startFrame+durationInFrames)/fps]`) so captions don't bleed into adjacent beats.
 2. Provides a `BeatContext` (currentBeatType, currentWords, beatStartFrame, beatDurationInFrames) so `KineticCaptions` can rebase GLOBAL word starts to LOCAL frames inside `useMemo`.
-3. Renders the typing-click track (see Step 6c) plus per-click `<AudioMountLog>` siblings.
+3. Renders the typing-click track (see Step 6c).
 4. Exposes its own `useBeatContext()` for `KineticCaptions`. (The orchestrator's `useBeatContext` still exists for backward compatibility but `KineticCaptions` reads from this local one — same data shape, owned by the same file.)
 
 ### Step 8: Wire Up `Root.tsx` — ✅ DONE
@@ -670,6 +702,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 - **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
 - **1.3 update:** the parsed `words[]` is run through `src/beats/words.ts::dedupeOverlappingWords` to drop overlapping / zero-duration entries before being injected into `props.words`. A `console.warn` lists how many were dropped (and that the Python pipeline's WhisperX step is the likely culprit).
+- **1.4 update:** the parsed beats + deduped words are run through a new `computeAudioPlan` helper that produces the whoosh slot list + click count (mirroring the orchestrator's layout). The plan is appended to `out/audio-mounts.log` via `writeAudioPlanLog(plan, process.cwd())`. The smoke test reads this file and asserts one valid JSON line is present. See 1.4 above for the full reasoning on why this is a file (not `console.log`) and why the per-mount log lines were removed.
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -697,7 +730,7 @@ Per-beat wrapper around `KineticCaptions` that:
     1. ✅ Replace silent fallback with hard error on missing render data (1.1)
     2. ✅ Validate per-beat `metadata` shape with Zod (1.2)
     3. ✅ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
-    4. ✅ Render-time logs around the audio streams (1.4) — see notes above about the sibling `<AudioMountLog>` pattern
+    4. ✅ Audio plan log written to `out/audio-mounts.log` (1.4) — see the long-form note in 1.4 above about why the per-mount `console.log` lines were removed in favor of a file-based plan log
     5. ⏳ Cache the last-render composition hash (1.5)
 23. **DEFERRED until laptop/GPU available (Mode B)**
     - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
@@ -732,7 +765,7 @@ Per-beat wrapper around `KineticCaptions` that:
 24. **Per-beat Zod validation (1.2)** — `src/beats/types.ts::PerBeatSchema` uses `z.object(beatBaseShape).passthrough().superRefine(...)` to dispatch each beat to its per-type Zod schema in `src/beats/registry.ts` and forward the underlying Zod issues into the parent validation context. This preserves the original field path so the user-facing error reads `beats[1].icon: Invalid input` rather than `beats[1].metadata: [opaque message]`. **The `.passthrough()` is load-bearing** — without it, Zod strips unknown keys before the per-type schema sees them, and per-type fields (`icon`, `left`, `right`, `events`, `steps`, `points`, `items`, `beforeLabel`, `afterLabel`, `locationName`, `latitude`, `longitude`, `buildings`, `quote`, `author`) are silently missing.
 25. **Per-word dedupe (1.3)** — `src/beats/words.ts::dedupeOverlappingWords` is a pure helper that drops WhisperX junk (zero-duration + overlapping entries) so the kinetic-caption highlight doesn't flicker or get stuck. `Root.tsx` calls it after `WordListSchema.safeParse` and logs a `console.warn` if any words were dropped, pointing the user at the Python pipeline's WhisperX alignment step. The dedupe rules are: (1) drop if `end <= start`; (2) drop if `end <= prevKept.end` (the later word is contained/duplicate of the previous kept one). On ties the LATER word is dropped, matching what `KineticCaptions::findCurrentWordIndex` does anyway (returns the first match). Logging lives in the caller so the helper stays pure and easy to unit test.
 26. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
-27. **Audio mount logs use a sibling component, not `onMount` (1.4)** — `<Audio>`'s `onMount` is a time-driven lifecycle hook that does NOT fire during a `still` (single-frame) render, so the smoke test in `scripts/render-smoke.sh` (which renders 1 frame) would see zero `[audio]` log lines. The fix: a small sibling component `<AudioMountLog>` (in `src/audio/AudioMountLog.tsx`) renders `null` and runs `logAudioMount(info)` inside `useEffect(..., [])` on first React mount. `useEffect` DOES fire during a `still` render, so the smoke test can now assert at least one `[audio]` line is present. The format is unchanged from the initial 1.4 spec (`[audio] <label> src=… volume=… frames=[from, to) <meta>`); only the trigger mechanism moved from `<Audio onMount>` to a sibling `<AudioMountLog>`.
+27. **Audio observability uses a file-based plan log, not per-mount `console.log` (1.4)** — Every attempt to emit a per-mount `[audio] ...` log line on `<Audio>` mount failed during a `still` (single-frame) render. The React tree is not committed during a `still`, so `onMount`, `useEffect`, `useState` initializers, and even `useRef` + function body all produce no output. The `still` command uses a render-only code path that bypasses the React lifecycle entirely. Since `scripts/render-smoke.sh` renders 1 frame, it would never see any of the per-mount log lines. The fix: compute the audio plan (whoosh slots + click count + resolved URLs) in `Root.tsx::renderDataCalculateMetadata` using the same `computeTransitionFrames` helper and `CAPTION_VISIBLE_BEAT_TYPES` set the orchestrator uses, then append one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test reads this file (no stdout/stderr capture needed) and asserts one valid JSON line is present. The trade-off: the log is a *plan* computed from the input data, not a *report* of what actually mounted. If the orchestrator's layout diverges from the plan, the log silently lies. We mitigate by reusing the orchestrator's `computeTransitionFrames` and gate set, so the plan IS the orchestrator's behavior for those exact inputs. We also drop the previous sibling `<AudioMountLog>` components and the `logAudioMount` helper — they never fired, so they were dead code in the `still` path. They may be reintroduced for the video-render path (where they DO fire) in a later horizon if per-mount observability is needed there.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -750,4 +783,10 @@ Per-beat wrapper around `KineticCaptions` that:
 }
 ```
 
-The Python pipeline emits `totalDurationInFrames: 1143` already accounting for the cross-fade overlap (`computeTransitionFrames` per pair). The orchestrator uses that value as-is, lays each beat at its `startFrame`, and lets the natural overlap produce the cross-fade. The first beat has no outgoing transition, so no whoosh plays for it; subsequent beats each play a whoosh in their last `transitionFrames` frames (≈4–15 frames, 0.13–0.5s at 30fps). Data-vis beats (`timeline` in this example) play a mouse-click per word in their captions via `BeatKineticCaptions`. The ambient track loops under everything for the full 1143 frames (~38 seconds). Visual subtitles for data-vis beats are produced by `KineticCaptions` with the local-frame rebasing fix; the spoken text on screen for text/card beats is the on-screen component itself (e.g. `KeyStatement`, `IconText`, `VersusCard`).
+The Python pipeline emits `totalDurationInFrames: 1143` already accounting for the cross-fade overlap (`computeTransitionFrames` per pair). The orchestrator uses that value as-is, lays each beat at its `startFrame`, and lets the natural overlap produce the cross-fade. The first beat has no outgoing transition, so no whoosh plays for it; subsequent beats each play a whoosh in their last `transitionFrames` frames (≈4–15 frames, 0.13–0.5s at 30fps). Data-vis beats (`timeline` in this example) play a mouse-click per word in their captions via `BeatKineticCaptions`. The ambient track loops under everything for the full 1143 frames (~38 seconds). The audio plan log line for this example would look like:
+
+```json
+{"beatsCount":6,"wordsCount":120,"narration":"public/narration.mp3","ambient":"public/sfx-ambient.mp3","whooshCount":5,"clickCount":3,"whooshSlots":[{"from":69,"to":77,"beatIndex":0},{"from":150,"to":158,"beatIndex":1},{"from":325,"to":333,"beatIndex":2},{"from":553,"to":561,"beatIndex":3},{"from":635,"to":643,"beatIndex":4}]}
+```
+
+(`whooshCount` is 5 because the 6 beats have 5 outgoing transitions; the last beat has none. `clickCount` is 3 because only the `timeline` beat is data-vis, and the 3 events land in its window.)

@@ -1,6 +1,5 @@
 import React from "react";
 import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
-import { z } from "zod";
 import { ChartCounter } from "./ChartCounter";
 import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
@@ -26,6 +25,8 @@ import {
   type TimedBeats,
 } from "./beats/types";
 import { dedupeOverlappingWords } from "./beats/words";
+import { computeTransitionFrames } from "./lib/transitionDuration";
+import { writeAudioPlanLog, type WhooshSlot } from "./lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
 /*  Render data                                                       */
@@ -76,6 +77,14 @@ import { dedupeOverlappingWords } from "./beats/words";
 // them) are dropped, otherwise the kinetic-caption highlight
 // flickers / gets stuck on the wrong word. A `console.warn` line
 // lists how many words were dropped.
+//
+// Audio plan log (Horizon 0.4 / 1.4): after the JSONs are parsed and
+// the word list is deduped, we compute the audio plan (whoosh slots,
+// click slots, resolved URLs) and append one JSON line to
+// `out/audio-mounts.log`. This is the only mount-time observability
+// we get because the React component tree does NOT mount during a
+// `still` (single-frame) render — see `src/lib/sceneSfx.ts` for the
+// full list of mount hooks that don't fire.
 // ------------------------------------------------------------------
 
 const RenderDataError = (message: string, cause?: unknown): Error => {
@@ -96,7 +105,72 @@ interface RenderDataResult {
   narrationSrc: string;
   fps: number;
   totalDurationInFrames: number;
+  /** Audio plan derived from beats + words (used by 1.4 logging). */
+  whooshSlots: WhooshSlot[];
+  /** Count of words inside data-vis beats (will get click <Audio>s). */
+  clickCount: number;
 }
+
+/**
+ * Compute the per-beat whoosh slots and the per-word click count from
+ * the parsed beats.json + timestamps.json. This mirrors the layout
+ * the orchestrator does at mount time (`src/MotionGraphicsVideo.tsx`),
+ * so the log line is a faithful prediction of what will mount.
+ */
+const computeAudioPlan = (beats: TimedBeats, words: Word[]): {
+  whooshSlots: WhooshSlot[];
+  clickCount: number;
+} => {
+  const allBeats = beats.beats;
+  const whooshSlots: WhooshSlot[] = [];
+
+  for (let i = 0; i < allBeats.length; i++) {
+    const beat = allBeats[i];
+    const next = allBeats[i + 1];
+    if (!next) continue; // last beat has no outgoing transition
+    const transitionFrames = computeTransitionFrames(
+      beat.durationInFrames,
+      next.durationInFrames,
+    );
+    if (transitionFrames <= 0) continue;
+    const from = Math.max(
+      0,
+      beat.startFrame + beat.durationInFrames - transitionFrames,
+    );
+    whooshSlots.push({
+      from,
+      to: from + transitionFrames,
+      beatIndex: i,
+    });
+  }
+
+  // Click slots: one per word inside a data-vis beat. The gate is the
+  // same `CAPTION_VISIBLE_BEAT_TYPES` set used by the orchestrator
+  // (in `src/beats/renderBeat.tsx`).
+  const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
+    "map_3d",
+    "chart_line",
+    "chart_comparison_3d",
+    "chart_counter",
+    "progress_meter",
+    "timeline",
+  ]);
+
+  let clickCount = 0;
+  for (const beat of allBeats) {
+    if (!CAPTION_VISIBLE_BEAT_TYPES.has(beat.type)) continue;
+    const windowStartSec = beat.startFrame / beats.fps;
+    const windowEndSec =
+      (beat.startFrame + beat.durationInFrames) / beats.fps;
+    for (const w of words) {
+      if (w.end > windowStartSec && w.start < windowEndSec) {
+        clickCount += 1;
+      }
+    }
+  }
+
+  return { whooshSlots, clickCount };
+};
 
 const fetchRenderData = async (
   abortSignal: AbortSignal,
@@ -187,12 +261,23 @@ const fetchRenderData = async (
     );
   }
 
+  // Compute the audio plan (whoosh slots + click count) from the
+  // parsed + deduped data. Mirrors the orchestrator's mount-time
+  // layout so the log line is a faithful prediction of what will
+  // mount.
+  const audioPlan = computeAudioPlan(
+    beatsParsed.data as unknown as TimedBeats,
+    deduped.words,
+  );
+
   return {
     beats: beatsParsed.data as unknown as TimedBeats,
     words: deduped.words,
     narrationSrc: "narration.mp3",
     fps: beatsParsed.data.fps,
     totalDurationInFrames: beatsParsed.data.totalDurationInFrames,
+    whooshSlots: audioPlan.whooshSlots,
+    clickCount: audioPlan.clickCount,
   };
 };
 
@@ -207,6 +292,43 @@ const renderDataCalculateMetadata: CalculateMetadataFunction<
       props,
     };
   }
+
+  // Audio plan log (Horizon 0.4 / 1.4).
+  // Write the resolved audio plan to out/audio-mounts.log so the
+  // smoke test (and any future CI / dashboard) can verify the
+  // orchestrator's audio layout without having to mount the React
+  // tree. This is the ONLY mount-time observability we get because
+  // a `still` render never commits the React component tree — see
+  // src/lib/sceneSfx.ts for the full reasoning.
+  //
+  // We resolve the project root from process.cwd() (the directory
+  // the user invoked `npx remotion` from, which is the project
+  // root by convention).
+  try {
+    writeAudioPlanLog(
+      {
+        beatsCount: data.beats.beats.length,
+        wordsCount: data.words.length,
+        narration: `public/${data.narrationSrc}`,
+        ambient: `public/sfx-ambient.mp3`,
+        whooshCount: data.whooshSlots.length,
+        clickCount: data.clickCount,
+        whooshSlots: data.whooshSlots,
+      },
+      process.cwd(),
+    );
+  } catch (err) {
+    // Don't fail the render if the log write fails — the audio plan
+    // log is observability, not correctness. But emit a warning so
+    // the user knows.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[MotionGraphicsVideo] failed to write audio plan log: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+
   return {
     durationInFrames: data.totalDurationInFrames,
     props: {

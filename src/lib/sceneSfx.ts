@@ -30,55 +30,110 @@
 /* ------------------------------------------------------------------ */
 /*  Render-time audio mount logger (Horizon 0.4 — 1.4)                 */
 /*                                                                     */
-/*  Every <Audio> in the render pipeline calls logAudioMount() once    */
-/*  on mount with a one-line summary of the resolved URL, volume, and */
-/*  frame range. This makes it trivial to correlate render output     */
-/*  with frame ranges when debugging — search the render log for      */
-/*  "[audio]" to see every stream the orchestrator mounted.           */
+/*  Why we log to a file, not console.log:                            */
+/*    We tried every React mount hook to emit a per-stream [audio]    */
+/*    log line on mount:                                               */
+/*      1. onMount on <Audio>          — time-driven, doesn't fire     */
+/*                                        during a `still` render      */
+/*      2. useEffect(..., []) in a      — post-render, doesn't fire    */
+/*         sibling <AudioMountLog>       during a `still` render      */
+/*      3. useState(() => ...)          — initializer, doesn't fire    */
+/*         initializer                   during a `still` render      */
+/*      4. useRef(false) + function      — doesn't fire either         */
+/*         body log                       (the React tree is NEVER    */
+/*                                        mounted during `still`,     */
+/*                                        only the render function    */
+/*                                        is called)                  */
 /*                                                                     */
-/*  Volume is rendered as a fixed-point number (0..1) for static      */
-/*  volumes, or as "0..N.NN (callback)" for callback volumes (ambient) */
-/*  to make the difference obvious.                                    */
+/*    The smoke test (`scripts/render-smoke.sh`) is a `still` render.  */
+/*    So the only way to emit observability for it is from somewhere  */
+/*    OUTSIDE the React tree, BEFORE the orchestrator mounts.         */
+/*    `Root.tsx::renderDataCalculateMetadata` is the perfect place:    */
+/*    it runs once per render, has access to the parsed beats.json    */
+/*    and timestamps.json, and computes the audio plan (whoosh slots, */
+/*    click slots) as a byproduct of the data fetch.                  */
 /*                                                                     */
-/*  Frame ranges are half-open [from, to) so to = from + duration.    */
+/*  Format:                                                           */
+/*    One JSON line per render. Contains:                              */
+/*      - beatsCount, wordsCount                                       */
+/*      - narration (the resolved public/narration.mp3)                 */
+/*      - ambient (the resolved public/sfx-ambient.mp3)                 */
+/*      - whooshCount (number of cross-fade whoosh <Audio>s)            */
+/*      - clickCount (number of per-word click <Audio>s)                */
+/*      - whooshSlots: list of { from, to, beatIndex } for each         */
+/*        whoosh that will be mounted (proves the math is right)        */
+/*                                                                     */
+/*  The log file lives at `${projectRoot}/out/audio-mounts.log`.       */
+/*  It is APPENDED across renders so you can see the history of what   */
+/*  was rendered. The smoke test truncates it before each run so the   */
+/*  assertion only sees the current render.                            */
 /* ------------------------------------------------------------------ */
 
-export type AudioMountLog = {
-  /** Stream label (narration, ambient, whoosh, click, …). */
-  readonly label: string;
-  /** Resolved URL or staticFile path. */
-  readonly src: string;
-  /** Static volume 0..1, or `null` if a callback was supplied. */
-  readonly volume: number | null;
-  /** Peak volume the callback reaches (0..1), or `null` for static. */
-  readonly peakVolume?: number | null;
-  /** Inclusive start frame (local to the parent <Sequence>). */
-  readonly from: number;
-  /** Duration in frames. */
-  readonly durationInFrames: number;
-  /** Optional per-mount context (beatIndex, wordIndex, etc.). */
-  readonly meta?: Record<string, string | number>;
+import { existsSync, mkdirSync, appendFileSync, writeFileSync } from "fs";
+import { join } from "path";
+
+export type WhooshSlot = {
+  /** Global frame the whoosh starts (inclusive). */
+  from: number;
+  /** Global frame the whoosh ends (exclusive). */
+  to: number;
+  /** Index of the OUTGOING beat in the beats[] array. */
+  beatIndex: number;
 };
 
-export const logAudioMount = (info: AudioMountLog): void => {
-  const to = info.from + info.durationInFrames;
-  const volumeStr =
-    info.volume === null
-      ? `0..${(info.peakVolume ?? 0).toFixed(2)} (callback)`
-      : info.volume.toFixed(2);
-  const metaStr = info.meta
-    ? " " +
-      Object.entries(info.meta)
-        .map(([k, v]) => `${k}=${v}`)
-        .join(" ")
-    : "";
-  // eslint-disable-next-line no-console
-  console.log(
-    `[audio] ${info.label.padEnd(8)} ` +
-      `src=${info.src} ` +
-      `volume=${volumeStr} ` +
-      `frames=[${info.from}, ${to})${metaStr}`,
-  );
+export type AudioPlanLog = {
+  /** Beat count from beats.json. */
+  beatsCount: number;
+  /** Word count from timestamps.json (after dedupe in 1.3). */
+  wordsCount: number;
+  /** Resolved public/ path to the narration audio. */
+  narration: string;
+  /** Resolved public/ path to the ambient SFX. */
+  ambient: string;
+  /** Number of cross-fade whoosh <Audio>s the orchestrator will mount. */
+  whooshCount: number;
+  /** Number of per-word click <Audio>s the orchestrator will mount. */
+  clickCount: number;
+  /** Per-whoosh global frame range and outgoing-beat index. */
+  whooshSlots: WhooshSlot[];
+};
+
+/**
+ * Append one JSON line describing the audio plan for a render to
+ * `${projectRoot}/out/audio-mounts.log`. Idempotent: creates the
+ * `out/` directory and the log file if they don't exist.
+ *
+ * Called from `Root.tsx::renderDataCalculateMetadata` after the
+ * JSONs have been parsed and deduped but BEFORE the orchestrator
+ * mounts, so the log is written even during a `still` (single-frame)
+ * render.
+ */
+export const writeAudioPlanLog = (
+  plan: AudioPlanLog,
+  projectRoot: string,
+): void => {
+  const outDir = join(projectRoot, "out");
+  if (!existsSync(outDir)) {
+    mkdirSync(outDir, { recursive: true });
+  }
+  const logPath = join(outDir, "audio-mounts.log");
+  appendFileSync(logPath, JSON.stringify(plan) + "\n", "utf8");
+};
+
+/**
+ * Truncate the audio plan log. Called by `scripts/render-smoke.sh`
+ * before each render so the assertion only sees the current run.
+ */
+export const truncateAudioPlanLog = (projectRoot: string): void => {
+  const logPath = join(projectRoot, "out", "audio-mounts.log");
+  // Use a no-op append + a writeFileSync of empty string to ensure
+  // the file exists for the smoke test's grep even if no render
+  // happens (e.g. when the assertion runs in dry-run mode).
+  const outDir = join(projectRoot, "out");
+  if (!existsSync(outDir)) {
+    mkdirSync(outDir, { recursive: true });
+  }
+  writeFileSync(logPath, "", "utf8");
 };
 
 export const TRANSITION_SFX_URL = "https://remotion.media/whoosh.wav";

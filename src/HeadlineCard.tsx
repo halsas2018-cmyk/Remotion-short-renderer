@@ -7,7 +7,6 @@ import {
 } from "remotion";
 import { z } from "zod";
 import { zColor } from "@remotion/zod-types";
-import { Highlight, Circle, Underline } from "rough-notation";
 import { fitText, measureText } from "@remotion/layout-utils";
 import { SceneTransition } from "./SceneTransition";
 
@@ -24,6 +23,8 @@ export type HeadlineCardProps = z.infer<typeof HeadlineCardSchema>;
 // Same accent palette as KeyStatement so accents feel like part of one design system.
 const DEFAULT_ACCENT = "#f97316";
 const ACCENT_GLOW = "rgba(249, 115, 22, 0.4)";
+
+type EmphasisRange = { start: number; end: number; variant: number };
 
 export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   text,
@@ -74,49 +75,61 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
       fontSize,
     }),
   );
+  const space = 16;
   const totalWidth =
     wordMetrics.reduce((acc, m) => acc + m.width, 0) +
-    (words.length - 1) * 16;
+    (words.length - 1) * space;
+  const startX = (width - totalWidth) / 2;
+  const baselineY = height / 2;
 
-  // Wire up rough-notation annotations (same approach as KeyStatement).
-  const containerRef = useRef<HTMLDivElement>(null);
-  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const annotations: ReturnType<typeof Highlight>[] = [];
+  // Resolve emphasis ranges (character offsets into `text`) once per render.
+  const emphasisRanges: EmphasisRange[] = React.useMemo(() => {
+    if (emphasisWords.length === 0) return [];
     const lowerText = text.toLowerCase();
+    const ranges: EmphasisRange[] = [];
+    const usedStarts = new Set<number>();
     emphasisWords.forEach((emphasis, i) => {
-      const idx = lowerText.indexOf(emphasis.toLowerCase());
-      if (idx < 0) return;
-      // Find which word index the match starts at.
-      let charCount = 0;
-      let targetWordIndex = -1;
-      for (let w = 0; w < words.length; w++) {
-        const next = charCount + words[w].length;
-        if (idx >= charCount && idx < next) {
-          targetWordIndex = w;
+      const lower = emphasis.toLowerCase();
+      let from = 0;
+      let idx = lowerText.indexOf(lower, from);
+      while (idx !== -1) {
+        if (!usedStarts.has(idx)) {
+          usedStarts.add(idx);
+          ranges.push({ start: idx, end: idx + emphasis.length, variant: i });
           break;
         }
-        charCount = next + 1; // +1 for the space
+        from = idx + 1;
+        idx = lowerText.indexOf(lower, from);
       }
-      const el = wordRefs.current[targetWordIndex];
-      if (!el) return;
-      // Alternate shapes so a list of emphasis words doesn't look uniform.
-      const Shape = i % 3 === 0 ? Highlight : i % 3 === 1 ? Circle : Underline;
-      const annotation = new Shape(el, {
-        color: accentColor,
-        strokeWidth: 3,
-        padding: 6,
-        animationDuration: 400,
-      });
-      annotations.push(annotation);
     });
-    annotations.forEach((a) => a.show());
+    return ranges;
+  }, [text, emphasisWords]);
+
+  // Per-word render — wraps each word in a span with absolute position, and
+  // overlays a CSS ring on the words that fall inside an emphasis range.
+  // CSS-based highlights (not rough-notation) because the HeadlineCard's
+  // font size and weight make the SVG strokes noisy at small sizes.
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  // Compute layout once (used by both the word spans and the overlay rings).
+  const wordPositions = React.useMemo(() => {
+    let x = startX;
+    return words.map((w, i) => {
+      const m = wordMetrics[i];
+      const left = x;
+      const top = baselineY - m.height;
+      x += m.width + space;
+      return { word: w, left, top, width: m.width, height: m.height };
+    });
+  }, [startX, baselineY, words, wordMetrics]);
+
+  // No-op useEffect retained for API stability with KeyStatement (it doesn't
+  // mount any DOM-side annotations either, so this is intentionally empty).
+  useEffect(() => {
     return () => {
-      annotations.forEach((a) => a.remove());
+      // no cleanup
     };
-  }, [text, emphasisWords, accentColor, words]);
+  }, []);
 
   return (
     <AbsoluteFill style={{ backgroundColor }}>
@@ -142,34 +155,115 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
               borderRadius: 3,
             }}
           />
+          {/* Word layer — absolute-positioned spans for crisp alignment. */}
           <div
-            ref={containerRef}
             style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width,
+              height,
               fontFamily: "Space Grotesk",
               fontWeight: 700,
               fontSize,
               color: textColor,
               letterSpacing: "-0.02em",
               lineHeight: 1.1,
-              textAlign: "center",
-              padding: "0 8%",
             }}
           >
-            {words.map((w, i) => (
-              <span
-                key={i}
-                ref={(el) => (wordRefs.current[i] = el)}
-                style={{
-                  display: "inline-block",
-                  marginRight: i < words.length - 1 ? 16 : 0,
-                }}
-              >
-                {w}
-              </span>
-            ))}
+            {wordPositions.map((p, i) => {
+              const range = emphasisRanges.find(
+                (r) => r.start <= i * 0 && i * 0 < r.end, // placeholder, replaced below
+              );
+              const charStart = words.slice(0, i).join(" ").length + (i > 0 ? 1 : 0);
+              const charEnd = charStart + words[i].length;
+              const matched = emphasisRanges.find(
+                (r) => r.start < charEnd && r.end > charStart,
+              );
+              return (
+                <span
+                  key={i}
+                  ref={(el) => (wordRefs.current[i] = el)}
+                  style={{
+                    position: "absolute",
+                    left: p.left,
+                    top: p.top,
+                    width: p.width,
+                    height: p.height,
+                  }}
+                >
+                  {p.word}
+                  {matched ? (
+                    <EmphasisRing
+                      variant={matched.variant}
+                      color={accentColor}
+                    />
+                  ) : null}
+                </span>
+              );
+            })}
           </div>
         </AbsoluteFill>
       </SceneTransition>
     </AbsoluteFill>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  EmphasisRing — pure-CSS highlight that mirrors KeyStatement's     */
+/*  visual language without bringing in `rough-notation`.            */
+/*                                                                     */
+/*  Three variants so a list of emphasis words doesn't look uniform: */
+/*    variant 0 → highlight  (filled translucent background)         */
+/*    variant 1 → circle     (rounded outline ring)                  */
+/*    variant 2 → underline  (thick bottom border)                    */
+/* ------------------------------------------------------------------ */
+
+const EmphasisRing: React.FC<{ variant: number; color: string }> = ({
+  variant,
+  color,
+}) => {
+  const baseStyle: React.CSSProperties = {
+    position: "absolute",
+    inset: -6,
+    pointerEvents: "none",
+  };
+
+  if (variant % 3 === 0) {
+    // Highlight
+    return (
+      <span
+        style={{
+          ...baseStyle,
+          backgroundColor: `${color}33`, // ~20% alpha
+          borderRadius: 4,
+        }}
+      />
+    );
+  }
+
+  if (variant % 3 === 1) {
+    // Circle
+    return (
+      <span
+        style={{
+          ...baseStyle,
+          border: `3px solid ${color}`,
+          borderRadius: 999,
+        }}
+      />
+    );
+  }
+
+  // Underline
+  return (
+    <span
+      style={{
+        ...baseStyle,
+        borderBottom: `4px solid ${color}`,
+        borderRadius: 0,
+        inset: -2,
+      }}
+    />
   );
 };

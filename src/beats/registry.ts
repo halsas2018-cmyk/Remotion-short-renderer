@@ -1,270 +1,249 @@
+import { z, ZodTypeAny } from "zod";
 import React from "react";
-import { z } from "zod";
-import { KeyStatement } from "../KeyStatement";
-import { PlainText } from "../PlainText";
-import { IconText } from "../IconText";
-import { ChartLine } from "../ChartLine";
-import { ChartCounter } from "../ChartCounter";
-import { ChartComparison3D } from "../ChartComparison3D";
-import { ProgressMeter } from "../ProgressMeter";
-import { Timeline } from "../Timeline";
-import { VersusCard } from "../VersusCard";
-import { BeforeAfter } from "../BeforeAfter";
-import { Map3D } from "../Map3D";
+import { KeyStatement } from "../components/KeyStatement";
 import { HeadlineCard } from "../HeadlineCard";
+import { PlainText } from "../components/PlainText";
+import { IconText } from "../components/IconText";
+import { ChartLine } from "../components/ChartLine";
+import { ChartCounter } from "../components/ChartCounter";
+import { ChartComparison3D } from "../components/ChartComparison3D";
+import { ProgressMeter } from "../components/ProgressMeter";
+import { Timeline } from "../components/Timeline";
+import { VersusCard } from "../components/VersusCard";
+import { BeforeAfter } from "../components/BeforeAfter";
+import { Map3D } from "../components/Map3D";
+import { QuoteCard } from "../QuoteCard";
 import { BeatType } from "./types";
 
 /* ------------------------------------------------------------------ */
-/*  Per-type Zod schemas                                               */
-/*                                                                     */
-/*  IMPORTANT: The Python pipeline (beat_generator.py) emits per-type  */
-/*  fields (text, emphasisWords, icon, left, right, events, steps,    */
-/*  beforeLabel, afterLabel, locationName, latitude, longitude,       */
-/*  buildings, etc.) at the TOP LEVEL of each beat, NOT inside a      */
-/*  nested `metadata` field. The orchestrator passes the whole beat   */
-/*  object here and the schema below picks out the relevant fields.   */
+/*  Per-type Zod schemas.                                            */
+/*  Each schema validates the WHOLE beat (top-level) shape.          */
+/*  The Python pipeline emits per-type fields at the top level,      */
+/*  not under a `metadata` wrapper, so the schema is built from     */
+/*  the base shape plus the per-type fields.                         */
 /* ------------------------------------------------------------------ */
 
-const emphasisWordsSchema = z.array(z.string()).optional();
-
-/**
- * Common fields present on every beat.
- * Used as a base for every schema below.
- */
 const beatBase = {
   type: z.string(),
-  text: z.string(),
-  startFrame: z.number(),
-  durationInFrames: z.number(),
-  endFrame: z.number().optional(),
-};
+  startFrame: z.number().nonnegative(),
+  endFrame: z.number().nonnegative().optional(),
+  durationInFrames: z.number().positive(),
+} as const;
 
-const keyStatementMetadata = z.object({
-  ...beatBase,
-  emphasisWords: emphasisWordsSchema,
-});
+const keyStatementMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("key_statement"),
+    text: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
-const plainTextMetadata = z.object({
-  ...beatBase,
-});
+const headlineCardMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("headline_card"),
+    text: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
+    backgroundColor: z.string().optional(),
+    accentColor: z.string().optional(),
+    textColor: z.string().optional(),
+  })
+  .passthrough();
 
-const iconTextMetadata = z.object({
-  ...beatBase,
-  icon: z.string(),
-  emphasisWords: emphasisWordsSchema,
-});
+const plainTextMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("plain_text"),
+    text: z.string(),
+  })
+  .passthrough();
 
-const chartLineMetadata = z.object({
-  ...beatBase,
-  points: z
-    .array(
+const iconTextMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("icon_text"),
+    text: z.string(),
+    icon: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+const chartLineMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("chart_line"),
+    text: z.string().optional(),
+    points: z.array(
       z.object({
         label: z.string(),
         value: z.number(),
       }),
-    )
-    .min(2),
-  exitDirection: z.enum(["up", "down", "left", "right"]).optional(),
-});
+    ),
+    exitDirection: z.string().optional(),
+  })
+  .passthrough();
 
-const chartCounterMetadata = z.object({
-  ...beatBase,
-  value: z.number(),
-  label: z.string(),
-});
+const chartCounterMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("chart_counter"),
+    text: z.string().optional(),
+    value: z.union([z.string(), z.number()]),
+    label: z.string(),
+  })
+  .passthrough();
 
-const chartComparison3DMetadata = z.object({
-  ...beatBase,
-  items: z
-    .array(
+const chartComparison3DMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("chart_comparison_3d"),
+    text: z.string().optional(),
+    items: z.array(
       z.object({
         label: z.string(),
         value: z.number(),
       }),
-    )
-    .min(2),
-});
+    ),
+  })
+  .passthrough();
 
-const progressMeterMetadata = z.object({
-  ...beatBase,
-  value: z.number(),
-  maxValue: z.number(),
-  label: z.string(),
-});
+const progressMeterMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("progress_meter"),
+    text: z.string().optional(),
+    value: z.number(),
+    maxValue: z.number(),
+    label: z.string(),
+  })
+  .passthrough();
 
-const timelineMetadata = z.object({
-  ...beatBase,
-  events: z.array(z.string()).min(1),
-});
+const timelineMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("timeline"),
+    text: z.string().optional(),
+    events: z.array(z.string()),
+  })
+  .passthrough();
 
-const versusMetadata = z.object({
-  ...beatBase,
-  left: z.string(),
-  right: z.string(),
-});
+const versusMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("versus"),
+    text: z.string().optional(),
+    left: z.union([z.string(), z.object({ label: z.string() })]),
+    right: z.union([z.string(), z.object({ label: z.string() })]),
+  })
+  .passthrough();
 
-const beforeAfterMetadata = z.object({
-  ...beatBase,
-  beforeLabel: z.string(),
-  afterLabel: z.string(),
-});
+const beforeAfterMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("before_after"),
+    text: z.string().optional(),
+    beforeLabel: z.string(),
+    afterLabel: z.string(),
+  })
+  .passthrough();
 
-const map3DMetadata = z.object({
-  ...beatBase,
-  locationName: z.string(),
-  latitude: z.number(),
-  longitude: z.number(),
-  buildings: z.number().optional(),
-});
+const map3DMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("map_3d"),
+    text: z.string().optional(),
+    locationName: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+    buildings: z.array(z.any()).optional(),
+  })
+  .passthrough();
 
-const processFlowMetadata = z.object({
-  ...beatBase,
-  steps: z.array(z.string()).min(1),
-});
+const processFlowMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("process_flow"),
+    text: z.string().optional(),
+    steps: z.array(z.string()),
+  })
+  .passthrough();
 
-const quoteCardMetadata = z.object({
-  ...beatBase,
-  quote: z.string(),
-  author: z.string().optional(),
-});
-
-const headlineCardMetadata = z.object({
-  ...beatBase,
-  emphasisWords: emphasisWordsSchema,
-  // All colour fields are optional; HeadlineCard falls back to its
-  // built-in palette (#0b0b0f bg, #f97316 accent, #ffffff text) so
-  // beats emitted by the Python pipeline can omit them.
-  backgroundColor: z.string().optional(),
-  accentColor: z.string().optional(),
-  textColor: z.string().optional(),
-});
+const quoteCardMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("quote_card"),
+    text: z.string().optional(),
+    quote: z.string(),
+    attribution: z.string().optional(),
+    author: z.string().optional(),
+  })
+  .passthrough();
 
 /* ------------------------------------------------------------------ */
-/*  Registry entry shape                                              */
+/*  Registry entry.                                                  */
+/*  `beatSchema` is the per-type top-level Zod schema.               */
+/*  `component` is the React component that renders the beat.        */
+/*  `validateBeatMetadata` is a runtime helper that runs the schema  */
+/*  against a parsed beat and returns a typed metadata object.      */
 /* ------------------------------------------------------------------ */
 
-type RegistryEntry = {
+interface RegistryEntry {
   component: React.ComponentType<any>;
-  /**
-   * Zod schema for the WHOLE beat (top-level fields), not just metadata.
-   * The schema validates that the per-type fields required by this
-   * beat type are present and well-typed.
-   */
-  beatSchema: z.ZodTypeAny;
+  beatSchema: ZodTypeAny;
+  validateBeatMetadata: (beat: unknown) => any;
+}
+
+const buildEntry = (
+  component: React.ComponentType<any>,
+  beatSchema: ZodTypeAny,
+): RegistryEntry => ({
+  component,
+  beatSchema,
+  validateBeatMetadata: (beat: unknown) => beatSchema.parse(beat),
+});
+
+export const registry: Record<BeatType, RegistryEntry> = {
+  key_statement: buildEntry(KeyStatement, keyStatementMetadata),
+  headline_card: buildEntry(HeadlineCard, headlineCardMetadata),
+  plain_text: buildEntry(PlainText, plainTextMetadata),
+  icon_text: buildEntry(IconText, iconTextMetadata),
+  chart_line: buildEntry(ChartLine, chartLineMetadata),
+  chart_counter: buildEntry(ChartCounter, chartCounterMetadata),
+  chart_comparison_3d: buildEntry(ChartComparison3D, chartComparison3DMetadata),
+  progress_meter: buildEntry(ProgressMeter, progressMeterMetadata),
+  timeline: buildEntry(Timeline, timelineMetadata),
+  versus: buildEntry(VersusCard, versusMetadata),
+  before_after: buildEntry(BeforeAfter, beforeAfterMetadata),
+  map_3d: buildEntry(Map3D, map3DMetadata),
+  // process_flow reuses the Timeline component until a dedicated variant
+  // is built. The schema validates steps[] as a string array.
+  process_flow: buildEntry(Timeline, processFlowMetadata),
+  // quote_card has a dedicated component (QuoteCard) registered as
+  // the primary renderer. See CLAUDE.md §2.1.1 and 2.1 (quote_attribution
+  // is the next copy-paste of HeadlineCard.tsx).
+  quote_card: buildEntry(QuoteCard, quoteCardMetadata),
 };
 
-const registry: Record<BeatType, RegistryEntry | null> = {
-  key_statement: {
-    component: KeyStatement,
-    beatSchema: keyStatementMetadata,
-  },
-  plain_text: {
-    component: PlainText,
-    beatSchema: plainTextMetadata,
-  },
-  icon_text: {
-    component: IconText,
-    beatSchema: iconTextMetadata,
-  },
-  chart_line: {
-    component: ChartLine,
-    beatSchema: chartLineMetadata,
-  },
-  chart_counter: {
-    component: ChartCounter,
-    beatSchema: chartCounterMetadata,
-  },
-  chart_comparison: {
-    component: ChartComparison3D,
-    beatSchema: chartComparison3DMetadata,
-  },
-  chart_comparison_3d: {
-    component: ChartComparison3D,
-    beatSchema: chartComparison3DMetadata,
-  },
-  progress_meter: {
-    component: ProgressMeter,
-    beatSchema: progressMeterMetadata,
-  },
-  timeline: {
-    component: Timeline,
-    beatSchema: timelineMetadata,
-  },
-  versus: {
-    component: VersusCard,
-    beatSchema: versusMetadata,
-  },
-  before_after: {
-    component: BeforeAfter,
-    beatSchema: beforeAfterMetadata,
-  },
-  map_location: {
-    component: Map3D,
-    beatSchema: map3DMetadata,
-  },
-  map_3d: {
-    component: Map3D,
-    beatSchema: map3DMetadata,
-  },
-  process_flow: {
-    component: Timeline,
-    beatSchema: processFlowMetadata,
-  },
-  quote_card: {
-    component: KeyStatement,
-    beatSchema: quoteCardMetadata,
-  },
-  headline_card: {
-    component: HeadlineCard,
-    beatSchema: headlineCardMetadata,
-  },
-};
-
-/* ------------------------------------------------------------------ */
-/*  Public API                                                        */
-/* ------------------------------------------------------------------ */
-
-/**
- * Look up the React component for a given beat type, or `null` if unsupported.
- */
-export const getBeatComponent = (
-  type: BeatType,
-): React.ComponentType<any> | null => {
-  return registry[type]?.component ?? null;
-};
-
-/**
- * Look up the Zod schema for a given beat type, or `null` if unsupported.
- * Exposed so `src/beats/types.ts` can run the schema inside its own
- * `superRefine` and forward the per-field Zod issues into the parent
- * validation context, preserving the original field path in error
- * messages.
- */
-export const getBeatSchemas = (
-  type: BeatType,
-): { beatSchema: z.ZodTypeAny } | null => {
-  const entry = registry[type];
-  if (!entry) return null;
-  return { beatSchema: entry.beatSchema };
-};
-
-/**
- * Validate a beat (the full top-level beat object) against its Zod schema.
- * Throws a descriptive error if validation fails.
- */
-export const validateBeatMetadata = (type: BeatType, beat: unknown) => {
-  const entry = registry[type];
-  if (!entry) {
-    throw new Error(
-      `No registry entry for beat type "${type}". Add one in src/beats/registry.ts.`,
-    );
+export const getBeatComponent = (type: string): React.ComponentType<any> | null => {
+  if (type in registry) {
+    return registry[type as BeatType].component;
   }
-  return entry.beatSchema.parse(beat);
+  return null;
 };
 
-/**
- * Check whether a beat type has a registered component.
- */
-export const isBeatTypeSupported = (type: BeatType): boolean => {
-  return registry[type] != null;
+export const getBeatSchemas = (type: string): { beatSchema: ZodTypeAny | null } => {
+  if (type in registry) {
+    return { beatSchema: registry[type as BeatType].beatSchema };
+  }
+  return { beatSchema: null };
 };
+
+export const validateBeatMetadata = (type: string, beat: unknown): any => {
+  if (!(type in registry)) {
+    throw new Error(`Unknown beat type "${type}". Add a registry entry in src/beats/registry.ts.`);
+  }
+  return registry[type as BeatType].validateBeatMetadata(beat);
+};
+
+export const isBeatTypeSupported = (type: string): boolean => type in registry;

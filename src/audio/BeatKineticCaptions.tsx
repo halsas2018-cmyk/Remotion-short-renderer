@@ -7,12 +7,12 @@ import React, {
 import { Sequence } from "remotion";
 import { Audio } from "@remotion/media";
 import { KineticCaptions } from "../KineticCaptions";
+import { AudioMountLog } from "./AudioMountLog";
 import type { Word } from "../beats/words";
 import {
   TYPING_CLICK_HOLD_FRAMES,
   TYPING_SFX_URL,
   TYPING_SFX_VOLUME,
-  logAudioMount,
 } from "../lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
@@ -154,10 +154,12 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
         MP4 muxer. 1-frame variants throw `Cannot write to a closing
         writable stream` during chunk flush.
 
-        Render-time audio log (Horizon 0.4 — 1.4): every click calls
-        logAudioMount() with the word's local frame range, so the
-        render log shows one line per click and the total count
-        matches the per-beat word count.
+        Render-time audio log (Horizon 0.4 — 1.4): each click has a
+        sibling <AudioMountLog> that emits a [audio] click line via
+        useEffect on first mount. The sibling pattern is required
+        because <Audio>'s onMount hook is time-driven and does not
+        fire during a `still` (single-frame) render — see
+        src/audio/AudioMountLog.tsx for the full reasoning.
       */}
       {currentWords.map((w, i) => {
         const localStartFrame = Math.max(
@@ -170,19 +172,14 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
             from={localStartFrame}
             durationInFrames={TYPING_CLICK_HOLD_FRAMES}
           >
-            <Audio
+            <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
+            <AudioMountLog
+              label="click"
               src={TYPING_SFX_URL}
               volume={TYPING_SFX_VOLUME}
-              onMount={() => {
-                logAudioMount({
-                  label: "click",
-                  src: TYPING_SFX_URL,
-                  volume: TYPING_SFX_VOLUME,
-                  from: localStartFrame,
-                  durationInFrames: TYPING_CLICK_HOLD_FRAMES,
-                  meta: { wordIndex: i, word: w.word },
-                });
-              }}
+              from={localStartFrame}
+              durationInFrames={TYPING_CLICK_HOLD_FRAMES}
+              meta={{ wordIndex: i, word: w.word }}
             />
           </Sequence>
         );

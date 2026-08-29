@@ -15,6 +15,7 @@ import {
 } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
 import { BeatKineticCaptions } from "./audio/BeatKineticCaptions";
+import { AudioMountLog } from "./audio/AudioMountLog";
 import type { Word } from "./beats/words";
 import { computeTransitionFrames } from "./lib/transitionDuration";
 import {
@@ -23,7 +24,6 @@ import {
   AMBIENT_SFX_VOLUME,
   TRANSITION_SFX_URL,
   TRANSITION_SFX_VOLUME,
-  logAudioMount,
 } from "./lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
@@ -95,13 +95,17 @@ export type MotionGraphicsVideoProps = {
 /*  narration, the whoosh, and the typing clicks.                    */
 /*                                                                     */
 /*  Render-time audio logs (Horizon 0.4 — 1.4):                        */
-/*    Every <Audio> in this file (narration, ambient, whoosh) calls   */
-/*    logAudioMount() with a one-line summary of the resolved URL,    */
-/*    volume, and frame range. Search the render log for "[audio]" to */
-/*    see every stream the orchestrator mounted. Typing-click mounts  */
-/*    are logged from src/audio/BeatKineticCaptions.tsx using the     */
-/*    same helper, so the format is consistent across all four audio  */
-/*    sources.                                                        */
+/*    Every <Audio> in this file (narration, ambient, whoosh) is      */
+/*    paired with a sibling <AudioMountLog> component that emits a    */
+/*    one-line [audio] ... log via useEffect(..., []) on mount.       */
+/*    The sibling approach (rather than `onMount` on the <Audio>     */
+/*    itself) is required because <Audio>'s onMount is a time-driven  */
+/*    lifecycle hook that does NOT fire during a `still` (single-    */
+/*    frame) render — see the comment in src/audio/AudioMountLog.tsx.*/
+/*    Typing-click mounts are logged from                             */
+/*    src/audio/BeatKineticCaptions.tsx using the same sibling-       */
+/*    component pattern, so the format is consistent across all four */
+/*    audio sources.                                                  */
 /*                                                                     */
 /*  Data inputs (all in /public, loaded at composition mount time):   */
 /*    - narration.mp3   → narrationSrc (this component)               */
@@ -145,20 +149,21 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
         The audio plays in its own (unmodified) timeline starting at
         global frame 0, which is what syncs the visuals to the words.
+
+        The <AudioMountLog> sibling emits the [audio] narration line
+        via useEffect on first mount (still-render safe).
       */}
       {narrationSrc ? (
-        <Audio
-          src={staticFile(narrationSrc)}
-          onMount={() => {
-            logAudioMount({
-              label: "narration",
-              src: `public/${narrationSrc}`,
-              volume: 1.0,
-              from: 0,
-              durationInFrames: totalDurationInFrames,
-            });
-          }}
-        />
+        <>
+          <Audio src={staticFile(narrationSrc)} />
+          <AudioMountLog
+            label="narration"
+            src={`public/${narrationSrc}`}
+            volume={1.0}
+            from={0}
+            durationInFrames={totalDurationInFrames}
+          />
+        </>
       ) : null}
 
       {/*
@@ -187,16 +192,14 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
             },
           )
         }
-        onMount={() => {
-          logAudioMount({
-            label: "ambient",
-            src: `public/${AMBIENT_SFX_URL}`,
-            volume: null,
-            peakVolume: AMBIENT_SFX_VOLUME,
-            from: 0,
-            durationInFrames: totalDurationInFrames,
-          });
-        }}
+      />
+      <AudioMountLog
+        label="ambient"
+        src={`public/${AMBIENT_SFX_URL}`}
+        volume={null}
+        peakVolume={AMBIENT_SFX_VOLUME}
+        from={0}
+        durationInFrames={totalDurationInFrames}
       />
 
       {/*
@@ -286,16 +289,14 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
                 <Audio
                   src={TRANSITION_SFX_URL}
                   volume={TRANSITION_SFX_VOLUME}
-                  onMount={() => {
-                    logAudioMount({
-                      label: "whoosh",
-                      src: TRANSITION_SFX_URL,
-                      volume: TRANSITION_SFX_VOLUME,
-                      from: whooshFrom,
-                      durationInFrames: transitionFrames,
-                      meta: { beatIndex: index },
-                    });
-                  }}
+                />
+                <AudioMountLog
+                  label="whoosh"
+                  src={TRANSITION_SFX_URL}
+                  volume={TRANSITION_SFX_VOLUME}
+                  from={whooshFrom}
+                  durationInFrames={transitionFrames}
+                  meta={{ beatIndex: index }}
                 />
               </Sequence>
             ) : null}

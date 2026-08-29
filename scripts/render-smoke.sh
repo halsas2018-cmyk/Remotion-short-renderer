@@ -35,8 +35,8 @@
 #   2 — output is too short (< 60 frames), indicates a silent
 #       failure we should investigate
 #   3 — no [audio] log lines were emitted (Horizon 0.4 — 1.4
-#       regression: the orchestrator mounted but logAudioMount was
-#       bypassed or the format changed)
+#       regression: the orchestrator mounted but the
+#       <AudioMountLog> sibling was bypassed or its format changed)
 # ------------------------------------------------------------------
 set -euo pipefail
 
@@ -70,11 +70,12 @@ mkdir -p "${OUT_DIR}"
 # error we just added in Horizon 0.1 and exit non-zero.
 #
 # We capture BOTH stdout and stderr because console.log from inside
-# React onMount callbacks lands in an unpredictable stream depending
-# on Remotion's bundler configuration — sometimes stdout (when the
-# bundler hasn't yet attached its own stderr handlers), sometimes
-# stderr (when it has). The combined log lets the [audio] assertion
-# work regardless of which stream Remotion picked.
+# the <AudioMountLog> sibling's useEffect lands in an unpredictable
+# stream depending on Remotion's bundler configuration — sometimes
+# stdout (when the bundler hasn't yet attached its own stderr
+# handlers), sometimes stderr (when it has). The combined log lets
+# the [audio] assertion work regardless of which stream Remotion
+# picked.
 if ! npx remotion still "${COMPOSITION_ID}" \
     --output="${OUT_FILE}" \
     --frame=60 \
@@ -106,30 +107,35 @@ fi
 # ------------------------------------------------------------------
 # Horizon 0.4 (1.4) audio log assertion.
 #
-# Every <Audio> in the render pipeline calls logAudioMount() once on
-# mount, emitting a "[audio] ..." line to console.log. We check the
-# COMBINED log (stdout + stderr) because the Remotion CLI's
-# bundler is inconsistent about which stream console.log lands in.
+# Every <Audio> in the render pipeline is paired with a sibling
+# <AudioMountLog> (src/audio/AudioMountLog.tsx) that calls
+# logAudioMount() inside useEffect(..., []) on first React mount.
+# This emits a "[audio] ..." line to console.log.
+#
+# We check the COMBINED log (stdout + stderr) because the Remotion
+# CLI's bundler is inconsistent about which stream console.log
+# lands in.
 #
 # We assert that at least one [audio] line is present in the log —
 # otherwise the orchestrator mounted successfully but the logger was
-# bypassed (e.g. someone removed the onMount callback, or the helper
-# was renamed and the callsites were missed). Without this assertion,
-# a future regression in the audio logging would be invisible until
-# someone manually rendered and grepped the output.
+# bypassed (e.g. someone removed the sibling <AudioMountLog>, or the
+# helper was renamed and the callsites were missed). Without this
+# assertion, a future regression in the audio logging would be
+# invisible until someone manually rendered and grepped the output.
 #
 # We only require ONE [audio] line because a single-frame render
-# (frame=60) at 30fps sits inside the narration's frame range (0..1438)
-# and inside the ambient bed's frame range, so those two will always
-# mount. The whoosh and click tracks are mounted at specific frames
-# and may or may not be active at frame 60 depending on the beat
-# plan; we don't assert on those.
+# (frame=60) at 30fps sits inside the narration's frame range
+# (0..1438) and inside the ambient bed's frame range, so those two
+# will always mount. The whoosh and click tracks are mounted at
+# specific frames and may or may not be active at frame 60 depending
+# on the beat plan; we don't assert on those.
 # ------------------------------------------------------------------
 if ! grep -q "\[audio\]" "${COMBINED_LOG}"; then
   echo "==> FAIL: no [audio] log lines found in ${COMBINED_LOG}." >&2
-  echo "==> This means logAudioMount() did not run, or the format" >&2
-  echo "==> changed. The 1.4 invariant is that every <Audio>" >&2
-  echo "==> mount emits a [audio] line to console.log." >&2
+  echo "==> This means the <AudioMountLog> sibling did not run," >&2
+  echo "==> or the log format changed. The 1.4 invariant is that" >&2
+  echo "==> every <Audio> mount is paired with a sibling" >&2
+  echo "==> <AudioMountLog> that emits a [audio] line." >&2
   echo "==> Search hint: the log helper emits lines like" >&2
   echo "==>   [audio] narration src=... volume=... frames=[N, M)" >&2
   echo "==> Last 50 lines of stderr:" >&2

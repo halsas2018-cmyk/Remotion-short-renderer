@@ -28,7 +28,7 @@
  */
 
 /* ------------------------------------------------------------------ */
-/*  Render-time audio mount logger (Horizon 0.4 — 1.4)                 */
+/*  Render-time audio plan logger (Horizon 0.4 — 1.4)                 */
 /*                                                                     */
 /*  Why we log to a file, not console.log:                            */
 /*    We tried every React mount hook to emit a per-stream [audio]    */
@@ -67,10 +67,24 @@
 /*  It is APPENDED across renders so you can see the history of what   */
 /*  was rendered. The smoke test truncates it before each run so the   */
 /*  assertion only sees the current render.                            */
+/*                                                                     */
+/*  Why dynamic import('fs') and import('path') inside the helper:    */
+/*    Remotion's bundler is webpack-based and runs in a browser-like  */
+/*    environment. Static `import { ... } from "fs"` at the top of    */
+/*    this file would be pulled into the browser bundle, and webpack */
+/*    would fail with `Module not found: Can't resolve 'fs'`.         */
+/*                                                                     */
+/*    Dynamic `await import("fs")` is invisible to webpack's static   */
+/*    analysis, so it never tries to bundle `fs`. At runtime,         */
+/*    `renderDataCalculateMetadata` runs server-side in Node, so the  */
+/*    dynamic import resolves to the real Node `fs` and `path`        */
+/*    modules and the file write succeeds.                             */
+/*                                                                     */
+/*    The cost of the dynamic import is one extra async hop per       */
+/*    render (negligible — calculateMetadata already does a fetch     */
+/*    per render). Node caches the import internally so the second    */
+/*    render is just as fast.                                          */
 /* ------------------------------------------------------------------ */
-
-import { existsSync, mkdirSync, appendFileSync, writeFileSync } from "fs";
-import { join } from "path";
 
 export type WhooshSlot = {
   /** Global frame the whoosh starts (inclusive). */
@@ -107,33 +121,26 @@ export type AudioPlanLog = {
  * JSONs have been parsed and deduped but BEFORE the orchestrator
  * mounts, so the log is written even during a `still` (single-frame)
  * render.
+ *
+ * Uses `await import("fs")` and `await import("path")` instead of
+ * static top-level imports so the Remotion webpack bundler doesn't
+ * try to bundle Node built-ins for the browser side. The dynamic
+ * import resolves to the real Node modules at server-side runtime
+ * (where `calculateMetadata` runs).
  */
-export const writeAudioPlanLog = (
+export const writeAudioPlanLog = async (
   plan: AudioPlanLog,
   projectRoot: string,
-): void => {
+): Promise<void> => {
+  const [{ appendFileSync, mkdirSync, existsSync }, { join }] =
+    await Promise.all([import("fs"), import("path")]);
+
   const outDir = join(projectRoot, "out");
   if (!existsSync(outDir)) {
     mkdirSync(outDir, { recursive: true });
   }
   const logPath = join(outDir, "audio-mounts.log");
   appendFileSync(logPath, JSON.stringify(plan) + "\n", "utf8");
-};
-
-/**
- * Truncate the audio plan log. Called by `scripts/render-smoke.sh`
- * before each render so the assertion only sees the current run.
- */
-export const truncateAudioPlanLog = (projectRoot: string): void => {
-  const logPath = join(projectRoot, "out", "audio-mounts.log");
-  // Use a no-op append + a writeFileSync of empty string to ensure
-  // the file exists for the smoke test's grep even if no render
-  // happens (e.g. when the assertion runs in dry-run mode).
-  const outDir = join(projectRoot, "out");
-  if (!existsSync(outDir)) {
-    mkdirSync(outDir, { recursive: true });
-  }
-  writeFileSync(logPath, "", "utf8");
 };
 
 export const TRANSITION_SFX_URL = "https://remotion.media/whoosh.wav";

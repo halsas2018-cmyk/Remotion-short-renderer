@@ -304,8 +304,13 @@ const renderDataCalculateMetadata: CalculateMetadataFunction<
   // We resolve the project root from process.cwd() (the directory
   // the user invoked `npx remotion` from, which is the project
   // root by convention).
+  //
+  // writeAudioPlanLog uses await import("fs") under the hood so
+  // the bundler doesn't try to pull Node built-ins into the
+  // browser bundle. The `await` here is therefore a Node-only
+  // server-side file write.
   try {
-    writeAudioPlanLog(
+    await writeAudioPlanLog(
       {
         beatsCount: data.beats.beats.length,
         wordsCount: data.words.length,

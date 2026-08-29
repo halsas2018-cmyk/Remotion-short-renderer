@@ -39,33 +39,39 @@ Config.setDelayRenderTimeoutInMilliseconds(120_000);
  * `node:fs` / `node:crypto` / `node:path`, which would crash the
  * `still` renderer with "Module not found: Error: Can't resolve 'fs'".
  *
- * This config tells webpack's resolver: when you see an import of
- * `fs` (or any of the other Node built-ins we know are bogus in a
- * browser context), replace it with `false` — which webpack's
- * resolver understands as "this module does not exist in the
- * browser bundle; don't try to follow it". This means the dead
- * file is silently dropped from the bundle instead of failing the
- * build.
+ * In Remotion 4.0.516, the API for modifying the webpack config is
+ * `Config.overrideWebpackConfig((current) => nextConfig)`. The callback
+ * receives Remotion's current webpack config and returns the merged
+ * result. We use this to add a `resolve.fallback` map that tells
+ * webpack: "when you see an import of `fs` (or any of the other Node
+ * built-ins we know are bogus in a browser context), replace it with
+ * `false`" — which webpack's resolver understands as "this module
+ * does not exist in the browser bundle; don't try to follow it".
  *
  * The smoke script (`scripts/render-smoke.sh`) and the
  * `lastRenderHash.mjs` helper run OUTSIDE the webpack bundle, so
  * this alias does NOT affect their ability to use `node:fs`.
  */
-Config.setWebpackConfiguration({
-  resolve: {
-    // `false` is webpack's signal to drop the module from the bundle
-    // without erroring. We list every Node built-in the project
-    // might accidentally reach for from inside a `src/` file.
-    fallback: {
-      fs: false,
-      path: false,
-      crypto: false,
-      os: false,
-      util: false,
-      stream: false,
-      buffer: false,
-      url: false,
-      child_process: false,
+Config.overrideWebpackConfig((current) => {
+  return {
+    ...current,
+    resolve: {
+      ...(current.resolve ?? {}),
+      // `false` is webpack's signal to drop the module from the bundle
+      // without erroring. We list every Node built-in the project
+      // might accidentally reach for from inside a `src/` file.
+      fallback: {
+        fs: false,
+        path: false,
+        crypto: false,
+        os: false,
+        util: false,
+        stream: false,
+        buffer: false,
+        url: false,
+        child_process: false,
+        ...((current.resolve as { fallback?: Record<string, unknown> } | undefined)?.fallback ?? {}),
+      },
     },
-  },
+  };
 });

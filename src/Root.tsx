@@ -19,7 +19,13 @@ import {
   MotionGraphicsVideoProps,
   calculateMetadata,
 } from "./MotionGraphicsVideo";
-import { TimedBeatsSchema, WordListSchema, type Word, type TimedBeats } from "./beats/types";
+import {
+  TimedBeatsSchema,
+  WordListSchema,
+  type Word,
+  type TimedBeats,
+} from "./beats/types";
+import { dedupeOverlappingWords } from "./beats/words";
 
 /* ------------------------------------------------------------------ */
 /*  Render data                                                       */
@@ -63,9 +69,13 @@ import { TimedBeatsSchema, WordListSchema, type Word, type TimedBeats } from "./
 //   at "beats[3].metadata": key_statement.emphasisWords must be an
 //   array, got number
 //
-// Per-word validation (Horizon 0.3 / 1.3) is not yet implemented
-// here — the top-level word shape is validated, but overlapping /
-// zero-duration word dedupe is a separate step.
+// Per-word validation + dedupe (Horizon 0.3 / 1.3): after
+// `WordListSchema.safeParse` succeeds, the parsed array is run
+// through `dedupeOverlappingWords` (from `src/beats/words.ts`).
+// Overlapping and zero-duration words (WhisperX sometimes produces
+// them) are dropped, otherwise the kinetic-caption highlight
+// flickers / gets stuck on the wrong word. A `console.warn` line
+// lists how many words were dropped.
 // ------------------------------------------------------------------
 
 const RenderDataError = (message: string, cause?: unknown): Error => {
@@ -157,9 +167,29 @@ const fetchRenderData = async (
     );
   }
 
+  // Per-word dedupe (Horizon 0.3 / 1.3).
+  // WhisperX sometimes emits overlapping or zero-duration entries.
+  // Both cause the kinetic-caption highlight to flicker or get
+  // stuck on the wrong word. Drop them in-place and warn so the
+  // user knows the Python pipeline produced bad timestamps.
+  const deduped = dedupeOverlappingWords(
+    wordsParsed.data as unknown as Word[],
+  );
+  if (deduped.dropped > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[MotionGraphicsVideo] public/timestamps.json had ` +
+        `${deduped.dropped} overlapping or zero-duration word(s); ` +
+        `dropped them to keep the kinetic captions in sync. ` +
+        `Original count: ${wordsParsed.data.length}, ` +
+        `cleaned count: ${deduped.words.length}. ` +
+        `Check the WhisperX alignment step in the Python pipeline.`,
+    );
+  }
+
   return {
     beats: beatsParsed.data as unknown as TimedBeats,
-    words: wordsParsed.data as unknown as Word[],
+    words: deduped.words,
     narrationSrc: "narration.mp3",
     fps: beatsParsed.data.fps,
     totalDurationInFrames: beatsParsed.data.totalDurationInFrames,

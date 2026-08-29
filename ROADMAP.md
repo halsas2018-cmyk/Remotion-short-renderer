@@ -75,8 +75,8 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - `computeTransitionFrames` (`clamp(round(0.15 * min(out, in)), 4, 15)`)
 - `CAPTION_VISIBLE_BEAT_TYPES` gate (data-vis beats only)
 - `adaptMetadata` (Python shape → component shape)
-- **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE
-- **Horizon 0.1b — Smoke test for the hard-error fetch path** — ✅ DONE (commit a73dd19)
+- **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE (commit a73dd19)
+- **Horizon 0.2 — Per-beat Zod validation in `src/beats/types.ts`** — ✅ DONE
 
 ---
 
@@ -89,21 +89,24 @@ The render pipeline is now functioning but fragile. Lock in stability before add
 - `scripts/render-smoke.sh` (new) renders a single frame at 0.2× scale and asserts the output is non-trivial in size. If the data files are missing, the smoke test fails fast with the new error message.
 - `AbortingError` is still treated as benign (Studio prop change mid-fetch) and returns `null` so it doesn't spam the log.
 
-### 0.2 Validate `beats.json` schema at fetch time — TODO
-- `Root.tsx` currently only checks three top-level fields.
-- Define a full Zod schema for `TimedBeats` in `src/beats/types.ts` and validate the parsed JSON in `renderDataCalculateMetadata` before injecting into props.
-- On Zod failure, throw with the path of the first invalid field so the Python pipeline logs point to the exact problem.
+### 0.2 Validate per-beat `metadata` shape with Zod — ✅ DONE
+- `src/beats/types.ts::PerBeatSchema` (uses `z.object(beatBaseShape).passthrough().superRefine(...)`) dispatches each `beats[i]` to the matching per-type Zod schema in `src/beats/registry.ts` and forwards the underlying Zod issues into the parent context, preserving the original field path (e.g. `["icon"]` → user-facing `beats[1].icon: Invalid input`).
+- The `.passthrough()` is required — without it, Zod strips unknown keys before the per-type schema sees them, so per-type fields (`icon`, `left`, `right`, `events`, `steps`, `points`, `items`, `beforeLabel`, `afterLabel`, `locationName`, `latitude`, `longitude`, `buildings`, `quote`, `author`) are silently missing.
+- `Root.tsx::renderDataCalculateMetadata` now imports `TimedBeatsSchema` from `src/beats/types.ts` and `validateBeatMetadata` from `src/beats/registry.ts` (via `getBeatSchemas`). Top-level Zod failure throws with the first issue's path + message.
+- `scripts/render-smoke.sh` still passes (`OK: smoke render produced 46314-byte PNG …`).
 
-### 0.3 Validate `timestamps.json` schema — TODO
-- `Word[]` is currently cast with no runtime check.
-- Add a Zod schema, validate at fetch time, and dedupe overlapping/zero-duration word entries (WhisperX sometimes produces them).
+### 0.3 Validate `timestamps.json` schema + dedupe — TODO
+- `WordSchema` was added in 1.1. 0.3 adds a `superRefine` that flags and drops overlapping words (WhisperX sometimes produces them) and zero-duration words (start === end), since both cause the kinetic-caption highlight to flicker.
+- A `console.warn` line lists how many words were dropped, so the user knows the Python pipeline produced bad timestamps.
+- Schema side lives in `src/beats/types.ts::WordListSchema` (already a `z.array(WordSchema).nonempty()`); 0.3 extends the `.safeParse` call in `Root.tsx` to run a `superRefine` on the parsed array.
 
-### 0.4 Add render-time logs around the new audio streams — TODO
-- Each `<Audio>` in the orchestrator should emit a one-line log on mount with the resolved URL, volume, and (for typing clicks) the word's start frame. This makes it trivial to correlate render output with frame ranges when debugging.
+### 0.4 Add render-time logs around the audio streams — TODO
+- Each `<Audio>` in the orchestrator should emit a one-line `console.log` on mount with the resolved URL, volume, and (for typing clicks) the word's start frame. This makes it trivial to correlate render output with frame ranges when debugging.
 - Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once the upstream fetch becomes a hard error (0.1).
 
 ### 0.5 Cache the last-rendered composition hash — TODO
 - Write the SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render. The next render compares it and skips work if nothing changed (saves ~5 min of ffmpeg time on duplicate renders).
+- The smoke test from 0.1 grows a `--skip-if-unchanged` flag that uses this hash.
 
 ---
 

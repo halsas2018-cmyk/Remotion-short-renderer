@@ -112,9 +112,41 @@ mv public/beats.json public/beats.json.bak
 mv public/beats.json.bak public/beats.json
 ```
 
-### 1.2 — Validate per-beat `metadata` shape with Zod — TODO
-- 1.1 introduced the top-level `TimedBeatsSchema`. Now we extend it so each `beats[i]` is validated against the per-type Zod schema already defined in `src/beats/registry.ts`. If Python produces a beat with the wrong metadata shape (e.g. `key_statement.emphasisWords` is a number instead of a string array), the user gets a clear error like `beats[3] (type=key_statement) failed schema validation: emphasisWords must be an array, got number` instead of a render-time crash deep inside `KeyStatement`.
-- The full `TimedBeats` Zod schema lives in `src/beats/types.ts`; the smoke test still uses it.
+### 1.2 — Validate per-beat `metadata` shape with Zod — ✅ DONE
+
+**Before this change:** `Root.tsx` checked the top-level fields (`fps`, `totalDurationInFrames`, `beats`) but each `beats[i]` was `z.unknown()`. If Python produced a beat with the wrong metadata shape (e.g. `key_statement.emphasisWords` was a number instead of a string array, or `icon_text.icon` was missing), the user got a render-time crash deep inside `KeyStatement` / `IconText` with no hint about which field was wrong.
+
+**After this change:** each `beats[i]` is validated against its per-type Zod schema in `src/beats/registry.ts` BEFORE the orchestrator runs. Failures throw with a path like `beats[1].icon: Invalid input` or `beats[3] (type=key_statement) failed schema validation: emphasisWords must be an array, got number` so the user knows exactly which Python output line is wrong.
+
+**What changed:**
+- `src/beats/types.ts`:
+  - Added `PerBeatSchema` (uses `z.object(beatBaseShape).passthrough().superRefine(...)`) that dispatches to the matching per-type Zod schema in `src/beats/registry.ts` and **forwards the underlying Zod issues into the parent validation context**, preserving the original field path (e.g. `["icon"]`) so the user-facing error reads `beats[1].icon: Invalid input` rather than `beats.1.metadata: [opaque message]`.
+  - **`.passthrough()` is required** — without it, Zod's default `z.object` strips unknown keys, so the per-type schema never sees `icon`/`left`/`right`/`events`/`steps` and always fails on the first per-type field.
+  - If `type` is unknown (no registry entry), the error is `beats[i].type: unknown beat type "foo". Add a registry entry in src/beats/registry.ts.`
+  - `TimedBeatsSchema` (the top-level schema) now wraps `beats: z.array(PerBeatSchema).min(1)` so each beat is validated.
+  - Added `WordSchema` (per-word: `word: z.string(), start/end: z.number().nonnegative()`) and `WordListSchema = z.array(WordSchema).nonempty()`. Used by `Root.tsx` for top-level `timestamps.json` validation. Per-word dedupe of overlapping / zero-duration words is NOT yet done — that's 1.3.
+- `src/beats/registry.ts`:
+  - Exposed `getBeatSchemas(type)` returning `{ beatSchema }` so `types.ts` can call `safeParse(beat)` inside its `superRefine` and inspect the per-issue `path`/`message` instead of relying on Zod's default opaque `custom` issue.
+  - Each per-type schema (e.g. `iconTextMetadata`) now lives as a top-level `ZodTypeAny` in the registry entry, so the same schema is shared between runtime validation (this task) and the registry's `validateBeatMetadata()` helper used by `BeatContent` in the orchestrator.
+  - The schema name was renamed from `*Metadata` (e.g. `iconTextMetadata`) to `beatSchema` in the registry entry to make it clear it validates the WHOLE beat (top-level), not just the metadata sub-object. The Python pipeline puts per-type fields at the top level (no `metadata` wrapper).
+- `src/Root.tsx`:
+  - `fetchRenderData` now imports `TimedBeatsSchema` and `WordListSchema` from `src/beats/types.ts` (not the local one in `Root.tsx`). The behavior is the same: a Zod failure throws with the first issue's `path` and `message`.
+- `scripts/render-smoke.sh`: unchanged, still renders 1 frame at 0.2× scale.
+
+**How to verify:**
+```bash
+./scripts/render-smoke.sh
+# Should print "OK: smoke render produced NNN-byte PNG at out/smoke.png"
+
+# Negative test: corrupt a per-beat field and confirm the error is clear
+sed -i 's/"icon": "store"/"icon": 42/' public/beats.json
+./scripts/render-smoke.sh
+# Should print:
+#   [MotionGraphicsVideo] public/beats.json failed schema validation
+#   at "beats.1.icon": Invalid input: expected string, received number
+# and exit non-zero.
+git checkout public/beats.json
+```
 
 ### 1.3 — Validate per-word shape + dedupe overlapping/zero-duration words — TODO
 - `WordSchema` was added in 1.1. 1.3 adds a `superRefine` that flags and drops overlapping words (WhisperX sometimes produces them) and zero-duration words (start === end), since both cause the kinetic-caption highlight to flicker.
@@ -122,7 +154,7 @@ mv public/beats.json.bak public/beats.json
 
 ### 1.4 — Render-time logs around the audio streams — TODO
 - Each `<Audio>` in `MotionGraphicsVideo.tsx` (narration, ambient, whoosh, typing click) prints a one-line `console.log` on mount with the resolved URL, volume, and frame range. Makes render output trivial to correlate with frame ranges when debugging.
-- Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once 1.1 makes the upstream fetch a hard error.
+- Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once the upstream fetch becomes a hard error (0.1).
 
 ### 1.5 — Cache the last-render composition hash — TODO
 - Write SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render.
@@ -324,7 +356,7 @@ src/
 ├── beats/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
-│   ├── types.ts                      # Beat type definitions ✅ DONE
+│   ├── types.ts                      # Beat type definitions + per-beat Zod schema ✅ DONE
 │   └── words.ts                      # Word timestamp type ✅ DONE
 ├── SceneTransition.tsx               # Per-beat entrance/exit with Easing.bezier ✅ DONE
 ├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
@@ -363,27 +395,29 @@ public/                                # All render data lives here (single-fold
 - `BeatType` union of all 15 supported types
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
 - `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
+- **1.2 update:** `PerBeatSchema` + `TimedBeatsSchema` validate each beat at the top level against the per-type Zod schema in the registry. See Phase 1 (Horizon 0) / 1.2 above.
 
 ### Step 2: Component Registry (`src/beats/registry.ts`) — ✅ DONE (commit ffebd7d)
 Maps each `BeatType` to:
 - The React component (`getBeatComponent(type)`)
-- A Zod schema that validates the `metadata` shape (`validateBeatMetadata(type, metadata)`)
+- A Zod schema that validates the WHOLE beat (top-level) shape (`getBeatSchemas(type).beatSchema`)
+- A Zod-based validator (`validateBeatMetadata(type, beat)`)
 - A support check (`isBeatTypeSupported(type)`)
 
-**Zod schemas** (per-beat-type metadata contracts):
-- `key_statement` → `{text, emphasisWords?}`
-- `plain_text` → `{text}`
-- `icon_text` → `{text, icon, emphasisWords?}`
-- `chart_line` → `{points[{label,value}], durationInFrames?, exitDirection?}`
-- `chart_counter` → `{value, label, durationInFrames?}`
-- `chart_comparison_3d` → `{items[{label,value}]}`
-- `progress_meter` → `{value, maxValue, label}`
-- `timeline` → `{events[{marker,label}]}`
-- `versus` → `{left, right}`
-- `before_after` → `{beforeLabel, afterLabel}`
-- `map_3d` → `{locationName, latitude, longitude, buildings?}`
-- `process_flow` → `{steps[]}`
-- `quote_card` → `{quote, author?}`
+**Zod schemas** (per-beat-type top-level shape contracts):
+- `key_statement` → `{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?}`
+- `plain_text` → `{type, text, startFrame, durationInFrames, endFrame?}`
+- `icon_text` → `{type, text, startFrame, durationInFrames, endFrame?, icon, emphasisWords?}`
+- `chart_line` → `{…, points[{label,value}], exitDirection?}`
+- `chart_counter` → `{…, value, label}`
+- `chart_comparison_3d` → `{…, items[{label,value}]}`
+- `progress_meter` → `{…, value, maxValue, label}`
+- `timeline` → `{…, events[]}`
+- `versus` → `{…, left, right}`
+- `before_after` → `{…, beforeLabel, afterLabel}`
+- `map_3d` → `{…, locationName, latitude, longitude, buildings?}`
+- `process_flow` → `{…, steps[]}`
+- `quote_card` → `{…, quote, author?}`
 
 **Active beat types** (what the Python pipeline currently emits):
 - `map_3d` (not `map_location`)
@@ -540,6 +574,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and render (in Studio or via CLI). No code change required.
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
+- **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -565,7 +600,7 @@ Per-beat wrapper around `KineticCaptions` that:
 21. ~~Fix kinetic captions: rebase words from global to local frames inside `KineticCaptions` so the highlight tracks the spoken word in the current beat~~ ✅ (commit c6f3b78)
 22. **IN PROGRESS — Phase 1 (Horizon 0) Renderer Hardening**
     1. ✅ Replace silent fallback with hard error on missing render data (1.1)
-    2. ⏳ Validate per-beat `metadata` shape with Zod (1.2)
+    2. ✅ Validate per-beat `metadata` shape with Zod (1.2)
     3. ⏳ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
     4. ⏳ Render-time logs around the audio streams (1.4)
     5. ⏳ Cache the last-render composition hash (1.5)
@@ -599,7 +634,8 @@ Per-beat wrapper around `KineticCaptions` that:
 21. **VersusCard visual language** — Indigo-cool on the left, orange-warm on the right; per-side `Option A` / `Option B` ribbons; glowing centered VS badge with dashed inner ring; grid background pattern + radial top-glow per side; optional `items[]` rendered as bulleted rows with a glow dot. Card rotation during entrance (–2° / +2° → 0°) for depth.
 22. **BeforeAfter visual language** — Red BEFORE / green AFTER color system, decorative tag pills (Legacy/Manual/Slow/Costly vs Modern/Automated/Fast/Efficient), top accent bars + side vertical strips, slider border that draws around the whole card group.
 23. **Hard-error fetch for render data (1.1)** — `Root.tsx::renderDataCalculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures, instead of silently falling back to a 1-frame video. The error message includes `[MotionGraphicsVideo]` and identifies either the filename + HTTP status, the JSON parse error, or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) is the only benign case and still returns `null`. A new `scripts/render-smoke.sh` exercises the full render path and asserts the output is non-trivial in size.
-24. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
+24. **Per-beat Zod validation (1.2)** — `src/beats/types.ts::PerBeatSchema` uses `z.object(beatBaseShape).passthrough().superRefine(...)` to dispatch each beat to its per-type Zod schema in `src/beats/registry.ts` and forward the underlying Zod issues into the parent validation context. This preserves the original field path so the user-facing error reads `beats[1].icon: Invalid input` rather than `beats.1.metadata: [opaque message]`. **The `.passthrough()` is load-bearing** — without it, Zod strips unknown keys before the per-type schema sees them, and per-type fields (`icon`, `left`, `right`, `events`, `steps`, `points`, `items`, `beforeLabel`, `afterLabel`, `locationName`, `latitude`, `longitude`, `buildings`, `quote`, `author`) are silently missing.
+25. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
 
 ### Real `beats.json` Example (current reference)
 ```json

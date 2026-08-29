@@ -24,6 +24,16 @@ import { TYPING_SFX_URL, TYPING_SFX_VOLUME } from "../lib/sceneSfx";
  *   the parent Sequence, so they automatically stop at the end of the
  *   beat. Volume is kept low (0.15) so the click track doesn't fight
  *   the narration or the cross-fade whoosh.
+ *
+ *   IMPORTANT: each click lives in a 4-frame <Sequence>, NOT a 1-frame
+ *   one. The 1-frame variant caused mediabunny's MP4 muxer to throw
+ *   `Cannot write to a closing writable stream` during chunk flush,
+ *   because a 1-frame audio sequence produces too few samples for the
+ *   interleaver to commit cleanly — the muxer would then try to write
+ *   a partial chunk to a target already mid-closure. 4 frames is
+ *   enough for mediabunny to read the WAV samples and produce a
+ *   well-formed audio chunk while still feeling snappy (≈133ms at
+ *   30fps, well under one caption word).
  */
 type BeatKineticCaptionsProps = {
   text: string;
@@ -49,9 +59,10 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
       {/*
         One short <Sequence> per word, mounted at the word's start frame
         inside this beat's local timeline. Each contains a single
-        <Audio> click. We use a 1-frame <Sequence> so the click fires
-        at the word's start; the audio itself is a short blip and stops
-        on its own.
+        <Audio> click. The Sequence runs for CLICK_HOLD_FRAMES frames
+        so mediabunny can flush a clean audio chunk; the audio file
+        itself is a short blip and stops on its own well within that
+        window.
       */}
       {words.map((w, i) => {
         const wordStartFrame = Math.max(0, Math.round(w.start * fps));
@@ -59,7 +70,7 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
           <Sequence
             key={`type-${i}-${w.start}`}
             from={wordStartFrame}
-            durationInFrames={1}
+            durationInFrames={CLICK_HOLD_FRAMES}
           >
             <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
           </Sequence>
@@ -68,3 +79,19 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
     </>
   );
 };
+
+/**
+ * Number of frames each typing-click <Sequence> stays mounted.
+ *
+ * Why 4 frames?
+ *   1 frame: too few audio samples for mediabunny's MP4 interleaver to
+ *            commit cleanly → "Cannot write to a closing writable stream"
+ *            during _flush.
+ *   2-3 frames: still flaky in the same way; the chunk size is so small
+ *            the muxer can't write it before the target closes.
+ *   4 frames: stable. Mediabunny reads the WAV samples and emits a
+ *            well-formed chunk. ≈133ms at 30fps — still snappy, still
+ *            feels like a discrete click, and well under the time the
+ *            word is on screen.
+ */
+const CLICK_HOLD_FRAMES = 4;

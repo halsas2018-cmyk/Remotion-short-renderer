@@ -23,6 +23,7 @@ import {
   AMBIENT_SFX_VOLUME,
   TRANSITION_SFX_URL,
   TRANSITION_SFX_VOLUME,
+  logAudioMount,
 } from "./lib/sceneSfx";
 
 /* ------------------------------------------------------------------ */
@@ -93,6 +94,15 @@ export type MotionGraphicsVideoProps = {
 /*  holds at AMBIENT_SFX_VOLUME so it stays a quiet bed under the     */
 /*  narration, the whoosh, and the typing clicks.                    */
 /*                                                                     */
+/*  Render-time audio logs (Horizon 0.4 — 1.4):                        */
+/*    Every <Audio> in this file (narration, ambient, whoosh) calls   */
+/*    logAudioMount() with a one-line summary of the resolved URL,    */
+/*    volume, and frame range. Search the render log for "[audio]" to */
+/*    see every stream the orchestrator mounted. Typing-click mounts  */
+/*    are logged from src/audio/BeatKineticCaptions.tsx using the     */
+/*    same helper, so the format is consistent across all four audio  */
+/*    sources.                                                        */
+/*                                                                     */
 /*  Data inputs (all in /public, loaded at composition mount time):   */
 /*    - narration.mp3   → narrationSrc (this component)               */
 /*    - sfx-ambient.mp3 → AMBIENT_SFX_URL (read in sceneSfx.ts)       */
@@ -105,7 +115,7 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
   words,
   narrationSrc,
 }) => {
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames: totalDurationInFrames } = useVideoConfig();
 
   const allBeats = beats.beats as Beat[];
 
@@ -136,7 +146,20 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         The audio plays in its own (unmodified) timeline starting at
         global frame 0, which is what syncs the visuals to the words.
       */}
-      {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
+      {narrationSrc ? (
+        <Audio
+          src={staticFile(narrationSrc)}
+          onMount={() => {
+            logAudioMount({
+              label: "narration",
+              src: `public/${narrationSrc}`,
+              volume: 1.0,
+              from: 0,
+              durationInFrames: totalDurationInFrames,
+            });
+          }}
+        />
+      ) : null}
 
       {/*
         Ambient SFX — a looping bed underneath the narration. Plays for
@@ -164,6 +187,16 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
             },
           )
         }
+        onMount={() => {
+          logAudioMount({
+            label: "ambient",
+            src: `public/${AMBIENT_SFX_URL}`,
+            volume: null,
+            peakVolume: AMBIENT_SFX_VOLUME,
+            from: 0,
+            durationInFrames: totalDurationInFrames,
+          });
+        }}
       />
 
       {/*
@@ -253,6 +286,16 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
                 <Audio
                   src={TRANSITION_SFX_URL}
                   volume={TRANSITION_SFX_VOLUME}
+                  onMount={() => {
+                    logAudioMount({
+                      label: "whoosh",
+                      src: TRANSITION_SFX_URL,
+                      volume: TRANSITION_SFX_VOLUME,
+                      from: whooshFrom,
+                      durationInFrames: transitionFrames,
+                      meta: { beatIndex: index },
+                    });
+                  }}
                 />
               </Sequence>
             ) : null}
@@ -278,26 +321,20 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 /*    beat's duration to cover its exit). The orchestrator therefore  */
 /*    uses `beats.totalDurationInFrames` directly.                    */
 /*                                                                     */
-/*  If `props.beats.beats` is empty (upstream fetch failed), we       */
-/*  return `durationInFrames: 1` and warn — same behavior as before.  */
+/*  Why we no longer fall back to a 1-frame video on empty beats:     */
+/*    The upstream fetch in Root.tsx::renderDataCalculateMetadata is  */
+/*    now a HARD ERROR (Horizon 0.1 — 1.1). If public/beats.json is   */
+/*    missing, malformed, or fails schema validation, the render      */
+/*    aborts before this function runs. Reaching this function with   */
+/*    an empty `beats` array therefore means a programming bug in     */
+/*    the upstream pipeline, not a graceful fallback case — so we     */
+/*    just trust the value from props and surface the runtime error   */
+/*    if any is thrown by Remotion while rendering.                   */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<
   MotionGraphicsVideoProps
 > = ({ props }) => {
-  const allBeats = (props.beats?.beats ?? []) as Beat[];
-  if (allBeats.length === 0) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[MotionGraphicsVideo] props.beats is empty when calculateMetadata ` +
-        `ran. This usually means public/beats.json was not found or the ` +
-        `upstream fetch in Root.tsx failed. The video will render as a ` +
-        `single frame. Check that public/beats.json and ` +
-        `public/timestamps.json exist and are valid JSON.`,
-    );
-    return { durationInFrames: 1 };
-  }
-
   // The Python pipeline already accounts for the cross-fade overlap in
   // `totalDurationInFrames`, so we use it directly. This keeps the
   // orchestrator's declared duration in lock-step with the rendered

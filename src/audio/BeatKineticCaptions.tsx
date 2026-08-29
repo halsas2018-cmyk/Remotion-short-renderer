@@ -1,52 +1,40 @@
-import React, { useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { Sequence } from "remotion";
 import { Audio } from "@remotion/media";
 import { KineticCaptions } from "../KineticCaptions";
 import type { Word } from "../beats/words";
-import { TYPING_SFX_URL, TYPING_SFX_VOLUME } from "../lib/sceneSfx";
+import {
+  TYPING_CLICK_HOLD_FRAMES,
+  TYPING_SFX_URL,
+  TYPING_SFX_VOLUME,
+  logAudioMount,
+} from "../lib/sceneSfx";
 
-/**
- * Per-beat wrapper around the existing <KineticCaptions> component.
- *
- * The orchestrator (MotionGraphicsVideo) renders this inside a
- * per-beat <Sequence from={startFrame} durationInFrames=...>. That
- * means the LOCAL `useCurrentFrame()` inside this wrapper is 0 at
- * the start of the beat and counts up to `durationInFrames` at the
- * end of the beat.
- *
- * Two responsibilities:
- *   1) Slice the full word list to the current beat's window, so
- *      KineticCaptions' word highlight stays inside this beat
- *      instead of jumping across the whole composition.
- *   2) Provide the beat context (currentBeatType, currentWords,
- *      beatStartFrame, beatDurationInFrames) so KineticCaptions
- *      can map the per-beat LOCAL frame counter against the
- *      re-based per-word LOCAL frame numbers.
- *
- * Typing SFX:
- *   In addition to the visual captions, this wrapper also renders
- *   one short <Audio> click per word, placed at the word's start
- *   frame inside the beat's LOCAL timeline. The clicks are bounded
- *   to the beat's <Sequence> by the parent Sequence, so they
- *   automatically stop at the end of the beat. Volume is kept low
- *   (0.15) so the click track doesn't fight the narration or the
- *   cross-fade whoosh.
- *
- *   IMPORTANT:
- *     - Each click lives in a 4-frame <Sequence>, NOT a 1-frame one.
- *       The 1-frame variant caused mediabunny's MP4 muxer to throw
- *       `Cannot write to a closing writable stream` during chunk
- *       flush. 4 frames is enough for mediabunny to read the WAV
- *       samples and produce a well-formed audio chunk while still
- *       feeling snappy.
- *     - Word timestamps from WhisperX are GLOBAL (relative to the
- *       start of the whole composition), but the click is mounted
- *       inside a per-beat <Sequence> whose local frame counter starts
- *       at 0 at the beat's `startFrame`. We therefore offset each
- *       word's start by `startFrame` (in frames) to convert it to
- *       the local timeline. Without this, the click would lag the
- *       narration by `startFrame` frames.
- */
+/* ------------------------------------------------------------------ */
+/*  Per-beat wrapper around <KineticCaptions>                          */
+/*                                                                     */
+/*  Responsibilities:                                                 */
+/*   1. Slice the full word list to the current beat's window so      */
+/*      captions don't bleed into adjacent beats.                     */
+/*   2. Provide a local BeatContext so KineticCaptions can rebase    */
+/*      GLOBAL word starts to LOCAL frames inside useMemo (the       */
+/*      highlight otherwise stays stuck on word 0).                   */
+/*   3. Render a typing-click <Audio> per word, gated to the same     */
+/*      data-vis beat types as the visual captions.                   */
+/*                                                                     */
+/*  Why we own a local context (not the orchestrator's):             */
+/*    The orchestrator exports `useBeatContext` for backward         */
+/*    compat, but KineticCaptions reads from THIS context. Same data */
+/*    shape, owned by the same file. Lets us add per-beat fields     */
+/*    later (e.g. word highlight color overrides) without touching   */
+/*    MotionGraphicsVideo.                                            */
+/* ------------------------------------------------------------------ */
+
 type BeatKineticCaptionsProps = {
   text: string;
   words: Word[];
@@ -56,19 +44,6 @@ type BeatKineticCaptionsProps = {
   /** Absolute frame at which this beat begins. */
   startFrame: number;
 };
-
-import { createContext, useContext, useState } from "react";
-
-/* ------------------------------------------------------------------ */
-/*  Beat context — exported so KineticCaptions can read it via hook.  */
-/*  We expose this from BeatKineticCaptions rather than from           */
-/*  MotionGraphicsVideo so the two halves of the captions system      */
-/*  (per-beat wrapper + visual renderer) are owned by the same file.  */
-/*                                                                     */
-/*  MotionGraphicsVideo's existing `useBeatContext` continues to      */
-/*  exist for backward compatibility but KineticCaptions now uses     */
-/*  this local one — the values are equivalent (same data shape).     */
-/* ------------------------------------------------------------------ */
 
 export type BeatContextValue = {
   currentBeatType: string | null;
@@ -89,13 +64,34 @@ const defaultBeatContext: BeatContextValue = {
   beatDurationInFrames: null,
 };
 
-const BeatContext = createContext<BeatContextValue>(defaultBeatContext);
+const LocalBeatContext = createContext<BeatContextValue>(defaultBeatContext);
 
-/**
- * Hook for child components (KineticCaptions) to read the per-beat
- * context provided by BeatKineticCaptions.
- */
-export const useBeatContext = (): BeatContextValue => useContext(BeatContext);
+export const useBeatContext = (): BeatContextValue =>
+  useContext(LocalBeatContext);
+
+/* ------------------------------------------------------------------ */
+/*  useBeatWordSlice                                                  */
+/*                                                                     */
+/*  Slices the global words[] to the current beat's window            */
+/*  [startFrame/fps, (startFrame + durationInFrames)/fps] and         */
+/*  forwards the result to KineticCaptions. This is the only place   */
+/*  that knows the beat's timing in absolute frames.                  */
+/* ------------------------------------------------------------------ */
+
+const useBeatWordSlice = (
+  words: Word[],
+  startFrame: number,
+  durationInFrames: number,
+  fps: number,
+): Word[] => {
+  return useMemo(() => {
+    const windowStartSec = startFrame / fps;
+    const windowEndSec = (startFrame + durationInFrames) / fps;
+    return words.filter(
+      (w) => w.end > windowStartSec && w.start < windowEndSec,
+    );
+  }, [words, startFrame, durationInFrames, fps]);
+};
 
 export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
   text,
@@ -105,74 +101,65 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
   fps,
   startFrame,
 }) => {
-  // ============================================
-  // Slice the word list to this beat's window.
-  // ============================================
-  // The Python pipeline emits a SINGLE global timestamps.json for
-  // the whole narration. We need just the words spoken during
-  // THIS beat. Use a 10ms pre-roll buffer on the start so a word
-  // that begins exactly at the beat boundary is included.
-  const startSec = startFrame / fps - 0.01;
-  const endSec = (startFrame + durationInFrames) / fps;
-  const beatWords: Word[] = words.filter(
-    (w) => w.start >= startSec && w.start < endSec,
+  const currentWords = useBeatWordSlice(
+    words,
+    startFrame,
+    durationInFrames,
+    fps,
   );
 
-  // Provide the per-beat context. We hold the value in state so it
-  // survives a parent re-render that swaps `words` references (the
-  // orchestrator passes a stable `allWords` array, but if it ever
-  // re-fetches and produces a new array, the captions will update
-  // without remounting).
-  const [ctx, setCtx] = useState<BeatContextValue>(defaultBeatContext);
-  const lastDeps = useRef<string>("");
-  useEffect(() => {
-    const depsKey = `${beatType}|${startFrame}|${durationInFrames}|${beatWords.length}|${text}`;
-    if (depsKey !== lastDeps.current) {
-      lastDeps.current = depsKey;
-      setCtx({
-        currentBeatType: beatType,
-        currentBeatText: text,
-        currentWords: beatWords,
-        beatStartFrame: startFrame,
-        beatDurationInFrames: durationInFrames,
-      });
-    }
-  }, [beatType, text, beatWords, startFrame, durationInFrames]);
-
-  // One-time log on mount so you can confirm in the render log that
-  // the words list reached this beat.
-  const hasLogged = useRef(false);
-  if (!hasLogged.current) {
+  // Capture beatIndex (relative to the per-beat <Sequence> mount) so
+  // the per-word audio log lines can be cross-referenced with the
+  // orchestrator's whoosh logs.
+  const [beatIndex] = useState(() =>
     // eslint-disable-next-line no-console
-    console.log(
-      `[BeatKineticCaptions] beat=${beatType} startFrame=${startFrame} ` +
-        `durationInFrames=${durationInFrames} fps=${fps} ` +
-        `words.length=${beatWords.length} text="${text.slice(0, 40)}${text.length > 40 ? "…" : ""}"`,
-    );
-    hasLogged.current = true;
-  }
+    Math.floor(Math.random() * 0), // placeholder — see note below
+  );
+  // NOTE: beatIndex is currently unknown here because
+  // BeatKineticCaptions is rendered without an index prop. The audio
+  // log line therefore omits the meta key. The orchestrator already
+  // logs the beat's whoosh with its own beatIndex, so per-word
+  // context is still recoverable from the order in the render log.
+  // (Avoiding a prop-drilling change just for log cosmetics.)
 
   return (
-    <BeatContext.Provider value={ctx}>
-      <KineticCaptions
-        captionEnabledTypes={new Set([beatType])}
-        beats={[]}
-        words={beatWords}
-      />
+    <LocalBeatContext.Provider
+      value={{
+        currentBeatType: beatType,
+        currentBeatText: text,
+        currentWords,
+        beatStartFrame: startFrame,
+        beatDurationInFrames: durationInFrames,
+      }}
+    >
+      <KineticCaptions />
 
       {/*
-        One short <Sequence> per word, mounted at the word's start
-        frame inside this beat's LOCAL timeline. The local frame is
-        `w.start * fps - startFrame`, where `w.start` is the global
-        word start in seconds and `startFrame` is the absolute frame
-        at which this beat begins.
+        Typing-click track — one <Audio> per word, mounted inside a
+        per-word <Sequence> at the word's LOCAL start frame. The
+        parent <Sequence> (this component is mounted inside a per-
+        beat <Sequence in MotionGraphicsVideo>) bounds the whole
+        track to the beat's duration, so clicks stop when the beat
+        ends even if the last word's localStartFrame + hold is past
+        the beat boundary.
 
-        Each <Sequence> contains a single <Audio> click. The Sequence
-        runs for CLICK_HOLD_FRAMES frames so mediabunny can flush a
-        clean audio chunk; the audio file itself is a short blip and
-        stops on its own well within that window.
+        Local-frame conversion: word timestamps are GLOBAL (relative
+        to the start of the whole composition). Clicks live inside
+        the per-beat <Sequence> whose local counter starts at 0 at
+        `startFrame`. `localStartFrame = Math.round(w.start * fps) -
+        startFrame` is the offset.
+
+        Each click is held for TYPING_CLICK_HOLD_FRAMES (4 frames ≈
+        133ms at 30fps) — the smallest stable window for mediabunny's
+        MP4 muxer. 1-frame variants throw `Cannot write to a closing
+        writable stream` during chunk flush.
+
+        Render-time audio log (Horizon 0.4 — 1.4): every click calls
+        logAudioMount() with the word's local frame range, so the
+        render log shows one line per click and the total count
+        matches the per-beat word count.
       */}
-      {beatWords.map((w, i) => {
+      {currentWords.map((w, i) => {
         const localStartFrame = Math.max(
           0,
           Math.round(w.start * fps) - startFrame,
@@ -181,28 +168,25 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
           <Sequence
             key={`type-${i}-${w.start}`}
             from={localStartFrame}
-            durationInFrames={CLICK_HOLD_FRAMES}
+            durationInFrames={TYPING_CLICK_HOLD_FRAMES}
           >
-            <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />
+            <Audio
+              src={TYPING_SFX_URL}
+              volume={TYPING_SFX_VOLUME}
+              onMount={() => {
+                logAudioMount({
+                  label: "click",
+                  src: TYPING_SFX_URL,
+                  volume: TYPING_SFX_VOLUME,
+                  from: localStartFrame,
+                  durationInFrames: TYPING_CLICK_HOLD_FRAMES,
+                  meta: { wordIndex: i, word: w.word },
+                });
+              }}
+            />
           </Sequence>
         );
       })}
-    </BeatContext.Provider>
+    </LocalBeatContext.Provider>
   );
 };
-
-/**
- * Number of frames each typing-click <Sequence> stays mounted.
- *
- * Why 4 frames?
- *   1 frame: too few audio samples for mediabunny's MP4 interleaver to
- *            commit cleanly → "Cannot write to a closing writable stream"
- *            during _flush.
- *   2-3 frames: still flaky in the same way; the chunk size is so small
- *            the muxer can't write it before the target closes.
- *   4 frames: stable. Mediabunny reads the WAV samples and emits a
- *            well-formed chunk. ≈133ms at 30fps — still snappy, still
- *            feels like a discrete click, and well under the time the
- *            word is on screen.
- */
-const CLICK_HOLD_FRAMES = 4;

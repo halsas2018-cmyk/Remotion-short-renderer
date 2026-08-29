@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validateBeatMetadata } from "./registry";
+import { getBeatSchemas, validateBeatMetadata } from "./registry";
 
 /* ------------------------------------------------------------------ */
 /*  BeatType — union of every supported beat type.                     */
@@ -79,6 +79,13 @@ export type Word = z.infer<typeof WordSchema>;
 /*  error message preserves the underlying field path (e.g.          */
 /*  `beats[1].icon: expected string, got undefined`) instead of       */
 /*  a generic "custom" issue with a useless `path: ["metadata"]`.     */
+/*                                                                     */
+/*  IMPORTANT: The top-level `z.object(beatBaseShape)` uses          */
+/*  `.passthrough()` so that per-type fields (icon, left, right,      */
+/*  events, steps, etc.) are NOT stripped before the per-type        */
+/*  schema sees them. Without `.passthrough()`, Zod's default        */
+/*  `z.object` strips unknown keys, and the per-type validation      */
+/*  would always fail on the first per-type field it tries to read.  */
 /* ------------------------------------------------------------------ */
 
 const beatBaseShape = {
@@ -97,41 +104,43 @@ const beatBaseShape = {
  * `path` (offset by the array index) so the final user-facing error
  * looks like: `beats[1].icon: expected string, got undefined`.
  */
-const PerBeatSchema = z.object(beatBaseShape).superRefine((beat, ctx) => {
-  // Dispatch to the per-type schema. Use safeParse so we can introspect
-  // the individual issues and preserve their original `path`.
-  const { getBeatSchemas } = require("./registry") as typeof import("./registry");
-  const schemas = getBeatSchemas(beat.type as BeatType);
-  if (!schemas) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["type"],
-      message: `unknown beat type "${beat.type}". Add a registry entry in src/beats/registry.ts.`,
-    });
-    return;
-  }
+const PerBeatSchema = z
+  .object(beatBaseShape)
+  .passthrough()
+  .superRefine((beat, ctx) => {
+    // Dispatch to the per-type schema. Use safeParse so we can introspect
+    // the individual issues and preserve their original `path`.
+    const schemas = getBeatSchemas(beat.type as BeatType);
+    if (!schemas) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["type"],
+        message: `unknown beat type "${beat.type}". Add a registry entry in src/beats/registry.ts.`,
+      });
+      return;
+    }
 
-  const result = schemas.beatSchema.safeParse(beat);
-  if (result.success) return;
+    const result = schemas.beatSchema.safeParse(beat);
+    if (result.success) return;
 
-  // Re-emit each underlying issue under the same `path` relative to
-  // the array element. Since the per-type schema validates the WHOLE
-  // beat object (top-level), the paths in `result.error.issues` are
-  // already relative to the beat. We forward them verbatim — the
-  // parent `z.array()` validation will prepend `beats[i]` automatically.
-  for (const issue of result.error.issues) {
-    ctx.addIssue({
-      ...issue,
-      // Strip any leading "metadata." prefix from the issue path.
-      // The old design added `path: ["metadata"]`; the new design
-      // forwards the real path so users see `beats[1].icon` instead of
-      // `beats[1].metadata`.
-      path: issue.path.map((p) =>
-        p === "metadata" ? [] : p,
-      ) as (string | number)[],
-    });
-  }
-});
+    // Re-emit each underlying issue under the same `path` relative to
+    // the array element. Since the per-type schema validates the WHOLE
+    // beat object (top-level), the paths in `result.error.issues` are
+    // already relative to the beat. We forward them verbatim — the
+    // parent `z.array()` validation will prepend `beats[i]` automatically.
+    for (const issue of result.error.issues) {
+      ctx.addIssue({
+        ...issue,
+        // Strip any leading "metadata." prefix from the issue path.
+        // The old design added `path: ["metadata"]`; the new design
+        // forwards the real path so users see `beats[1].icon` instead of
+        // `beats[1].metadata`.
+        path: issue.path.map((p) =>
+          p === "metadata" ? [] : p,
+        ) as (string | number)[],
+      });
+    }
+  });
 
 /**
  * Top-level `beats.json` schema.

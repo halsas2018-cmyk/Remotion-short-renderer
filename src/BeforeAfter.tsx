@@ -44,6 +44,7 @@ const BEFORE_ACCENT_BAR = "#dc2626";
 const AFTER_ACCENT_BAR = "#16a34a";
 const DIVIDER_COLOR = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a"; // Black slider
+const DIVIDER_BORDER_RADIUS = 16; // Card border radius used for the divider
 
 // Wraps a single label into lines that fit a max width, using fillTextBox
 // from @remotion/layout-utils. Returns the lines, the resolved fontSize,
@@ -267,6 +268,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const tagPaddingY = Math.max(6, height * 0.003);
   const cardBorderRadius = Math.max(16, width * 0.022);
   const cardPadding = Math.max(32, width * 0.03);
+  const dividerBorderRadius = Math.max(8, width * 0.012);
 
   // ============================================
   // Headline sizing — uses measureText + fitText + fillTextBox

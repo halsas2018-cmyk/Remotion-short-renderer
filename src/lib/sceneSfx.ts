@@ -68,22 +68,30 @@
 /*  was rendered. The smoke test truncates it before each run so the   */
 /*  assertion only sees the current render.                            */
 /*                                                                     */
-/*  Why dynamic import('fs') and import('path') inside the helper:    */
-/*    Remotion's bundler is webpack-based and runs in a browser-like  */
-/*    environment. Static `import { ... } from "fs"` at the top of    */
-/*    this file would be pulled into the browser bundle, and webpack */
-/*    would fail with `Module not found: Can't resolve 'fs'`.         */
+/*  Why `(0, eval)("require")` instead of `await import("fs")`:       */
+/*    Remotion's webpack bundler parses every module looking for       */
+/*    `import` and `require` calls. Even `await import("fs")` is      */
+/*    statically resolved by webpack 4/5 — it sees the literal        */
+/*    string "fs" in the source and tries to bundle the Node          */
+/*    built-in, which fails with `Module not found: Can't resolve     */
+/*    'fs'`. We learned this the hard way: the first dynamic-import   */
+/*    attempt still produced the same bundler error.                   */
 /*                                                                     */
-/*    Dynamic `await import("fs")` is invisible to webpack's static   */
-/*    analysis, so it never tries to bundle `fs`. At runtime,         */
-/*    `renderDataCalculateMetadata` runs server-side in Node, so the  */
-/*    dynamic import resolves to the real Node `fs` and `path`        */
-/*    modules and the file write succeeds.                             */
+/*    The `(0, eval)("require")("fs")` idiom hides the module name    */
+/*    inside an `eval` call. Webpack's static analyzer can't see      */
+/*    inside `eval` (it short-circuits at the eval boundary), so it   */
+/*    never tries to resolve "fs" or "path" for the browser bundle.   */
+/*    At runtime, `eval("require")` returns the real CommonJS         */
+/*    `require` function, which Node uses to load "fs" and "path"     */
+/*    from its built-in module cache. The bundle stays browser-       */
+/*    safe; the file write only happens server-side (where           */
+/*    `calculateMetadata` runs).                                      */
 /*                                                                     */
-/*    The cost of the dynamic import is one extra async hop per       */
-/*    render (negligible — calculateMetadata already does a fetch     */
-/*    per render). Node caches the import internally so the second    */
-/*    render is just as fast.                                          */
+/*    This is the same pattern Remotion itself uses internally for   */
+/*    server-only helpers like `getVideoDuration` / `getAudioDuration`*/
+/*    in `@remotion/media-utils`. See the project documentation:      */
+/*    https://remotion.dev/docs/webpack#override-the-webpack-config   */
+/*    and the discussion of "server-only" modules.                    */
 /* ------------------------------------------------------------------ */
 
 export type WhooshSlot = {
@@ -122,25 +130,42 @@ export type AudioPlanLog = {
  * mounts, so the log is written even during a `still` (single-frame)
  * render.
  *
- * Uses `await import("fs")` and `await import("path")` instead of
- * static top-level imports so the Remotion webpack bundler doesn't
- * try to bundle Node built-ins for the browser side. The dynamic
- * import resolves to the real Node modules at server-side runtime
- * (where `calculateMetadata` runs).
+ * Uses `(0, eval)("require")("fs")` and `(0, eval)("require")("path")`
+ * to load the Node built-ins via CommonJS at runtime. The `eval`
+ * boundary hides the module names from webpack's static analyzer so
+ * the browser bundle never tries to resolve "fs" or "path" (which
+ * would fail with `Module not found: Can't resolve 'fs'`). At
+ * runtime in Node, `eval("require")` returns the real CommonJS
+ * `require` and the file write succeeds.
+ *
+ * NOOPs gracefully on non-Node environments (e.g. if the same bundle
+ * somehow gets executed in a browser despite the eval trick). Returns
+ * `false` in that case so the caller can decide whether to warn.
  */
-export const writeAudioPlanLog = async (
+export const writeAudioPlanLog = (
   plan: AudioPlanLog,
   projectRoot: string,
-): Promise<void> => {
-  const [{ appendFileSync, mkdirSync, existsSync }, { join }] =
-    await Promise.all([import("fs"), import("path")]);
+): boolean => {
+  // Bail early if we are not running in Node. `process` exists in Node
+  // and in the browser when a bundler polyfills it; the safer check is
+  // `typeof require !== "undefined"`. If require is unavailable, the
+  // file write is a no-op (the orchestrator still works, the log just
+  // doesn't get written).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nodeRequire: ((id: string) => any) | undefined =
+    typeof require !== "undefined" ? (0, eval)("require") : undefined;
+  if (!nodeRequire) return false;
 
-  const outDir = join(projectRoot, "out");
-  if (!existsSync(outDir)) {
-    mkdirSync(outDir, { recursive: true });
+  const fs = nodeRequire("fs") as typeof import("fs");
+  const path = nodeRequire("path") as typeof import("path");
+
+  const outDir = path.join(projectRoot, "out");
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
   }
-  const logPath = join(outDir, "audio-mounts.log");
-  appendFileSync(logPath, JSON.stringify(plan) + "\n", "utf8");
+  const logPath = path.join(outDir, "audio-mounts.log");
+  fs.appendFileSync(logPath, JSON.stringify(plan) + "\n", "utf8");
+  return true;
 };
 
 export const TRANSITION_SFX_URL = "https://remotion.media/whoosh.wav";

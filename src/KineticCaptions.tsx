@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -87,14 +87,18 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   const { fps, width, height } = useVideoConfig();
 
   // Safely get beat context - default to showing captions if no context
-  let currentBeatType: string | null = null;
+  let beatContext: ReturnType<typeof useBeatContext> | null = null;
   try {
-    const beatContext = useBeatContext();
-    currentBeatType = beatContext?.currentBeatType ?? null;
+    beatContext = useBeatContext();
   } catch (e) {
     // No BeatContext provider - default to showing captions
-    currentBeatType = null;
+    beatContext = null;
   }
+
+  const currentBeatType: string | null = beatContext?.currentBeatType ?? null;
+  const beatStartFrame: number | null = beatContext?.beatStartFrame ?? null;
+  const beatDurationInFrames: number | null =
+    beatContext?.beatDurationInFrames ?? null;
 
   // If a beat type is provided by the orchestrator, gate captions to the
   // beat types the orchestrator considers data-vis. If no context (e.g. a
@@ -108,46 +112,99 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
     ? effectiveEnabledTypes.has(currentBeatType)
     : true;
 
-  // Use dynamic words if provided
-  const allWords: Word[] = React.useMemo(() => {
-    if (dynamicWords && dynamicWords.length > 0) {
-      return dynamicWords;
-    }
-    return [] as Word[];
-  }, [dynamicWords]);
+  // ============================================
+  // WORD RESOLUTION (the actual fix)
+  // ============================================
+  // 1. Prefer the per-beat words from the orchestrator's context
+  //    (BeatKineticCaptions slices the full list to the current beat).
+  // 2. Fall back to the prop if no context.
+  // 3. If we have a beatStartFrame, convert each word's global
+  //    `w.start` (seconds) to a LOCAL frame number so the captions
+  //    line up with the per-beat <Sequence> that the orchestrator
+  //    wraps us in. This is the root-cause fix: previously the
+  //    `currentWordIndex` lookup compared `frame` (local, 0..duration)
+  //    against `w.start * fps` (global, 0..totalDuration), so it
+  //    almost never matched and the highlight stayed stuck on word 0.
+  const contextWords: Word[] = beatContext?.currentWords ?? [];
 
-  if (!shouldShowCaptions || allWords.length === 0) {
+  const allWords: Word[] = useMemo(() => {
+    const src = (contextWords && contextWords.length > 0)
+      ? contextWords
+      : (dynamicWords ?? []);
+    if (!src || src.length === 0) return [];
+
+    // If we have a beat context, slice to the beat's window AND
+    // rebase `start`/`end` to LOCAL frames. The renderer reads
+    // `w.start` as a frame number; after rebasing, frame 0 is the
+    // first word spoken inside this beat.
+    if (beatStartFrame != null) {
+      const startSec = beatStartFrame / fps;
+      const endSec = beatStartFrame + (beatDurationInFrames ?? 0) / fps;
+      return src
+        .filter((w) => w.start >= startSec - 0.01 && w.start < endSec)
+        .map((w) => ({
+          word: w.word,
+          start: Math.max(0, Math.round(w.start * fps) - beatStartFrame),
+          end: Math.max(0, Math.round(w.end * fps) - beatStartFrame),
+        }));
+    }
+    // No beat context — treat prop words as local frames already
+    // (e.g. the *Test composition pre-slices them).
+    return src;
+  }, [contextWords, dynamicWords, beatStartFrame, beatDurationInFrames, fps]);
+
+  // Hold words in state so an async-loaded prop update re-renders
+  // captions. (When the orchestrator's first render sees an empty
+  // `dynamicWords` and then the fetch resolves, we want to update.)
+  const [resolvedWords, setResolvedWords] = useState<Word[]>([]);
+  useEffect(() => {
+    if (allWords.length > 0) setResolvedWords(allWords);
+  }, [allWords]);
+  const effectiveWords = allWords.length > 0 ? allWords : resolvedWords;
+
+  if (!shouldShowCaptions || effectiveWords.length === 0) {
     return null;
   }
 
-  // Find the currently spoken word index
-  const currentWordIndex = allWords.findIndex((w, i) => {
-    const wordStartFrame = Math.round(w.start * fps);
-    const nextWord = allWords[i + 1];
-    const nextWordStartFrame = nextWord ? Math.round(nextWord.start * fps) : Math.round(w.end * fps);
+  // Find the currently spoken word index. With the rebasing above,
+  // `frame` (local) and `w.start` (local) are now in the same unit,
+  // so the lookup is correct.
+  const currentWordIndex = effectiveWords.findIndex((w, i) => {
+    const wordStartFrame = w.start;
+    const nextWord = effectiveWords[i + 1];
+    const nextWordStartFrame = nextWord ? nextWord.start : w.end;
     return frame >= wordStartFrame && frame < nextWordStartFrame;
   });
+
+  // If we never found a match (frame is outside the spoken range, e.g.
+  // the beat is still pre-roll, or this beat has no words), don't
+  // render anything.
+  if (currentWordIndex === -1) {
+    return null;
+  }
 
   // Only show 5 words at a time: current word + 2 before + 2 after
   const windowSize = 5;
   const halfWindow = Math.floor(windowSize / 2);
-  const startIndex = Math.max(0, currentWordIndex - halfWindow);
-  const endIndex = Math.min(allWords.length - 1, currentWordIndex + halfWindow);
+  const endIndex = Math.min(
+    effectiveWords.length - 1,
+    currentWordIndex + halfWindow,
+  );
 
   // Adjust start if we're near the end
   const adjustedStart = Math.max(0, endIndex - windowSize + 1);
-  const visibleWordIndices = [];
+  const visibleWordIndices: number[] = [];
   for (let i = adjustedStart; i <= endIndex; i++) {
     visibleWordIndices.push(i);
   }
 
   // For each visible word, compute its visibility progress
   const wordStates = visibleWordIndices.map((i) => {
-    const w = allWords[i];
-    const wordStartFrame = Math.round(w.start * fps);
-    const wordEndFrame = Math.round(w.end * fps);
-    const nextWord = allWords[i + 1];
-    const nextWordStartFrame = nextWord ? Math.round(nextWord.start * fps) : wordEndFrame;
+    const w = effectiveWords[i];
+    const wordStartFrame = w.start;
+    const wordEndFrame = w.end;
+    const nextWord = effectiveWords[i + 1];
+    const nextWordStartFrame = nextWord ? nextWord.start : wordEndFrame;
     const fadeInFrames = CONFIG.transitionFrames;
 
     let progress = 0;

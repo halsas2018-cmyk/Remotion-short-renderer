@@ -75,40 +75,60 @@ export type Word = z.infer<typeof WordSchema>;
 /*  `endFrame?`) are always present, and the per-type fields are     */
 /*  validated against the registered schema in `src/beats/registry.ts`*/
 /*                                                                     */
-/*  We use Zod's `discriminatedUnion` so a malformed beat (e.g.      */
-/*  `type=key_statement` but `emphasisWords=42`) is caught with a    */
-/*  clear error like `beats[3].emphasisWords must be an array, got   */
-/*  number` instead of a render-time crash deep inside KeyStatement. */
+/*  We forward the per-type Zod issues into the parent context so the */
+/*  error message preserves the underlying field path (e.g.          */
+/*  `beats[1].icon: expected string, got undefined`) instead of       */
+/*  a generic "custom" issue with a useless `path: ["metadata"]`.     */
 /* ------------------------------------------------------------------ */
 
-/**
- * The schema for ONE beat. Reads the `type` field and dispatches to
- * the matching per-type schema in the registry.
- *
- * Throws if `type` is unknown (no registry entry). The error message
- * lists the unknown type and the valid alternatives.
- */
-const PerBeatSchema = z.object({
+const beatBaseShape = {
   type: z.string(),
   text: z.string(),
   startFrame: z.number().int().nonnegative(),
   durationInFrames: z.number().int().positive(),
   endFrame: z.number().int().nonnegative().optional(),
-}).superRefine((beat, ctx) => {
-  // Dispatch to the per-type schema. If it throws, Zod wraps the
-  // error in a ZodError with a clean `path` we can surface in the
-  // [MotionGraphicsVideo] error message.
-  try {
-    validateBeatMetadata(beat.type as BeatType, beat);
-  } catch (err) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : `unknown schema validation failure for type "${beat.type}"`;
+};
+
+/**
+ * The schema for ONE beat. Reads the `type` field and dispatches to
+ * the matching per-type schema in the registry.
+ *
+ * If the per-type schema has issues, we re-emit them under the same
+ * `path` (offset by the array index) so the final user-facing error
+ * looks like: `beats[1].icon: expected string, got undefined`.
+ */
+const PerBeatSchema = z.object(beatBaseShape).superRefine((beat, ctx) => {
+  // Dispatch to the per-type schema. Use safeParse so we can introspect
+  // the individual issues and preserve their original `path`.
+  const { getBeatSchemas } = require("./registry") as typeof import("./registry");
+  const schemas = getBeatSchemas(beat.type as BeatType);
+  if (!schemas) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["metadata"],
-      message,
+      path: ["type"],
+      message: `unknown beat type "${beat.type}". Add a registry entry in src/beats/registry.ts.`,
+    });
+    return;
+  }
+
+  const result = schemas.beatSchema.safeParse(beat);
+  if (result.success) return;
+
+  // Re-emit each underlying issue under the same `path` relative to
+  // the array element. Since the per-type schema validates the WHOLE
+  // beat object (top-level), the paths in `result.error.issues` are
+  // already relative to the beat. We forward them verbatim — the
+  // parent `z.array()` validation will prepend `beats[i]` automatically.
+  for (const issue of result.error.issues) {
+    ctx.addIssue({
+      ...issue,
+      // Strip any leading "metadata." prefix from the issue path.
+      // The old design added `path: ["metadata"]`; the new design
+      // forwards the real path so users see `beats[1].icon` instead of
+      // `beats[1].metadata`.
+      path: issue.path.map((p) =>
+        p === "metadata" ? [] : p,
+      ) as (string | number)[],
     });
   }
 });

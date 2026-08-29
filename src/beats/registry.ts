@@ -138,69 +138,69 @@ type RegistryEntry = {
    * The schema validates that the per-type fields required by this
    * beat type are present and well-typed.
    */
-  metadataSchema: z.ZodTypeAny;
+  beatSchema: z.ZodTypeAny;
 };
 
 const registry: Record<BeatType, RegistryEntry | null> = {
   key_statement: {
     component: KeyStatement,
-    metadataSchema: keyStatementMetadata,
+    beatSchema: keyStatementMetadata,
   },
   plain_text: {
     component: PlainText,
-    metadataSchema: plainTextMetadata,
+    beatSchema: plainTextMetadata,
   },
   icon_text: {
     component: IconText,
-    metadataSchema: iconTextMetadata,
+    beatSchema: iconTextMetadata,
   },
   chart_line: {
     component: ChartLine,
-    metadataSchema: chartLineMetadata,
+    beatSchema: chartLineMetadata,
   },
   chart_counter: {
     component: ChartCounter,
-    metadataSchema: chartCounterMetadata,
+    beatSchema: chartCounterMetadata,
   },
   chart_comparison: {
     component: ChartComparison3D,
-    metadataSchema: chartComparison3DMetadata,
+    beatSchema: chartComparison3DMetadata,
   },
   chart_comparison_3d: {
     component: ChartComparison3D,
-    metadataSchema: chartComparison3DMetadata,
+    beatSchema: chartComparison3DMetadata,
   },
   progress_meter: {
     component: ProgressMeter,
-    metadataSchema: progressMeterMetadata,
+    beatSchema: progressMeterMetadata,
   },
   timeline: {
     component: Timeline,
-    metadataSchema: timelineMetadata,
+    beatSchema: timelineMetadata,
   },
   versus: {
     component: VersusCard,
-    metadataSchema: versusMetadata,
+    beatSchema: versusMetadata,
   },
   before_after: {
     component: BeforeAfter,
-    metadataSchema: beforeAfterMetadata,
+    beatSchema: beforeAfterMetadata,
   },
   map_location: {
     component: Map3D,
-    metadataSchema: map3DMetadata,
+    beatSchema: map3DMetadata,
   },
   map_3d: {
     component: Map3D,
-    metadataSchema: map3DMetadata,
+    beatSchema: map3DMetadata,
   },
   process_flow: {
     component: Timeline,
-    metadataSchema: processFlowMetadata,
+    beatSchema: processFlowMetadata,
   },
   quote_card: {
     component: KeyStatement,
-    metadataSchema: quoteCardMetadata,
+    beatSchema: quoteCardMetadata,
   },
 };
 
@@ -218,6 +218,21 @@ export const getBeatComponent = (
 };
 
 /**
+ * Look up the Zod schema for a given beat type, or `null` if unsupported.
+ * Exposed so `src/beats/types.ts` can run the schema inside its own
+ * `superRefine` and forward the per-field Zod issues into the parent
+ * validation context, preserving the original field path in error
+ * messages.
+ */
+export const getBeatSchemas = (
+  type: BeatType,
+): { beatSchema: z.ZodTypeAny } | null => {
+  const entry = registry[type];
+  if (!entry) return null;
+  return { beatSchema: entry.beatSchema };
+};
+
+/**
  * Validate a beat (the full top-level beat object) against its Zod schema.
  * Throws a descriptive error if validation fails.
  */
@@ -228,7 +243,7 @@ export const validateBeatMetadata = (type: BeatType, beat: unknown) => {
       `No registry entry for beat type "${type}". Add one in src/beats/registry.ts.`,
     );
   }
-  return entry.metadataSchema.parse(beat);
+  return entry.beatSchema.parse(beat);
 };
 
 /**

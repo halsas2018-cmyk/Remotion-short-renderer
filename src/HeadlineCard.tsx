@@ -1,19 +1,15 @@
-import React from "react";
-import { loadFont, AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import React, { useEffect, useRef } from "react";
+import {
+  AbsoluteFill,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { z } from "zod";
 import { zColor } from "@remotion/zod-types";
-import { Annotation } from "./lib/annotations/Annotation";
 import { Highlight, Circle, Underline } from "rough-notation";
-import { useEffect, useRef } from "react";
-import { fitText, measureText, fillTextBox } from "@remotion/layout-utils";
+import { fitText, measureText } from "@remotion/layout-utils";
 import { SceneTransition } from "./SceneTransition";
-
-// Match KeyStatement's font setup so HeadlineCard sits in the same visual family.
-loadFont("normal", {
-  family: "Space Grotesk",
-  weights: ["500", "700"],
-  subsets: ["latin"],
-});
 
 export const HeadlineCardSchema = z.object({
   text: z.string().min(1),
@@ -71,20 +67,24 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   // Build per-word layout for emphasis annotations.
   const words = text.split(/\s+/);
   const wordMetrics = words.map((w) =>
-    measureText({ text: w, fontFamily: "Space Grotesk", fontWeight: "700", fontSize }),
+    measureText({
+      text: w,
+      fontFamily: "Space Grotesk",
+      fontWeight: "700",
+      fontSize,
+    }),
   );
-  const totalWidth = wordMetrics.reduce((acc, m) => acc + m.width, 0) + (words.length - 1) * 16;
-  const startX = (width - totalWidth) / 2;
-  const baselineY = height / 2;
+  const totalWidth =
+    wordMetrics.reduce((acc, m) => acc + m.width, 0) +
+    (words.length - 1) * 16;
 
   // Wire up rough-notation annotations (same approach as KeyStatement).
   const containerRef = useRef<HTMLDivElement>(null);
-  const annotationsRef = useRef<Annotation[]>([]);
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const annotations: Annotation[] = [];
+    const annotations: ReturnType<typeof Highlight>[] = [];
     const lowerText = text.toLowerCase();
     emphasisWords.forEach((emphasis, i) => {
       const idx = lowerText.indexOf(emphasis.toLowerCase());
@@ -110,12 +110,11 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
         padding: 6,
         animationDuration: 400,
       });
-      annotations.push({ Component: annotation, color: accentColor });
+      annotations.push(annotation);
     });
-    annotationsRef.current = annotations;
-    annotations.forEach((a) => a.Component.show());
+    annotations.forEach((a) => a.show());
     return () => {
-      annotations.forEach((a) => a.Component.remove());
+      annotations.forEach((a) => a.remove());
     };
   }, [text, emphasisWords, accentColor, words]);
 

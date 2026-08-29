@@ -37,6 +37,22 @@
 #   mapping in `sceneSfx.ts`, bump `LAST_RENDER_HASH_VERSION` in
 #   `scripts/lastRenderHash.mjs` to invalidate old caches.
 #
+# Canonical hash input: the two file bodies concatenated byte-for-byte
+# with NO separator. This matches what `cat beats.json timestamps.json
+# | sha256sum` produces and what `computeLastRenderHash` in
+# `scripts/lastRenderHash.mjs` produces. Earlier versions of this
+# script inserted a single `0x0a` (LF) byte between the two file
+# bodies, on the theory that a separator would make the hash more
+# robust. Two problems with that:
+#   1. `createHash().update(0x0a)` throws
+#      `ERR_INVALID_ARG_TYPE: data argument must be of type string or
+#      an instance of Buffer, TypedArray, or DataView. Received type
+#      number (10)`. The number `0x0a` is not accepted; you have to
+#      wrap it in `Buffer.from([0x0a])` or `"\n"`.
+#   2. The bash side does NOT add a separator, so the two hashes
+#      would never have agreed even if the call hadn't thrown.
+# Both problems are fixed by dropping the separator entirely.
+#
 # Pre-requisites:
 #   1. public/narration.mp3, public/beats.json, public/timestamps.json
 #      and public/sfx-ambient.mp3 must all exist.
@@ -194,8 +210,11 @@ fi
 # Horizon 0.5 — write the last-render hash so the NEXT invocation
 # of `scripts/render-smoke.sh --skip-if-unchanged` can short-circuit.
 #
-# We compute the same canonical input as above (`cat beats words`)
-# and write it via the helper module so the schema is shared with
+# We compute the same canonical input as above (`cat beats words`),
+# which is a pure byte concatenation with NO separator. The Node
+# side mirrors that exactly: two `h.update()` calls with no
+# separator in between. The hash is then prefixed with the version
+# and written via the helper module so the schema is shared with
 # any future caller. Failures are warned, not fatal — a broken
 # cache file shouldn't kill an otherwise-successful render.
 # ------------------------------------------------------------------
@@ -209,9 +228,11 @@ if ! node --input-type=module -e "
   const { createHash } = await import('node:crypto');
   const beats = fs.readFileSync('${PUBLIC_BEATS_FILE}');
   const words = fs.readFileSync('${PUBLIC_WORDS_FILE}');
+  // Canonical input: beats bytes || words bytes, no separator.
+  // Must match the bash side ('cat beats words | sha256sum') and
+  // scripts/lastRenderHash.mjs::computeLastRenderHash byte-for-byte.
   const h = createHash('sha256');
   h.update(beats);
-  h.update(0x0a);
   h.update(words);
   const hex = h.digest('hex');
   writeLastRenderHash('${OUT_DIR}', 'v' + LAST_RENDER_HASH_VERSION + ':' + hex);

@@ -24,14 +24,32 @@ const HASH_FILENAME = "last-render.json";
 /**
  * Compute the SHA-256 hex digest of the canonical input pair.
  *
+ * Canonical input = `public/beats.json` bytes || `public/timestamps.json` bytes,
+ * concatenated with NO separator. This matches what the bash side of
+ * `scripts/render-smoke.sh` does via `cat beats.json timestamps.json |
+ * sha256sum` (which is also a pure byte concatenation with no
+ * separator). Keeping the two sides in lock-step is what makes the
+ * skip path actually skip: the bash-computed hash and the
+ * Node-computed hash MUST agree, byte-for-byte.
+ *
+ * Earlier versions of this function inserted a single `0x0a` (LF)
+ * byte between the two file bodies, on the theory that a separator
+ * would make the hash more robust. Two problems with that:
+ *   1. `createHash().update(0x0a)` throws
+ *      `ERR_INVALID_ARG_TYPE: data argument must be of type string or
+ *      an instance of Buffer, TypedArray, or DataView. Received type
+ *      number (10)`. The number `0x0a` is not accepted.
+ *   2. The bash side does NOT add a separator, so the two hashes
+ *      would never have agreed even if the call hadn't thrown.
+ * Both problems are fixed by dropping the separator entirely.
+ *
  * @param {string|Buffer} beatsJson  Raw bytes of `public/beats.json`.
  * @param {string|Buffer} wordsJson  Raw bytes of `public/timestamps.json`.
- * @returns {string} `<version>:<64-char hex>`
+ * @returns {string} `v<version>:<64-char hex>`
  */
 export const computeLastRenderHash = (beatsJson, wordsJson) => {
   const h = crypto.createHash("sha256");
   h.update(beatsJson);
-  h.update(0x0a); // LF separator, matches the bash `cat` invocation
   h.update(wordsJson);
   return `v${LAST_RENDER_HASH_VERSION}:${h.digest("hex")}`;
 };

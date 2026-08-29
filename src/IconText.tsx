@@ -6,11 +6,7 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
-  delayRender,
-  continueRender,
-  cancelRender,
 } from "remotion";
-import { Lottie, LottieAnimationData } from "@remotion/lottie";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { fitText, fillTextBox, measureText } from "@remotion/layout-utils";
 import * as LucideIcons from "lucide-react";
@@ -38,28 +34,9 @@ const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
-// Lottie icon map - maps icon names to files in public/icons/
-const ICON_MAP: Record<string, string> = {
-  warning: "warning.json",
-  money: "money.json",
-  chip: "chip.json",
-  risk: "risk.json",
-  contract: "contract.json",
-  handshake: "handshake.json",
-  brain: "brain.json",
-  rocket: "rocket.json",
-  growth: "growth.json",
-  decline: "decline.json",
-  clock: "clock.json",
-  globe: "globe.json",
-  lock: "lock.json",
-  shield: "shield.json",
-  lightbulb: "lightbulb.json",
-  "trending-up": "trending-up.json",
-  "trending-down": "trending-down.json",
-};
-
-// Lucide fallback icons for when Lottie files don't exist
+// Lucide icons for every supported icon name. No Lottie — Lucide is the
+// single source of truth. If the icon name doesn't match, the default
+// `Info` icon is used.
 const LUCIDE_FALLBACK_MAP: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
   warning: LucideIcons.AlertTriangle,
   money: LucideIcons.DollarSign,
@@ -76,6 +53,7 @@ const LUCIDE_FALLBACK_MAP: Record<string, React.ComponentType<{ size?: number; c
   lock: LucideIcons.Lock,
   shield: LucideIcons.Shield,
   lightbulb: LucideIcons.Lightbulb,
+  insight: LucideIcons.Lightbulb,
   "trending-up": LucideIcons.TrendingUp,
   "trending-down": LucideIcons.TrendingDown,
 };
@@ -114,34 +92,6 @@ export const IconText: React.FC<IconTextProps> = ({
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
 
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
-
-  // ============================================
-  // LOTTIE LOADING (from lottie.md pattern) with fallback
-  // ============================================
-  const iconFile = ICON_MAP[icon.toLowerCase()] || "info.json";
-  const iconPath = `/icons/${iconFile}`;
-
-  const [lottieHandle] = React.useState(() => delayRender(`Loading Lottie: ${iconFile}`));
-  const [animationData, setAnimationData] = React.useState<LottieAnimationData | null>(null);
-  const [lottieFailed, setLottieFailed] = React.useState(false);
-
-  React.useEffect(() => {
-    // Try to load Lottie file
-    fetch(iconPath)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load ${iconPath}: ${res.status}`);
-        return res.json();
-      })
-      .then((json) => {
-        setAnimationData(json);
-        continueRender(lottieHandle);
-      })
-      .catch((err) => {
-        console.warn(`Lottie icon not found: ${iconPath}, using Lucide fallback`);
-        setLottieFailed(true);
-        continueRender(lottieHandle); // Continue render even if Lottie fails
-      });
-  }, [lottieHandle, iconPath]);
 
   // ============================================
   // RESPONSIVE SIZING & TEXT WRAPPING (using measuring-text.md)
@@ -308,28 +258,8 @@ export const IconText: React.FC<IconTextProps> = ({
     return entry;
   });
 
-  // Resolve fallback Lucide icon
+  // Resolve the Lucide icon for this beat. No Lottie fallback.
   const LucideFallback = LUCIDE_FALLBACK_MAP[icon.toLowerCase()] || DefaultLucideIcon;
-
-  // Render icon (Lottie if loaded, Lucide fallback if failed/not loaded yet)
-  const renderIcon = () => {
-    if (animationData) {
-      return (
-        <Lottie
-          animationData={animationData}
-          style={{ width: 120, height: 120 }}
-        />
-      );
-    }
-    // Fallback to Lucide icon (shows immediately in Studio)
-    return (
-      <LucideFallback
-        size={120}
-        color={ACCENT_COLOR}
-        strokeWidth={2}
-      />
-    );
-  };
 
   return (
     <AbsoluteFill
@@ -505,7 +435,7 @@ export const IconText: React.FC<IconTextProps> = ({
                 gap: 24,
               }}
             >
-              {/* Icon with entrance animation (Lottie or Lucide fallback) */}
+              {/* Icon with entrance animation — Lucide only */}
               <div
                 style={{
                   transform: [
@@ -522,7 +452,11 @@ export const IconText: React.FC<IconTextProps> = ({
                   willChange: "transform, opacity",
                 }}
               >
-                {renderIcon()}
+                <LucideFallback
+                  size={120}
+                  color={ACCENT_COLOR}
+                  strokeWidth={2}
+                />
               </div>
 
               {/* Text with line-by-line word animation + rough-notation highlights */}

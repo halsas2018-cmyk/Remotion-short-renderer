@@ -6,11 +6,7 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
-  delayRender,
-  continueRender,
-  cancelRender,
 } from "remotion";
-import { Lottie, LottieAnimationData } from "@remotion/lottie";
 
 interface TimelineEvent {
   marker: string;
@@ -40,15 +36,6 @@ const MARKER_BG = "white";
 const MARKER_BORDER = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a";
 const CARD_BORDER = "#e8e8e8";
-
-// Lottie icon map for timeline markers (optional decorative animation)
-const TIMELINE_ICON_MAP: Record<string, string> = {
-  "2024": "growth.json",
-  "2025": "rocket.json",
-  "2026": "chip.json",
-  "2029": "money.json",
-  "2032": "brain.json",
-};
 
 export const Timeline: React.FC<TimelineProps> = ({
   events,
@@ -164,55 +151,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   // directly below the vertical line, i.e., at the center line (50%).
   const descCardTop = `calc(50% + ${markerRadius * 2 + 32}px)`;
 
-  // Lottie loading for each marker (if icon exists)
-  const lottieHandles = events.map((event) => {
-    const iconFile = TIMELINE_ICON_MAP[event.marker];
-    if (!iconFile) return null;
-    return {
-      iconFile,
-      handle: delayRender(`Loading Lottie: ${iconFile}`),
-    };
-  });
-
-  const [lottieData, setLottieData] = React.useState<Record<string, LottieAnimationData | null>>({});
-  const [lottieFailed, setLottieFailed] = React.useState<Record<string, boolean>>({});
-
-  React.useEffect(() => {
-    const loaders = lottieHandles.filter(Boolean) as {
-      iconFile: string;
-      handle: number;
-    }[];
-
-    loaders.forEach(({ iconFile, handle }) => {
-      fetch(`/icons/${iconFile}`)
-        .then((res) => {
-          if (!res.ok) throw new Error(`Failed to load ${iconFile}`);
-          return res.json();
-        })
-        .then((json) => {
-          setLottieData((prev) => ({ ...prev, [iconFile]: json }));
-          continueRender(handle);
-        })
-        .catch((err) => {
-          console.warn(`Lottie icon not found: ${iconFile}`, err);
-          setLottieFailed((prev) => ({ ...prev, [iconFile]: true }));
-          continueRender(handle);
-        });
-    });
-
-    // Cleanup: continue any remaining handles if component unmounts early
-    return () => {
-      loaders.forEach(({ handle }) => {
-        // Only continue if not already continued (safe to call multiple times)
-        try {
-          continueRender(handle);
-        } catch (e) {
-          // ignore
-        }
-      });
-    };
-  }, []);
-
   return (
     <AbsoluteFill
       style={{
@@ -280,9 +218,6 @@ export const Timeline: React.FC<TimelineProps> = ({
               const isActive = markerProg > 0;
 
               const descPos = getDescPosition(xPos);
-              const iconFile = TIMELINE_ICON_MAP[event.marker];
-              const lottieAnim = iconFile ? lottieData[iconFile] : null;
-              const lottieFailedForIcon = iconFile ? lottieFailed[iconFile] : false;
 
               return (
                 <React.Fragment key={i}>
@@ -330,26 +265,18 @@ export const Timeline: React.FC<TimelineProps> = ({
                       willChange: "transform, opacity",
                     }}
                   >
-                    {/* Lottie icon inside marker if available */}
-                    {iconFile && lottieAnim && !lottieFailedForIcon ? (
-                      <Lottie
-                        animationData={lottieAnim}
-                        style={{ width: markerRadius * 1.2, height: markerRadius * 1.2 }}
-                      />
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: markerFontSize,
-                          fontWeight: 800,
-                          color: ACCENT_COLOR,
-                          fontFamily: "system-ui, sans-serif",
-                          lineHeight: 1,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {event.marker}
-                      </span>
-                    )}
+                    <span
+                      style={{
+                        fontSize: markerFontSize,
+                        fontWeight: 800,
+                        color: ACCENT_COLOR,
+                        fontFamily: "system-ui, sans-serif",
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {event.marker}
+                    </span>
                   </div>
 
                   {/* Event description below vertical line - elevated card, centered under marker, constrained to screen */}

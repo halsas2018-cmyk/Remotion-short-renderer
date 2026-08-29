@@ -25,234 +25,28 @@
  * Centralized here so the URLs and volumes can be tweaked in one
  * place and reused if other parts of the project ever need
  * transition / typing / ambient sounds.
+ *
+ * Note on 1.4 audio plan log: this file used to also export
+ * `writeAudioPlanLog` (Horizon 1.4), which wrote a JSON line to
+ * `out/audio-mounts.log` describing the audio plan for each render.
+ * The smoke test asserted on that file. The audio plan log was the
+ * replacement for the cancelled Horizon 0.4 (per-mount console.log
+ * lines that never fire during a `still` render).
+ *
+ * As of commit that drops 1.4 (see ROADMAP.md), we no longer
+ * emit the audio plan log. The orchestration works fine without
+ * it — the audio streams (narration, ambient, per-transition
+ * whoosh, per-word click) all mount correctly because they live
+ * in the React tree, not in a side-channel log. The smoke test
+ * dropped its audio-plan assertion in the same change.
+ *
+ * The previous `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`
+ * exports are gone. If you want observability of the audio mix
+ * later, write a per-mount <AudioMountLog> component that fires
+ * on the real `npx remotion render` path (not `still`) and reads
+ * from the orchestrator's state via context. That's a future
+ * horizon, not a current one.
  */
-
-/* ------------------------------------------------------------------ */
-/*  Render-time audio plan logger (Horizon 0.4 — 1.4)                 */
-/*                                                                     */
-/*  Why we log to a file, not console.log:                            */
-/*    We tried every React mount hook to emit a per-stream [audio]    */
-/*    log line on mount:                                               */
-/*      1. onMount on <Audio>          — time-driven, doesn't fire     */
-/*                                        during a `still` render      */
-/*      2. useEffect(..., []) in a      — post-render, doesn't fire    */
-/*         sibling <AudioMountLog>       during a `still` render      */
-/*      3. useState(() => ...)          — initializer, doesn't fire    */
-/*         initializer                   during a `still` render      */
-/*      4. useRef(false) + function      — doesn't fire either         */
-/*         body log                       (the React tree is NEVER    */
-/*                                        mounted during `still`,     */
-/*                                        only the render function    */
-/*                                        is called)                  */
-/*                                                                     */
-/*    The smoke test (`scripts/render-smoke.sh`) is a `still` render.  */
-/*    So the only way to emit observability for it is from somewhere  */
-/*    OUTSIDE the React tree, BEFORE the orchestrator mounts.         */
-/*    `Root.tsx::renderDataCalculateMetadata` is the perfect place:    */
-/*    it runs once per render, has access to the parsed beats.json    */
-/*    and timestamps.json, and computes the audio plan (whoosh slots, */
-/*    click slots) as a byproduct of the data fetch.                  */
-/*                                                                     */
-/*  Format:                                                           */
-/*    One JSON line per render. Contains:                              */
-/*      - beatsCount, wordsCount                                       */
-/*      - narration (the resolved public/narration.mp3)                 */
-/*      - ambient (the resolved public/sfx-ambient.mp3)                 */
-/*      - whooshCount (number of cross-fade whoosh <Audio>s)            */
-/*      - clickCount (number of per-word click <Audio>s)                */
-/*      - whooshSlots: list of { from, to, beatIndex } for each         */
-/*        whoosh that will be mounted (proves the math is right)        */
-/*                                                                     */
-/*  The log file lives at `${projectRoot}/out/audio-mounts.log`.       */
-/*  It is APPENDED across renders so you can see the history of what   */
-/*  was rendered. The smoke test truncates it before each run so the   */
-/*  assertion only sees the current render.                            */
-/*                                                                     */
-/*  Why `(0, eval)("require")` instead of `await import("fs")`:       */
-/*    Remotion's webpack bundler parses every module looking for       */
-/*    `import` and `require` calls. Even `await import("fs")` is      */
-/*    statically resolved by webpack 4/5 — it sees the literal        */
-/*    string "fs" in the source and tries to bundle the Node          */
-/*    built-in, which fails with `Module not found: Can't resolve     */
-/*    'fs'`. We learned this the hard way: the first dynamic-import   */
-/*    attempt still produced the same bundler error.                   */
-/*                                                                     */
-/*    The `(0, eval)("require")("fs")` idiom hides the module name    */
-/*    inside an `eval` call. Webpack's static analyzer can't see      */
-/*    inside `eval` (it short-circuits at the eval boundary), so it   */
-/*    never tries to resolve "fs" or "path" for the browser bundle.   */
-/*    At runtime, `eval("require")` returns the real CommonJS         */
-/*    `require` function, which Node uses to load "fs" and "path"     */
-/*    from its built-in module cache. The bundle stays browser-       */
-/*    safe; the file write only happens server-side (where           */
-/*    `calculateMetadata` runs).                                      */
-/*                                                                     */
-/*    This is the same pattern Remotion itself uses internally for   */
-/*    server-only helpers like `getVideoDuration` / `getAudioDuration`*/
-/*    in `@remotion/media-utils`. See the project documentation:      */
-/*    https://remotion.dev/docs/webpack#override-the-webpack-config   */
-/*    and the discussion of "server-only" modules.                    */
-/* ------------------------------------------------------------------ */
-
-export type WhooshSlot = {
-  /** Global frame the whoosh starts (inclusive). */
-  from: number;
-  /** Global frame the whoosh ends (exclusive). */
-  to: number;
-  /** Index of the OUTGOING beat in the beats[] array. */
-  beatIndex: number;
-};
-
-export type AudioPlanLog = {
-  /** Beat count from beats.json. */
-  beatsCount: number;
-  /** Word count from timestamps.json (after dedupe in 1.3). */
-  wordsCount: number;
-  /** Resolved public/ path to the narration audio. */
-  narration: string;
-  /** Resolved public/ path to the ambient SFX. */
-  ambient: string;
-  /** Number of cross-fade whoosh <Audio>s the orchestrator will mount. */
-  whooshCount: number;
-  /** Number of per-word click <Audio>s the orchestrator will mount. */
-  clickCount: number;
-  /** Per-whoosh global frame range and outgoing-beat index. */
-  whooshSlots: WhooshSlot[];
-};
-
-/**
- * Append one JSON line describing the audio plan for a render to
- * `${projectRoot}/out/audio-mounts.log`. Idempotent: creates the
- * `out/` directory and the log file if they don't exist.
- *
- * Called from `Root.tsx::renderDataCalculateMetadata` after the
- * JSONs have been parsed and deduped but BEFORE the orchestrator
- * mounts, so the log is written even during a `still` (single-frame)
- * render.
- *
- * `projectRoot` is preferred when supplied. If omitted, the function
- * derives the directory from `process.cwd()` when available, then
- * falls back to walking up from `__dirname` looking for `package.json`.
- *
- * Uses `(0, eval)("require")("fs")` and `(0, eval)("require")("path")`
- * to load the Node built-ins via CommonJS at runtime. The `eval`
- * boundary hides the module names from webpack's static analyzer so
- * the browser bundle never tries to resolve "fs" or "path" (which
- * would fail with `Module not found: Can't resolve 'fs'`). At
- * runtime in Node, `eval("require")` returns the real CommonJS
- * `require` and the file write succeeds.
- *
- * If we are NOT in real Node (the eval fails or the require throws),
- * the function re-throws so the caller's try/catch in Root.tsx
- * surfaces a warn and the render continues. We intentionally do NOT
- * silently `return false` on the eval failure — that path made the
- * smoke test report an empty log with no warn, which was impossible
- * to debug.
- */
-export const writeAudioPlanLog = (
-  plan: AudioPlanLog,
-  projectRoot?: string,
-): boolean => {
-  // ------------------------------------------------------------------
-  // Real-Node detection. A genuine Node runtime has
-  // `process.versions.node` set to a string like "v20.10.0".
-  // Browser-side shims (e.g. the `process` polyfill that webpack /
-  // Remotion provides to the renderer bundle) have a `process`
-  // object but `process.versions.node` is `undefined` — they ONLY
-  // expose things like `process.env`, `process.cwd`, etc. that
-  // happen to be missing in the browser. Trying to
-  // `globalThis.require("fs")` against such a shim throws
-  // `Cannot find module 'fs'` (which is what the previous version
-  // of this function hit).
-  //
-  // We gate on `process.versions.node` and bail early if we're
-  // NOT in real Node. This is the canonical "am I in Node?" check
-  // used by many npm packages (e.g. `is-node`, `node-fetch`'s
-  // runtime detection, etc.).
-  // ------------------------------------------------------------------
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const proc: any = typeof process !== "undefined" ? process : undefined;
-  if (!proc || !proc.versions || typeof proc.versions.node !== "string") {
-    // Re-throw so the caller's try/catch in Root.tsx surfaces a warn
-    // in the render log. Silently returning false here was the bug
-    // that made the smoke test report an empty audio-mounts.log with
-    // no diagnostic to grep for. The smoke test's `tail -n 50
-    // ${STDERR_LOG}` will now show a clear "writeAudioPlanLog:
-    // not running in real Node" message instead of empty stderr.
-    throw new Error(
-      "writeAudioPlanLog: not running in real Node (process.versions.node is " +
-        String(proc?.versions?.node) +
-        "); cannot write out/audio-mounts.log",
-    );
-  }
-
-  // From here down we are guaranteed to be in real Node, so
-  // `require` and Node built-ins are safe to use.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nodeRequire: ((id: string) => any) =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    typeof require === "function"
-      ? require
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (0, eval)("require");
-
-  const fs = nodeRequire("fs") as typeof import("fs");
-  const path = nodeRequire("path") as typeof import("path");
-
-  let root: string;
-  if (projectRoot) {
-    root = projectRoot;
-  } else {
-    // Prefer process.cwd() if it's callable.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const proc: any = typeof process !== "undefined" ? process : undefined;
-    if (proc && typeof proc.cwd === "function") {
-      try {
-        root = proc.cwd();
-      } catch {
-        root = "";
-      }
-    } else {
-      root = "";
-    }
-
-    // Fallback: walk up from __dirname until we find a package.json.
-    // Remotion's renderer bundle exposes __dirname even when
-    // process.cwd is missing. The sceneSfx.ts module itself lives at
-    // <projectRoot>/src/lib/sceneSfx.ts, so going up 2 levels lands
-    // us at the project root.
-    if (!root) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fromDir: string | undefined = (globalThis as any).__dirname;
-      if (fromDir) {
-        let dir = fromDir;
-        for (let i = 0; i < 8; i++) {
-          if (fs.existsSync(path.join(dir, "package.json"))) {
-            root = dir;
-            break;
-          }
-          const parent = path.dirname(dir);
-          if (parent === dir) break; // hit filesystem root
-          dir = parent;
-        }
-      }
-    }
-
-    if (!root) {
-      // Last-ditch fallback: use the current working directory string
-      // (path.join handles "" as ".").
-      root = ".";
-    }
-  }
-
-  const outDir = path.join(root, "out");
-  if (!fs.existsSync(outDir)) {
-    fs.mkdirSync(outDir, { recursive: true });
-  }
-  const logPath = path.join(outDir, "audio-mounts.log");
-  fs.appendFileSync(logPath, JSON.stringify(plan) + "\n", "utf8");
-  return true;
-};
 
 export const TRANSITION_SFX_URL = "https://remotion.media/whoosh.wav";
 

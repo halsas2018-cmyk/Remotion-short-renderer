@@ -48,12 +48,13 @@
 #   1 — render failed (Remotion printed an error)
 #   2 — output is too short (< 60 frames), indicates a silent
 #       failure we should investigate
-#   3 — no audio plan log line was written (Horizon 0.4 — 1.4
-#       regression: the audio plan wasn't computed or the file
-#       write failed)
-#   4 — --skip-if-unchanged was requested but the cache file
-#       `out/last-render.json` is missing or unreadable (treat
-#       as a fresh render, NOT a failure; we still run the render)
+#
+# History:
+#   - Horizon 1.4 used to add exit code 3 for "no audio plan log
+#     line in out/audio-mounts.log". That assertion was dropped
+#     along with 1.4 itself (see ROADMAP.md / CLAUDE.md). The
+#     orchestrator's audio streams are observable through the
+#     React tree; a side-channel log was redundant.
 # ------------------------------------------------------------------
 set -euo pipefail
 
@@ -91,7 +92,6 @@ OUT_FILE="${OUT_DIR}/smoke.png"
 STDOUT_LOG="${OUT_DIR}/smoke.stdout.log"
 STDERR_LOG="${OUT_DIR}/smoke.stderr.log"
 COMBINED_LOG="${OUT_DIR}/smoke.combined.log"
-AUDIO_PLAN_LOG="${OUT_DIR}/audio-mounts.log"
 LAST_RENDER_FILE="${OUT_DIR}/last-render.json"
 PUBLIC_BEATS_FILE="${PROJECT_ROOT}/public/beats.json"
 PUBLIC_WORDS_FILE="${PROJECT_ROOT}/public/timestamps.json"
@@ -104,7 +104,6 @@ echo "    output:             ${OUT_FILE}"
 echo "    stdout log:         ${STDOUT_LOG}"
 echo "    stderr log:         ${STDERR_LOG}"
 echo "    combined log:       ${COMBINED_LOG}"
-echo "    audio plan:         ${AUDIO_PLAN_LOG}"
 echo "    last-render cache:  ${LAST_RENDER_FILE}"
 echo "    skip-if-unchanged:  ${SKIP_IF_UNCHANGED}"
 
@@ -119,9 +118,9 @@ mkdir -p "${OUT_DIR}"
 # deliberately kept under `scripts/` (not `src/`) so Remotion's
 # webpack bundler never walks it — only the smoke script's
 # `node -e` invocation loads it. If the cache is missing or stale,
-# we fall through to the render path. We never fail with exit 4
-# just because the cache is absent on a fresh checkout — that's
-# exit 0 to "fall through".
+# we fall through to the render path. We never fail just because
+# the cache is absent on a fresh checkout — that's exit 0 to
+# "fall through".
 # ------------------------------------------------------------------
 if [ "${SKIP_IF_UNCHANGED}" = "1" ]; then
   if [ ! -f "${PUBLIC_BEATS_FILE}" ] || [ ! -f "${PUBLIC_WORDS_FILE}" ]; then
@@ -154,12 +153,6 @@ if [ "${SKIP_IF_UNCHANGED}" = "1" ]; then
     fi
   fi
 fi
-
-# Truncate the audio plan log so the assertion only sees the current
-# render. This is safe to do even on a first run (the file doesn't
-# exist yet, but we create it as empty so the grep has something to
-# look at if the render fails before calculateMetadata completes).
-: > "${AUDIO_PLAN_LOG}"
 
 # Render a single frame at the 2-second mark. `--scale=0.2` keeps
 # the output small (≈216×384) so the smoke test runs in under a
@@ -198,73 +191,6 @@ if [ "${OUTPUT_SIZE}" -lt 1024 ]; then
 fi
 
 # ------------------------------------------------------------------
-# Horizon 0.4 (1.4) audio plan assertion.
-#
-# The audio plan is written by Root.tsx::renderDataCalculateMetadata
-# to out/audio-mounts.log AFTER the JSONs are parsed and deduped
-# but BEFORE the orchestrator mounts. It is one JSON line per
-# render with:
-#   - beatsCount, wordsCount
-#   - narration, ambient (resolved public/ paths)
-#   - whooshCount, clickCount
-#   - whooshSlots: per-whoosh { from, to, beatIndex }
-#
-# Why a file (not console.log):
-#   We tried every React mount hook to emit a per-stream log line:
-#     - onMount on <Audio>        — time-driven, doesn't fire in `still`
-#     - useEffect(..., [])         — post-render, doesn't fire in `still`
-#     - useState(() => ...) init   — initializer, doesn't fire in `still`
-#     - useRef(false) + body log   — doesn't fire in `still` either
-#   The `still` (single-frame) renderer in Remotion does not commit
-#   the React component tree — it just calls the render function
-#   for one frame and discards it. The orchestrator is never
-#   mounted. So the only place we can emit observability is from
-#   calculateMetadata, which DOES run before the render.
-#
-# We assert at least one line is present and is a valid JSON object
-# with the expected top-level fields. This proves the audio plan
-# was computed and the file write succeeded.
-# ------------------------------------------------------------------
-if [ ! -s "${AUDIO_PLAN_LOG}" ]; then
-  echo "==> FAIL: no audio plan log line in ${AUDIO_PLAN_LOG}." >&2
-  echo "==> This means the audio plan was not computed, or the" >&2
-  echo "==> file write in Root.tsx::renderDataCalculateMetadata" >&2
-  echo "==> failed. The 1.4 invariant is that one JSON line per" >&2
-  echo "==> render lands in out/audio-mounts.log." >&2
-  echo "==> Last 50 lines of stderr:" >&2
-  tail -n 50 "${STDERR_LOG}" >&2 || true
-  echo "==> Last 50 lines of stdout:" >&2
-  tail -n 50 "${STDOUT_LOG}" >&2 || true
-  exit 3
-fi
-
-# Validate the last line is a JSON object with the expected fields.
-# We use Node.js here because the bash-only JSON parsing path is
-# gnarly and we already need Node for the render.
-AUDIO_PLAN_VALIDATION=$(node -e "
-  const fs = require('fs');
-  const lines = fs.readFileSync('${AUDIO_PLAN_LOG}', 'utf8').trim().split('\n');
-  const last = lines[lines.length - 1];
-  try {
-    const obj = JSON.parse(last);
-    const required = ['beatsCount', 'wordsCount', 'narration', 'ambient', 'whooshCount', 'clickCount', 'whooshSlots'];
-    const missing = required.filter(k => !(k in obj));
-    if (missing.length) {
-      console.log('INVALID: missing keys: ' + missing.join(', '));
-      process.exit(1);
-    }
-    console.log('beatsCount=' + obj.beatsCount + ' wordsCount=' + obj.wordsCount + ' whooshCount=' + obj.whooshCount + ' clickCount=' + obj.clickCount);
-  } catch (e) {
-    console.log('INVALID: not valid JSON: ' + e.message);
-    process.exit(1);
-  }
-" 2>&1) || {
-  echo "==> FAIL: audio plan log line is not valid JSON." >&2
-  echo "==> Contents: $(cat "${AUDIO_PLAN_LOG}")" >&2
-  exit 3
-}
-
-# ------------------------------------------------------------------
 # Horizon 0.5 — write the last-render hash so the NEXT invocation
 # of `scripts/render-smoke.sh --skip-if-unchanged` can short-circuit.
 #
@@ -276,15 +202,6 @@ AUDIO_PLAN_VALIDATION=$(node -e "
 INPUT_HASH=$(
   cat "${PUBLIC_BEATS_FILE}" "${PUBLIC_WORDS_FILE}" | sha256sum | awk '{print $1}'
 )
-DURATION_FRAMES=$(node -e "
-  const fs = require('fs');
-  const lines = fs.readFileSync('${AUDIO_PLAN_LOG}', 'utf8').trim().split('\n');
-  const obj = JSON.parse(lines[lines.length - 1]);
-  // We don't store totalDurationInFrames in the plan; derive from
-  // beats if we can. Falls back to 0 (which is fine — it's metadata
-  // for humans, not load-bearing).
-  console.log(obj.beatsCount || 0);
-" 2>/dev/null || echo 0)
 
 if ! node --input-type=module -e "
   const { writeLastRenderHash, LAST_RENDER_HASH_VERSION } = await import('./scripts/lastRenderHash.mjs');
@@ -297,15 +214,11 @@ if ! node --input-type=module -e "
   h.update(0x0a);
   h.update(words);
   const hex = h.digest('hex');
-  writeLastRenderHash('${OUT_DIR}', 'v' + LAST_RENDER_HASH_VERSION + ':' + hex, {
-    durationInFrames: ${DURATION_FRAMES} || undefined,
-  });
+  writeLastRenderHash('${OUT_DIR}', 'v' + LAST_RENDER_HASH_VERSION + ':' + hex);
 " 2>&1; then
   echo "==> WARN: failed to write ${LAST_RENDER_FILE} (non-fatal, see above)." >&2
 fi
 
 echo "==> OK: smoke render produced ${OUTPUT_SIZE}-byte PNG at ${OUT_FILE}"
-echo "==> OK: audio plan: ${AUDIO_PLAN_VALIDATION}"
-echo "==> OK: log file:   ${AUDIO_PLAN_LOG}"
 echo "==> OK: cache:      ${LAST_RENDER_FILE} (hash ${INPUT_HASH:0:12}…)"
 exit 0

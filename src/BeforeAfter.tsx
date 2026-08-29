@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   Composition,
@@ -7,6 +7,11 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import {
+  fitText,
+  fillTextBox,
+  measureText,
+} from "@remotion/layout-utils";
 
 interface BeforeAfterProps {
   beforeLabel: string;
@@ -23,37 +28,136 @@ interface BeforeAfterProps {
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
-const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#4a4a4a";
+const ACCENT_LIGHT = "#f97316";
+const DARK_TEXT = "#0f172a";
+const MEDIUM_TEXT = "#475569";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)";
 const CARD_BG = "white";
 const CARD_BORDER = "#e8e8e8";
 const BEFORE_TAG_BG = "#fee2e2";
 const BEFORE_TAG_COLOR = "#dc2626";
 const BEFORE_TAG_BORDER = "#fecaca";
-const AFTER_TAG_BG = "#fef3c7";
-const AFTER_TAG_COLOR = "#e86c00";
-const AFTER_TAG_BORDER = "#fde68a";
-const BEFORE_ITEM_BG = "#fee2e2";
-const BEFORE_ITEM_COLOR = "#dc2626";
-const BEFORE_ITEM_BORDER = "#fecaca";
-const AFTER_ITEM_BG = "#dcfce7";
-const AFTER_ITEM_COLOR = "#16a34a";
-const AFTER_ITEM_BORDER = "#bbf7d0";
+const AFTER_TAG_BG = "#dcfce7";
+const AFTER_TAG_COLOR = "#15803d";
+const AFTER_TAG_BORDER = "#bbf7d0";
+const BEFORE_ACCENT_BAR = "#dc2626";
+const AFTER_ACCENT_BAR = "#16a34a";
 const DIVIDER_COLOR = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a"; // Black slider
 
-// Helper to calculate responsive headline font size based on text length and available height
-const calculateHeadlineFontSize = (text: string, cardHeight: number, cardPadding: number, width: number): number => {
-  const baseFontSize = Math.max(84, width * 0.078);
-  const charCount = text.length;
-  const estimatedLines = Math.max(1, Math.ceil(charCount / 28));
-  const lineHeight = 1.2;
-  const tagHeight = 40;
-  const bottomTagsHeight = 60;
-  const availableHeight = cardHeight - 2 * cardPadding - tagHeight - bottomTagsHeight - 40;
-  const maxFontSizeForHeight = availableHeight / (estimatedLines * lineHeight);
-  return Math.min(baseFontSize, Math.max(48, maxFontSizeForHeight));
+// Wraps a single label into lines that fit a max width, using fillTextBox
+// from @remotion/layout-utils. Returns the lines, the resolved fontSize,
+// and whether the text fit. If the text overflowed the line budget, the
+// caller can shrink the fontSize further or rely on a clip path.
+const wrapLabel = (params: {
+  text: string;
+  maxWidth: number;
+  maxLines: number;
+  maxFontSize: number;
+  minFontSize: number;
+  fontWeight: 600 | 700 | 800;
+}): { lines: string[]; fontSize: number; didFit: boolean } => {
+  const { text, maxWidth, maxLines, maxFontSize, minFontSize, fontWeight } =
+    params;
+
+  // fitText gives us the largest font size that fits the FULL string
+  // as a single line; we then try to wrap onto multiple lines via
+  // fillTextBox.add().
+  const fitted = fitText({
+    text,
+    withinWidth: maxWidth,
+    fontFamily: "system-ui, sans-serif",
+    fontWeight: String(fontWeight),
+    maxFontSize,
+    minFontSize,
+  });
+  const fontSize = Math.max(minFontSize, Math.min(maxFontSize, fitted.fontSize));
+
+  const box = fillTextBox({
+    maxBoxWidth: maxWidth,
+    maxLines,
+    fontFamily: "system-ui, sans-serif",
+    fontSize,
+    fontWeight: String(fontWeight),
+    lineHeight: 1.18,
+  });
+
+  // Split on whitespace and feed each word (with a trailing space) into
+  // fillTextBox. Stop early once it overflows the line budget.
+  const tokens = text.split(/(\s+)/); // keep whitespace as separate tokens
+  let didFit = true;
+  const words: string[] = [];
+  for (const tok of tokens) {
+    if (tok.length === 0) continue;
+    const isSpace = /^\s+$/.test(tok);
+    const candidate = isSpace ? words.join("") + tok : words.join("") + tok;
+    const { exceedsBox } = box.add({
+      text: isSpace ? tok : candidate,
+      fontFamily: "system-ui, sans-serif",
+      fontSize,
+      fontWeight: String(fontWeight),
+    });
+    if (exceedsBox) {
+      didFit = false;
+      break;
+    }
+    words.push(tok);
+  }
+
+  // Pull the final lines back out of the box. fillTextBox doesn't expose
+  // a .getLines() so we approximate by greedy line breaks using
+  // measureText at the same font size.
+  const wrapped = greedyWrap(text, maxWidth, fontSize, fontWeight, maxLines);
+
+  return { lines: wrapped.lines, fontSize, didFit: wrapped.didFit };
+};
+
+// Greedy word-wrap with a hard cap on number of lines. Each line is
+// measured with measureText() at the same font family/weight that
+// fitText resolved — so the lines we render in JSX match the lines
+// the layout function expects.
+const greedyWrap = (
+  text: string,
+  maxWidth: number,
+  fontSize: number,
+  fontWeight: 600 | 700 | 800,
+  maxLines: number,
+): { lines: string[]; didFit: boolean } => {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (let i = 0; i < words.length; i++) {
+    const next = current ? `${current} ${words[i]}` : words[i];
+    const { width } = measureText({
+      text: next,
+      fontFamily: "system-ui, sans-serif",
+      fontSize,
+      fontWeight: String(fontWeight),
+    });
+    if (width > maxWidth && current) {
+      lines.push(current);
+      current = words[i];
+      if (lines.length === maxLines) {
+        // Check whether remaining words still fit on this last line.
+        const remaining = words.slice(i).join(" ");
+        const { width: remW } = measureText({
+          text: remaining,
+          fontFamily: "system-ui, sans-serif",
+          fontSize,
+          fontWeight: String(fontWeight),
+        });
+        if (remW > maxWidth) {
+          return { lines, didFit: false };
+        }
+        return { lines: [...lines, remaining], didFit: true };
+      }
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return { lines, didFit: lines.length <= maxLines };
 };
 
 export const BeforeAfter: React.FC<BeforeAfterProps> = ({
@@ -161,16 +265,112 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const tagFontSize = Math.max(14, width * 0.013);
   const tagPaddingX = Math.max(12, width * 0.011);
   const tagPaddingY = Math.max(6, height * 0.003);
-  const itemFontSize = Math.max(16, width * 0.015);
-  const itemPaddingX = Math.max(16, width * 0.015);
-  const itemPaddingY = Math.max(8, height * 0.004);
   const cardBorderRadius = Math.max(16, width * 0.022);
-  const dividerBorderRadius = Math.max(8, width * 0.011);
   const cardPadding = Math.max(32, width * 0.03);
 
-  // Calculate headline font sizes per label to fit in card
-  const beforeHeadlineFontSize = calculateHeadlineFontSize(beforeLabel, cardHeight, cardPadding, width);
-  const afterHeadlineFontSize = calculateHeadlineFontSize(afterLabel, cardHeight, cardPadding, width);
+  // ============================================
+  // Headline sizing — uses measureText + fitText + fillTextBox
+  // (per .agents/skills/remotion-markup/measuring-text.md)
+  // ============================================
+  //
+  // The headline must:
+  //   1. Fit horizontally inside the card's content width.
+  //   2. Wrap onto at most 2 lines (any more and the card gets cramped).
+  //   3. Stay readable on a 1080×1920 phone screen (>= 48px).
+  //
+  // We use fitText() to find the maximum font size that satisfies #1
+  // and #2, capped by the card's own height budget so the headline
+  // doesn't push the tag/footer off-screen. We also store the wrapped
+  // lines so JSX can render the exact same lines the layout function
+  // computed (otherwise the text might wrap differently at render
+  // time and overflow).
+
+  const headlineMaxFontSize = Math.max(96, width * 0.085);
+  const headlineMinFontSize = 48;
+  const headlineMaxLines = 2;
+
+  // The card's headline column is the card width minus 2× padding, then
+  // minus a small safety margin so very long words ("Lease-Back") can
+  // still break gracefully.
+  const headlineMaxWidth = cardWidth - 2 * cardPadding - 8;
+
+  // Cap the headline height so the tag on top and the items row on the
+  // bottom never get pushed off-screen. We use 60% of the card height
+  // for the headline block.
+  const headlineHeightBudget = Math.max(120, cardHeight * 0.6);
+
+  const beforeHeadline = useMemo(
+    () =>
+      wrapLabel({
+        text: beforeLabel,
+        maxWidth: headlineMaxWidth,
+        maxLines: headlineMaxLines,
+        maxFontSize: headlineMaxFontSize,
+        minFontSize: headlineMinFontSize,
+        fontWeight: 800,
+      }),
+    [
+      beforeLabel,
+      headlineMaxWidth,
+      headlineMaxLines,
+      headlineMaxFontSize,
+      headlineMinFontSize,
+    ],
+  );
+
+  const afterHeadline = useMemo(
+    () =>
+      wrapLabel({
+        text: afterLabel,
+        maxWidth: headlineMaxWidth,
+        maxLines: headlineMaxLines,
+        maxFontSize: headlineMaxFontSize,
+        minFontSize: headlineMinFontSize,
+        fontWeight: 800,
+      }),
+    [
+      afterLabel,
+      headlineMaxWidth,
+      headlineMaxLines,
+      headlineMaxFontSize,
+      headlineMinFontSize,
+    ],
+  );
+
+  // Final font size: respect fitText's fit, but never exceed the height
+  // budget. We recompute it once per render so useMemo is the only
+  // place that runs the layout function repeatedly.
+  const resolveFinalFontSize = (
+    fitted: { fontSize: number; lines: string[]; didFit: boolean },
+  ): number => {
+    // If wrapping didn't fit in the line budget, drop the font size
+    // until the longest line fits the width (this matches what
+    // fitText does internally for width, but we also enforce a height
+    // budget).
+    let size = fitted.fontSize;
+    const lineHeight = 1.18;
+    while (size > headlineMinFontSize) {
+      const longest = fitted.lines.reduce(
+        (a, b) => (a.length >= b.length ? a : b),
+        "",
+      );
+      const { width: lw } = measureText({
+        text: longest,
+        fontFamily: "system-ui, sans-serif",
+        fontSize: size,
+        fontWeight: "800",
+      });
+      const totalHeight = fitted.lines.length * size * lineHeight;
+      if (lw <= headlineMaxWidth && totalHeight <= headlineHeightBudget) {
+        break;
+      }
+      size = Math.max(headlineMinFontSize, size - 4);
+    }
+    return size;
+  };
+
+  const beforeHeadlineFontSize = resolveFinalFontSize(beforeHeadline);
+  const afterHeadlineFontSize = resolveFinalFontSize(afterHeadline);
 
   // Shimmer position calculation (0-100% top position, loops)
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -288,12 +488,38 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           }}
           aria-label={`Before: ${beforeLabel}`}
         >
+          {/* Top accent bar — red for BEFORE */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 6,
+              background: `linear-gradient(90deg, ${BEFORE_ACCENT_BAR}, #f87171)`,
+              borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
+            }}
+          />
+          {/* Vertical accent strip on the left edge */}
+          <div
+            style={{
+              position: "absolute",
+              top: 12,
+              bottom: 12,
+              left: 0,
+              width: 4,
+              borderRadius: "0 4px 4px 0",
+              background: BEFORE_ACCENT_BAR,
+              opacity: 0.85,
+            }}
+          />
+
           {/* BEFORE tag - elevated card */}
           <div
             style={{
               position: "absolute",
-              top: tagPaddingY,
-              left: tagPaddingX,
+              top: tagPaddingY + 8,
+              left: tagPaddingX + 8,
               fontSize: tagFontSize,
               fontWeight: 700,
               color: BEFORE_TAG_COLOR,
@@ -311,30 +537,47 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             BEFORE
           </div>
 
+          {/*
+            Headline — wrapped lines from wrapLabel(). Uses the exact
+            fontSize that fitText() / measureText() resolved, so the
+            text never overflows the card.
+          */}
           <div
             style={{
               fontSize: beforeHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.2,
-              letterSpacing: -1,
+              lineHeight: 1.18,
+              letterSpacing: -1.5,
               wordBreak: "break-word",
               overflowWrap: "anywhere",
               maxWidth: "100%",
               flex: "1 1 auto",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 4,
             }}
           >
-            {beforeLabel}
+            {beforeHeadline.lines.map((line, i) => (
+              <span
+                key={i}
+                style={{
+                  display: "block",
+                  maxWidth: "100%",
+                }}
+              >
+                {line}
+              </span>
+            ))}
           </div>
 
           {/* Decorative elements for "before" state - elevated cards */}
           <div
             style={{
-              marginTop: 40,
+              marginTop: 24,
               display: "flex",
               gap: 12,
               flexWrap: "wrap",
@@ -346,14 +589,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               <div
                 key={i}
                 style={{
-                  fontSize: itemFontSize,
+                  fontSize: tagFontSize + 2,
                   fontWeight: 600,
-                  color: BEFORE_ITEM_COLOR,
+                  color: BEFORE_TAG_COLOR,
                   fontFamily: "system-ui, sans-serif",
-                  backgroundColor: BEFORE_ITEM_BG,
-                  border: `1px solid ${BEFORE_ITEM_BORDER}`,
-                  padding: `${itemPaddingY}px ${itemPaddingX}px`,
-                  borderRadius: 20,
+                  backgroundColor: BEFORE_TAG_BG,
+                  border: `1px solid ${BEFORE_TAG_BORDER}`,
+                  padding: `${tagPaddingY}px ${tagPaddingX + 4}px`,
+                  borderRadius: 999,
                   boxShadow: "0 2px 8px rgba(220, 38, 38, 0.1)",
                 }}
               >
@@ -456,12 +699,38 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           }}
           aria-label={`After: ${afterLabel}`}
         >
+          {/* Top accent bar — green for AFTER */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 6,
+              background: `linear-gradient(90deg, ${AFTER_ACCENT_BAR}, #4ade80)`,
+              borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
+            }}
+          />
+          {/* Vertical accent strip on the right edge */}
+          <div
+            style={{
+              position: "absolute",
+              top: 12,
+              bottom: 12,
+              right: 0,
+              width: 4,
+              borderRadius: "4px 0 0 4px",
+              background: AFTER_ACCENT_BAR,
+              opacity: 0.85,
+            }}
+          />
+
           {/* AFTER tag - elevated card */}
           <div
             style={{
               position: "absolute",
-              top: tagPaddingY,
-              right: tagPaddingX,
+              top: tagPaddingY + 8,
+              right: tagPaddingX + 8,
               fontSize: tagFontSize,
               fontWeight: 700,
               color: AFTER_TAG_COLOR,
@@ -472,37 +741,53 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               border: `1px solid ${AFTER_TAG_BORDER}`,
               padding: `${tagPaddingY}px ${tagPaddingX}px`,
               borderRadius: 4,
-              boxShadow: "0 2px 8px rgba(232, 108, 0, 0.15)",
+              boxShadow: "0 2px 8px rgba(22, 163, 74, 0.15)",
             }}
             role="label"
           >
             AFTER
           </div>
 
+          {/*
+            Headline — wrapped lines from wrapLabel(). Uses the exact
+            fontSize that fitText() / measureText() resolved.
+          */}
           <div
             style={{
               fontSize: afterHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
               fontFamily: "system-ui, sans-serif",
-              lineHeight: 1.2,
-              letterSpacing: -1,
+              lineHeight: 1.18,
+              letterSpacing: -1.5,
               wordBreak: "break-word",
               overflowWrap: "anywhere",
               maxWidth: "100%",
               flex: "1 1 auto",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 4,
             }}
           >
-            {afterLabel}
+            {afterHeadline.lines.map((line, i) => (
+              <span
+                key={i}
+                style={{
+                  display: "block",
+                  maxWidth: "100%",
+                }}
+              >
+                {line}
+              </span>
+            ))}
           </div>
 
           {/* Decorative elements for "after" state - elevated cards */}
           <div
             style={{
-              marginTop: 40,
+              marginTop: 24,
               display: "flex",
               gap: 12,
               flexWrap: "wrap",
@@ -514,14 +799,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               <div
                 key={i}
                 style={{
-                  fontSize: itemFontSize,
+                  fontSize: tagFontSize + 2,
                   fontWeight: 600,
-                  color: AFTER_ITEM_COLOR,
+                  color: AFTER_TAG_COLOR,
                   fontFamily: "system-ui, sans-serif",
-                  backgroundColor: AFTER_ITEM_BG,
-                  border: `1px solid ${AFTER_ITEM_BORDER}`,
-                  padding: `${itemPaddingY}px ${itemPaddingX}px`,
-                  borderRadius: 20,
+                  backgroundColor: AFTER_TAG_BG,
+                  border: `1px solid ${AFTER_TAG_BORDER}`,
+                  padding: `${tagPaddingY}px ${tagPaddingX + 4}px`,
+                  borderRadius: 999,
                   boxShadow: "0 2px 8px rgba(22, 163, 74, 0.1)",
                 }}
               >

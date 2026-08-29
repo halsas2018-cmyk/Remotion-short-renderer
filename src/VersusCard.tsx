@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   Composition,
@@ -7,6 +7,10 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import {
+  fitText,
+  measureText,
+} from "@remotion/layout-utils";
 
 interface VersusSide {
   label: string;
@@ -27,18 +31,58 @@ interface VersusCardProps {
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const easeInOut = Easing.bezier(0.65, 0, 0.35, 1);
 const ACCENT_COLOR = "#e86c00";
-const ACCENT_LIGHT = "#fff4ed";
-const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#525252";
-const LIGHT_TEXT = "#a3a3a3";
-const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
-const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
-const DIVIDER_COLOR = ACCENT_COLOR;
+const ACCENT_LIGHT = "#f97316";
+const ACCENT_DEEP = "#c2410c";
+const DARK_TEXT = "#0f172a";
+const MEDIUM_TEXT = "#475569";
+const LIGHT_TEXT = "#94a3b8";
+const CARD_SHADOW = "0 16px 48px rgba(15, 23, 42, 0.12), 0 6px 16px rgba(15, 23, 42, 0.06)";
 const CARD_BG = "white";
-const CARD_BORDER = "#e8e8e8";
-const SLIDER_COLOR = "#1a1a1a";
-const DIVIDER_BG = "#fff7ed";
+const CARD_BORDER = "#e2e8f0";
+const DIVIDER_COLOR = ACCENT_COLOR;
+const SLIDER_COLOR = "#0f172a";
+const DIVIDER_BG = "linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%)";
+const LEFT_GLOW = "radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.10) 0%, transparent 60%)";
+const RIGHT_GLOW = "radial-gradient(ellipse at 50% 0%, rgba(232, 108, 0, 0.12) 0%, transparent 60%)";
+const GRID_BG = "repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.03) 0, rgba(15, 23, 42, 0.03) 1px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.03) 0, rgba(15, 23, 42, 0.03) 1px, transparent 1px, transparent 32px)";
+
+// Resolves a font size for `text` so it fits within `maxWidth` at the
+// given font weight, capped between minFontSize and maxFontSize.
+// (See .agents/skills/remotion-markup/measuring-text.md)
+const resolveFittedSize = (
+  text: string,
+  maxWidth: number,
+  maxFontSize: number,
+  minFontSize: number,
+  fontWeight: 600 | 700 | 800,
+): number => {
+  if (!text) return minFontSize;
+  const fitted = fitText({
+    text,
+    withinWidth: maxWidth,
+    fontFamily: "system-ui, sans-serif",
+    fontWeight: String(fontWeight),
+    maxFontSize,
+    minFontSize,
+  });
+  // Guard against fitText picking a font size that wraps the text by
+  // also running a width check via measureText. If the fitted size
+  // would still overflow, drop it 4px at a time.
+  let size = Math.max(minFontSize, Math.min(maxFontSize, fitted.fontSize));
+  while (size > minFontSize) {
+    const { width } = measureText({
+      text,
+      fontFamily: "system-ui, sans-serif",
+      fontSize: size,
+      fontWeight: String(fontWeight),
+    });
+    if (width <= maxWidth) break;
+    size = Math.max(minFontSize, size - 4);
+  }
+  return size;
+};
 
 export const VersusCard: React.FC<VersusCardProps> = ({
   left,
@@ -89,7 +133,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     extrapolateRight: "clamp",
   });
   const dividerProgress = interpolate(frame, [dividerStart, dividerStart + dividerDuration], [0, 1], {
-    easing: easeOutExpo,
+    easing: easeInOut,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -103,19 +147,20 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const isIdle = frame > entranceEndFrame;
   const idleTimeSeconds = isIdle ? (frame - entranceEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
+  const idleVS = isIdle ? 1 + 0.04 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.6) : 1;
 
   // Shimmer timing — starts after each card's entrance completes
   const leftShimmerStart = leftStart + sideDuration;
   const rightShimmerStart = rightStart + sideDuration;
-  const shimmerSpeed = 25; // % per second
+  const shimmerSpeed = 22; // % per second
 
   // Responsive sizing
   const padding = Math.max(80, width * 0.11);
   const availableWidth = width - 2 * padding;
-  const dividerWidth = Math.max(72, width * 0.065);
+  const dividerWidth = Math.max(96, width * 0.085);
   const cardGap = Math.max(20, width * 0.018);
   const cardWidth = (availableWidth - dividerWidth - 2 * cardGap) / 2;
-  const cardHeight = Math.min(520, height * 0.48);
+  const cardHeight = Math.min(560, height * 0.52);
 
   // Container dimensions (for slider)
   const containerWidth = availableWidth;
@@ -123,16 +168,49 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const sliderPadding = 24;
   const sliderWidth = containerWidth + 2 * sliderPadding;
   const sliderHeight = containerHeight + 2 * sliderPadding;
-  const sliderBorderRadius = Math.max(28, width * 0.026);
+  const sliderBorderRadius = Math.max(32, width * 0.03);
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  // Responsive font sizes (following video-layout.md minimums)
-  const labelFontSize = Math.max(36, width * 0.033);
-  const valueFontSize = Math.max(56, width * 0.052);
-  const itemFontSize = Math.max(18, width * 0.017);
-  const cardBorderRadius = Math.max(20, width * 0.0185);
-  const dividerBorderRadius = Math.max(10, width * 0.009);
-  const cardPadding = Math.max(40, width * 0.037);
+  // ============================================
+  // Fitted font sizes — using measureText / fitText
+  // (per .agents/skills/remotion-markup/measuring-text.md)
+  // ============================================
+  const cardPadding = Math.max(36, width * 0.034);
+  const headlineMaxWidth = cardWidth - 2 * cardPadding - 8;
+  const valueMaxWidth = headlineMaxWidth;
+
+  const labelMaxFontSize = Math.max(40, width * 0.036);
+  const labelMinFontSize = 28;
+  const valueMaxFontSize = Math.max(60, width * 0.056);
+  const valueMinFontSize = 36;
+  const itemMaxFontSize = Math.max(20, width * 0.018);
+  const itemMinFontSize = 16;
+
+  const leftLabelSize = useMemo(
+    () => resolveFittedSize(left.label, headlineMaxWidth, labelMaxFontSize, labelMinFontSize, 700),
+    [left.label, headlineMaxWidth, labelMaxFontSize, labelMinFontSize],
+  );
+  const rightLabelSize = useMemo(
+    () => resolveFittedSize(right.label, headlineMaxWidth, labelMaxFontSize, labelMinFontSize, 700),
+    [right.label, headlineMaxWidth, labelMaxFontSize, labelMinFontSize],
+  );
+  const leftValueSize = useMemo(
+    () => resolveFittedSize(left.value ?? "", valueMaxWidth, valueMaxFontSize, valueMinFontSize, 800),
+    [left.value, valueMaxWidth, valueMaxFontSize, valueMinFontSize],
+  );
+  const rightValueSize = useMemo(
+    () => resolveFittedSize(right.value ?? "", valueMaxWidth, valueMaxFontSize, valueMinFontSize, 800),
+    [right.value, valueMaxWidth, valueMaxFontSize, valueMinFontSize],
+  );
+
+  // Static responsive sizes
+  const itemFontSize = itemMaxFontSize;
+  const cardBorderRadius = Math.max(24, width * 0.022);
+  const vsCircleSize = dividerWidth * 0.9;
+  const vsFontSize = Math.max(22, width * 0.022);
+  const tagFontSize = Math.max(11, width * 0.011);
+  const tagPaddingX = Math.max(10, width * 0.01);
+  const tagPaddingY = Math.max(4, height * 0.0025);
 
   // Shimmer position calculation
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -158,6 +236,79 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     { rotate: interpolate(rightProgress, [0, 1], [2, 0]) },
   ];
 
+  // === Card body shared style — extracted so we can keep left/right in sync ===
+  const cardBodyBase: React.CSSProperties = {
+    width: cardWidth,
+    height: cardHeight,
+    borderRadius: cardBorderRadius,
+    backgroundColor: CARD_BG,
+    border: `1.5px solid ${CARD_BORDER}`,
+    display: "flex",
+    flexDirection: "column",
+    padding: cardPadding,
+    boxSizing: "border-box",
+    position: "relative",
+    overflow: "hidden",
+    boxShadow: CARD_SHADOW,
+    willChange: "transform, opacity",
+    flexShrink: 0,
+    backdropFilter: "blur(0.5px)",
+  };
+
+  // === Item row subcomponent (local) — uniform row with leading dot ===
+  const renderItems = (
+    items: string[] | undefined,
+    color: string,
+    bg: string,
+    border: string,
+  ) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          width: "100%",
+          marginTop: "auto",
+          paddingTop: 16,
+          borderTop: `1px dashed ${CARD_BORDER}`,
+        }}
+      >
+        {items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: itemFontSize,
+              fontWeight: 500,
+              color: MEDIUM_TEXT,
+              fontFamily: "system-ui, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: `${tagPaddingY + 4}px ${tagPaddingX + 4}px`,
+              backgroundColor: bg,
+              borderRadius: 12,
+              border: `1px solid ${border}`,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: color,
+                boxShadow: `0 0 8px ${color}`,
+                flexShrink: 0,
+              }}
+            />
+            {item}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <AbsoluteFill
       style={{
@@ -177,7 +328,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
           height: sliderHeight,
           pointerEvents: "none",
           opacity: sliderProgress,
-          filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
+          filter: "drop-shadow(0 0 24px rgba(15, 23, 42, 0.18))",
         }}
       >
         <svg
@@ -224,116 +375,106 @@ export const VersusCard: React.FC<VersusCardProps> = ({
           gap: cardGap,
         }}
       >
-        {/* Left Card */}
+        {/* === Left Card === */}
         <article
           style={{
-            width: cardWidth,
-            height: cardHeight,
-            borderRadius: cardBorderRadius,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-            padding: cardPadding,
-            boxSizing: "border-box",
-            position: "relative",
-            overflow: "hidden",
+            ...cardBodyBase,
+            backgroundImage: `${LEFT_GLOW}, ${GRID_BG}`,
             transformOrigin: "center right",
             transform: leftTransform,
             opacity: leftProgress,
-            boxShadow: CARD_SHADOW,
-            willChange: "transform, opacity",
-            flexShrink: 0,
           }}
         >
-          {/* Accent top bar */}
+          {/* Accent top bar (cool, indigo) */}
           <div
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              height: 4,
-              background: `linear-gradient(90deg, ${ACCENT_COLOR}, #f97316)`,
+              height: 5,
+              background:
+                "linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #c7d2fe 100%)",
               borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
             }}
           />
+          {/* Corner accent — top-left ribbon */}
+          <div
+            style={{
+              position: "absolute",
+              top: 18,
+              left: 18,
+              fontSize: tagFontSize,
+              fontWeight: 800,
+              color: "#4338ca",
+              fontFamily: "system-ui, sans-serif",
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              backgroundColor: "rgba(99, 102, 241, 0.10)",
+              border: "1px solid rgba(99, 102, 241, 0.20)",
+              padding: `${tagPaddingY}px ${tagPaddingX}px`,
+              borderRadius: 999,
+            }}
+          >
+            Option A
+          </div>
 
           <div
             style={{
-              fontSize: labelFontSize,
-              fontWeight: 700,
-              color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              marginBottom: 12,
-              letterSpacing: -0.5,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              gap: 8,
+              flex: "1 1 auto",
+              minHeight: 0,
+              marginTop: 28,
             }}
           >
-            {left.label}
-          </div>
-          {left.value && (
             <div
               style={{
-                fontSize: valueFontSize,
-                fontWeight: 800,
-                color: ACCENT_COLOR,
+                fontSize: leftLabelSize,
+                fontWeight: 700,
+                color: DARK_TEXT,
                 fontFamily: "system-ui, sans-serif",
-                lineHeight: 1.15,
-                marginBottom: left.items ? 24 : 0,
-                letterSpacing: -1,
+                letterSpacing: -0.8,
+                lineHeight: 1.1,
+                maxWidth: "100%",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
               }}
             >
-              {left.value}
+              {left.label}
             </div>
-          )}
-          {left.items && left.items.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                width: "100%",
-                marginTop: "auto",
-                paddingTop: 20,
-                borderTop: `1px solid ${CARD_BORDER}`,
-              }}
-            >
-              {left.items.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: itemFontSize,
-                    fontWeight: 500,
-                    color: MEDIUM_TEXT,
-                    fontFamily: "system-ui, sans-serif",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 14px",
-                    backgroundColor: "#fafafa",
-                    borderRadius: 12,
-                    border: `1px solid ${CARD_BORDER}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor: ACCENT_COLOR,
-                      flexShrink: 0,
-                    }}
-                  />
-                  {item}
-                </div>
-              ))}
-            </div>
+            {left.value && (
+              <div
+                style={{
+                  fontSize: leftValueSize,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1.1,
+                  letterSpacing: -1.5,
+                  maxWidth: "100%",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  textShadow: "0 2px 12px rgba(232, 108, 0, 0.18)",
+                }}
+              >
+                {left.value}
+              </div>
+            )}
+          </div>
+
+          {renderItems(
+            left.items,
+            "#6366f1",
+            "rgba(99, 102, 241, 0.06)",
+            "rgba(99, 102, 241, 0.18)",
           )}
 
-          {/* Shimmer animation - starts after card entrance */}
+          {/* Shimmer animation - light orange sliding from top to bottom */}
           <div
             style={{
               position: "absolute",
@@ -349,163 +490,182 @@ export const VersusCard: React.FC<VersusCardProps> = ({
           />
         </article>
 
-        {/* Center Divider */}
+        {/* === Center VS Badge === */}
         <div
           style={{
             width: dividerWidth,
-            height: dividerWidth,
-            borderRadius: "50%",
-            backgroundColor: DIVIDER_BG,
-            border: `3px solid ${DIVIDER_COLOR}`,
             display: "flex",
-            justifyContent: "center",
+            flexDirection: "column",
             alignItems: "center",
-            transformOrigin: "center",
-            transform: [
-              { scale: dividerProgress * idlePulse },
-            ],
-            opacity: dividerProgress,
+            justifyContent: "center",
             flexShrink: 0,
-            boxShadow: `0 0 0 ${interpolate(dividerProgress, [0, 1], [8, 0])}px ${ACCENT_COLOR}20`,
-            willChange: "transform, opacity, box-shadow",
+            opacity: dividerProgress,
+            transform: [
+              { scale: interpolate(dividerProgress, [0, 1], [0.6, 1]) * idleVS },
+            ],
+            transformOrigin: "center",
+            willChange: "transform, opacity",
           }}
         >
-          <span
-            style={{
-              fontSize: Math.max(20, width * 0.0185),
-              fontWeight: 900,
-              color: DIVIDER_COLOR,
-              fontFamily: "system-ui, sans-serif",
-              letterSpacing: 1,
-            }}
-          >
-            VS
-          </span>
-          {/* Moving shimmer - runs during idle */}
+          {/* Vertical guide line above the badge */}
           <div
             style={{
-              position: "absolute",
-              top: isIdle ? `${(idleTimeSeconds * shimmerSpeed) % 100}%` : "-100%",
-              left: 0,
-              width: "100%",
-              height: "15%",
-              background: `linear-gradient(180deg, transparent, ${DIVIDER_COLOR}44, transparent)`,
-              opacity: dividerProgress,
+              width: 2,
+              height: Math.max(60, height * 0.04),
+              background: `linear-gradient(180deg, transparent 0%, ${DIVIDER_COLOR}80 100%)`,
+              marginBottom: -2,
+              borderRadius: 2,
+            }}
+          />
+          <div
+            style={{
+              width: vsCircleSize,
+              height: vsCircleSize,
               borderRadius: "50%",
+              background: DIVIDER_BG,
+              border: `3px solid ${DIVIDER_COLOR}`,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              position: "relative",
+              boxShadow: `0 0 0 ${interpolate(dividerProgress, [0, 1], [0, 10])}px rgba(232, 108, 0, 0.18), 0 8px 24px rgba(232, 108, 0, 0.25)`,
+              willChange: "box-shadow, transform",
+            }}
+          >
+            <span
+              style={{
+                fontSize: vsFontSize,
+                fontWeight: 900,
+                color: ACCENT_DEEP,
+                fontFamily: "system-ui, sans-serif",
+                letterSpacing: 1.5,
+                textShadow: "0 1px 2px rgba(255, 255, 255, 0.6)",
+              }}
+            >
+              VS
+            </span>
+            {/* Inner ring */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 6,
+                borderRadius: "50%",
+                border: `1px dashed ${ACCENT_COLOR}66`,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+          {/* Vertical guide line below the badge */}
+          <div
+            style={{
+              width: 2,
+              height: Math.max(60, height * 0.04),
+              background: `linear-gradient(0deg, transparent 0%, ${DIVIDER_COLOR}80 100%)`,
+              marginTop: -2,
+              borderRadius: 2,
             }}
           />
         </div>
 
-        {/* Right Card */}
+        {/* === Right Card === */}
         <article
           style={{
-            width: cardWidth,
-            height: cardHeight,
-            borderRadius: cardBorderRadius,
-            backgroundColor: CARD_BG,
-            border: `2px solid ${CARD_BORDER}`,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-            padding: cardPadding,
-            boxSizing: "border-box",
-            position: "relative",
-            overflow: "hidden",
+            ...cardBodyBase,
+            backgroundImage: `${RIGHT_GLOW}, ${GRID_BG}`,
             transformOrigin: "center left",
             transform: rightTransform,
             opacity: rightProgress,
-            boxShadow: CARD_SHADOW,
-            willChange: "transform, opacity",
-            flexShrink: 0,
           }}
         >
-          {/* Accent top bar */}
+          {/* Accent top bar (warm, orange) */}
           <div
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              height: 4,
-              background: `linear-gradient(90deg, #f97316, ${ACCENT_COLOR})`,
+              height: 5,
+              background: `linear-gradient(90deg, #fed7aa 0%, ${ACCENT_LIGHT} 50%, ${ACCENT_COLOR} 100%)`,
               borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
             }}
           />
+          {/* Corner accent — top-right ribbon */}
+          <div
+            style={{
+              position: "absolute",
+              top: 18,
+              right: 18,
+              fontSize: tagFontSize,
+              fontWeight: 800,
+              color: ACCENT_DEEP,
+              fontFamily: "system-ui, sans-serif",
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              backgroundColor: "rgba(232, 108, 0, 0.10)",
+              border: "1px solid rgba(232, 108, 0, 0.20)",
+              padding: `${tagPaddingY}px ${tagPaddingX}px`,
+              borderRadius: 999,
+            }}
+          >
+            Option B
+          </div>
 
           <div
             style={{
-              fontSize: labelFontSize,
-              fontWeight: 700,
-              color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
-              marginBottom: 12,
-              letterSpacing: -0.5,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              gap: 8,
+              flex: "1 1 auto",
+              minHeight: 0,
+              marginTop: 28,
             }}
           >
-            {right.label}
-          </div>
-          {right.value && (
             <div
               style={{
-                fontSize: valueFontSize,
-                fontWeight: 800,
-                color: ACCENT_COLOR,
+                fontSize: rightLabelSize,
+                fontWeight: 700,
+                color: DARK_TEXT,
                 fontFamily: "system-ui, sans-serif",
-                lineHeight: 1.15,
-                marginBottom: right.items ? 24 : 0,
-                letterSpacing: -1,
+                letterSpacing: -0.8,
+                lineHeight: 1.1,
+                maxWidth: "100%",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
               }}
             >
-              {right.value}
+              {right.label}
             </div>
-          )}
-          {right.items && right.items.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                width: "100%",
-                marginTop: "auto",
-                paddingTop: 20,
-                borderTop: `1px solid ${CARD_BORDER}`,
-              }}
-            >
-              {right.items.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: itemFontSize,
-                    fontWeight: 500,
-                    color: MEDIUM_TEXT,
-                    fontFamily: "system-ui, sans-serif",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 14px",
-                    backgroundColor: "#fafafa",
-                    borderRadius: 12,
-                    border: `1px solid ${CARD_BORDER}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor: ACCENT_COLOR,
-                      flexShrink: 0,
-                    }}
-                  />
-                  {item}
-                </div>
-              ))}
-            </div>
+            {right.value && (
+              <div
+                style={{
+                  fontSize: rightValueSize,
+                  fontWeight: 800,
+                  color: ACCENT_COLOR,
+                  fontFamily: "system-ui, sans-serif",
+                  lineHeight: 1.1,
+                  letterSpacing: -1.5,
+                  maxWidth: "100%",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  textShadow: "0 2px 12px rgba(232, 108, 0, 0.18)",
+                }}
+              >
+                {right.value}
+              </div>
+            )}
+          </div>
+
+          {renderItems(
+            right.items,
+            ACCENT_COLOR,
+            "rgba(232, 108, 0, 0.06)",
+            "rgba(232, 108, 0, 0.18)",
           )}
 
-          {/* Shimmer animation - starts after card entrance */}
+          {/* Shimmer animation - light orange sliding from top to bottom */}
           <div
             style={{
               position: "absolute",

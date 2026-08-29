@@ -20,7 +20,8 @@ export type BeatType =
   | "map_location"
   | "map_3d"
   | "process_flow"
-  | "quote_card";
+  | "quote_card"
+  | "headline_card";
 
 /* ------------------------------------------------------------------ */
 /*  Beat — runtime shape of a single beat.                            */

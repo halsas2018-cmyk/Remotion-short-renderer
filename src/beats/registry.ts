@@ -11,6 +11,7 @@ import { Timeline } from "../Timeline";
 import { VersusCard } from "../VersusCard";
 import { BeforeAfter } from "../BeforeAfter";
 import { Map3D } from "../Map3D";
+import { HeadlineCard } from "../HeadlineCard";
 import { BeatType } from "./types";
 
 /* ------------------------------------------------------------------ */
@@ -127,6 +128,17 @@ const quoteCardMetadata = z.object({
   author: z.string().optional(),
 });
 
+const headlineCardMetadata = z.object({
+  ...beatBase,
+  emphasisWords: emphasisWordsSchema,
+  // All colour fields are optional; HeadlineCard falls back to its
+  // built-in palette (#0b0b0f bg, #f97316 accent, #ffffff text) so
+  // beats emitted by the Python pipeline can omit them.
+  backgroundColor: z.string().optional(),
+  accentColor: z.string().optional(),
+  textColor: z.string().optional(),
+});
+
 /* ------------------------------------------------------------------ */
 /*  Registry entry shape                                              */
 /* ------------------------------------------------------------------ */
@@ -201,6 +213,10 @@ const registry: Record<BeatType, RegistryEntry | null> = {
   quote_card: {
     component: KeyStatement,
     beatSchema: quoteCardMetadata,
+  },
+  headline_card: {
+    component: HeadlineCard,
+    beatSchema: headlineCardMetadata,
   },
 };
 

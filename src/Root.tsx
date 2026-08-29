@@ -1,6 +1,7 @@
 import React from "react";
 import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsVideo";
+import { HeadlineCard, HeadlineCardSchema } from "./HeadlineCard";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
 
@@ -121,6 +122,23 @@ export const renderDataCalculateMetadata: CalculateMetadataFunction<
   };
 };
 
+/* ------------------------------------------------------------------ */
+/*  HeadlineCard test composition                                      */
+/*                                                                     */
+/*  Single-beat composition for visual QA of the new component.       */
+/*  Reuses HeadlineCard's own Zod schema so defaultProps is the       */
+/*  source of truth for valid props.                                   */
+/* ------------------------------------------------------------------ */
+
+const HeadlineCardTestComposition: React.FC = () => {
+  return (
+    <HeadlineCard
+      text="Apple just became the first $4 trillion company in history"
+      emphasisWords={["first", "$4 trillion"]}
+    />
+  );
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -140,6 +158,22 @@ export const RemotionRoot: React.FC = () => {
           },
           words: [],
           narrationSrc: PUBLIC_NARRATION_URL,
+        }}
+      />
+      <Composition
+        id="HeadlineCardTest"
+        component={HeadlineCardTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
+        schema={HeadlineCardSchema}
+        defaultProps={{
+          text: "Apple just became the first $4 trillion company in history",
+          emphasisWords: ["first", "$4 trillion"],
+          backgroundColor: "#0b0b0f",
+          accentColor: "#f97316",
+          textColor: "#ffffff",
         }}
       />
     </>

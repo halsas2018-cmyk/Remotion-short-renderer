@@ -77,6 +77,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - `adaptMetadata` (Python shape → component shape)
 - **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE (commit a73dd19)
 - **Horizon 0.2 — Per-beat Zod validation in `src/beats/types.ts`** — ✅ DONE
+- **Horizon 0.3 — Per-word dedupe via `src/beats/words.ts::dedupeOverlappingWords`** — ✅ DONE
 
 ---
 
@@ -95,10 +96,10 @@ The render pipeline is now functioning but fragile. Lock in stability before add
 - `Root.tsx::renderDataCalculateMetadata` now imports `TimedBeatsSchema` from `src/beats/types.ts` and `validateBeatMetadata` from `src/beats/registry.ts` (via `getBeatSchemas`). Top-level Zod failure throws with the first issue's path + message.
 - `scripts/render-smoke.sh` still passes (`OK: smoke render produced 46314-byte PNG …`).
 
-### 0.3 Validate `timestamps.json` schema + dedupe — TODO
-- `WordSchema` was added in 1.1. 0.3 adds a `superRefine` that flags and drops overlapping words (WhisperX sometimes produces them) and zero-duration words (start === end), since both cause the kinetic-caption highlight to flicker.
-- A `console.warn` line lists how many words were dropped, so the user knows the Python pipeline produced bad timestamps.
-- Schema side lives in `src/beats/types.ts::WordListSchema` (already a `z.array(WordSchema).nonempty()`); 0.3 extends the `.safeParse` call in `Root.tsx` to run a `superRefine` on the parsed array.
+### 0.3 Validate `timestamps.json` schema + dedupe — ✅ DONE
+- `WordListSchema` (added in 0.1) now feeds into a new pure helper `dedupeOverlappingWords` in `src/beats/words.ts` that drops zero-duration entries (`end <= start`) and overlapping entries (`end <= prevKept.end`). On ties the LATER word is dropped, matching `KineticCaptions::findCurrentWordIndex`.
+- `Root.tsx` calls the helper after Zod parsing and emits a `console.warn` if any words were dropped, pointing the user at the Python pipeline's WhisperX alignment step.
+- `scripts/render-smoke.sh` still passes.
 
 ### 0.4 Add render-time logs around the audio streams — TODO
 - Each `<Audio>` in the orchestrator should emit a one-line `console.log` on mount with the resolved URL, volume, and (for typing clicks) the word's start frame. This makes it trivial to correlate render output with frame ranges when debugging.

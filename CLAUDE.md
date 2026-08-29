@@ -148,9 +148,43 @@ sed -i 's/"icon": "store"/"icon": 42/' public/beats.json
 git checkout public/beats.json
 ```
 
-### 1.3 — Validate per-word shape + dedupe overlapping/zero-duration words — TODO
-- `WordSchema` was added in 1.1. 1.3 adds a `superRefine` that flags and drops overlapping words (WhisperX sometimes produces them) and zero-duration words (start === end), since both cause the kinetic-caption highlight to flicker.
-- A `console.warn` line lists how many words were dropped, so the user knows the Python pipeline produced bad timestamps.
+### 1.3 — Validate per-word shape + dedupe overlapping/zero-duration words — ✅ DONE
+
+**Before this change:** `WordListSchema.safeParse` accepted any array of `{word, start, end}` objects, including ones with `end === start` (zero-duration) or `word[i+1].end <= word[i].end` (overlapping — WhisperX sometimes produces both). Both caused the kinetic-caption highlight to flicker or get stuck on the wrong word because `findCurrentWordIndex` could find two indices for the same local frame.
+
+**After this change:** the parsed `words[]` is run through a new `dedupeOverlappingWords()` helper in `src/beats/words.ts` before being injected into `props.words`. Overlapping and zero-duration entries are dropped. A `console.warn` line lists how many words were dropped so the user knows the Python pipeline produced bad timestamps.
+
+**What changed:**
+- `src/beats/words.ts` (new helper):
+  - `dedupeOverlappingWords(words): { words: Word[]; dropped: number }` — pure function (no side effects). Rule 1: drop if `end <= start`. Rule 2: drop if the previous kept word's `end >= this word's end` (later contained/duplicate entry).
+  - Ties (when `word[i+1].end === word[i].end`): the LATER word is dropped. This matches what `KineticCaptions::findCurrentWordIndex` does anyway (it returns the FIRST matching word), so dropping the later one is the no-op-safe choice.
+- `src/Root.tsx`:
+  - `fetchRenderData` calls `dedupeOverlappingWords(wordsParsed.data as unknown as Word[])` after Zod parsing. If `dropped > 0`, it emits a `console.warn` of the form:
+    ```
+    [MotionGraphicsVideo] public/timestamps.json had N overlapping or zero-duration word(s); dropped them to keep the kinetic captions in sync. Original count: N, cleaned count: M. Check the WhisperX alignment step in the Python pipeline.
+    ```
+- `scripts/render-smoke.sh`: unchanged.
+
+**How to verify:**
+```bash
+./scripts/render-smoke.sh
+# Should print "OK: smoke render produced NNN-byte PNG at out/smoke.png".
+# If the production timestamps.json has WhisperX junk, the warn line
+# will appear above the render line in the studio/render log.
+
+# Negative test: inject a synthetic overlapping + zero-duration word
+# into public/timestamps.json and confirm the warning appears.
+python3 -c '
+import json, copy
+data = json.load(open("public/timestamps.json"))
+# Inject a zero-duration entry at index 10 and an overlap at index 20.
+data.insert(10, {"word": "junk", "start": 5.0, "end": 5.0})
+data[20]["end"] = data[19]["end"]  # make it overlap the previous
+json.dump(data, open("public/timestamps.json.bak", "w"))
+'
+# (use whatever non-destructive copy/edit you prefer; the point is
+# to confirm the warning is logged at render time)
+```
 
 ### 1.4 — Render-time logs around the audio streams — TODO
 - Each `<Audio>` in `MotionGraphicsVideo.tsx` (narration, ambient, whoosh, typing click) prints a one-line `console.log` on mount with the resolved URL, volume, and frame range. Makes render output trivial to correlate with frame ranges when debugging.
@@ -357,7 +391,7 @@ src/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
 │   ├── types.ts                      # Beat type definitions + per-beat Zod schema ✅ DONE
-│   └── words.ts                      # Word timestamp type ✅ DONE
+│   └── words.ts                      # Word timestamp type + dedupeOverlappingWords ✅ DONE
 ├── SceneTransition.tsx               # Per-beat entrance/exit with Easing.bezier ✅ DONE
 ├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
@@ -396,6 +430,7 @@ public/                                # All render data lives here (single-fold
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
 - `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
 - **1.2 update:** `PerBeatSchema` + `TimedBeatsSchema` validate each beat at the top level against the per-type Zod schema in the registry. See Phase 1 (Horizon 0) / 1.2 above.
+- **1.1 / 1.3 update:** `WordSchema` and `WordListSchema` validate the shape of `public/timestamps.json`; the actual dedupe of overlapping/zero-duration entries is in `src/beats/words.ts::dedupeOverlappingWords` (used by `Root.tsx`).
 
 ### Step 2: Component Registry (`src/beats/registry.ts`) — ✅ DONE (commit ffebd7d)
 Maps each `BeatType` to:
@@ -575,6 +610,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 - **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
+- **1.3 update:** the parsed `words[]` is run through `src/beats/words.ts::dedupeOverlappingWords` to drop overlapping / zero-duration entries before being injected into `props.words`. A `console.warn` lists how many were dropped (and that the Python pipeline's WhisperX step is the likely culprit).
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -601,7 +637,7 @@ Per-beat wrapper around `KineticCaptions` that:
 22. **IN PROGRESS — Phase 1 (Horizon 0) Renderer Hardening**
     1. ✅ Replace silent fallback with hard error on missing render data (1.1)
     2. ✅ Validate per-beat `metadata` shape with Zod (1.2)
-    3. ⏳ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
+    3. ✅ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
     4. ⏳ Render-time logs around the audio streams (1.4)
     5. ⏳ Cache the last-render composition hash (1.5)
 23. **DEFERRED until laptop/GPU available (Mode B)**
@@ -635,7 +671,8 @@ Per-beat wrapper around `KineticCaptions` that:
 22. **BeforeAfter visual language** — Red BEFORE / green AFTER color system, decorative tag pills (Legacy/Manual/Slow/Costly vs Modern/Automated/Fast/Efficient), top accent bars + side vertical strips, slider border that draws around the whole card group.
 23. **Hard-error fetch for render data (1.1)** — `Root.tsx::renderDataCalculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures, instead of silently falling back to a 1-frame video. The error message includes `[MotionGraphicsVideo]` and identifies either the filename + HTTP status, the JSON parse error, or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) is the only benign case and still returns `null`. A new `scripts/render-smoke.sh` exercises the full render path and asserts the output is non-trivial in size.
 24. **Per-beat Zod validation (1.2)** — `src/beats/types.ts::PerBeatSchema` uses `z.object(beatBaseShape).passthrough().superRefine(...)` to dispatch each beat to its per-type Zod schema in `src/beats/registry.ts` and forward the underlying Zod issues into the parent validation context. This preserves the original field path so the user-facing error reads `beats[1].icon: Invalid input` rather than `beats.1.metadata: [opaque message]`. **The `.passthrough()` is load-bearing** — without it, Zod strips unknown keys before the per-type schema sees them, and per-type fields (`icon`, `left`, `right`, `events`, `steps`, `points`, `items`, `beforeLabel`, `afterLabel`, `locationName`, `latitude`, `longitude`, `buildings`, `quote`, `author`) are silently missing.
-25. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
+25. **Per-word dedupe (1.3)** — `src/beats/words.ts::dedupeOverlappingWords` is a pure helper that drops WhisperX junk (zero-duration + overlapping entries) so the kinetic-caption highlight doesn't flicker or get stuck. `Root.tsx` calls it after `WordListSchema.safeParse` and logs a `console.warn` if any words were dropped, pointing the user at the Python pipeline's WhisperX alignment step. The dedupe rules are: (1) drop if `end <= start`; (2) drop if `end <= prevKept.end` (the later word is contained/duplicate of the previous kept one). On ties the LATER word is dropped, matching what `KineticCaptions::findCurrentWordIndex` does anyway (returns the first match). Logging lives in the caller so the helper stays pure and easy to unit test.
+26. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
 
 ### Real `beats.json` Example (current reference)
 ```json

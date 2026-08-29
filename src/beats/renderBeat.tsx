@@ -239,3 +239,14 @@ export const sliceWordsForBeat = (
     (w) => w.start >= startSec - 0.001 && w.start < endSec,
   );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Re-export the captions gate from the orchestrator's perspective   */
+/*                                                                     */
+/*  The orchestrator (MotionGraphicsVideo) imports this and calls     */
+/*  it per-beat to decide whether to mount <BeatKineticCaptions>.     */
+/*  We re-export `shouldShowKineticCaptions` so the same set is the   */
+/*  single source of truth on both sides.                             */
+/* ------------------------------------------------------------------ */
+
+export { shouldShowKineticCaptions as shouldShowCaptions };

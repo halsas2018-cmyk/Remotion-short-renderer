@@ -6,6 +6,58 @@ This document outlines what to build after the renderer successfully produces a 
 
 ---
 
+## Render Mode (read this first)
+
+The pipeline runs in one of two modes. **Pick the one that matches your current hardware.** This choice changes which horizons are on the critical path, not the source code.
+
+### Mode A — Phone (current, no GPU) ⭐ ACTIVE
+You're building on a phone (e.g. Termux on Android). Chromium headless rendering is slow and there's no GPU. **Use the Remotion Studio web UI to render in the browser.**
+
+The Python pipeline runs to completion and drops the four files in `public/`. Then you open the Studio in a browser and click "Render". The browser does the actual video encoding (Chrome's MediaRecorder / WebCodecs), which is GPU-accelerated and fast even on mid-range phones.
+
+```bash
+# 1. Generate the four files (narration.mp3, beats.json, timestamps.json, sfx-ambient.mp3)
+python -m run_pipeline
+
+# 2. Copy them into the Remotion public/ folder if the pipeline didn't already
+cp output/DD_MM_short_vids/<story_id>/*.mp3 public/
+cp output/DD_MM_short_vids/<story_id>/beats.json public/
+cp output/DD_MM_short_vids/<story_id>/timestamps.json public/
+
+# 3. Start the Studio
+npx remotion studio --no-open
+# Open http://localhost:3000/MotionGraphicsVideo in your phone browser
+# (use `adb reverse tcp:3000 tcp:3000` or ssh port-forward if needed)
+
+# 4. Click "Render" in the top right, choose MP4, wait for the browser to encode
+```
+
+**Why this works on a phone:**
+- No `npx remotion render` invocation (which is slow without a GPU).
+- No Python batch driver needed.
+- The browser uses Chrome's built-in video encoder, which is hardware-accelerated on most phones.
+
+### Mode B — Laptop / Desktop (later, has GPU) ⭐ FUTURE
+When you have a laptop with a real GPU, replace step 3 above with a one-line CLI render:
+
+```bash
+# Replace Mode A step 3 with this:
+npx remotion render MotionGraphicsVideo out/movie.mp4
+
+# Or batch many stories:
+python -m render_batch  # future Horizon 1.1
+```
+
+This produces the same MP4 but locally. Then we can layer on a Python batch driver, a managed render farm, etc. (Horizons 1, 6, 7, 8 below.)
+
+**Switching modes is a one-line change** in how you invoke rendering. The Python pipeline and the Remotion source are identical. Don't rebuild anything when you switch — just change the render command.
+
+### Implications for the roadmap
+- **Mode A horizons** (do now): everything that doesn't require a local render or a host. That includes Horizon 0 (renderer hardening), Horizon 2 (component coverage), Horizon 3 (LLM-driven beat generation), parts of Horizon 4 (everything except 4.1 local SD image gen), Horizon 5 (Studio is already the player), and Horizon 9 (E2E tests via CI runners).
+- **Mode B horizons** (defer until laptop): Horizon 1 (Python batch driver), Horizon 6 (hosted dashboard), Horizon 7 (managed render farm), and the auto-upload step in Horizon 8 (manual upload from Studio is fine for now).
+
+---
+
 ## What's already done (do not re-build)
 
 These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're referenced by horizon below only when a later horizon depends on them.
@@ -24,6 +76,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - `CAPTION_VISIBLE_BEAT_TYPES` gate (data-vis beats only)
 - `adaptMetadata` (Python shape → component shape)
 - **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE
+- **Horizon 0.1b — Smoke test for the hard-error fetch path** — ✅ DONE (commit a73dd19)
 
 ---
 
@@ -36,25 +89,27 @@ The render pipeline is now functioning but fragile. Lock in stability before add
 - `scripts/render-smoke.sh` (new) renders a single frame at 0.2× scale and asserts the output is non-trivial in size. If the data files are missing, the smoke test fails fast with the new error message.
 - `AbortingError` is still treated as benign (Studio prop change mid-fetch) and returns `null` so it doesn't spam the log.
 
-### 0.2 Validate `beats.json` schema at fetch time
+### 0.2 Validate `beats.json` schema at fetch time — TODO
 - `Root.tsx` currently only checks three top-level fields.
 - Define a full Zod schema for `TimedBeats` in `src/beats/types.ts` and validate the parsed JSON in `renderDataCalculateMetadata` before injecting into props.
 - On Zod failure, throw with the path of the first invalid field so the Python pipeline logs point to the exact problem.
 
-### 0.3 Validate `timestamps.json` schema
+### 0.3 Validate `timestamps.json` schema — TODO
 - `Word[]` is currently cast with no runtime check.
 - Add a Zod schema, validate at fetch time, and dedupe overlapping/zero-duration word entries (WhisperX sometimes produces them).
 
-### 0.4 Add render-time logs around the new audio streams
+### 0.4 Add render-time logs around the new audio streams — TODO
 - Each `<Audio>` in the orchestrator should emit a one-line log on mount with the resolved URL, volume, and (for typing clicks) the word's start frame. This makes it trivial to correlate render output with frame ranges when debugging.
 - Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once the upstream fetch becomes a hard error (0.1).
 
-### 0.5 Cache the last-rendered composition hash
+### 0.5 Cache the last-rendered composition hash — TODO
 - Write the SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render. The next render compares it and skips work if nothing changed (saves ~5 min of ffmpeg time on duplicate renders).
 
 ---
 
-## Horizon 1 — Local Batch Renderer (3–5 days, **$0**)
+## Horizon 1 — Local Batch Renderer (defer until laptop, **$0**)
+
+**Defer trigger: you have a laptop/desktop with a real GPU.** For now, see Mode A in the "Render Mode" section above — render in the browser via Studio.
 
 A single video takes ~2 minutes to render locally. You don't need a web UI to start producing a daily Shorts feed — a Python batch driver + `cron` is enough. The hosted dashboard is in Horizon 6.
 
@@ -142,13 +197,13 @@ The current `beat_generator.py` uses a single LLM call to assign beat types to w
 
 ---
 
-## Horizon 4 — Local Asset Pipeline (1–2 weeks, **$0**)
+## Horizon 4 — Local Asset Pipeline (1–2 weeks, **$0**; 4.1 deferred until GPU)
 
 Per-story assets, but generated locally so there are no API costs. **No stock-photo APIs in this horizon.**
 
-### 4.1 Local image generator (`image_fetcher.py`)
-- For each story, generate 2–3 AI images using a **local** Stable Diffusion install (e.g. `diffusers` + a quantized SDXL model, ~4 GB VRAM, ~30 s per image).
-- OR pull a small set of pre-generated hero images from a local `assets/hero/` folder and pick by `category` (e.g. finance → "stock chart", tech → "circuit board").
+### 4.1 Local image generator (`image_fetcher.py`) — DEFERRED until GPU
+- ~~For each story, generate 2–3 AI images using a local Stable Diffusion install~~ — needs a GPU. Skip until Mode B.
+- **Phone-friendly fallback**: pull a small set of pre-generated hero images from a local `assets/hero/` folder and pick by `category` (e.g. finance → "stock chart", tech → "circuit board"). Add a manifest of category→filename mappings. Ships now.
 - Store as `output/DD_MM_short_vids/{story_id}/images/{0,1,2}.png`.
 - Reference from `beats.json` via the new `image_card` beat type (2.1).
 
@@ -195,7 +250,9 @@ The current system produces static MP4s. Adding interactivity makes the pipeline
 
 ---
 
-## Horizon 6 — Hosted Web Dashboard & Multi-Story Compositions (1–2 weeks, **$10–$30/month**)
+## Horizon 6 — Hosted Web Dashboard & Multi-Story Compositions (defer until laptop, **$10–$30/month**)
+
+**Defer trigger: you're already on Mode B (laptop, local batch rendering) and want a web UI.** For now, use `tail -f output/DD_MM_short_vids/_render_log.jsonl` and the file system.
 
 This is where hosting costs start. The previous horizons are zero-spend; from here on, you're paying for a server.
 
@@ -228,9 +285,9 @@ This is where hosting costs start. The previous horizons are zero-spend; from he
 
 ---
 
-## Horizon 7 — Managed Render Farm (1 week, **$20–$100/month**)
+## Horizon 7 — Managed Render Farm (1 week, **$20–$100/month**, Mode B only)
 
-Only do this if your local machine can't keep up. Most creators with one daily Short can stay on Horizon 1.
+**Defer trigger: your local machine can't keep up with the daily queue.** Most creators with one daily Short can stay on Horizon 1.
 
 **Cost model:**
 - **GitHub Actions runners** (free for public repos, 2 000 min/month for private): zero-cost if you're open source; ~$0.008/min for Linux runners beyond that.
@@ -277,6 +334,7 @@ This is the last horizon because YouTube Data API v3 requires OAuth verification
 - Title format: `{headline} | S-NEWS Shorts`
 - Tags: derived from the story's `category` + `source_name`
 - Schedule for 9am ET daily. Add the upload to a `out/upload_log.jsonl` so it can be retried.
+- **Phone-friendly interim (Mode A):** download the MP4 from Studio and upload it manually via the YouTube app. No automation, but it works.
 
 ### 8.3 Failure-mode playbook
 Write `docs/FAILURE_MODES.md` covering:
@@ -293,6 +351,7 @@ Write `docs/FAILURE_MODES.md` covering:
 ### 9.1 GitHub Actions workflow
 - On every PR, run `npx remotion render MotionGraphicsVideo` against a sample `beats.json` and check the output duration is > 60 frames.
 - Free for public repos; ~2 min of CI time per PR.
+- **Mode A note:** CI runs on GitHub's Linux runners, which DO have hardware acceleration. So this horizon works in both modes; it's just that in Mode A you can't run the same `npx remotion render` locally — you'd have to push to a branch and let CI do it.
 
 ### 9.2 End-to-end test
 - A single script `scripts/e2e.sh` that:
@@ -313,7 +372,7 @@ Write `docs/FAILURE_MODES.md` covering:
 
 These were considered and removed because they don't pass the cost lens or the impact-vs-effort ratio:
 
-- **Stock-photo APIs (Pexels, Unsplash, Shutterstock):** either pay-per-call or rate-limited; replaced with local generation in 4.1.
+- **Stock-photo APIs (Pexels, Unsplash, Shutterstock):** either pay-per-call or rate-limited; replaced with local generation in 4.1 (or the curated fallback in 4.1 for Mode A).
 - **Managed vector + raster map APIs (Mapbox, MapTiler paid tier):** the current `Map3D` uses 3D voxel renderers that don't need map tiles. The roadmap's `Map3D` is local-only.
 - **ElevenLabs / paid TTS:** the current pipeline uses Microsoft Edge TTS (free). The voice quality is "good enough" for Shorts; revisit only if A/B testing shows paid TTS lifts retention.
 - **WebGL/Three.js map effects:** the existing voxel `Map3D` is fast and free; a photorealistic 3D map would require a tile provider.
@@ -329,23 +388,23 @@ These were considered and removed because they don't pass the cost lens or the i
 2. **Brand identity**: Is `S-NEWS` the permanent brand, or a placeholder? If placeholder, the logo variants in 4.3 are higher priority.
 3. **YouTube API approval**: YouTube Data API requires OAuth approval for production upload. Start the application process now if you haven't.
 4. **Content rights**: Confirm that the news sources you're aggregating allow derivative video content. RSS feeds are usually fine; Reddit posts need attribution.
-5. **Local GPU available?** A consumer GPU (≥ 6 GB VRAM) unlocks 4.1 (local SD). If you don't have one, 4.1 falls back to a curated `assets/hero/` folder.
+5. **Local GPU available?** A consumer GPU (≥ 6 GB VRAM) unlocks 4.1 (local SD) and Horizon 1 / 7 (local render farm). If you don't have one, you're in Mode A and 4.1 / Horizon 1 / 6 / 7 are deferred.
 
 ---
 
 ## Summary
 
-| Horizon | Effort | Cost | Output |
-|---|---|---|---|
-| 0 — Renderer Hardening | 1–2 days | $0 | Stable, observable, deterministic renders |
-| 1 — Local Batch Renderer | 3–5 days | $0 | 6 videos/day on a laptop, log-file monitoring |
-| 2 — Component Coverage | 1–2 weeks | $0 | 13 beat types, idle motion library, emphasis text |
-| 3 — Smart Beat Generation | 1–2 weeks | $0–$5/day LLM | Story-arc planning, diversity budget, auto-pacing |
-| 4 — Local Asset Pipeline | 1–2 weeks | $0 (needs local GPU for 4.1) | Local images, ambient tracks, logo variants |
-| 5 — Interaction, Player, Analytics | 1–2 weeks | $0 | Local player, offline heatmap, file telemetry |
-| 6 — Hosted Dashboard & Multi-Story | 1–2 weeks | $5–$30/month VPS | Web dashboard, intro/outro, format switch |
-| 7 — Managed Render Farm | 1 week | $20–$100/month | Containerized renderer, push queue, alerts |
-| 8 — YouTube Auto-Publish | 1 week | $0 (OAuth approval time) | Auto-upload + scheduling |
-| 9 — E2E Tests, CI, Production Polish | ongoing | $0 (free CI minutes) | Visual regression, e2e script, release pipeline |
+| Horizon | Effort | Cost | Mode | Output |
+|---|---|---|---|---|
+| 0 — Renderer Hardening | 1–2 days | $0 | A or B | Stable, observable, deterministic renders |
+| 1 — Local Batch Renderer | 3–5 days | $0 | B only | 6 videos/day on a laptop, log-file monitoring |
+| 2 — Component Coverage | 1–2 weeks | $0 | A or B | 13 beat types, idle motion library, emphasis text |
+| 3 — Smart Beat Generation | 1–2 weeks | $0–$5/day LLM | A or B | Story-arc planning, diversity budget, auto-pacing |
+| 4 — Local Asset Pipeline | 1–2 weeks | $0 (4.1 needs GPU) | A or B | Local images, ambient tracks, logo variants |
+| 5 — Interaction, Player, Analytics | 1–2 weeks | $0 | A or B | Local player, offline heatmap, file telemetry |
+| 6 — Hosted Dashboard & Multi-Story | 1–2 weeks | $5–$30/month VPS | B only | Web dashboard, intro/outro, format switch |
+| 7 — Managed Render Farm | 1 week | $20–$100/month | B only | Containerized renderer, push queue, alerts |
+| 8 — YouTube Auto-Publish | 1 week | $0 (OAuth approval time) | A: manual, B: auto | Auto-upload + scheduling |
+| 9 — E2E Tests, CI, Production Polish | ongoing | $0 (free CI minutes) | A or B | Visual regression, e2e script, release pipeline |
 
-**The critical path is Horizon 0 → 1 → 2 → 3 → 4 → 5 → 8** (in that order). Horizons 6 and 7 are needed only when the local machine can't keep up with the daily queue.
+**The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.

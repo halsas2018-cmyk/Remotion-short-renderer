@@ -7,9 +7,57 @@ Automated pipeline for creating YouTube Shorts from news stories.
 
 ---
 
+## Render Mode (read this first)
+
+The pipeline runs in one of two modes. **Pick the one that matches your current hardware.**
+
+### Mode A — Phone (current, no GPU) ⭐ ACTIVE
+You're building on a phone (e.g. Termux on Android). Chromium headless rendering is slow and there's no GPU. **Use the Remotion Studio web UI to render in the browser.**
+
+The Python pipeline runs to completion and drops the four files in `public/`. Then you open the Studio in a browser and click "Render". The browser does the actual video encoding (Chrome's MediaRecorder / WebCodecs), which is GPU-accelerated and fast.
+
+```bash
+# 1. Generate the four files (narration.mp3, beats.json, timestamps.json, sfx-ambient.mp3)
+python -m run_pipeline
+
+# 2. Copy them into the Remotion public/ folder if the pipeline didn't already
+cp output/DD_MM_short_vids/<story_id>/*.mp3 public/
+cp output/DD_MM_short_vids/<story_id>/beats.json public/
+cp output/DD_MM_short_vids/<story_id>/timestamps.json public/
+
+# 3. Start the Studio
+npx remotion studio --no-open
+# Open http://localhost:3000/MotionGraphicsVideo in your phone browser
+# (use `adb reverse tcp:3000 tcp:3000` or ssh port-forward if needed)
+
+# 4. Click "Render" in the top right, choose MP4, wait for the browser to encode
+```
+
+**Why this works on a phone:**
+- No `npx remotion render` invocation (which is slow without a GPU).
+- No Python batch driver needed.
+- The browser uses Chrome's built-in video encoder, which is hardware-accelerated on most phones.
+
+### Mode B — Laptop / Desktop (later, has GPU) ⭐ FUTURE
+When you have a laptop with a real GPU, replace step 3 above with a one-line CLI render:
+
+```bash
+# Replace Mode A step 3 with this:
+npx remotion render MotionGraphicsVideo out/movie.mp4
+
+# Or batch many stories:
+python -m render_batch  # future Horizon 1.1
+```
+
+This produces the same MP4 but locally. Then we can layer on a Python batch driver, a managed render farm, etc. (Horizons 1, 6, 7, 8 below.)
+
+**Switching modes is a one-line change** in how you invoke rendering. The Python pipeline and the Remotion source are identical. Don't rebuild anything when you switch — just change the render command.
+
+---
+
 ## Render Data (single-folder input)
 
-The renderer reads **four** files at composition-mount time. Drop them in `public/` and run `npx remotion render MotionGraphicsVideo out/movie.mp4`. No code change required.
+The renderer reads **four** files at composition-mount time. Drop them in `public/` and render (in Studio or via CLI). No code change required.
 
 ```
 public/
@@ -23,7 +71,7 @@ The orchestrator **never** imports these files at build time. They are loaded at
 - `narration.mp3` and `sfx-ambient.mp3` are read directly by `MotionGraphicsVideo` via `<Audio src={staticFile("…")} />`.
 - `beats.json` and `timestamps.json` are fetched in `Root.tsx`'s `renderDataCalculateMetadata` via `fetch(staticFile("…"))` and injected into `props.beats` / `props.words`. The orchestrator's own `calculateMetadata` then derives `durationInFrames` from those props.
 
-To render a different story, copy the four files above into `public/` and re-run the render command. The `*Test` compositions in Studio still use hard-coded `defaultProps` (no fetch needed).
+To render a different story, copy the four files above into `public/` and render. The `*Test` compositions in Studio still use hard-coded `defaultProps` (no fetch needed).
 
 ---
 
@@ -215,6 +263,10 @@ Components are located in `src/` and follow these conventions:
 10. **Lucide-only icons**: No Lottie loading in `IconText.tsx` or `Timeline.tsx`. If you need animated icons, add a Lottie file at `public/icons/{name}.json` and re-enable the Lottie path in those components.
 
 ### Running the Renderer
+
+**Phone (Mode A, current):** see the "Render Mode" section at the top of this doc.
+
+**Laptop (Mode B, future):**
 ```bash
 # 1. Drop the four files into public/ (see top of this doc)
 # 2. Render
@@ -431,7 +483,7 @@ Lives inside `src/MotionGraphicsVideo.tsx`. Returns `beats.totalDurationInFrames
 - Default context (when used outside a `<SceneTransition>`) provides identity values so existing `*Test` compositions still work
 
 ### Step 6b: Scene Transition SFX — ✅ DONE
-Each beat's outgoing `<Sequence>` contains a nested `<Sequence from={whooshFrom - startFrame} durationInFrames={transitionFrames}><Audio src=TRANSITION_SFX_URL volume=TRANSITION_SFX_VOLUME /></Sequence>` that plays a short whoosh at the start of the cross-fade. The nested sequence's local clock is bounded by `transitionFrames`, so the audio starts when the cross-fade starts and stops when it ends.
+Each beat's outgoing `<Sequence>` contains a nested `<Sequence from={whooshFrom - startFrame} durationInFrames={transitionFrames}><Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} /></Sequence>` that plays a short whoosh at the start of the cross-fade. The nested sequence's local clock is bounded by `transitionFrames`, so the audio starts when the cross-fade starts and stops when it ends.
 
 - **URL**: `https://remotion.media/whoosh.wav` (from the project's `sfx.md` skill).
 - **Volume**: 0.5.
@@ -485,7 +537,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - `renderDataCalculateMetadata` (in `Root.tsx`) is the **async** `calculateMetadata` for the `MotionGraphicsVideo` composition. It fetches `public/beats.json` and `public/timestamps.json` via `fetch(staticFile("…"))` in parallel, injects the parsed JSON into `props.beats` / `props.words`, and returns both the resolved `durationInFrames` (from `beats.totalDurationInFrames`) and the populated props.
 - The **sync** `calculateMetadata` in `MotionGraphicsVideo.tsx` then runs on the now-populated `props.beats` and returns the same value (it just trusts the upstream number). This is the value Remotion actually uses to size the composition.
 - `defaultProps` passes only placeholder values (`beats: empty, words: [], narrationSrc: "narration.mp3"`) because the real values come from the fetch.
-- The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and run `npx remotion render`. No code change required.
+- The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and render (in Studio or via CLI). No code change required.
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 
@@ -517,6 +569,11 @@ Per-beat wrapper around `KineticCaptions` that:
     3. ⏳ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
     4. ⏳ Render-time logs around the audio streams (1.4)
     5. ⏳ Cache the last-render composition hash (1.5)
+23. **DEFERRED until laptop/GPU available (Mode B)**
+    - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
+    - ⏳ Hosted dashboard (Horizon 6)
+    - ⏳ Managed render farm (Horizon 7)
+    - ⏳ YouTube auto-publish (Horizon 8) — manual upload from Studio for now
 
 ### Critical Decisions
 1. **Absolute-positioned beats, not `<TransitionSeries>`.** `<TransitionSeries>` only supports `durationInFrames` (not `from`), which desynced beats from the global word timestamps in `public/timestamps.json`. We use plain `<Sequence from={beat.startFrame} durationInFrames=…>` per beat; the cross-fade is the natural overlap during which the outgoing beat's `SceneTransition` exit-fade multiplies with the incoming beat's `SceneTransition` entrance-fade.
@@ -534,7 +591,7 @@ Per-beat wrapper around `KineticCaptions` that:
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. The Python pipeline pre-accounts for this overlap and emits `totalDurationInFrames` accordingly; the orchestrator uses that value directly without re-subtracting.
 14. **Transition SFX** — A whoosh.wav from the Remotion CDN plays at the start of every cross-fade window, mounted inside the outgoing beat's nested `<Sequence from={whooshFrom - startFrame} durationInFrames={transitionFrames}>`. Volume 0.5. URL and volume centralized in `src/lib/sceneSfx.ts`. First beat has no outgoing transition, so no SFX plays for it; final beat's exit is silent.
 15. **Typing SFX** — A mouse-click.wav from the Remotion CDN plays at the start of every word inside `<BeatKineticCaptions>`, gated to the same data-vis beat types as the visual captions. Volume 0.15. Each click lives inside a 4-frame `<Sequence from={localStartFrame} durationInFrames={4}>`; the parent beat's `<Sequence>` bounds the whole track. `fps` is forwarded from the orchestrator so the click track is frame-accurate. Word timestamps are converted to local frames via `Math.round(w.start * fps) - startFrame`.
-16. **Single-folder render data** — All four data files (`public/narration.mp3`, `public/beats.json`, `public/timestamps.json`, `public/sfx-ambient.mp3`) are loaded at composition mount time. `Root.tsx` fetches the two JSONs in `renderDataCalculateMetadata` and injects them into `props`. The audio files are read directly by the orchestrator via `staticFile("…")`. This replaces the previous build-time import in `Root.tsx`. To render a different story, copy the four files into `public/` and run `npx remotion render` — no source edits required.
+16. **Single-folder render data** — All four data files (`public/narration.mp3`, `public/beats.json`, `public/timestamps.json`, `public/sfx-ambient.mp3`) are loaded at composition mount time. `Root.tsx` fetches the two JSONs in `renderDataCalculateMetadata` and injects them into `props`. The audio files are read directly by the orchestrator via `staticFile("…")`. This replaces the previous build-time import in `Root.tsx`. To render a different story, copy the four files into `public/` and render (in Studio or via CLI) — no source edits required.
 17. **Ambient SFX** — A local `public/sfx-ambient.mp3` plays on `loop` with `loopVolumeCurveBehavior="extend"` underneath the narration. Volume is a callback `(f) => interpolate(f, [0, 30], [0, 0.15], {extrapolateRight: "clamp"})` so it fades in over the first second and then holds at 0.15 for the rest of the composition. Per `audio.md` best practices for ambient sound. Mounted at the root of `MotionGraphicsVideo` (not per-beat) so it spans the whole composition without restarting at every cross-fade. URL and volume centralized in `src/lib/sceneSfx.ts`.
 18. **Local-frame rebasing for kinetic captions** — `KineticCaptions` reads `useCurrentFrame()` from inside the per-beat `<Sequence>`, so its value is LOCAL (0…`durationInFrames`). Word timestamps are GLOBAL (in seconds from the start of the whole composition). `KineticCaptions` rebases each word's `start`/`end` from seconds-then-multiplied-by-fps to local frames inside `useMemo`, so the highlight `findIndex` lookup can compare `frame` against `w.start` in matching units. Without this, the highlight is stuck on word 0 (or whatever the first word is) because `frame < w.start` for almost every word in the beat. The rebasing is gated on the presence of `beatStartFrame` in the `BeatContext` (so `*Test` compositions without a context still work — they pass pre-sliced local-frame words via props).
 19. **Lucide-only icons** — `IconText.tsx` and `Timeline.tsx` no longer load Lottie files. All icon names map to a Lucide component; unknown names fall back to `LucideIcons.Info`. To restore Lottie, drop a `.json` file at `public/icons/{name}.json` and re-enable the Lottie path in those two components.
@@ -542,6 +599,7 @@ Per-beat wrapper around `KineticCaptions` that:
 21. **VersusCard visual language** — Indigo-cool on the left, orange-warm on the right; per-side `Option A` / `Option B` ribbons; glowing centered VS badge with dashed inner ring; grid background pattern + radial top-glow per side; optional `items[]` rendered as bulleted rows with a glow dot. Card rotation during entrance (–2° / +2° → 0°) for depth.
 22. **BeforeAfter visual language** — Red BEFORE / green AFTER color system, decorative tag pills (Legacy/Manual/Slow/Costly vs Modern/Automated/Fast/Efficient), top accent bars + side vertical strips, slider border that draws around the whole card group.
 23. **Hard-error fetch for render data (1.1)** — `Root.tsx::renderDataCalculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures, instead of silently falling back to a 1-frame video. The error message includes `[MotionGraphicsVideo]` and identifies either the filename + HTTP status, the JSON parse error, or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) is the only benign case and still returns `null`. A new `scripts/render-smoke.sh` exercises the full render path and asserts the output is non-trivial in size.
+24. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
 
 ### Real `beats.json` Example (current reference)
 ```json

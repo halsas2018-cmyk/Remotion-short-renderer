@@ -75,9 +75,9 @@ To render a different story, copy the four files above into `public/` and render
 
 ---
 
-## Phase 1 (Horizon 0) — Renderer Hardening — IN PROGRESS
+## Phase 1 (Horizon 0) — Renderer Hardening — ✅ COMPLETE (next: Horizon 2)
 
-Goal: lock in stability of the render pipeline before adding new features. Everything is local, no APIs, no hosting, no spend.
+Goal: lock in stability of the render pipeline before adding new features. Everything is local, no APIs, no hosting, no spend. **Horizon 0 is now complete** (commits a73dd19 for 1.1, 78e3f69 for 1.2, then a series of commits for 1.3, 1.4-cancelled, 1.5). Next up: Horizon 2 (component coverage + visuals).
 
 ### 1.1 — Hard error when a render data file is missing — ✅ DONE
 
@@ -186,97 +186,43 @@ json.dump(data, open("public/timestamps.json.bak", "w"))
 # to confirm the warning is logged at render time)
 ```
 
-### 1.4 — Audio plan log written to `out/audio-mounts.log` — ✅ DONE (with caveat)
+### 1.4 — Audio plan log written to `out/audio-mounts.log` — ~~CANCELLED~~ (was also 0.4)
 
-**Before this change:** no per-audio-stream mount logs existed. When debugging render output it was hard to know which `<Audio>` elements were actually mounted, what their resolved URL was, what volume they were playing at, and over which frame range.
+The original 1.4 spec called for a file-based audio plan log that the smoke test would assert on. After two implementation attempts and a deep dive into the failure modes, **both 1.4 and Horizon 0.4 (the per-mount `console.log` lines it was meant to replace) were cancelled**. The orchestration works fine without the side-channel log: the audio streams (narration, ambient, per-transition whoosh, per-word click) all mount correctly because they live in the React tree, not in a side-channel log. Full reasoning lives in `ROADMAP.md` ("What's already done" and "0.4" / "1.4" entries). The takeaway:
 
-**After this change:** the audio plan is computed in `Root.tsx::renderDataCalculateMetadata` (after beats.json + timestamps.json are parsed and deduped) and one JSON line per render is appended to `out/audio-mounts.log`. The line contains:
+- **0.4 was unworkable from the start.** Every attempt to emit a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on `<Audio>` mount failed during a `still` (single-frame) render. We tried four mechanisms: `onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body. **All four produced zero output.** Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked. There is no place inside the React tree from which to emit a per-mount log line during a `still`.
+- **1.4 was the file-based replacement for 0.4.** We pivoted to computing the audio plan in `Root.tsx::renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout) and appending one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test would read the file and assert one valid JSON line is present. The implementation shipped behind a `process.versions.node` guard, but that guard was unreliable: Remotion's render context shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The cache file was never written in practice. The two `remotion.config.ts` workarounds (`resolve.fallback: { fs: false, ... }` and moving the helper to `scripts/`) were enough to keep the render working, but the actual writeAudioPlanLog call still failed at runtime.
+- **Final fix:** drop the entire 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`; `Root.tsx` no longer computes or writes the audio plan; `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams are still observable through the React tree itself; per-mount observability would be a future horizon (likely tied to a real `npx remotion render` smoke test, not `still`).
+- **Do not re-litigate 0.4 / 1.4.** If a future horizon (e.g. 9.x CI) needs per-mount audio observability, write the per-mount log lines from inside a wrapper that the orchestrator mounts unconditionally and gate the verification on a full `npx remotion render` smoke test, not on `npx remotion still`. The `still` path will never produce per-mount logs.
 
-```json
-{
-  "beatsCount": 12,
-  "wordsCount": 47,
-  "narration": "public/narration.mp3",
-  "ambient": "public/sfx-ambient.mp3",
-  "whooshCount": 11,
-  "clickCount": 47,
-  "whooshSlots": [
-    { "from": 76, "to": 84, "beatIndex": 0 },
-    { "from": 156, "to": 164, "beatIndex": 1 },
-    ...
-  ]
-}
-```
+### 1.5 — Cache the last-render composition hash — ✅ DONE
 
-The four audio source categories covered:
+**Before this change:** every `scripts/render-smoke.sh` invocation re-ran `npx remotion still` even if beats.json + timestamps.json were byte-for-byte identical to the previous run. That costs ~2 minutes per duplicate render.
 
-1. **narration** — mounted at the root in `MotionGraphicsVideo.tsx` (resolved to `public/narration.mp3`).
-2. **ambient** — looping bed, mounted at the root (resolved to `public/sfx-ambient.mp3`).
-3. **whoosh** — per outgoing beat, mounted inside a nested `<Sequence>` for the cross-fade window (`whooshCount` = non-last beats with `transitionFrames > 0`).
-4. **click** — per word inside `BeatKineticCaptions`, mounted inside a per-word `<Sequence>` (`clickCount` = words inside data-vis beats).
-
-**Why a file (not `console.log`) — the long story:**
-
-The original 1.4 spec called for a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` line emitted to `console.log` on every `<Audio>` mount. We tried four different ways to make this fire during a `still` (single-frame) render — which is what `scripts/render-smoke.sh` does — and all four failed:
-
-1. **`onMount` on `<Audio>`** — time-driven lifecycle, only fires when the audio's local timeline starts advancing. `still` never advances time. No log.
-2. **`useEffect(..., [])` in a sibling `<AudioMountLog>`** — post-render callback, doesn't fire during `still` because the React tree is never committed. No log.
-3. **`useState(() => logAudioMount(...))` initializer** — same problem. The `still` renderer calls the function component to compute one frame, but never commits the mount lifecycle. No log.
-4. **`useRef(false)` + direct log in the function body** — `useRef` is the only hook that synchronously returns during render, but the log still didn't fire. This proved the function body itself is not being called during `still` (Remotion's `still` command uses a render-only path that doesn't even invoke the function components in the tree — it just reads the composition dimensions and renders a frame using the calculateMetadata-supplied data).
-
-So there is no place inside the React tree from which to emit a per-stream log line during a `still`. The only place that DOES run before the orchestrator "mounts" (such as it does) is `Root.tsx::renderDataCalculateMetadata`. We pivot the 1.4 spec to:
-
-- Compute the audio plan in `renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout).
-- Append one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync` (synchronous, no IO race with the React render).
-- The smoke test reads the file and asserts it has one valid JSON line.
-
-**What this gives up vs. the original spec:**
-- We lose the per-stream volume + per-word meta (the whoosh volume is constant at 0.5, the click volume is constant at 0.15, and the per-word string is recoverable from `timestamps.json` directly — so this is recoverable info, not a true loss).
-- We lose the per-stream "is this stream actually mounted at frame N" check. The log line is a *plan*, not a mount report. If the orchestrator's layout diverges from the plan (e.g. `computeTransitionFrames` changes), the log will silently lie. We mitigate by computing the plan with the same `computeTransitionFrames` function the orchestrator uses (`src/lib/transitionDuration.ts`).
-
-**What this buys us:**
-- The smoke test (`scripts/render-smoke.sh`) can actually verify the audio plan was computed, which closes the original 1.4 observability gap.
-- The log file is append-only across renders, so you can see the history of every audio plan ever produced. Useful for debugging regressions.
-- No reliance on stdout/stderr capture (Remotion's bundler is inconsistent about which stream `console.log` lands in).
+**After this change:** `scripts/render-smoke.sh --skip-if-unchanged` computes a SHA-256 of the canonical input pair (beats bytes ‖ words bytes, no separator) and compares it to the hash stored in `out/last-render.json` from the previous successful render. If they match, it prints a SKIP message and exits 0 without re-running `remotion still`.
 
 **What changed:**
-- `src/lib/sceneSfx.ts`:
-  - Removed the `AudioMountLog` type and the `logAudioMount` helper (no longer used — the React component tree never mounts in `still`).
-  - Added `AudioPlanLog` type and `writeAudioPlanLog(plan, projectRoot)` (appends a JSON line to `out/audio-mounts.log`).
-  - Added `truncateAudioPlanLog(projectRoot)` (used by the smoke script before each run to clear the log).
-  - Kept the SFX URL and volume constants (TRANSITION_SFX_URL, TYPING_SFX_URL, AMBIENT_SFX_URL, etc.) — those are still used by the orchestrator.
-- `src/audio/AudioMountLog.tsx`:
-  - **Deleted.** The function-body log inside this component never fires (proven empirically across four attempts). See `src/lib/sceneSfx.ts` for the full reasoning.
-- `src/MotionGraphicsVideo.tsx`:
-  - Removed all `<AudioMountLog>` siblings next to the narration, ambient, and whoosh `<Audio>` elements. The orchestrator still mounts the `<Audio>` elements (they work in the real `npx remotion render` path, just not in `still`), but the per-mount log lines are gone.
-- `src/audio/BeatKineticCaptions.tsx`:
-  - Removed all `<AudioMountLog>` siblings next to the per-word click `<Audio>` elements. Same reasoning.
-- `src/Root.tsx`:
-  - `renderDataCalculateMetadata` now also computes the audio plan (whoosh slots + click count) from the parsed + deduped data, mirroring the orchestrator's layout. It writes one JSON line per render to `out/audio-mounts.log` via `writeAudioPlanLog(plan, process.cwd())`.
-  - The plan computation uses the same `computeTransitionFrames` helper and the same `CAPTION_VISIBLE_BEAT_TYPES` set the orchestrator uses, so the plan is faithful.
-  - File write failures are caught and warned (not thrown) so a broken log file doesn't kill the render.
-- `scripts/render-smoke.sh` (1.4 update):
-  - Truncates `out/audio-mounts.log` to empty before each render.
-  - After the render, asserts the file is non-empty and the last line is a valid JSON object with the expected top-level fields (`beatsCount`, `wordsCount`, `narration`, `ambient`, `whooshCount`, `clickCount`, `whooshSlots`).
-  - Exit code 3 on missing or invalid audio plan log.
+- New pure helper `scripts/lastRenderHash.mjs` (NOT in `src/lib/` — see the move note below) exports `computeLastRenderHash(beatsJson, wordsJson)`, `readLastRenderHash(outDir)`, `writeLastRenderHash(outDir, hash, extras?)`, and a `LAST_RENDER_HASH_VERSION` constant. Uses `node:crypto`'s built-in `sha256` (no new dependency).
+- Canonical input is the raw bytes of `public/beats.json` + `public/timestamps.json` concatenated with **NO separator** (matches what `cat beats.json timestamps.json | sha256sum` produces on the bash side). The hash is prefixed with `v<version>:` so future schema changes are backwards-incompatible by design — bump the version in one place to invalidate every old cache.
+- `scripts/render-smoke.sh --skip-if-unchanged` now:
+  1. Computes the SHA-256 of the input pair in bash and delegates the cache read to a Node one-liner that `import()`s the helper module. Schema parity is enforced by reusing the helper's `LAST_RENDER_HASH_VERSION` constant.
+  2. If the cache matches, prints `==> SKIP: input hash matches v1:<hash> (rendered <ISO>)` and exits 0 without re-rendering.
+  3. If the cache is missing, malformed, or stale-version, falls through to the render path (never fails on a missing cache — fresh checkouts just render).
+  4. After a successful render, writes `out/last-render.json` via `writeLastRenderHash`. The write is non-fatal: a failed cache write prints `==> WARN: …` and the render still exits 0.
+- **What is NOT in the cache key** (intentional): `public/narration.mp3` and `public/sfx-ambient.mp3`. The visible output is fully determined by beats + words, and MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes). If you change a SFX mapping in `sceneSfx.ts` in a way that affects the visible render, bump `LAST_RENDER_HASH_VERSION` to invalidate old caches automatically.
+- **The helper lives under `scripts/`, not `src/lib/`** (commit 7be612b). Webpack's bundle input is rooted at `src/Root.tsx`; it walks every sibling `.ts` file in any imported directory. The first attempt put the helper in `src/lib/`, and webpack discovered it via the directory walk even though nothing imported it — and then tried to resolve `node:fs` / `node:crypto` in a browser context, failing with "Module not found: Error: Can't resolve 'fs'". Moving to `scripts/` puts the file outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build.
+- **Bug fix: hash separator** (commit 5c7349c). An earlier version of the helper and the smoke script's Node one-liner inserted a single `0x0a` (LF) byte between the two file bodies in the digest. That was wrong on two counts: (a) `createHash().update(0x0a)` throws `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)` — Node doesn't accept raw numbers; you have to wrap them in `Buffer.from([0x0a])` or `"\n"`. (b) The bash side does NOT add a separator, so the two hashes would never have agreed even if (a) hadn't thrown. Both issues are fixed by dropping the separator entirely.
+- **Usage:**
+  ```bash
+  # First run: renders, writes the cache
+  ./scripts/render-smoke.sh
+  # Second run with identical inputs: skips, exits 0 in <1s
+  ./scripts/render-smoke.sh --skip-if-unchanged
+  # Force a re-render even if cache matches
+  ./scripts/render-smoke.sh              # default: always renders
+  ```
 
-**How to verify:**
-```bash
-./scripts/render-smoke.sh
-# Should print:
-#   ==> OK: smoke render produced NNNN-byte PNG at out/smoke.png
-#   ==> OK: audio plan: beatsCount=12 wordsCount=47 whooshCount=11 clickCount=47
-#   ==> OK: log file:   /root/kinetic_typo_vid/my-video/out/audio-mounts.log
-
-# Inspect the raw log:
-cat out/audio-mounts.log | python3 -m json.tool --no-ensure-ascii
-# Should print the full AudioPlanLog object with the whooshSlots array.
-```
-
-### 1.5 — Cache the last-render composition hash — TODO
-- Write SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render.
-- The next render compares hashes and skips re-encoding if nothing changed (≈2 min saved on duplicate renders).
-- The smoke test from 1.1 grows a `--skip-if-unchanged` flag that uses this hash.
+**Horizon 0 is now complete. Next up: Horizon 2 (component coverage + visuals).**
 
 ---
 
@@ -407,7 +353,7 @@ Components are located in `src/` and follow these conventions:
 4. **Fonts**: Load via `@remotion/google-fonts` for type-safe, blocking font loading
 5. **Assets**: Place in `public/` folder, reference with `staticFile()`. For **runtime** JSON data, use `fetch(staticFile("…"))` inside `calculateMetadata` (see Step 8).
 6. **Transitions**: Use plain `<Sequence from={…} durationInFrames={…}>` for per-beat positioning, and `SceneTransition` for per-beat entrance/exit. The previous `<TransitionSeries>` was removed because it only supports `durationInFrames` (not `from`), which desynced beats from the global word timestamps. Cross-fade is now driven by overlapping `<Sequence>`s whose exit/enter fades are produced by each beat's `SceneTransition`.
-7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs in `src/lib/sceneSfx.ts`. SFX observability is handled by `Root.tsx::renderDataCalculateMetadata` writing the audio plan to `out/audio-mounts.log` (see 1.4) — the per-mount log lines were removed because the React component tree never mounts during a `still` (single-frame) render.
+7. **SFX**: Use `<Audio>` from `@remotion/media` (works in both server-side render and `<Player>`). Centralize URLs and volumes in `src/lib/sceneSfx.ts`. There is no side-channel log for audio observability — see 1.4 for the cancelled audio-plan-log surface area and the reasoning for why a per-mount `console.log` was unworkable in the `still` render path.
 8. **Ambient SFX**: A looping bed under the narration uses `<Audio loop loopVolumeCurveBehavior="extend" volume={(f) => interpolate(f, [0, FADE_FRAMES], [0, TARGET_VOLUME], {extrapolateRight: "clamp"})} />`. Mounted at the root, not per-beat, so it spans the whole composition. The ambient stream is included in the audio plan log as `ambient: "public/sfx-ambient.mp3"` (see 1.4).
 9. **Text fitting**: Always use `fitText` + `measureText` from `@remotion/layout-utils` for headline sizing, and `fillTextBox` for multi-line wrapping (per `measuring-text.md`).
 10. **Lucide-only icons**: No Lottie loading in `IconText.tsx` or `Timeline.tsx`. If you need animated icons, add a Lottie file at `public/icons/{name}.json` and re-enable the Lottie path in those components.
@@ -443,8 +389,7 @@ public/   (single source of render data)
 Root.tsx::renderDataCalculateMetadata (async fetch via staticFile)
   ├─ Parses beats.json + timestamps.json via Zod
   ├─ Dedupe overlapping/zero-duration words (1.3)
-  ├─ Compute audio plan (whoosh slots + click count) (1.4)
-  └─ Write audio plan to out/audio-mounts.log (1.4)
+  └─ Inject beats + deduped words into props
   ↓
 MotionGraphicsVideo.tsx (orchestrator)
   ↓
@@ -502,7 +447,7 @@ src/
 ├── lib/
 │   ├── totalDuration.ts              # Sums beat durations
 │   ├── transitionDuration.ts         # Dynamic cross-fade frames ✅ DONE
-│   └── sceneSfx.ts                   # SFX URLs + defaults + writeAudioPlanLog ✅ DONE
+│   └── sceneSfx.ts                   # SFX URLs + defaults (no audio-plan-log — see 1.4) ✅ DONE
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
 └─…
@@ -702,7 +647,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 - **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
 - **1.3 update:** the parsed `words[]` is run through `src/beats/words.ts::dedupeOverlappingWords` to drop overlapping / zero-duration entries before being injected into `props.words`. A `console.warn` lists how many were dropped (and that the Python pipeline's WhisperX step is the likely culprit).
-- **1.4 update:** the parsed beats + deduped words are run through a new `computeAudioPlan` helper that produces the whoosh slot list + click count (mirroring the orchestrator's layout). The plan is appended to `out/audio-mounts.log` via `writeAudioPlanLog(plan, process.cwd())`. The smoke test reads this file and asserts one valid JSON line is present. See 1.4 above for the full reasoning on why this is a file (not `console.log`) and why the per-mount log lines were removed.
+- **1.5 update:** the smoke script (`scripts/render-smoke.sh`) grew a `--skip-if-unchanged` flag that compares the SHA-256 of `public/beats.json` + `public/timestamps.json` to the hash in `out/last-render.json` and skips re-rendering if they match. See 1.5 above for the full reasoning and the `scripts/lastRenderHash.mjs` helper.
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -726,12 +671,25 @@ Per-beat wrapper around `KineticCaptions` that:
 19. ~~Beautify `VersusCard` (corner ribbons, Option A/B tags, item rows, VS badge pulse, grid background)~~ ✅
 20. ~~Remove Lottie loading from `IconText` and `Timeline`; use Lucide everywhere~~ ✅ (commit 8d99fe8)
 21. ~~Fix kinetic captions: rebase words from global to local frames inside `KineticCaptions` so the highlight tracks the spoken word in the current beat~~ ✅ (commit c6f3b78)
-22. **IN PROGRESS — Phase 1 (Horizon 0) Renderer Hardening**
+22. **Horizon 0 — Renderer Hardening — ✅ COMPLETE**
     1. ✅ Replace silent fallback with hard error on missing render data (1.1)
     2. ✅ Validate per-beat `metadata` shape with Zod (1.2)
     3. ✅ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
-    4. ✅ Audio plan log written to `out/audio-mounts.log` (1.4) — see the long-form note in 1.4 above about why the per-mount `console.log` lines were removed in favor of a file-based plan log
-    5. ⏳ Cache the last-render composition hash (1.5)
+    4. ✅ Per-mount `console.log` audio observability (0.4) — CANCELLED (see 1.4)
+    5. ✅ File-based audio plan log (1.4) — CANCELLED (see 1.4)
+    6. ✅ Cache the last-render composition hash (1.5)
+23. **DEFERRED until laptop/GPU available (Mode B)**
+    - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
+    - ⏳ Hosted dashboard (Horizon 6)
+    - ⏳ Managed render farm (Horizon 7)
+    - ⏳ YouTube auto-publish (Horizon 8) — manual upload from Studio for now
+24. **IN PROGRESS — Horizon 2 — Component Coverage + Better Visuals**
+    - ⏳ Priority 2.1.1: `headline_card` beat type (`src/components/HeadlineCard.tsx`)
+    - ⏳ Remaining 2.1 priorities: `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card`, `scrollytelling`, `ticker_tape`
+    - ⏳ 2.2: per-type Zod schemas + unit tests
+    - ⏳ 2.3: idle motion library (`src/lib/idleMotion/`)
+    - ⏳ 2.4: emphasis words → component-level highlights
+    - ⏳ 2.5: visual polish pass on existing components
 23. **DEFERRED until laptop/GPU available (Mode B)**
     - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
     - ⏳ Hosted dashboard (Horizon 6)
@@ -765,7 +723,9 @@ Per-beat wrapper around `KineticCaptions` that:
 24. **Per-beat Zod validation (1.2)** — `src/beats/types.ts::PerBeatSchema` uses `z.object(beatBaseShape).passthrough().superRefine(...)` to dispatch each beat to its per-type Zod schema in `src/beats/registry.ts` and forward the underlying Zod issues into the parent validation context. This preserves the original field path so the user-facing error reads `beats[1].icon: Invalid input` rather than `beats[1].metadata: [opaque message]`. **The `.passthrough()` is load-bearing** — without it, Zod strips unknown keys before the per-type schema sees them, and per-type fields (`icon`, `left`, `right`, `events`, `steps`, `points`, `items`, `beforeLabel`, `afterLabel`, `locationName`, `latitude`, `longitude`, `buildings`, `quote`, `author`) are silently missing.
 25. **Per-word dedupe (1.3)** — `src/beats/words.ts::dedupeOverlappingWords` is a pure helper that drops WhisperX junk (zero-duration + overlapping entries) so the kinetic-caption highlight doesn't flicker or get stuck. `Root.tsx` calls it after `WordListSchema.safeParse` and logs a `console.warn` if any words were dropped, pointing the user at the Python pipeline's WhisperX alignment step. The dedupe rules are: (1) drop if `end <= start`; (2) drop if `end <= prevKept.end` (the later word is contained/duplicate of the previous kept one). On ties the LATER word is dropped, matching what `KineticCaptions::findCurrentWordIndex` does anyway (returns the first match). Logging lives in the caller so the helper stays pure and easy to unit test.
 26. **Render mode is a deployment choice, not a code choice** — Mode A (phone, browser-render in Studio) and Mode B (laptop, CLI-render) consume the exact same Remotion source. The only thing that changes is the render invocation (Studio "Render" button vs. `npx remotion render`). This means we can build all the renderer features (Horizon 0, 2, 5) without a GPU, then later switch to Mode B by changing the render command — no source edits. The Python batch driver, managed render farm, and hosted dashboard (Horizons 1, 6, 7) only make sense in Mode B and are explicitly deferred until then.
-27. **Audio observability uses a file-based plan log, not per-mount `console.log` (1.4)** — Every attempt to emit a per-mount `[audio] ...` log line on `<Audio>` mount failed during a `still` (single-frame) render. The React tree is not committed during a `still`, so `onMount`, `useEffect`, `useState` initializers, and even `useRef` + function body all produce no output. The `still` command uses a render-only code path that bypasses the React lifecycle entirely. Since `scripts/render-smoke.sh` renders 1 frame, it would never see any of the per-mount log lines. The fix: compute the audio plan (whoosh slots + click count + resolved URLs) in `Root.tsx::renderDataCalculateMetadata` using the same `computeTransitionFrames` helper and `CAPTION_VISIBLE_BEAT_TYPES` set the orchestrator uses, then append one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test reads this file (no stdout/stderr capture needed) and asserts one valid JSON line is present. The trade-off: the log is a *plan* computed from the input data, not a *report* of what actually mounted. If the orchestrator's layout diverges from the plan, the log silently lies. We mitigate by reusing the orchestrator's `computeTransitionFrames` and gate set, so the plan IS the orchestrator's behavior for those exact inputs. We also drop the previous sibling `<AudioMountLog>` components and the `logAudioMount` helper — they never fired, so they were dead code in the `still` path. They may be reintroduced for the video-render path (where they DO fire) in a later horizon if per-mount observability is needed there.
+27. **Audio observability is not a side-channel log (0.4 + 1.4 cancelled)** — The original Horizon 0.4 spec asked for a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on every `<Audio>` mount. We tried four mechanisms (`onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body). All four produced zero output during a `still` (single-frame) render. Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked, and there is no place inside the React tree from which to emit a per-mount log line during a `still`. We then pivoted (Horizon 1.4) to a file-based audio plan log: `Root.tsx::renderDataCalculateMetadata` would compute the whoosh slot list + click count and append one JSON line to `out/audio-mounts.log`, and the smoke test would assert on that file. That implementation hit two unfixable problems: (a) `process.versions.node` is shimmed in Remotion's render context, so the "am I in real Node?" guard was unreliable, and (b) webpack's static analysis still tried to follow the dynamic `require("node:fs")` even after the `remotion.config.ts` fallback. **Final fix:** drop the entire 0.4 + 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`. `Root.tsx` no longer computes or writes the audio plan. `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams (narration, ambient, per-transition whoosh, per-word click) are still observable through the React tree itself; per-mount observability would be a future horizon, gated on a real `npx remotion render` smoke test (not `still`).
+28. **Last-render hash cache lives under `scripts/`, not `src/lib/` (1.5)** — The hash helper (`scripts/lastRenderHash.mjs`) was originally placed in `src/lib/`, but Remotion's webpack bundler walks `src/Root.tsx`'s input graph and discovered the file even though nothing imported it, then tried to resolve `node:fs` / `node:crypto` in a browser context and failed with "Module not found: Error: Can't resolve 'fs'". Moving the helper to `scripts/` puts it outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build. The canonical hash input is the two file bodies concatenated byte-for-byte with **NO separator**; an earlier version inserted a single `0x0a` (LF) byte between them, which (a) `createHash().update(0x0a)` rejected as `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)`, and (b) never matched the bash side of `cat beats.json timestamps.json | sha256sum`, which adds no separator. The smoke script's `--skip-if-unchanged` flag uses this hash to short-circuit duplicate renders in <1s; a non-`--skip-if-unchanged` invocation always re-renders and rewrites the cache.
+29. **Cache key scope is beats + words only (1.5)** — The visible output is fully determined by `public/beats.json` and `public/timestamps.json`; changing `public/narration.mp3` or `public/sfx-ambient.mp3` does not change a single pixel. MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes), so we deliberately exclude audio files from the cache key. If you change a SFX mapping in `src/lib/sceneSfx.ts` in a way that affects the visible render (e.g. a new whoosh SFX or a different default volume), bump `LAST_RENDER_HASH_VERSION` in `scripts/lastRenderHash.mjs` to invalidate all old caches automatically — the version prefix on the cached hash is compared on every read, and stale-version records are treated as "no cache" and fall through to a fresh render.
 
 ### Real `beats.json` Example (current reference)
 ```json

@@ -23,6 +23,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - `computeTransitionFrames` (`clamp(round(0.15 * min(out, in)), 4, 15)`)
 - `CAPTION_VISIBLE_BEAT_TYPES` gate (data-vis beats only)
 - `adaptMetadata` (Python shape → component shape)
+- **Horizon 0.1 — Hard-error fetch for render data** (replace silent fallback) — ✅ DONE
 
 ---
 
@@ -30,10 +31,10 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 
 The render pipeline is now functioning but fragile. Lock in stability before adding new features. Everything here is local-only; no APIs, no hosting, no spend.
 
-### 0.1 Replace silent fallback with a proper error
-- `Root.tsx::renderDataCalculateMetadata` currently returns `durationInFrames: 1` when the fetch fails. The render proceeds, so the user gets a useless 1-frame MP4 with no error.
-- Replace the silent fallback with: throw an `Error` in the fetch path that contains the HTTP status + filename, surface it via Remotion's render log, and document the failure mode in `CLAUDE.md`.
-- Add a smoke-test render command (`scripts/render-smoke.sh`) that runs `npx remotion render MotionGraphicsVideo` and asserts the output is `>= 60 frames`.
+### 0.1 Replace silent fallback with a proper error — ✅ DONE
+- `Root.tsx::renderDataCalculateMetadata` now THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures. Error message includes `[MotionGraphicsVideo]` and the exact filename + HTTP status or Zod issue path.
+- `scripts/render-smoke.sh` (new) renders a single frame at 0.2× scale and asserts the output is non-trivial in size. If the data files are missing, the smoke test fails fast with the new error message.
+- `AbortingError` is still treated as benign (Studio prop change mid-fetch) and returns `null` so it doesn't spam the log.
 
 ### 0.2 Validate `beats.json` schema at fetch time
 - `Root.tsx` currently only checks three top-level fields.

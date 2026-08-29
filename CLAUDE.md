@@ -27,6 +27,62 @@ To render a different story, copy the four files above into `public/` and re-run
 
 ---
 
+## Phase 1 (Horizon 0) — Renderer Hardening — IN PROGRESS
+
+Goal: lock in stability of the render pipeline before adding new features. Everything is local, no APIs, no hosting, no spend.
+
+### 1.1 — Hard error when a render data file is missing — ✅ DONE
+
+**Before this change:** if `public/beats.json` was missing, `Root.tsx::renderDataCalculateMetadata` returned `durationInFrames: 1` and the user got a useless 1-frame MP4 with no error message.
+
+**After this change:** if any of the two JSON files is missing, returns non-2xx, has invalid JSON, or fails top-level Zod validation, `renderDataCalculateMetadata` **throws** an `Error` whose message identifies the exact file and field that failed. Remotion surfaces the error in the render log and aborts the render. The orchestrator no longer produces a silent 1-frame video on missing data.
+
+**What changed:**
+- `src/Root.tsx`:
+  - Added Zod schemas `TimedBeatsSchema` (top-level fields) and `WordSchema` (per-word fields). At this stage `beats` items inside the array are still `z.unknown()` — per-beat validation lands in 1.2.
+  - Replaced the silent fallback with a `fetchRenderData` helper that THROWS on missing files, non-2xx responses, JSON parse errors, or top-level schema validation failures. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
+  - The error helper `RenderDataError` prefixes the message with `[MotionGraphicsVideo]` and includes the HTTP status, the Zod issue path, or the underlying error message so the failure is self-explanatory in the render log.
+- `scripts/render-smoke.sh` (new): a single-frame smoke test that renders frame 60 of `MotionGraphicsVideo` at 0.2× scale and asserts the output PNG exists and is non-trivial in size. If beats.json / timestamps.json are missing, the smoke test fails fast with the new error message in the render log.
+- This doc entry (1.1) added.
+
+**How to verify:**
+```bash
+./scripts/render-smoke.sh
+# Should print "OK: smoke render produced NNN-byte PNG at out/smoke.png"
+# If beats.json is missing, the script will print the [MotionGraphicsVideo]
+# error and exit non-zero.
+```
+
+**Manual negative test (optional):**
+```bash
+mv public/beats.json public/beats.json.bak
+./scripts/render-smoke.sh
+# Should print something like:
+#   [MotionGraphicsVideo] public/beats.json fetch failed: HTTP 404 Not Found.
+#   Make sure the file exists in /public and is readable.
+# and exit non-zero.
+mv public/beats.json.bak public/beats.json
+```
+
+### 1.2 — Validate per-beat `metadata` shape with Zod — TODO
+- 1.1 introduced the top-level `TimedBeatsSchema`. Now we extend it so each `beats[i]` is validated against the per-type Zod schema already defined in `src/beats/registry.ts`. If Python produces a beat with the wrong metadata shape (e.g. `key_statement.emphasisWords` is a number instead of a string array), the user gets a clear error like `beats[3] (type=key_statement) failed schema validation: emphasisWords must be an array, got number` instead of a render-time crash deep inside `KeyStatement`.
+- The full `TimedBeats` Zod schema lives in `src/beats/types.ts`; the smoke test still uses it.
+
+### 1.3 — Validate per-word shape + dedupe overlapping/zero-duration words — TODO
+- `WordSchema` was added in 1.1. 1.3 adds a `superRefine` that flags and drops overlapping words (WhisperX sometimes produces them) and zero-duration words (start === end), since both cause the kinetic-caption highlight to flicker.
+- A `console.warn` line lists how many words were dropped, so the user knows the Python pipeline produced bad timestamps.
+
+### 1.4 — Render-time logs around the audio streams — TODO
+- Each `<Audio>` in `MotionGraphicsVideo.tsx` (narration, ambient, whoosh, typing click) prints a one-line `console.log` on mount with the resolved URL, volume, and frame range. Makes render output trivial to correlate with frame ranges when debugging.
+- Remove the `console.warn` "props.beats is empty" branch in `MotionGraphicsVideo::calculateMetadata` once 1.1 makes the upstream fetch a hard error.
+
+### 1.5 — Cache the last-render composition hash — TODO
+- Write SHA-256 of `beats.json` + `timestamps.json` to `out/last-render.json` after a successful render.
+- The next render compares hashes and skips re-encoding if nothing changed (≈2 min saved on duplicate renders).
+- The smoke test from 1.1 grows a `--skip-if-unchanged` flag that uses this hash.
+
+---
+
 ## Completed Work (Phase 1)
 
 ### Pipeline Stages
@@ -39,7 +95,7 @@ To render a different story, copy the four files above into `public/` and re-run
 2. **Deduplication** (`run_pipeline.py`)
    - Daily log at `output/DD_MM_short_vids/_generated_log.json`
    - Fingerprint = normalized title (first 60 chars, alphanumeric only)
-   - Skips stories already generated today
+   - Output: ranked story list with metadata (score, source, category, rank_reason)
 
 3. **Script Generation** (`script_generator.py`)
    - `process_story(story, model_key)` → ~110–150 word Shorts script
@@ -243,7 +299,7 @@ src/
 │   └── sceneSfx.ts                   # SFX URLs + defaults (whoosh, click, ambient) ✅ DONE
 ├── calculateMetadata.ts              # Dynamic duration ✅ DONE (in MotionGraphicsVideo.tsx)
 ├── Composition.tsx                   # Template file (unused; placeholder)
-└── …
+└─…
 public/                                # All render data lives here (single-folder input)
 ├── narration.mp3
 ├── beats.json
@@ -431,6 +487,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - `defaultProps` passes only placeholder values (`beats: empty, words: [], narrationSrc: "narration.mp3"`) because the real values come from the fetch.
 - The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and run `npx remotion render`. No code change required.
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
+- **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -454,6 +511,12 @@ Per-beat wrapper around `KineticCaptions` that:
 19. ~~Beautify `VersusCard` (corner ribbons, Option A/B tags, item rows, VS badge pulse, grid background)~~ ✅
 20. ~~Remove Lottie loading from `IconText` and `Timeline`; use Lucide everywhere~~ ✅ (commit 8d99fe8)
 21. ~~Fix kinetic captions: rebase words from global to local frames inside `KineticCaptions` so the highlight tracks the spoken word in the current beat~~ ✅ (commit c6f3b78)
+22. **IN PROGRESS — Phase 1 (Horizon 0) Renderer Hardening**
+    1. ✅ Replace silent fallback with hard error on missing render data (1.1)
+    2. ⏳ Validate per-beat `metadata` shape with Zod (1.2)
+    3. ⏳ Validate per-word shape + dedupe overlapping/zero-duration words (1.3)
+    4. ⏳ Render-time logs around the audio streams (1.4)
+    5. ⏳ Cache the last-render composition hash (1.5)
 
 ### Critical Decisions
 1. **Absolute-positioned beats, not `<TransitionSeries>`.** `<TransitionSeries>` only supports `durationInFrames` (not `from`), which desynced beats from the global word timestamps in `public/timestamps.json`. We use plain `<Sequence from={beat.startFrame} durationInFrames=…>` per beat; the cross-fade is the natural overlap during which the outgoing beat's `SceneTransition` exit-fade multiplies with the incoming beat's `SceneTransition` entrance-fade.
@@ -478,6 +541,7 @@ Per-beat wrapper around `KineticCaptions` that:
 20. **Headline sizing via `@remotion/layout-utils`** — `BeforeAfter.tsx` and `VersusCard.tsx` use `fitText` + `measureText` (and `fillTextBox` for multi-line wrapping in `BeforeAfter`) to size headlines. The resolved font size is dropped 4px at a time until both the longest line's width AND a height budget fit. This stops the "Lease-Back" / "World Cup boost" overflow that was happening with the previous hand-tuned font sizes.
 21. **VersusCard visual language** — Indigo-cool on the left, orange-warm on the right; per-side `Option A` / `Option B` ribbons; glowing centered VS badge with dashed inner ring; grid background pattern + radial top-glow per side; optional `items[]` rendered as bulleted rows with a glow dot. Card rotation during entrance (–2° / +2° → 0°) for depth.
 22. **BeforeAfter visual language** — Red BEFORE / green AFTER color system, decorative tag pills (Legacy/Manual/Slow/Costly vs Modern/Automated/Fast/Efficient), top accent bars + side vertical strips, slider border that draws around the whole card group.
+23. **Hard-error fetch for render data (1.1)** — `Root.tsx::renderDataCalculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures, instead of silently falling back to a 1-frame video. The error message includes `[MotionGraphicsVideo]` and identifies either the filename + HTTP status, the JSON parse error, or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) is the only benign case and still returns `null`. A new `scripts/render-smoke.sh` exercises the full render path and asserts the output is non-trivial in size.
 
 ### Real `beats.json` Example (current reference)
 ```json

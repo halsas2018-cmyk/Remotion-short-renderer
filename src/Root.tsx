@@ -1,5 +1,6 @@
 import React from "react";
 import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
+import { z } from "zod";
 import { ChartCounter } from "./ChartCounter";
 import { KeyStatement } from "./KeyStatement";
 import { VersusCard } from "./VersusCard";
@@ -38,91 +39,145 @@ import type { TimedBeats } from "./beats/types";
 /*  No code change required.                                           */
 /* ------------------------------------------------------------------ */
 
-interface TimedBeatsData {
-  fps: number;
-  totalDurationInFrames: number;
-  beats: unknown[];
-}
-
-interface TimestampsDataShape {
-  word: string;
-  start: number;
-  end: number;
-}
-
-// Asynchronously fetch the two JSON files at composition mount. The
-// `abortSignal` cancels stale requests when the user changes props in
-// Studio before the previous fetch has resolved.
+// ------------------------------------------------------------------
+// Zod schemas for the two JSON files (Horizon 0.2 / 0.3 — 1.1 ships
+// the schema, the strict top-level validation, and the hard-error
+// path; 1.2 / 1.3 will add per-beat and per-word validation in
+// subsequent commits).
 //
-// IMPORTANT: this function is best-effort. If the fetch fails (file
-// missing, network error, non-2xx status), it returns null and the
-// caller falls back to whatever is already in `defaultProps`. This
-// prevents a missing JSON from collapsing the entire video to a
-// single frame.
-const fetchRenderData = async (
-  abortSignal: AbortSignal,
-): Promise<{
+// For now we use a permissive schema (every beat is `unknown` and
+// every word is a `z.unknown()` field) so we don't break on shapes
+// we haven't yet learned to validate. The point of this commit is
+// to replace the silent fallback with a hard error when the FILES
+// are missing or the top-level shape is wrong — not to validate
+// every field.
+// ------------------------------------------------------------------
+
+const TimedBeatsSchema = z.object({
+  fps: z.number().int().positive(),
+  totalDurationInFrames: z.number().int().nonnegative(),
+  beats: z.array(z.unknown()),
+});
+
+const WordSchema = z.object({
+  word: z.string(),
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+});
+
+const RenderDataError = (message: string, cause?: unknown): Error => {
+  if (cause instanceof Error) {
+    return new Error(`[MotionGraphicsVideo] ${message}: ${cause.message}`);
+  }
+  if (cause !== undefined) {
+    return new Error(
+      `[MotionGraphicsVideo] ${message}: ${JSON.stringify(cause)}`,
+    );
+  }
+  return new Error(`[MotionGraphicsVideo] ${message}`);
+};
+
+interface RenderDataResult {
   beats: TimedBeats;
   words: Word[];
   narrationSrc: string;
   fps: number;
   totalDurationInFrames: number;
-} | null> => {
+}
+
+// ------------------------------------------------------------------
+// Hard-error fetch (Horizon 0.1 — replaces silent fallback).
+//
+// Behavior changes from the previous commit:
+//   - Missing JSON files now THROW. Previously we returned
+//     `durationInFrames: 1` and the user got a 1-frame MP4 with no
+//     explanation.
+//   - Invalid top-level JSON shape (e.g. `beats.fps` is a string)
+//     THROWS with the exact field path that failed Zod validation.
+//   - Network errors (non-2xx, fetch rejected) THROW.
+//   - AbortError is still treated as a benign cancellation (the
+//     user changed props in Studio before the previous fetch
+//     resolved). The orchestrator falls back to defaultProps in
+//     that case because there's nothing meaningful to render
+//     against.
+// ------------------------------------------------------------------
+const fetchRenderData = async (
+  abortSignal: AbortSignal,
+): Promise<RenderDataResult | null> => {
+  let beatsResp: Response;
+  let wordsResp: Response;
   try {
-    const [beatsResp, wordsResp] = await Promise.all([
+    [beatsResp, wordsResp] = await Promise.all([
       fetch(staticFile("beats.json"), { signal: abortSignal }),
       fetch(staticFile("timestamps.json"), { signal: abortSignal }),
     ]);
-    if (!beatsResp.ok || !wordsResp.ok) {
-      // Surface a clear warning in render logs so the user can fix the
-      // missing file without having to guess.
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[MotionGraphicsVideo] runtime data fetch failed — ` +
-          `beats.json=${beatsResp.status}, timestamps.json=${wordsResp.status}. ` +
-          `Make sure public/beats.json and public/timestamps.json exist. ` +
-          `Falling back to defaultProps (which means the composition will be 1 frame).`,
-      );
-      return null;
-    }
-    const beats = (await beatsResp.json()) as TimedBeatsData;
-    const words = (await wordsResp.json()) as TimestampsDataShape[];
-
-    if (
-      !beats ||
-      typeof beats.fps !== "number" ||
-      typeof beats.totalDurationInFrames !== "number" ||
-      !Array.isArray(beats.beats)
-    ) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[MotionGraphicsVideo] public/beats.json is missing required fields ` +
-          `({ fps: number, totalDurationInFrames: number, beats: array }). ` +
-          `Falling back to defaultProps.`,
-      );
-      return null;
-    }
-
-    return {
-      beats: beats as unknown as TimedBeats,
-      words: words as unknown as Word[],
-      narrationSrc: "narration.mp3",
-      fps: beats.fps,
-      totalDurationInFrames: beats.totalDurationInFrames,
-    };
   } catch (err) {
-    // AbortError is normal when the user changes props in Studio mid-fetch;
-    // we don't need to warn for that.
     if (err instanceof Error && err.name === "AbortError") {
       return null;
     }
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[MotionGraphicsVideo] runtime data fetch threw: ${err instanceof Error ? err.message : String(err)}. ` +
-        `Falling back to defaultProps.`,
+    throw RenderDataError(
+      `failed to fetch public/beats.json or public/timestamps.json`,
+      err,
     );
-    return null;
   }
+
+  if (!beatsResp.ok) {
+    throw RenderDataError(
+      `public/beats.json fetch failed: HTTP ${beatsResp.status} ` +
+        `${beatsResp.statusText}. Make sure the file exists in /public ` +
+        `and is readable.`,
+    );
+  }
+  if (!wordsResp.ok) {
+    throw RenderDataError(
+      `public/timestamps.json fetch failed: HTTP ${wordsResp.status} ` +
+        `${wordsResp.statusText}. Make sure the file exists in /public ` +
+        `and is readable.`,
+    );
+  }
+
+  let beatsRaw: unknown;
+  let wordsRaw: unknown;
+  try {
+    [beatsRaw, wordsRaw] = await Promise.all([
+      beatsResp.json(),
+      wordsResp.json(),
+    ]);
+  } catch (err) {
+    throw RenderDataError(
+      `public/beats.json or public/timestamps.json is not valid JSON`,
+      err,
+    );
+  }
+
+  const beatsParsed = TimedBeatsSchema.safeParse(beatsRaw);
+  if (!beatsParsed.success) {
+    const issue = beatsParsed.error.issues[0];
+    const path = issue?.path.join(".") || "(root)";
+    throw RenderDataError(
+      `public/beats.json failed schema validation at "${path}": ` +
+        (issue?.message ?? "unknown error"),
+    );
+  }
+
+  const wordsArraySchema = z.array(WordSchema).nonempty();
+  const wordsParsed = wordsArraySchema.safeParse(wordsRaw);
+  if (!wordsParsed.success) {
+    const issue = wordsParsed.error.issues[0];
+    const path = issue?.path.join(".") || "(root)";
+    throw RenderDataError(
+      `public/timestamps.json failed schema validation at "${path}": ` +
+        (issue?.message ?? "unknown error"),
+    );
+  }
+
+  return {
+    beats: beatsParsed.data as unknown as TimedBeats,
+    words: wordsParsed.data as unknown as Word[],
+    narrationSrc: "narration.mp3",
+    fps: beatsParsed.data.fps,
+    totalDurationInFrames: beatsParsed.data.totalDurationInFrames,
+  };
 };
 
 const renderDataCalculateMetadata: CalculateMetadataFunction<
@@ -130,9 +185,7 @@ const renderDataCalculateMetadata: CalculateMetadataFunction<
 > = async ({ props, abortSignal }) => {
   const data = await fetchRenderData(abortSignal);
   if (!data) {
-    // Return the static duration. MotionGraphicsVideo's own
-    // calculateMetadata will run afterwards and warn if the
-    // beats prop is still empty.
+    // AbortError path: no useful data to inject, keep defaultProps.
     return {
       durationInFrames: 1,
       props,
@@ -516,9 +569,11 @@ export const RemotionRoot = () => (
 
       The "1" duration is a placeholder; the async calculateMetadata runs
       before the composition is registered and supplies the real number.
-      If the fetch fails (missing file, network error, bad JSON), the
-      fetch falls back to defaultProps and warns to the render log — the
-      render will still proceed, just as a 1-frame video.
+      If the fetch fails (missing file, network error, bad JSON),
+      renderDataCalculateMetadata THROWS — Remotion surfaces the error in
+      the render log, the render aborts, and the user sees a clear
+      "[MotionGraphicsVideo] public/beats.json fetch failed: HTTP 404"
+      message instead of a 1-frame MP4.
     */}
     <Composition
       id="MotionGraphicsVideo"

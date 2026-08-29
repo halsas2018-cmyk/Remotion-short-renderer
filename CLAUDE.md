@@ -75,6 +75,42 @@ To render a different story, copy the four files above into `public/` and render
 
 ---
 
+## Design System Rules (read this — every new component must follow these)
+
+**These rules are non-negotiable. They define what the library LOOKS LIKE and what is shared between all 13+ beat components. The current component library was audited and conforms; the new components built under Horizon 2 (HeadlineCard, QuoteAttribution, etc.) MUST conform too.**
+
+1. **Output format: portrait 1080×1920.** Every composition is `width=1080 height=1920`. This is YouTube Shorts / TikTok / Reels format. `MotionGraphicsVideo` and every `*Test` composition in `Root.tsx` set these dimensions. Do not introduce 1920×1080 (16:9) compositions — they break the visual contract.
+2. **Components are transparent overlays on `PersistentBackground`.** Every beat component's outer wrapper is `<AbsoluteFill style={{ backgroundColor: "transparent" }}>`. The orchestrator mounts `PersistentBackground` once at the root, so the background scrolls/animates continuously across all beats and through cross-fades. **Never** draw a solid background inside a beat component — it will cover `PersistentBackground` and break the design.
+3. **Every component draws a white card.** The card is `backgroundColor: "white"`, with `box-shadow: 0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06)`, a 1px `#e8e8e8` border, and a 28–32px border radius. The card sits centered on the canvas and is the only place where the component's content (text, icons, charts) lives. Padded internally with `cardPadding = max(48, width * 0.044)`.
+4. **Every card has a top accent bar.** A 4px gradient bar (`linear-gradient(90deg, #e86c00, #f97316)`) is positioned `top: 0, left: 0, right: 0` with the card's top corners rounded to match the border-radius. This is the visual "signature" of the library — without it, components feel like they belong to a different project.
+5. **Decorative sliders, dots, and shimmer sit on the card.** Each card is wrapped in a `position: relative` parent that has a `position: absolute, inset: -sliderPadding` child with a 5px `#1a1a1a` border (`sliderBorderRadius = cardBorderRadius + 24`). The slider draws on at `sliderStart = textEndFrame` (so the beat's text lands first, the slider confirms it). Three accent dots (`<AccentDot size=6/8/6>`) sit at the top of the card, three at the bottom. A vertical shimmer gradient sweeps over the card during idle.
+6. **Idle motion: bounce + 3D tilt + glow pulse.** When `frame > textEndFrame`, the card translates `sin(t) * 6px` (slow bounce) and rotates `sin(t * 0.05) * 2deg` around the X axis. The glow behind the card scales `1 + 0.15 * sin(t * 0.03)` and pulses opacity `0.6 + 0.2 * sin(t * 0.05)`. Emphasized words do a faster bounce (`sin(t) * 8px`) + slight float + idle scale pulse.
+7. **No exit animation. `SceneTransition` owns entry + cross-fade.** Each beat's component draws its entrance animation (fade + spring pop) and then **holds** through the idle phase. The orchestrator's `<SceneTransition>` produces the entrance fade, the exit fade, and the cross-fade between adjacent beats. Components must NOT animate themselves out at the end of their beat — that double-fades and looks like a glitch. The last beat is the only exception (no outgoing transition, so the closing fade-out is `SceneTransition`'s alone).
+8. **30–40% entrance rule.** All entrance animations (card pop, word-by-word reveal, accent dots, slider draw) MUST complete by 30–40% of the beat's `durationInFrames`. After that, the beat sits at rest in the idle phase. This is so the viewer has time to read the beat's content. The only motion during idle is the subtle bounce/tilt/glow described in rule 6.
+9. **Space Grotesk via `@remotion/google-fonts/SpaceGrotesk`.** Every text component loads the same font with `weights: ["500", "700"]` and `subsets: ["latin"]`. Use `loadFont` (the `@remotion/google-fonts` API), not the `loadFont` exported from `remotion` (that one doesn't exist on this Remotion version). The Google Font package blocks rendering until the font is ready, so the layout doesn't jitter.
+10. **Accent palette: `#e86c00` (dark) / `#f97316` (light) / `rgba(232, 108, 0, 0.4)` (glow).** Use `#e86c00` for the gradient stop, `#f97316` for emphasis rings, and the 0.4-alpha for glow halos. Emphasis-word gradient text uses `linear-gradient(120deg, #e86c00, #f97316)` with `WebkitBackgroundClip: "text"`.
+11. **`rough-notation` from `@remotion/rough-notation`, not `rough-notation`.** The `Highlight` / `Circle` / `Underline` components live in `@remotion/rough-notation` (the Remotion wrapper) — they are React components, not classes you instantiate. Use them like `<Highlight color="…" strokeWidth={3} padding={6} progress={0..1}>{children}</Highlight>`. The `progress` prop is the new addition Remotion's wrapper has that the upstream `rough-notation` does not. Cycle `Highlight` → `Circle` → `Underline` per emphasized word so a list of emphasis words doesn't look uniform.
+12. **Responsive sizing: `fitText` + `measureText` from `@remotion/layout-utils`.** Never hand-tune a font size. Use `fitText({ text, withinWidth, fontFamily, fontWeight }).fontSize` for the cap, then `Math.min(responsiveMax, fittedSize * 0.85)` for the base, and `fittedSize` directly for emphasis. `KeyStatement`, `VersusCard`, and `BeforeAfter` are the reference implementations.
+13. **`durationInFrames` is forwarded as a prop.** Every beat component accepts `durationInFrames: number` as an optional prop override that falls back to `useVideoConfig().durationInFrames`. The orchestrator passes `beat.durationInFrames` so internal timing percentages scale with the beat's actual length. Components MUST NOT assume a fixed-duration composition.
+
+**Why these rules exist:** the 13 beat types in the registry are mostly cosmetic variants of three primitives (text-over-card, bar/number, 3D scene). The visual contract above is what makes them feel like one design system instead of 13 different prototypes. Any component that diverges from it (wrong aspect ratio, solid background, hand-tuned font size, no card chrome, its own exit animation) breaks the library.
+
+**Audit checklist for a new component** (tick before merging):
+- [ ] `width=1080 height=1920` in the Composition
+- [ ] Outer wrapper `<AbsoluteFill style={{ backgroundColor: "transparent" }}>`
+- [ ] White card with shadow + border + border-radius
+- [ ] Top 4px gradient accent bar
+- [ ] `loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] })` from `@remotion/google-fonts/SpaceGrotesk`
+- [ ] `fontSize = Math.min(maxSize, fitText(...).fontSize * factor)` for both base and emphasis
+- [ ] All entrance animations complete by `Math.round(durationInFrames * 0.4)`
+- [ ] NO exit animation inside the component
+- [ ] `SceneTransition` is mounted by the ORCHESTRATOR (`BeatContent`), not the component itself
+- [ ] Idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t*0.03)`)
+- [ ] Accent palette: `#e86c00` / `#f97316` / `rgba(232, 108, 0, 0.4)`
+- [ ] Emphasis words cycle `Highlight` → `Circle` → `Underline` from `@remotion/rough-notation`
+
+---
+
 ## Phase 1 (Horizon 0) — Renderer Hardening — ✅ COMPLETE (next: Horizon 2)
 
 Goal: lock in stability of the render pipeline before adding new features. Everything is local, no APIs, no hosting, no spend. **Horizon 0 is now complete** (commits a73dd19 for 1.1, 78e3f69 for 1.2, then a series of commits for 1.3, 1.4-cancelled, 1.5). Next up: Horizon 2 (component coverage + visuals).
@@ -191,7 +227,7 @@ json.dump(data, open("public/timestamps.json.bak", "w"))
 The original 1.4 spec called for a file-based audio plan log that the smoke test would assert on. After two implementation attempts and a deep dive into the failure modes, **both 1.4 and Horizon 0.4 (the per-mount `console.log` lines it was meant to replace) were cancelled**. The orchestration works fine without the side-channel log: the audio streams (narration, ambient, per-transition whoosh, per-word click) all mount correctly because they live in the React tree, not in a side-channel log. Full reasoning lives in `ROADMAP.md` ("What's already done" and "0.4" / "1.4" entries). The takeaway:
 
 - **0.4 was unworkable from the start.** Every attempt to emit a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on `<Audio>` mount failed during a `still` (single-frame) render. We tried four mechanisms: `onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body. **All four produced zero output.** Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked. There is no place inside the React tree from which to emit a per-mount log line during a `still`.
-- **1.4 was the file-based replacement for 0.4.** We pivoted to computing the audio plan in `Root.tsx::renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout) and appending one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test would read the file and assert one valid JSON line is present. The implementation shipped behind a `process.versions.node` guard, but that guard was unreliable: Remotion's render context shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The cache file was never written in practice. The two `remotion.config.ts` workarounds (`resolve.fallback: { fs: false, ... }` and moving the helper to `scripts/`) were enough to keep the render working, but the actual writeAudioPlanLog call still failed at runtime.
+- **1.4 was the file-based replacement for 0.4.** We pivoted to computing the audio plan in `Root.tsx::renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout) and appending one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test would read the file and assert one valid JSON line was present. The implementation shipped behind a `process.versions.node` guard, but that guard was unreliable: Remotion's render context shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The cache file was never written in practice. The two `remotion.config.ts` workarounds (`resolve.fallback: { fs: false, ... }` and moving the helper to `scripts/`) were enough to keep the render working, but the actual writeAudioPlanLog call still failed at runtime.
 - **Final fix:** drop the entire 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`; `Root.tsx` no longer computes or writes the audio plan; `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams are still observable through the React tree itself; per-mount observability would be a future horizon (likely tied to a real `npx remotion render` smoke test, not `still`).
 - **Do not re-litigate 0.4 / 1.4.** If a future horizon (e.g. 9.x CI) needs per-mount audio observability, write the per-mount log lines from inside a wrapper that the orchestrator mounts unconditionally and gate the verification on a full `npx remotion render` smoke test, not on `npx remotion still`. The `still` path will never produce per-mount logs.
 
@@ -283,6 +319,8 @@ Each beat object contains:
 ### Component Library
 Components are located in `src/` and follow these conventions:
 
+**Every component conforms to the Design System Rules at the top of this document** (portrait 1080×1920, transparent overlay on `PersistentBackground`, white card with shadow + border + top accent bar, `SceneTransition`-owned entrance/exit, 30–40% entrance rule, Space Grotesk via `@remotion/google-fonts/SpaceGrotesk`, accent palette `#e86c00` / `#f97316`, emphasis cycling `Highlight` → `Circle` → `Underline` from `@remotion/rough-notation`, `fitText` + `measureText` from `@remotion/layout-utils` for headline sizing, `durationInFrames` forwarded as a prop). When you build a new component, tick every box on the audit checklist before merging.
+
 #### KineticCaptions.tsx
 - Displays word-by-word captions synced to narration
 - **Local-frame rebasing**: words are converted from GLOBAL frames (`w.start * fps`) to LOCAL frames (relative to the current beat's `startFrame`) inside `useMemo`. The captions' `useCurrentFrame()` is local (0…`durationInFrames`) because the orchestrator wraps them in a per-beat `<Sequence>`, so both sides are now in the same unit. Without this rebasing, the highlight stayed stuck on word 0.
@@ -290,7 +328,7 @@ Components are located in `src/` and follow these conventions:
 - Current word is highlighted with orange color and background
 - **Card Style**: Current word is wrapped in a card with white background, orange border, and subtle shadow
 - Past words fade to gray, future words are hidden
-- Supports emphasis words with cycling annotations (Highlight, Circle, Underline)
+- Supports emphasis words with cycling annotations (Highlight, Circle, Underline) from `@remotion/rough-notation`
 - Idle animations: card bounce, 3D tilt, glow pulse, shimmer
 - Responsive sizing with `fitText` for optimal text scaling
 - **Timing**: Internal animations complete by ~50% of duration, then holds idle state
@@ -305,7 +343,7 @@ Components are located in `src/` and follow these conventions:
 
 #### KeyStatement.tsx
 - Displays text with word-by-word entrance animations
-- Supports emphasis words with cycling annotations (Highlight, Circle, Underline)
+- Supports emphasis words with cycling annotations (Highlight, Circle, Underline) from `@remotion/rough-notation`
 - Idle animations: card bounce, 3D tilt, glow pulse, shimmer
 - Responsive sizing with `fitText` for optimal text scaling
 - **Timing**: Internal animations complete by ~50% of duration, then holds idle state
@@ -391,7 +429,7 @@ Root.tsx::renderDataCalculateMetadata (async fetch via staticFile)
   ├─ Dedupe overlapping/zero-duration words (1.3)
   └─ Inject beats + deduped words into props
   ↓
-MotionGraphicsVideo.tsx (orchestrator)
+MotionGraphicsVideo.tsx (orchestrator)  width=1080 height=1920 (portrait)
   ↓
 calculateMetadata (sync; uses beats.totalDurationInFrames directly)
   ↓
@@ -496,7 +534,7 @@ Maps each `BeatType` to:
 - `quote_card` → `KeyStatement`
 
 ### Step 3: Orchestrator (`src/MotionGraphicsVideo.tsx`) — ✅ DONE
-- Root composition: `MotionGraphicsVideo`
+- Root composition: `MotionGraphicsVideo`, dimensions **1080×1920** (portrait, YouTube Shorts)
 - Renders the `narration.mp3` once at the root via `<Audio src={staticFile(narrationSrc)} />`
 - Wraps `PersistentBackground` once at the root (so its frame counter is global)
 - Lays out each beat at its absolute `startFrame` via `<Sequence from={startFrame} durationInFrames=...>`. The per-beat `<SceneTransition>` handles entrance/exit. Cross-fade is implicit: adjacent beats overlap by `computeTransitionFrames()` frames; during the overlap the outgoing beat's exit fade multiplies with the incoming beat's entrance fade to produce a cross-fade.
@@ -726,6 +764,7 @@ Per-beat wrapper around `KineticCaptions` that:
 27. **Audio observability is not a side-channel log (0.4 + 1.4 cancelled)** — The original Horizon 0.4 spec asked for a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on every `<Audio>` mount. We tried four mechanisms (`onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body). All four produced zero output during a `still` (single-frame) render. Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked, and there is no place inside the React tree from which to emit a per-mount log line during a `still`. We then pivoted (Horizon 1.4) to a file-based audio plan log: `Root.tsx::renderDataCalculateMetadata` would compute the whoosh slot list + click count and append one JSON line to `out/audio-mounts.log`, and the smoke test would assert on that file. That implementation hit two unfixable problems: (a) `process.versions.node` is shimmed in Remotion's render context, so the "am I in real Node?" guard was unreliable, and (b) webpack's static analysis still tried to follow the dynamic `require("node:fs")` even after the `remotion.config.ts` fallback. **Final fix:** drop the entire 0.4 + 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`. `Root.tsx` no longer computes or writes the audio plan. `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams (narration, ambient, per-transition whoosh, per-word click) are still observable through the React tree itself; per-mount observability would be a future horizon, gated on a real `npx remotion render` smoke test (not `still`).
 28. **Last-render hash cache lives under `scripts/`, not `src/lib/` (1.5)** — The hash helper (`scripts/lastRenderHash.mjs`) was originally placed in `src/lib/`, but Remotion's webpack bundler walks `src/Root.tsx`'s input graph and discovered the file even though nothing imported it, then tried to resolve `node:fs` / `node:crypto` in a browser context and failed with "Module not found: Error: Can't resolve 'fs'". Moving the helper to `scripts/` puts it outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build. The canonical hash input is the two file bodies concatenated byte-for-byte with **NO separator**; an earlier version inserted a single `0x0a` (LF) byte between them, which (a) `createHash().update(0x0a)` rejected as `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)`, and (b) never matched the bash side of `cat beats.json timestamps.json | sha256sum`, which adds no separator. The smoke script's `--skip-if-unchanged` flag uses this hash to short-circuit duplicate renders in <1s; a non-`--skip-if-unchanged` invocation always re-renders and rewrites the cache.
 29. **Cache key scope is beats + words only (1.5)** — The visible output is fully determined by `public/beats.json` and `public/timestamps.json`; changing `public/narration.mp3` or `public/sfx-ambient.mp3` does not change a single pixel. MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes), so we deliberately exclude audio files from the cache key. If you change a SFX mapping in `src/lib/sceneSfx.ts` in a way that affects the visible render (e.g. a new whoosh SFX or a different default volume), bump `LAST_RENDER_HASH_VERSION` in `scripts/lastRenderHash.mjs` to invalidate all old caches automatically — the version prefix on the cached hash is compared on every read, and stale-version records are treated as "no cache" and fall through to a fresh render.
+30. **Design system rules — portrait 1080×1920, white card on transparent overlay, `SceneTransition` owns entrance/exit, 30–40% entrance rule, Space Grotesk, accent palette, `rough-notation` from `@remotion/rough-notation`, `fitText` for headlines, `durationInFrames` forwarded as a prop.** The full 13-rule contract and the audit checklist live in the "Design System Rules" section near the top of this doc. Every component in `src/components/` conforms; new components MUST conform too. The next component you build (e.g. `QuoteAttribution`, `StatPill`) should be a copy of `KeyStatement` with the per-type field set swapped out — do not invent a new layout. If a future component genuinely can't fit the contract, document the exception in this section before merging.
 
 ### Real `beats.json` Example (current reference)
 ```json

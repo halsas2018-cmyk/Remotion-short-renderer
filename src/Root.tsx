@@ -126,15 +126,15 @@ export const renderDataCalculateMetadata: CalculateMetadataFunction<
 /*  HeadlineCard test composition                                      */
 /*                                                                     */
 /*  Single-beat composition for visual QA of the new component.       */
-/*  Reuses HeadlineCard's own Zod schema so defaultProps is the       */
-/*  source of truth for valid props.                                   */
+/*  Portrait 1080×1920 to match the design system. The component      */
+/*  itself is a transparent overlay on the persistent background.    */
 /* ------------------------------------------------------------------ */
 
 const HeadlineCardTestComposition: React.FC = () => {
   return (
     <HeadlineCard
-      text="Apple just became the first $4 trillion company in history"
-      emphasisWords={["first", "$4 trillion"]}
+      text="The gamble works while AI chips are scarce"
+      emphasisWords={["gamble", "scarce"]}
     />
   );
 };
@@ -147,8 +147,8 @@ export const RemotionRoot: React.FC = () => {
         component={MotionGraphicsVideo}
         durationInFrames={300}
         fps={30}
-        width={1920}
-        height={1080}
+        width={1080}
+        height={1920}
         calculateMetadata={renderDataCalculateMetadata}
         defaultProps={{
           beats: {
@@ -165,15 +165,11 @@ export const RemotionRoot: React.FC = () => {
         component={HeadlineCardTestComposition}
         durationInFrames={120}
         fps={30}
-        width={1920}
-        height={1080}
-        schema={HeadlineCardSchema}
+        width={1080}
+        height={1920}
         defaultProps={{
-          text: "Apple just became the first $4 trillion company in history",
-          emphasisWords: ["first", "$4 trillion"],
-          backgroundColor: "#0b0b0f",
-          accentColor: "#f97316",
-          textColor: "#ffffff",
+          text: "The gamble works while AI chips are scarce",
+          emphasisWords: ["gamble", "scarce"],
         }}
       />
     </>

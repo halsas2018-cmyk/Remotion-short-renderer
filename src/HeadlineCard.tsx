@@ -1,20 +1,20 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Composition,
   interpolate,
   useCurrentFrame,
   useVideoConfig,
   Easing,
 } from "remotion";
-import { z } from "zod";
-import { zColor } from "@remotion/zod-types";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
-import { fitText, measureText } from "@remotion/layout-utils";
+import { fitText } from "@remotion/layout-utils";
 
 /* ------------------------------------------------------------------ */
-/*  Google Font — type-safe, blocks rendering until the font is       */
-/*  ready. Matches KeyStatement so the two components sit in the     */
-/*  same visual family.                                              */
+/*  Google Font — type-safe, blocks rendering until the font is      */
+/*  ready. Same setup as KeyStatement so the two components sit in   */
+/*  the same visual family.                                          */
 /* ------------------------------------------------------------------ */
 
 const { fontFamily } = loadFont("normal", {
@@ -22,161 +22,94 @@ const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
 });
 
-export const HeadlineCardSchema = z.object({
-  text: z.string().min(1),
-  emphasisWords: z.array(z.string()).default([]),
-  // Optional accent colour (top bar, emphasis rings). Falls back to
-  // the same orange used by KeyStatement so the library is consistent.
-  accentColor: zColor().default("#e86c00"),
-  // Light variant used for gradients / hover.
-  accentColorLight: zColor().default("#f97316"),
-});
-
-export type HeadlineCardProps = z.infer<typeof HeadlineCardSchema>;
-
-/* ------------------------------------------------------------------ */
-/*  Constants — mirror KeyStatement so the design language is one.    */
-/* ------------------------------------------------------------------ */
-
-const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
-const DARK_TEXT = "#1a1a1a";
-const CARD_SHADOW =
-  "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
-const CARD_BORDER = "#e8e8e8";
-const SLIDER_COLOR = "#1a1a1a";
+interface HeadlineCardProps {
+  text: string;
+  emphasisWords: string[];
+  durationInFrames?: number; // Optional override; defaults to composition duration
+  // Timing percentages for internal animation only
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  textStartDelayPct?: number;
+  sliderDurPct?: number;
+}
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
+const ACCENT_COLOR = "#e86c00";
+const ACCENT_COLOR_LIGHT = "#f97316";
+const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
+const DARK_TEXT = "#1a1a1a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_BORDER = "#e8e8e8";
+const SLIDER_COLOR = "#1a1a1a";
 
 /* ------------------------------------------------------------------ */
 /*  Three emphasis annotation shapes, cycled per emphasised word.    */
-/*  Same pattern KeyStatement uses.                                  */
+/*  Same pattern KeyStatement uses: Highlight → Circle → Underline  */
+/*  from `@remotion/rough-notation` (the React-wrapped variant with  */
+/*  a `progress` prop that the upstream `rough-notation` package     */
+/*  does not export).                                                */
 /* ------------------------------------------------------------------ */
 
 const ANNOTATION_CYCLE = [
-  { name: "highlight" as const, color: "rgba(232, 108, 0, 0.25)" },
-  { name: "circle" as const, color: "#f97316" },
-  { name: "underline" as const, color: "#e86c00" },
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_COLOR_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
 ];
-
-type AnnotationStyle = (typeof ANNOTATION_CYCLE)[number];
-
-const renderAnnotation = (
-  style: AnnotationStyle,
-  children: React.ReactNode,
-): React.ReactNode => {
-  if (style.name === "highlight") {
-    return (
-      <span
-        style={{
-          position: "relative",
-          display: "inline-block",
-          padding: "2px 4px",
-          background: style.color,
-          borderRadius: 4,
-        }}
-      >
-        {children}
-      </span>
-    );
-  }
-  if (style.name === "circle") {
-    return (
-      <span
-        style={{
-          position: "relative",
-          display: "inline-block",
-          padding: "2px 4px",
-          boxShadow: `inset 0 0 0 3px ${style.color}`,
-          borderRadius: 999,
-        }}
-      >
-        {children}
-      </span>
-    );
-  }
-  // underline
-  return (
-    <span
-      style={{
-        position: "relative",
-        display: "inline-block",
-        padding: "2px 4px",
-        borderBottom: `4px solid ${style.color}`,
-        borderRadius: 0,
-      }}
-    >
-      {children}
-    </span>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  HeadlineCard                                                       */
-/*                                                                     */
-/*  Big-text intro beat for the story hook. Like KeyStatement, it:   */
-/*   - sits on a TRANSPARENT AbsoluteFill (PersistentBackground is  */
-/*     the canvas),                                                   */
-/*   - draws a white card with shadow + border + top accent bar,     */
-/*   - sizes the headline with fitText (longest word fits the card), */
-/*   - cycles Highlight / Circle / Underline on emphasisWords,       */
-/*   - holds idle state after ~30–40% of the beat (no exit),        */
-/*   - relies on SceneTransition (mounted by the orchestrator) for   */
-/*     the entrance fade + the cross-fade to the next beat.         */
-/* ------------------------------------------------------------------ */
 
 export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   text,
   emphasisWords,
-  accentColor = "#e86c00",
-  accentColorLight = "#f97316",
+  durationInFrames: propsDurationInFrames,
+  wordDurPct = 0.08,
+  wordStaggerPct = 0.03,
+  textStartDelayPct = 0.05,
+  sliderDurPct = 0.45,
 }) => {
   const frame = useCurrentFrame();
-  const { width, height, fps, durationInFrames: videoDurationInFrames } =
-    useVideoConfig();
+  const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
 
-  // The orchestrator passes durationInFrames via <BeatComponent {...}
-  // durationInFrames={beat.durationInFrames} />. KeyStatement's API
-  // names it `propsDurationInFrames` and falls back to the composition
-  // duration; we do the same.
-  const durationInFrames = videoDurationInFrames;
+  // Use prop override if provided, otherwise fall back to composition duration
+  const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
-  // ============================================
-  // INTERNAL TIMELINE — completes by ~40%, then holds.
-  // No exit animation. SceneTransition (mounted by the
-  // orchestrator) owns the entrance fade and the cross-fade.
-  // ============================================
-  const wordDuration = Math.max(8, Math.round(durationInFrames * 0.08));
-  const wordStagger = Math.max(2, Math.round(durationInFrames * 0.03));
-  const textStartDelay = Math.max(2, Math.round(durationInFrames * 0.05));
+  /* ================================================================ */
+  /*  INTERNAL TIMELINE — completes by ~40%, then holds.              */
+  /*  No exit animation. SceneTransition (mounted by the             */
+  /*  orchestrator's BeatContent wrapper) owns the entrance fade    */
+  /*  and the cross-fade to the next beat.                           */
+  /* ================================================================ */
+  const wordDuration = Math.max(8, Math.round(durationInFrames * wordDurPct));
+  const wordStagger = Math.max(2, Math.round(durationInFrames * wordStaggerPct));
+  const textStartDelay = Math.max(2, Math.round(durationInFrames * textStartDelayPct));
   const words = text.split(" ");
   const totalWords = words.length;
   const textEndFrame =
     textStartDelay + (totalWords - 1) * wordStagger + wordDuration;
   const sliderStart = textEndFrame;
-  const sliderDuration = Math.round(durationInFrames * 0.45);
+  const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
-  // Card entrance — quick fade + spring pop.
+  // Card entrance — quick fade + spring pop at the very start
   const cardEntranceDuration = Math.max(12, Math.round(durationInFrames * 0.07));
 
+  // Idle state — everything time-based from here on
   const isIdle = frame > textEndFrame;
 
-  // Mark which words are emphasised.
+  // Mark which words are emphasised
   const emphasisSet = new Set(
     emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
   );
 
-  // Cycle the annotation shape per emphasised word.
+  // Assign an annotation style to each emphasized word (cycles Highlight → Circle → Underline)
   let emphasisRunIndex = 0;
   const wordAnnotations = words.map((word) => {
-    const clean = word.toLowerCase().replace(/[.,!?;:]$/, "");
-    if (!emphasisSet.has(clean)) return null;
+    const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+    if (!emphasisSet.has(cleanWord)) return null;
     const entry = ANNOTATION_CYCLE[emphasisRunIndex % ANNOTATION_CYCLE.length];
     emphasisRunIndex += 1;
     return entry;
   });
 
-  // Card idle bounce + subtle 3D tilt (matches KeyStatement).
+  // Card idle bounce + subtle 3D tilt (matches KeyStatement)
   const cardBounceFrequency = 0.08;
   const cardBounceAmplitude = 6;
   const cardBounceOffset = isIdle
@@ -184,15 +117,15 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     : 0;
   const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
 
-  // Per-emphasis-word bounce (idle loop).
+  // Per-emphasis-word bounce (idle loop)
   const bounceFrequency = 0.25;
   const bounceAmplitude = 8;
 
-  // Glow pulse (idle).
+  // Glow pulse (idle)
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
-  // Responsive sizing.
+  // Responsive sizing — portrait 1080×1920 hard-coded for Shorts.
   const padding = Math.max(60, width * 0.11);
   const availableWidth = width - 2 * padding;
   const cardPadding = Math.max(36, width * 0.044);
@@ -215,20 +148,18 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     fontWeight: "700",
   }).fontSize;
   const baseFontSize = Math.min(Math.max(56, width * 0.055), fittedSize * 0.85);
-  const emphasisFontSize = Math.min(
-    Math.max(68, width * 0.066),
-    fittedSize,
-  );
+  const emphasisFontSize = Math.min(Math.max(68, width * 0.066), fittedSize);
 
-  // Shimmer timing (idle).
+  // Shimmer timing (idle)
   const shimmerSpeed = 25;
   const shimmerStart = textEndFrame;
-  const getShimmerTop = (start: number) => {
-    if (frame < start) return "-100%";
-    const elapsedSeconds = (frame - start) / fps;
+  const getShimmerTop = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return "-100%";
+    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
-  const getShimmerOpacity = (start: number) => (frame < start ? 0 : 1);
+  const getShimmerOpacity = (shimmerStartFrame: number) =>
+    frame < shimmerStartFrame ? 0 : 1;
 
   /* ------------------------------ decorations ------------------------------ */
 
@@ -240,7 +171,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     animate?: boolean;
   }> = ({
     size = 8,
-    color = accentColor,
+    color = ACCENT_COLOR,
     baseDelay = 0,
     opacity = 1,
     animate = false,
@@ -277,11 +208,12 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   }> = ({
     width: lineWidth = 60,
     height: lineHeight = 2,
-    color = accentColor,
+    color = ACCENT_COLOR,
     opacity: lineOpacity = 1,
     animate = false,
   }) => {
-    const pulse = animate && isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.08) : lineOpacity;
+    const pulse =
+      animate && isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.08) : lineOpacity;
     const glow =
       animate && isIdle
         ? `drop-shadow(0 0 ${
@@ -301,8 +233,6 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
       />
     );
   };
-
-  /* -------------------------------- render -------------------------------- */
 
   return (
     <AbsoluteFill
@@ -343,11 +273,16 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
               border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
               borderRadius: sliderBorderRadius,
               boxSizing: "border-box",
-              opacity: interpolate(frame, [sliderStart, sliderStart + 10], [0, 1], {
-                easing: easeOut,
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
+              opacity: interpolate(
+                frame,
+                [sliderStart, sliderStart + 10],
+                [0, 1],
+                {
+                  easing: easeOut,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                },
+              ),
               scale: interpolate(
                 frame,
                 [sliderStart, sliderStart + sliderDuration],
@@ -379,22 +314,32 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
-              opacity: interpolate(frame, [0, cardEntranceDuration], [0, 1], {
-                easing: easeOut,
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
-              scale: interpolate(frame, [0, cardEntranceDuration], [0.92, 1], {
-                easing: Easing.spring({ damping: 200 }),
-                output: "perceptual-scale",
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
+              opacity: interpolate(
+                frame,
+                [0, cardEntranceDuration],
+                [0, 1],
+                {
+                  easing: easeOut,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                },
+              ),
+              scale: interpolate(
+                frame,
+                [0, cardEntranceDuration],
+                [0.92, 1],
+                {
+                  easing: Easing.spring({ damping: 200 }),
+                  output: "perceptual-scale",
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                },
+              ),
               translate: `0px ${cardBounceOffset}px`,
               rotate: `x ${cardTiltDeg}deg`,
             }}
           >
-            {/* Top accent bar (curved corners). */}
+            {/* Top accent bar with matching curved corners. */}
             <div
               style={{
                 position: "absolute",
@@ -402,7 +347,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                 left: 0,
                 right: 0,
                 height: 4,
-                background: `linear-gradient(90deg, ${accentColor}, ${accentColorLight})`,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
                 borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
@@ -411,13 +356,16 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
             <div
               style={{
                 position: "absolute",
-                inset: 0,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 borderRadius: cardBorderRadius,
                 opacity: 0.03,
                 backgroundImage: `repeating-linear-gradient(
                   45deg,
-                  ${accentColor} 0,
-                  ${accentColor} 1px,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
                   transparent 1px,
                   transparent 20px
                 )`,
@@ -425,14 +373,16 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
               }}
             />
 
-            {/* Radial gradient overlay for depth. */}
+            {/* Subtle radial gradient overlay for depth. */}
             <div
               style={{
                 position: "absolute",
-                inset: 0,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 borderRadius: cardBorderRadius,
-                background:
-                  "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)",
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
                 pointerEvents: "none",
               }}
             />
@@ -441,7 +391,10 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
             <div
               style={{
                 position: "absolute",
-                inset: 0,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -462,7 +415,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
               />
             </div>
 
-            {/* Decorative dots at the top. */}
+            {/* Decorative accent dots at top. */}
             <div
               style={{
                 position: "absolute",
@@ -507,46 +460,35 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                 }}
               >
                 {words.map((word, i) => {
-                  const cleanWord = word
-                    .toLowerCase()
-                    .replace(/[.,!?;:]$/, "");
+                  const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
                   const isEmphasized = emphasisSet.has(cleanWord);
                   const annotation = wordAnnotations[i];
 
+                  // Word entrance window.
                   const wordStartFrame = textStartDelay + i * wordStagger;
                   const wordEndFrame = wordStartFrame + wordDuration;
 
+                  // Idle animations for emphasized words.
                   const bounceOffset =
                     isIdle && isEmphasized
-                      ? Math.sin(frame * bounceFrequency * Math.PI * 2) *
-                        bounceAmplitude
+                      ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude
                       : 0;
                   const idleScalePulse =
-                    isIdle && isEmphasized
-                      ? 1 + 0.04 * Math.sin(frame * 0.12 + i)
-                      : 1;
+                    isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
                   const emphasisFloat =
                     isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
 
+                  // Filter chain: entrance blur (+ idle glow for emphasized words).
                   const wordFilter = [
-                    `blur(${interpolate(
-                      frame,
-                      [wordStartFrame, wordEndFrame],
-                      [8, 0],
-                      {
-                        easing: easeOutExpo,
-                        extrapolateLeft: "clamp",
-                        extrapolateRight: "clamp",
-                      },
-                    )}px)`,
+                    `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [8, 0], {
+                      easing: easeOutExpo,
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    })}px)`,
                     ...(isIdle && isEmphasized
                       ? [
-                          `drop-shadow(0 0 ${
-                            8 + 4 * Math.sin(frame * 0.15 + i)
-                          }px ${ACCENT_GLOW})`,
-                          `drop-shadow(0 0 ${
-                            16 + 8 * Math.sin(frame * 0.1 + i)
-                          }px ${ACCENT_GLOW})`,
+                          `drop-shadow(0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW})`,
+                          `drop-shadow(0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})`,
                         ]
                       : []),
                   ].join(" ");
@@ -555,52 +497,32 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                     <span
                       style={{
                         display: "inline-block",
-                        opacity: interpolate(
-                          frame,
-                          [wordStartFrame, wordEndFrame],
-                          [0, 1],
-                          {
+                        opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        }),
+                        translate: `0px ${
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
                             easing: easeOutExpo,
                             extrapolateLeft: "clamp",
                             extrapolateRight: "clamp",
-                          },
-                        ),
-                        translate: `0px ${
-                          interpolate(
-                            frame,
-                            [wordStartFrame, wordEndFrame],
-                            [40, 0],
-                            {
-                              easing: easeOutExpo,
-                              extrapolateLeft: "clamp",
-                              extrapolateRight: "clamp",
-                            },
-                          ) +
+                          }) +
                           bounceOffset +
                           emphasisFloat
                         }px`,
                         scale:
-                          interpolate(
-                            frame,
-                            [wordStartFrame, wordEndFrame],
-                            [0.7, 1],
-                            {
-                              easing: easeOutExpo,
-                              extrapolateLeft: "clamp",
-                              extrapolateRight: "clamp",
-                              output: "perceptual-scale",
-                            },
-                          ) * idleScalePulse,
-                        rotate: `${interpolate(
-                          frame,
-                          [wordStartFrame, wordEndFrame],
-                          [-5, 0],
-                          {
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
                             easing: easeOutExpo,
                             extrapolateLeft: "clamp",
                             extrapolateRight: "clamp",
-                          },
-                        )}deg`,
+                            output: "perceptual-scale",
+                          }) * idleScalePulse,
+                        rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        })}deg`,
                         transformOrigin: "center bottom",
                         fontSize: isEmphasized ? emphasisFontSize : baseFontSize,
                         fontWeight: isEmphasized ? 700 : 500,
@@ -609,7 +531,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                         margin: "0 0.04em",
                         ...(isEmphasized
                           ? {
-                              backgroundImage: `linear-gradient(120deg, ${accentColor}, ${accentColorLight})`,
+                              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
                               WebkitBackgroundClip: "text",
                               backgroundClip: "text",
                               WebkitTextFillColor: "transparent",
@@ -624,22 +546,40 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                     </span>
                   );
 
+                  // Wrap emphasized words with cycling rough-notation annotations.
                   if (isEmphasized && annotation) {
+                    const AnnotationComponent = annotation.Component;
                     return (
-                      <span key={i} style={{ display: "inline-block" }}>
-                        {renderAnnotation(annotation, wordContent)}
-                      </span>
+                      <AnnotationComponent
+                        key={i}
+                        color={annotation.color}
+                        strokeWidth={3}
+                        padding={6}
+                        progress={interpolate(
+                          frame,
+                          [wordStartFrame, wordEndFrame + 5],
+                          [0, 1],
+                          {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                          },
+                        )}
+                      >
+                        {wordContent}
+                      </AnnotationComponent>
                     );
                   }
+
                   return <span key={i}>{wordContent}</span>;
                 })}
               </div>
 
-              {/* Separator. */}
+              {/* Decorative separator line. */}
               <DecorativeLine
                 width={80}
                 height={3}
-                color={accentColor}
+                color={ACCENT_COLOR}
                 opacity={isIdle ? 0.7 : 0.4}
                 animate={true}
               />
@@ -667,7 +607,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                 left: 0,
                 width: "100%",
                 height: "18%",
-                background: `linear-gradient(180deg, transparent, ${accentColor}33, transparent)`,
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
                 opacity: getShimmerOpacity(shimmerStart),
                 borderRadius: cardBorderRadius,
                 pointerEvents: "none",
@@ -679,3 +619,18 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     </AbsoluteFill>
   );
 };
+
+export const HeadlineCardTestComposition: React.FC = () => (
+  <Composition
+    id="HeadlineCardTest"
+    component={HeadlineCard}
+    durationInFrames={120}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{
+      text: "The gamble works while AI chips are scarce",
+      emphasisWords: ["scarce"],
+    }}
+  />
+);

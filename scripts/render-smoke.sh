@@ -35,7 +35,7 @@
 #   to narration.mp3 / sfx-ambient.mp3 do NOT invalidate the cache
 #   because they don't change a single pixel. If you change a SFX
 #   mapping in `sceneSfx.ts`, bump `LAST_RENDER_HASH_VERSION` in
-#   `src/lib/lastRenderHash.ts` to invalidate old caches.
+#   `scripts/lastRenderHash.mjs` to invalidate old caches.
 #
 # Pre-requisites:
 #   1. public/narration.mp3, public/beats.json, public/timestamps.json
@@ -114,11 +114,14 @@ mkdir -p "${OUT_DIR}"
 # Horizon 0.5 — skip-if-unchanged check.
 #
 # We compute the hash here in bash (cat | sha256sum) and then
-# delegate the version-aware read to a small Node one-liner so the
-# semantics of "is the cache valid?" match the TypeScript helper
-# exactly. If the cache is missing or stale, we fall through to the
-# render path. We never fail with exit 4 just because the cache is
-# absent on a fresh checkout — that's exit 0 to "fall through".
+# delegate the version-aware read to a small Node one-liner that
+# dynamically imports `scripts/lastRenderHash.mjs`. The helper is
+# deliberately kept under `scripts/` (not `src/`) so Remotion's
+# webpack bundler never walks it — only the smoke script's
+# `node -e` invocation loads it. If the cache is missing or stale,
+# we fall through to the render path. We never fail with exit 4
+# just because the cache is absent on a fresh checkout — that's
+# exit 0 to "fall through".
 # ------------------------------------------------------------------
 if [ "${SKIP_IF_UNCHANGED}" = "1" ]; then
   if [ ! -f "${PUBLIC_BEATS_FILE}" ] || [ ! -f "${PUBLIC_WORDS_FILE}" ]; then
@@ -129,25 +132,14 @@ if [ "${SKIP_IF_UNCHANGED}" = "1" ]; then
     INPUT_HASH=$(
       cat "${PUBLIC_BEATS_FILE}" "${PUBLIC_WORDS_FILE}" | sha256sum | awk '{print $1}'
     )
-    CACHE_RESULT=$(node -e "
-      const fs = require('fs');
+    CACHE_RESULT=$(node --input-type=module -e "
+      const { readLastRenderHash, LAST_RENDER_HASH_VERSION } = await import('./scripts/lastRenderHash.mjs');
       const path = '${LAST_RENDER_FILE}';
-      let raw;
-      try { raw = fs.readFileSync(path, 'utf8'); }
-      catch (e) { console.log('MISSING'); process.exit(0); }
-      let obj;
-      try { obj = JSON.parse(raw); }
-      catch (e) { console.log('MALFORMED'); process.exit(0); }
-      const expectedPrefix = 'v' + (require('./src/lib/lastRenderHash').LAST_RENDER_HASH_VERSION) + ':';
-      if (typeof obj.version !== 'number' || obj.version !== require('./src/lib/lastRenderHash').LAST_RENDER_HASH_VERSION) {
-        console.log('STALE_VERSION');
-        process.exit(0);
-      }
-      if (typeof obj.hash !== 'string' || !obj.hash.startsWith(expectedPrefix)) {
-        console.log('STALE_FORMAT');
-        process.exit(0);
-      }
-      console.log('OK ' + obj.hash + ' ' + (obj.renderedAt || ''));
+      let record;
+      try { record = readLastRenderHash('${OUT_DIR}'); }
+      catch (e) { console.log('READ_ERROR'); process.exit(0); }
+      if (!record) { console.log('MISSING_OR_STALE'); process.exit(0); }
+      console.log('OK ' + record.hash + ' ' + record.renderedAt);
     " 2>/dev/null || echo "NODE_ERROR")
     CACHE_STATUS="${CACHE_RESULT%% *}"
     CACHE_HASH="${CACHE_RESULT#* }"
@@ -277,8 +269,8 @@ AUDIO_PLAN_VALIDATION=$(node -e "
 # of `scripts/render-smoke.sh --skip-if-unchanged` can short-circuit.
 #
 # We compute the same canonical input as above (`cat beats words`)
-# and write it via the TypeScript helper so the schema is shared
-# with any future caller. Failures are warned, not fatal — a broken
+# and write it via the helper module so the schema is shared with
+# any future caller. Failures are warned, not fatal — a broken
 # cache file shouldn't kill an otherwise-successful render.
 # ------------------------------------------------------------------
 INPUT_HASH=$(
@@ -294,12 +286,10 @@ DURATION_FRAMES=$(node -e "
   console.log(obj.beatsCount || 0);
 " 2>/dev/null || echo 0)
 
-if ! node -e "
-  const { writeLastRenderHash, LAST_RENDER_HASH_VERSION } = require('./src/lib/lastRenderHash');
-  const { createHash } = require('node:crypto');
-  // Re-derive the prefixed hash from the same inputs the bash did,
-  // so the schema in TS is the single source of truth.
-  const fs = require('node:fs');
+if ! node --input-type=module -e "
+  const { writeLastRenderHash, LAST_RENDER_HASH_VERSION } = await import('./scripts/lastRenderHash.mjs');
+  const fs = await import('node:fs');
+  const { createHash } = await import('node:crypto');
   const beats = fs.readFileSync('${PUBLIC_BEATS_FILE}');
   const words = fs.readFileSync('${PUBLIC_WORDS_FILE}');
   const h = createHash('sha256');

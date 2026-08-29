@@ -157,18 +157,57 @@ export const writeAudioPlanLog = (
   plan: AudioPlanLog,
   projectRoot?: string,
 ): boolean => {
-  // Bail early if we are not running in Node. `process` exists in Node
-  // and in the browser when a bundler polyfills it; the safer check is
-  // `typeof require !== "undefined"`. If require is unavailable, the
-  // file write is a no-op (the orchestrator still works, the log just
-  // doesn't get written).
+  // ------------------------------------------------------------------
+  // Node-only file write. We use a synchronous dynamic import of the
+  // Node built-ins `fs` and `path`. `writeAudioPlanLog` is only ever
+  // called from `Root.tsx::renderDataCalculateMetadata`, which only
+  // runs server-side (in the `remotion render` / `remotion still`
+  // Node process). It is NEVER called from the browser bundle.
+  //
+  // Why not `(0, eval)("require")("fs")` like the previous version?
+  //   Because the Remotion renderer bundle is ESM-compiled, so
+  //   `require` is not a real symbol in scope — the bare identifier
+  //   `require` is a CommonJS-only concept. Inside an ESM module,
+  //   `eval("require")` throws `ReferenceError: require is not
+  //   defined` at runtime. The previous `(0, eval)("require")` trick
+  //   hid the module name "fs" from webpack's static analyzer, but
+  //   the `require` identifier itself was the problem.
+  //
+  // Why not `await import("fs")`?
+  //   Same webpack concern as above: webpack sees the literal string
+  //   "fs" in the source and tries to bundle it for the browser
+  //   bundle, which fails. BUT — since `writeAudioPlanLog` is only
+  //   ever called from a server-only code path, we don't ship a
+  //   browser bundle at all. The only bundles we ship are the server
+  //   bundle (which has `fs` available) and the Studio bundle (which
+  //   never calls this function).
+  //
+  // Why not a top-level `import fs from "fs"`?
+  //   Same webpack problem. The `import` statement is statically
+  //   visible to webpack, which tries to resolve it for every bundle
+  //   it emits (including the browser bundle if any file ever
+  //   transitively imports this module).
+  //
+  // The fix: gate the dynamic import behind a synchronous
+  // Node-detect check, and use `require` *if it actually exists in
+  // the global scope* (the CJS case). If we're in an ESM-only
+  // runtime, fall back to throwing — the caller's try/catch will
+  // turn it into a warn and the render keeps going.
+  // ------------------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nodeRequire: ((id: string) => any) | undefined =
-    typeof require !== "undefined" ? (0, eval)("require") : undefined;
-  if (!nodeRequire) return false;
+  const globalRequire: ((id: string) => any) | undefined =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    typeof (globalThis as any).require === "function"
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).require
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        typeof require === "function"
+        ? require
+        : undefined;
+  if (!globalRequire) return false;
 
-  const fs = nodeRequire("fs") as typeof import("fs");
-  const path = nodeRequire("path") as typeof import("path");
+  const fs = globalRequire("fs") as typeof import("fs");
+  const path = globalRequire("path") as typeof import("path");
 
   let root: string;
   if (projectRoot) {

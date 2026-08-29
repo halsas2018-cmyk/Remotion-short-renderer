@@ -1,5 +1,4 @@
 import React from "react";
-import { TransitionSeries } from "@remotion/transitions";
 import { Beat } from "./types";
 import { SceneTransition } from "../SceneTransition";
 import { BeatKineticCaptions } from "../audio/BeatKineticCaptions";
@@ -15,7 +14,7 @@ import type { Word } from "./words";
 /*                                                                     */
 /*  Only data-vis beat types show word-sync captions on top of the   */
 /*  visual. Text/card heavy beat types already show the spoken text  */
-/*  on screen, so adding captions would be redundant.                */
+/*  on-screen, so adding captions would be redundant.                */
 /*                                                                     */
 /*  Show:  map_3d, chart_line, chart_comparison_3d, chart_counter,    */
 /*         progress_meter, timeline                                    */
@@ -23,7 +22,7 @@ import type { Word } from "./words";
 /*         process_flow, quote_card                                   */
 /* ------------------------------------------------------------------ */
 
-const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
+export const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
   "map_3d",
   "chart_line",
   "chart_comparison_3d",
@@ -32,53 +31,45 @@ const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
   "timeline",
 ]);
 
-const shouldShowKineticCaptions = (beatType: string): boolean =>
+export const shouldShowKineticCaptions = (beatType: string): boolean =>
   CAPTION_VISIBLE_BEAT_TYPES.has(beatType);
 
-/**
- * Render a single beat as a <TransitionSeries.Sequence>.
- *
- * Inside the orchestrator, beats are arranged in a <TransitionSeries>
- * with a <fade()> cross-fade between each pair of adjacent beats (see
- * src/MotionGraphicsVideo.tsx). Each beat is therefore wrapped in a
- * <TransitionSeries.Sequence> with a `durationInFrames` prop.
- *
- * Per Remotion best practices, each beat is its own authored JSX node
- * (not generated via .map() of JSX) so its `durationInFrames` is
- * editable in Studio.
- *
- * NOTE: <TransitionSeries.Sequence> does NOT support a `from` prop —
- * beat ordering is determined by array order in beats.json, not by
- * per-beat `startFrame`. The Python pipeline still emits `startFrame`
- * for reference, but the orchestrator ignores it.
- *
- * Each <TransitionSeries.Sequence> contains:
- *   - <SceneTransition>                  (entrance/exit wrapper)
- *     -> <BeatComponent {...props} />   (the typed component)
- *   - <BeatKineticCaptions />            (per-beat word-sync overlay;
- *                                         only for data-vis beat types)
- *
- * NOTE: <PersistentBackground /> is NOT rendered here — it lives at the
- * root of <MotionGraphicsVideo> so its frame counter is the global
- * composition frame (not the per-beat local frame, which would reset
- * to 0 every beat and make the background appear frozen).
- */
-type RenderBeatProps = {
+/* ------------------------------------------------------------------ */
+/*  BeatContent                                                       */
+/*                                                                     */
+/*  IMPORTANT: This component renders the CONTENT of a single beat — */
+/*  it does NOT wrap itself in <TransitionSeries.Sequence>. The      */
+/*  caller (MotionGraphicsVideo) is responsible for the wrapper,     */
+/*  because <TransitionSeries> only accepts literal                   */
+/*  <TransitionSeries.Sequence> / <TransitionSeries.Transition> /     */
+/*  <TransitionSeries.Overlay> elements as direct children.           */
+/*                                                                     */
+/*  The component handles:                                            */
+/*    1) Validating the beat metadata (Zod)                           */
+/*    2) Adapting the top-level Python shape into the rich shape the */
+/*       existing components expect                                   */
+/*    3) Looking up the registered component                         */
+/*    4) Slicing the word list to this beat's window                  */
+/*    5) Rendering either the real component OR an inline fallback   */
+/*       message inside a <SceneTransition>                           */
+/*                                                                     */
+/*  The caller separately renders <BeatKineticCaptions> as a sibling */
+/*  inside the <TransitionSeries.Sequence> (only for data-vis beats).*/
+/* ------------------------------------------------------------------ */
+
+type BeatContentProps = {
   beat: Beat;
   allWords: Word[];
   beatIndex: number;
   fps: number;
 };
 
-export const RenderBeat: React.FC<RenderBeatProps> = ({
+export const BeatContent: React.FC<BeatContentProps> = ({
   beat,
   allWords,
-  beatIndex,
   fps,
 }) => {
-  // 1) Validate the WHOLE beat (top-level fields) against the Zod schema
-  //    for this beat type. The Python pipeline puts per-type props at
-  //    the top level — not inside a `metadata` field.
+  // 1) Validate metadata
   let validatedBeat: Record<string, unknown>;
   try {
     validatedBeat = validateBeatMetadata(beat.type, beat) as Record<
@@ -87,77 +78,37 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
     >;
   } catch (err) {
     return (
-      <TransitionSeries.Sequence
-        key={`beat-${beatIndex}`}
-        durationInFrames={beat.durationInFrames}
-        name={`Beat ${beatIndex} (invalid)`}
-      >
-        <SceneTransition>
-          <InvalidBeatMessage
-            beatType={beat.type}
-            text={beat.text}
-            error={err instanceof Error ? err.message : String(err)}
-          />
-        </SceneTransition>
-      </TransitionSeries.Sequence>
+      <SceneTransition>
+        <InvalidBeatMessage
+          beatType={beat.type}
+          text={beat.text}
+          error={err instanceof Error ? err.message : String(err)}
+        />
+      </SceneTransition>
     );
   }
 
-  // 2) Adapt the top-level Python shape into the rich shape the
-  //    existing components expect (e.g. `left: "..."` → `left: {label: "..."}`).
+  // 2) Adapt top-level Python shape to component shape
   const adaptedProps = adaptMetadata(beat.type, validatedBeat);
 
-  // 3) Look up the component for this beat type.
+  // 3) Look up the component
   const BeatComponent = getBeatComponent(beat.type);
 
   if (!BeatComponent || !isBeatTypeSupported(beat.type)) {
     return (
-      <TransitionSeries.Sequence
-        key={`beat-${beatIndex}`}
-        durationInFrames={beat.durationInFrames}
-        name={`Beat ${beatIndex} (unsupported)`}
-      >
-        <SceneTransition>
-          <UnsupportedBeatMessage beatType={beat.type} text={beat.text} />
-        </SceneTransition>
-      </TransitionSeries.Sequence>
+      <SceneTransition>
+        <UnsupportedBeatMessage beatType={beat.type} text={beat.text} />
+      </SceneTransition>
     );
   }
 
-  // 4) Slice the word list to the window this beat narrates.
-  const startSec = beat.startFrame / fps;
-  const endSec = (beat.startFrame + beat.durationInFrames) / fps;
-  const beatWords = allWords.filter(
-    (w) => w.start >= startSec - 0.001 && w.start < endSec,
-  );
-
-  // 5) Decide whether this beat should show kinetic captions on top of
-  //    its visual. Only data-vis beat types do.
-  const showCaptions = shouldShowKineticCaptions(beat.type);
-
   return (
-    <TransitionSeries.Sequence
-      key={`beat-${beatIndex}`}
-      durationInFrames={beat.durationInFrames}
-      name={`Beat ${beatIndex}: ${beat.type}`}
-    >
-      <SceneTransition>
-        <BeatComponent
-          {...adaptedProps}
-          durationInFrames={beat.durationInFrames}
-        />
-      </SceneTransition>
-
-      {showCaptions ? (
-        <BeatKineticCaptions
-          text={beat.text}
-          words={beatWords}
-          durationInFrames={beat.durationInFrames}
-          beatType={beat.type}
-          fps={fps}
-        />
-      ) : null}
-    </TransitionSeries.Sequence>
+    <SceneTransition>
+      <BeatComponent
+        {...adaptedProps}
+        durationInFrames={beat.durationInFrames}
+      />
+    </SceneTransition>
   );
 };
 
@@ -165,29 +116,12 @@ export const RenderBeat: React.FC<RenderBeatProps> = ({
 /*  Per-type metadata adapter                                         */
 /* ------------------------------------------------------------------ */
 
-/**
- * Adapts the top-level Python pipeline shape into the rich shape the
- * existing components expect.
- *
- * The Python pipeline emits flat fields at the top level of each beat:
- *   - versus: {left: "string", right: "string"}
- *   - timeline: {events: ["a", "b", "c"]}
- *   - process_flow: {steps: ["a", "b"]}
- *
- * The existing components expect rich objects:
- *   - VersusCard: {left: {label, value, items}, right: {...}}
- *   - Timeline: {events: [{marker, label}]}
- *
- * This function converts the flat shape into the rich shape.
- */
 const adaptMetadata = (
   type: string,
   beat: Record<string, unknown>,
 ): Record<string, unknown> => {
   switch (type) {
     case "versus": {
-      // Python: {left: "string", right: "string"}
-      // VersusCard expects: {left: {label, value, items}, right: {label, value, items}}
       const leftStr = typeof beat.left === "string" ? beat.left : "";
       const rightStr = typeof beat.right === "string" ? beat.right : "";
       return {
@@ -198,8 +132,6 @@ const adaptMetadata = (
     }
 
     case "timeline": {
-      // Python: {events: ["a", "b", "c"]} (strings)
-      // Timeline expects: {events: [{marker, label}]}
       const events = Array.isArray(beat.events)
         ? (beat.events as unknown[]).map((e, i) => {
             if (typeof e === "string") {
@@ -212,8 +144,6 @@ const adaptMetadata = (
     }
 
     case "process_flow": {
-      // Python: {steps: ["a", "b"]} (strings)
-      // Timeline (fallback) expects: {events: [{marker, label}]}
       const steps = Array.isArray(beat.steps)
         ? (beat.steps as unknown[]).map((s, i) => {
             const labelStr = typeof s === "string" ? s : "";
@@ -224,7 +154,6 @@ const adaptMetadata = (
     }
 
     default:
-      // All other beat types pass through unchanged.
       return beat;
   }
 };
@@ -288,3 +217,25 @@ const UnsupportedBeatMessage: React.FC<{
     <div style={{ fontSize: 20, fontStyle: "italic" }}>{text}</div>
   </div>
 );
+
+/* ------------------------------------------------------------------ */
+/*  Word slicing helper                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Slice the full word list to just the words in this beat's window.
+ * Used by MotionGraphicsVideo when deciding whether to render
+ * <BeatKineticCaptions> for a beat.
+ */
+export const sliceWordsForBeat = (
+  allWords: Word[],
+  startFrame: number,
+  durationInFrames: number,
+  fps: number,
+): Word[] => {
+  const startSec = startFrame / fps;
+  const endSec = (startFrame + durationInFrames) / fps;
+  return allWords.filter(
+    (w) => w.start >= startSec - 0.001 && w.start < endSec,
+  );
+};

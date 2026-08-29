@@ -8,8 +8,13 @@ import {
 } from "remotion";
 import { Audio } from "@remotion/media";
 import { Beat, TimedBeats } from "./beats/types";
-import { RenderBeat } from "./beats/renderBeat";
+import {
+  BeatContent,
+  shouldShowKineticCaptions,
+  sliceWordsForBeat,
+} from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
+import { BeatKineticCaptions } from "./audio/BeatKineticCaptions";
 import type { Word } from "./beats/words";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
@@ -93,27 +98,53 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
   // Build a flat list of <TransitionSeries.Sequence /> and
   // <TransitionSeries.Transition /> children. <TransitionSeries> does
-  // NOT allow wrappers (Fragments, divs, etc.) between its direct
-  // children — it inspects each child and throws on anything that
-  // isn't a Sequence / Transition / Overlay. We therefore iterate
-  // over each beat and push the Sequence plus the (optional) following
-  // Transition into a flat array, which is what we render as the
-  // direct children of <TransitionSeries>. React supports array
-  // children, and the parent flattens them into <TransitionSeries>'s
-  // direct children list.
+  // NOT allow wrappers (Fragments, divs, custom components, etc.)
+  // between its direct children — it inspects each child and throws
+  // on anything that isn't a Sequence / Transition / Overlay.
+  //
+  // We therefore iterate over each beat and push the literal
+  // <TransitionSeries.Sequence> plus the (optional) following
+  // <TransitionSeries.Transition> into a flat array, which is what
+  // we render as the direct children of <TransitionSeries>.
+  //
+  // The actual beat content (component, fallback message, kinetic
+  // captions) is rendered INSIDE the <TransitionSeries.Sequence> by
+  // <BeatContent> (the content-only helper from src/beats/renderBeat.tsx).
+  // We can't wrap a <BeatContent> component as the child because
+  // <TransitionSeries> checks `current.type` and a custom component
+  // function doesn't match `SeriesSequence` (or `Transition`).
   const sequenceAndTransition: React.ReactNode[] = [];
   allBeats.forEach((beat, index) => {
     const next = allBeats[index + 1];
     const isLast = !next;
+    const beatWords = sliceWordsForBeat(words, beat.startFrame, beat.durationInFrames, fps);
+    const showCaptions = shouldShowKineticCaptions(beat.type);
+
     sequenceAndTransition.push(
-      <RenderBeat
+      <TransitionSeries.Sequence
         key={`beat-${index}`}
-        beat={beat}
-        allWords={words}
-        beatIndex={index}
-        fps={fps}
-      />,
+        durationInFrames={beat.durationInFrames}
+        name={`Beat ${index}: ${beat.type}`}
+      >
+        <BeatContent
+          beat={beat}
+          allWords={words}
+          beatIndex={index}
+          fps={fps}
+        />
+
+        {showCaptions ? (
+          <BeatKineticCaptions
+            text={beat.text}
+            words={beatWords}
+            durationInFrames={beat.durationInFrames}
+            beatType={beat.type}
+            fps={fps}
+          />
+        ) : null}
+      </TransitionSeries.Sequence>,
     );
+
     if (!isLast) {
       sequenceAndTransition.push(
         <TransitionSeries.Transition

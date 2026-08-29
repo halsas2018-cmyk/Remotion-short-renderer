@@ -38,8 +38,10 @@ const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
 const ACCENT_COLOR_LIGHT = "#f97316";
 const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
-const DARK_TEXT = "#ffffff";
-const CARD_BORDER = "rgba(255, 255, 255, 0.12)";
+const DARK_TEXT = "#1a1a1a";
+const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
+const CARD_BORDER = "#e8e8e8";
+const SLIDER_COLOR = "#1a1a1a";
 
 /* ------------------------------------------------------------------ */
 /*  Three emphasis annotation shapes, cycled per emphasised word.    */
@@ -50,7 +52,7 @@ const CARD_BORDER = "rgba(255, 255, 255, 0.12)";
 /* ------------------------------------------------------------------ */
 
 const ANNOTATION_CYCLE = [
-  { Component: Highlight, color: "rgba(232, 108, 0, 0.35)" },
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
   { Component: Circle, color: ACCENT_COLOR_LIGHT },
   { Component: Underline, color: ACCENT_COLOR },
 ];
@@ -83,6 +85,8 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   const totalWords = words.length;
   const textEndFrame =
     textStartDelay + (totalWords - 1) * wordStagger + wordDuration;
+  const sliderStart = textEndFrame;
+  const sliderDuration = Math.round(durationInFrames * sliderDurPct);
 
   // Card entrance — quick fade + spring pop at the very start
   const cardEntranceDuration = Math.max(12, Math.round(durationInFrames * 0.07));
@@ -105,6 +109,14 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     return entry;
   });
 
+  // Card idle bounce + subtle 3D tilt (matches KeyStatement)
+  const cardBounceFrequency = 0.08;
+  const cardBounceAmplitude = 6;
+  const cardBounceOffset = isIdle
+    ? Math.sin(frame * cardBounceFrequency * Math.PI * 2) * cardBounceAmplitude
+    : 0;
+  const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
+
   // Per-emphasis-word bounce (idle loop)
   const bounceFrequency = 0.25;
   const bounceAmplitude = 8;
@@ -116,20 +128,38 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
   // Responsive sizing — portrait 1080×1920 hard-coded for Shorts.
   const padding = Math.max(60, width * 0.11);
   const availableWidth = width - 2 * padding;
+  const cardPadding = Math.max(36, width * 0.044);
+  const cardBorderRadius = Math.max(28, width * 0.03);
+  const containerMinHeight = Math.max(320, height * 0.28);
+  const sliderPadding = 24;
+  const sliderBorderRadius = cardBorderRadius + sliderPadding;
+  const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
   // Auto-fit the headline: longest word must fit the card's text area.
+  const textAreaWidth = availableWidth - 2 * cardPadding;
   const longestWord = words.reduce(
     (longest, current) => (current.length > longest.length ? current : longest),
     "",
   );
   const fittedSize = fitText({
     text: longestWord,
-    withinWidth: availableWidth,
+    withinWidth: textAreaWidth,
     fontFamily,
     fontWeight: "700",
   }).fontSize;
   const baseFontSize = Math.min(Math.max(56, width * 0.055), fittedSize * 0.85);
   const emphasisFontSize = Math.min(Math.max(68, width * 0.066), fittedSize);
+
+  // Shimmer timing (idle)
+  const shimmerSpeed = 25;
+  const shimmerStart = textEndFrame;
+  const getShimmerTop = (shimmerStartFrame: number) => {
+    if (frame < shimmerStartFrame) return "-100%";
+    const elapsedSeconds = (frame - shimmerStartFrame) / fps;
+    return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
+  };
+  const getShimmerOpacity = (shimmerStartFrame: number) =>
+    frame < shimmerStartFrame ? 0 : 1;
 
   /* ------------------------------ decorations ------------------------------ */
 
@@ -209,8 +239,7 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
       style={{
         width,
         height,
-        // TRANSPARENT — PersistentBackground provides the canvas.
-        // No opaque card, no white background, no shadow.
+        // TRANSPARENT — PersistentBackground provides the canvas behind the card.
         backgroundColor: "transparent",
       }}
     >
@@ -235,61 +264,56 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
             perspective: 1200,
           }}
         >
-          {/* Glow behind the headline. */}
+          {/* Slider border — pure CSS, matches KeyStatement. */}
           <div
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              inset: -sliderPadding,
               pointerEvents: "none",
-              zIndex: -1,
+              border: `${sliderStrokeWidth}px solid ${SLIDER_COLOR}`,
+              borderRadius: sliderBorderRadius,
+              boxSizing: "border-box",
+              opacity: interpolate(
+                frame,
+                [sliderStart, sliderStart + 10],
+                [0, 1],
+                {
+                  easing: easeOut,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                },
+              ),
+              scale: interpolate(
+                frame,
+                [sliderStart, sliderStart + sliderDuration],
+                [0.94, 1],
+                {
+                  easing: Easing.spring({ damping: 200 }),
+                  output: "perceptual-scale",
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                },
+              ),
+              filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
             }}
-          >
-            <div
-              style={{
-                width: "110%",
-                height: "110%",
-                borderRadius: 999,
-                background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
-                opacity: glowOpacity,
-                filter: `blur(60px)`,
-                scale: glowPulse,
-              }}
-            />
-          </div>
+          />
 
-          {/* Decorative accent dots at top. */}
-          <div
-            style={{
-              position: "absolute",
-              top: -16,
-              left: "50%",
-              translate: "-50% 0px",
-              display: "flex",
-              gap: 8,
-              pointerEvents: "none",
-            }}
-          >
-            <AccentDot size={6} baseDelay={0} animate={true} />
-            <AccentDot size={8} baseDelay={0.5} animate={true} />
-            <AccentDot size={6} baseDelay={1} animate={true} />
-          </div>
-
-          {/* Headline — no card chrome, sits on PersistentBackground. */}
+          {/* White card with shadow + border + top accent bar. */}
           <div
             style={{
               position: "relative",
-              zIndex: 1,
-              width: "100%",
+              minHeight: containerMinHeight,
+              backgroundColor: "white",
+              borderRadius: cardBorderRadius,
+              padding: cardPadding,
+              boxShadow: CARD_SHADOW,
+              border: `1px solid ${CARD_BORDER}`,
+              boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
               alignItems: "center",
-              gap: 8,
+              textAlign: "center",
               opacity: interpolate(
                 frame,
                 [0, cardEntranceDuration],
@@ -311,162 +335,284 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                   extrapolateRight: "clamp",
                 },
               ),
+              translate: `0px ${cardBounceOffset}px`,
+              rotate: `x ${cardTiltDeg}deg`,
             }}
           >
+            {/* Top accent bar with matching curved corners. */}
             <div
               style={{
-                fontSize: baseFontSize,
-                fontWeight: 500,
-                fontFamily,
-                color: DARK_TEXT,
-                lineHeight: 1.3,
-                letterSpacing: -1.5,
-                textAlign: "center",
-                textShadow: `0 4px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4)`,
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                gap: "0.08em",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+                borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
-            >
-              {words.map((word, i) => {
-                const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
-                const isEmphasized = emphasisSet.has(cleanWord);
-                const annotation = wordAnnotations[i];
-
-                // Word entrance window.
-                const wordStartFrame = textStartDelay + i * wordStagger;
-                const wordEndFrame = wordStartFrame + wordDuration;
-
-                // Idle animations for emphasized words.
-                const bounceOffset =
-                  isIdle && isEmphasized
-                    ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude
-                    : 0;
-                const idleScalePulse =
-                  isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
-                const emphasisFloat =
-                  isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
-
-                // Filter chain: entrance blur (+ idle glow for emphasized words).
-                const wordFilter = [
-                  `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [8, 0], {
-                    easing: easeOutExpo,
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  })}px)`,
-                  ...(isIdle && isEmphasized
-                    ? [
-                        `drop-shadow(0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW})`,
-                        `drop-shadow(0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})`,
-                      ]
-                    : []),
-                ].join(" ");
-
-                const wordContent = (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
-                        easing: easeOutExpo,
-                        extrapolateLeft: "clamp",
-                        extrapolateRight: "clamp",
-                      }),
-                      translate: `0px ${
-                        interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
-                          easing: easeOutExpo,
-                          extrapolateLeft: "clamp",
-                          extrapolateRight: "clamp",
-                        }) +
-                        bounceOffset +
-                        emphasisFloat
-                      }px`,
-                      scale:
-                        interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
-                          easing: easeOutExpo,
-                          extrapolateLeft: "clamp",
-                          extrapolateRight: "clamp",
-                          output: "perceptual-scale",
-                        }) * idleScalePulse,
-                      rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
-                        easing: easeOutExpo,
-                        extrapolateLeft: "clamp",
-                        extrapolateRight: "clamp",
-                      })}deg`,
-                      transformOrigin: "center bottom",
-                      fontSize: isEmphasized ? emphasisFontSize : baseFontSize,
-                      fontWeight: isEmphasized ? 700 : 500,
-                      fontFamily,
-                      lineHeight: 1.3,
-                      margin: "0 0.04em",
-                      ...(isEmphasized
-                        ? {
-                            backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
-                            WebkitBackgroundClip: "text",
-                            backgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                          }
-                        : { color: DARK_TEXT }),
-                      filter: wordFilter,
-                      willChange: "transform, opacity, filter",
-                    }}
-                  >
-                    {word}
-                    {i < totalWords - 1 ? " " : ""}
-                  </span>
-                );
-
-                // Wrap emphasized words with cycling rough-notation annotations.
-                if (isEmphasized && annotation) {
-                  const AnnotationComponent = annotation.Component;
-                  return (
-                    <AnnotationComponent
-                      key={i}
-                      color={annotation.color}
-                      strokeWidth={3}
-                      padding={6}
-                      progress={interpolate(
-                        frame,
-                        [wordStartFrame, wordEndFrame + 5],
-                        [0, 1],
-                        {
-                          easing: easeOutExpo,
-                          extrapolateLeft: "clamp",
-                          extrapolateRight: "clamp",
-                        },
-                      )}
-                    >
-                      {wordContent}
-                    </AnnotationComponent>
-                  );
-                }
-
-                return <span key={i}>{wordContent}</span>;
-              })}
-            </div>
-
-            {/* Decorative separator line. */}
-            <DecorativeLine
-              width={80}
-              height={3}
-              color={ACCENT_COLOR}
-              opacity={isIdle ? 0.7 : 0.4}
-              animate={true}
             />
 
-            {/* Accent dots below text. */}
+            {/* Subtle diagonal pattern. */}
             <div
               style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                opacity: 0.03,
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  ${ACCENT_COLOR} 0,
+                  ${ACCENT_COLOR} 1px,
+                  transparent 1px,
+                  transparent 20px
+                )`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Subtle radial gradient overlay for depth. */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: cardBorderRadius,
+                background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.02) 100%)`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Glow behind the card. */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 display: "flex",
-                gap: 10,
-                marginTop: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+                zIndex: -1,
+              }}
+            >
+              <div
+                style={{
+                  width: "110%",
+                  height: "110%",
+                  borderRadius: cardBorderRadius,
+                  background: `radial-gradient(ellipse at center, rgba(232, 108, 0, 0.35) 0%, transparent 70%)`,
+                  opacity: glowOpacity,
+                  filter: `blur(60px)`,
+                  scale: glowPulse,
+                }}
+              />
+            </div>
+
+            {/* Decorative accent dots at top. */}
+            <div
+              style={{
+                position: "absolute",
+                top: cardPadding - 10,
+                left: "50%",
+                translate: "-50% 0px",
+                display: "flex",
+                gap: 8,
                 pointerEvents: "none",
               }}
             >
-              <AccentDot size={5} baseDelay={0.2} animate={true} />
-              <AccentDot size={7} baseDelay={0.7} animate={true} />
-              <AccentDot size={5} baseDelay={1.2} animate={true} />
+              <AccentDot size={6} baseDelay={0} animate={true} />
+              <AccentDot size={8} baseDelay={0.5} animate={true} />
+              <AccentDot size={6} baseDelay={1} animate={true} />
             </div>
+
+            {/* Headline. */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: baseFontSize,
+                  fontWeight: 500,
+                  fontFamily,
+                  color: DARK_TEXT,
+                  lineHeight: 1.3,
+                  letterSpacing: -1.5,
+                  textAlign: "center",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: "0.08em",
+                }}
+              >
+                {words.map((word, i) => {
+                  const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+                  const isEmphasized = emphasisSet.has(cleanWord);
+                  const annotation = wordAnnotations[i];
+
+                  // Word entrance window.
+                  const wordStartFrame = textStartDelay + i * wordStagger;
+                  const wordEndFrame = wordStartFrame + wordDuration;
+
+                  // Idle animations for emphasized words.
+                  const bounceOffset =
+                    isIdle && isEmphasized
+                      ? Math.sin(frame * bounceFrequency * Math.PI * 2) * bounceAmplitude
+                      : 0;
+                  const idleScalePulse =
+                    isIdle && isEmphasized ? 1 + 0.04 * Math.sin(frame * 0.12 + i) : 1;
+                  const emphasisFloat =
+                    isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
+
+                  // Filter chain: entrance blur (+ idle glow for emphasized words).
+                  const wordFilter = [
+                    `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [8, 0], {
+                      easing: easeOutExpo,
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    })}px)`,
+                    ...(isIdle && isEmphasized
+                      ? [
+                          `drop-shadow(0 0 ${8 + 4 * Math.sin(frame * 0.15 + i)}px ${ACCENT_GLOW})`,
+                          `drop-shadow(0 0 ${16 + 8 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})`,
+                        ]
+                      : []),
+                  ].join(" ");
+
+                  const wordContent = (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        }),
+                        translate: `0px ${
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                          }) +
+                          bounceOffset +
+                          emphasisFloat
+                        }px`,
+                        scale:
+                          interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                            output: "perceptual-scale",
+                          }) * idleScalePulse,
+                        rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
+                          easing: easeOutExpo,
+                          extrapolateLeft: "clamp",
+                          extrapolateRight: "clamp",
+                        })}deg`,
+                        transformOrigin: "center bottom",
+                        fontSize: isEmphasized ? emphasisFontSize : baseFontSize,
+                        fontWeight: isEmphasized ? 700 : 500,
+                        fontFamily,
+                        lineHeight: 1.3,
+                        margin: "0 0.04em",
+                        ...(isEmphasized
+                          ? {
+                              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+                              WebkitBackgroundClip: "text",
+                              backgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                            }
+                          : { color: DARK_TEXT }),
+                        filter: wordFilter,
+                        willChange: "transform, opacity, filter",
+                      }}
+                    >
+                      {word}
+                      {i < totalWords - 1 ? " " : ""}
+                    </span>
+                  );
+
+                  // Wrap emphasized words with cycling rough-notation annotations.
+                  if (isEmphasized && annotation) {
+                    const AnnotationComponent = annotation.Component;
+                    return (
+                      <AnnotationComponent
+                        key={i}
+                        color={annotation.color}
+                        strokeWidth={3}
+                        padding={6}
+                        progress={interpolate(
+                          frame,
+                          [wordStartFrame, wordEndFrame + 5],
+                          [0, 1],
+                          {
+                            easing: easeOutExpo,
+                            extrapolateLeft: "clamp",
+                            extrapolateRight: "clamp",
+                          },
+                        )}
+                      >
+                        {wordContent}
+                      </AnnotationComponent>
+                    );
+                  }
+
+                  return <span key={i}>{wordContent}</span>;
+                })}
+              </div>
+
+              {/* Decorative separator line. */}
+              <DecorativeLine
+                width={80}
+                height={3}
+                color={ACCENT_COLOR}
+                opacity={isIdle ? 0.7 : 0.4}
+                animate={true}
+              />
+
+              {/* Accent dots below text. */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginTop: 8,
+                  pointerEvents: "none",
+                }}
+              >
+                <AccentDot size={5} baseDelay={0.2} animate={true} />
+                <AccentDot size={7} baseDelay={0.7} animate={true} />
+                <AccentDot size={5} baseDelay={1.2} animate={true} />
+              </div>
+            </div>
+
+            {/* Shimmer overlay. */}
+            <div
+              style={{
+                position: "absolute",
+                top: getShimmerTop(shimmerStart),
+                left: 0,
+                width: "100%",
+                height: "18%",
+                background: `linear-gradient(180deg, transparent, ${ACCENT_COLOR}33, transparent)`,
+                opacity: getShimmerOpacity(shimmerStart),
+                borderRadius: cardBorderRadius,
+                pointerEvents: "none",
+              }}
+            />
           </div>
         </div>
       </div>

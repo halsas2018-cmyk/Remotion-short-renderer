@@ -194,20 +194,41 @@ export const writeAudioPlanLog = (
   // runtime, fall back to throwing — the caller's try/catch will
   // turn it into a warn and the render keeps going.
   // ------------------------------------------------------------------
+  // ------------------------------------------------------------------
+  // Real-Node detection. A genuine Node runtime has
+  // `process.versions.node` set to a string like "v20.10.0".
+  // Browser-side shims (e.g. the `process` polyfill that webpack /
+  // Remotion provides to the renderer bundle) have a `process`
+  // object but `process.versions.node` is `undefined` — they ONLY
+  // expose things like `process.env`, `process.cwd`, etc. that
+  // happen to be missing in the browser. Trying to
+  // `globalThis.require("fs")` against such a shim throws
+  // `Cannot find module 'fs'` (which is what the previous version
+  // of this function hit).
+  //
+  // We gate on `process.versions.node` and bail early if we're
+  // NOT in real Node. This is the canonical "am I in Node?" check
+  // used by many npm packages (e.g. `is-node`, `node-fetch`'s
+  // runtime detection, etc.).
+  // ------------------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globalRequire: ((id: string) => any) | undefined =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    typeof (globalThis as any).require === "function"
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (globalThis as any).require
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        typeof require === "function"
-        ? require
-        : undefined;
-  if (!globalRequire) return false;
+  const proc: any = typeof process !== "undefined" ? process : undefined;
+  if (!proc || !proc.versions || typeof proc.versions.node !== "string") {
+    return false;
+  }
 
-  const fs = globalRequire("fs") as typeof import("fs");
-  const path = globalRequire("path") as typeof import("path");
+  // From here down we are guaranteed to be in real Node, so
+  // `require` and Node built-ins are safe to use.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nodeRequire: ((id: string) => any) =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    typeof require === "function"
+      ? require
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (0, eval)("require");
+
+  const fs = nodeRequire("fs") as typeof import("fs");
+  const path = nodeRequire("path") as typeof import("path");
 
   let root: string;
   if (projectRoot) {

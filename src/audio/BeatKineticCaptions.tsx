@@ -19,21 +19,26 @@ import { TYPING_SFX_URL, TYPING_SFX_VOLUME } from "../lib/sceneSfx";
  *
  * Typing SFX:
  *   In addition to the visual captions, this wrapper also renders one
- *   short <Audio> click per word, placed at the word's start frame.
- *   The clicks are bounded to the beat's <TransitionSeries.Sequence> by
- *   the parent Sequence, so they automatically stop at the end of the
- *   beat. Volume is kept low (0.15) so the click track doesn't fight
- *   the narration or the cross-fade whoosh.
+ *   short <Audio> click per word, placed at the word's start frame
+ *   inside the beat's local timeline. The clicks are bounded to the
+ *   beat's <Sequence> by the parent Sequence, so they automatically
+ *   stop at the end of the beat. Volume is kept low (0.15) so the
+ *   click track doesn't fight the narration or the cross-fade whoosh.
  *
- *   IMPORTANT: each click lives in a 4-frame <Sequence>, NOT a 1-frame
- *   one. The 1-frame variant caused mediabunny's MP4 muxer to throw
- *   `Cannot write to a closing writable stream` during chunk flush,
- *   because a 1-frame audio sequence produces too few samples for the
- *   interleaver to commit cleanly — the muxer would then try to write
- *   a partial chunk to a target already mid-closure. 4 frames is
- *   enough for mediabunny to read the WAV samples and produce a
- *   well-formed audio chunk while still feeling snappy (≈133ms at
- *   30fps, well under one caption word).
+ *   IMPORTANT:
+ *     - Each click lives in a 4-frame <Sequence>, NOT a 1-frame one.
+ *       The 1-frame variant caused mediabunny's MP4 muxer to throw
+ *       `Cannot write to a closing writable stream` during chunk
+ *       flush. 4 frames is enough for mediabunny to read the WAV
+ *       samples and produce a well-formed audio chunk while still
+ *       feeling snappy.
+ *     - Word timestamps from WhisperX are GLOBAL (relative to the
+ *       start of the whole composition), but the click is mounted
+ *       inside a per-beat <Sequence> whose local frame counter starts
+ *       at 0 at the beat's `startFrame`. We therefore offset each
+ *       word's start by `startFrame` (in frames) to convert it to
+ *       the local timeline. Without this, the click would lag the
+ *       narration by `startFrame` frames.
  */
 type BeatKineticCaptionsProps = {
   text: string;
@@ -41,12 +46,16 @@ type BeatKineticCaptionsProps = {
   durationInFrames: number;
   beatType: string;
   fps: number;
+  /** Absolute frame at which this beat begins. Subtracted from each
+   * word's global start so the click lines up with the audio. */
+  startFrame: number;
 };
 
 export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
   words,
   beatType,
   fps,
+  startFrame,
 }) => {
   return (
     <>
@@ -57,19 +66,26 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
       />
 
       {/*
-        One short <Sequence> per word, mounted at the word's start frame
-        inside this beat's local timeline. Each contains a single
-        <Audio> click. The Sequence runs for CLICK_HOLD_FRAMES frames
-        so mediabunny can flush a clean audio chunk; the audio file
-        itself is a short blip and stops on its own well within that
-        window.
+        One short <Sequence> per word, mounted at the word's start
+        frame inside this beat's LOCAL timeline. The local frame is
+        `w.start * fps - startFrame`, where `w.start` is the global
+        word start in seconds and `startFrame` is the absolute frame
+        at which this beat begins.
+
+        Each <Sequence> contains a single <Audio> click. The Sequence
+        runs for CLICK_HOLD_FRAMES frames so mediabunny can flush a
+        clean audio chunk; the audio file itself is a short blip and
+        stops on its own well within that window.
       */}
       {words.map((w, i) => {
-        const wordStartFrame = Math.max(0, Math.round(w.start * fps));
+        const localStartFrame = Math.max(
+          0,
+          Math.round(w.start * fps) - startFrame,
+        );
         return (
           <Sequence
             key={`type-${i}-${w.start}`}
-            from={wordStartFrame}
+            from={localStartFrame}
             durationInFrames={CLICK_HOLD_FRAMES}
           >
             <Audio src={TYPING_SFX_URL} volume={TYPING_SFX_VOLUME} />

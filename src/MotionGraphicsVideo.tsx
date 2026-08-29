@@ -2,6 +2,7 @@ import React, { createContext, useContext } from "react";
 import {
   AbsoluteFill,
   CalculateMetadataFunction,
+  Sequence,
   interpolate,
   staticFile,
   useVideoConfig,
@@ -11,13 +12,10 @@ import { Beat, TimedBeats } from "./beats/types";
 import {
   BeatContent,
   shouldShowKineticCaptions,
-  sliceWordsForBeat,
 } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
 import { BeatKineticCaptions } from "./audio/BeatKineticCaptions";
 import type { Word } from "./beats/words";
-import { TransitionSeries, linearTiming } from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
 import { computeTransitionFrames } from "./lib/transitionDuration";
 import {
   AMBIENT_SFX_FADE_IN_FRAMES,
@@ -68,17 +66,32 @@ export type MotionGraphicsVideoProps = {
 /* ------------------------------------------------------------------ */
 /*  The composition itself                                            */
 /*                                                                     */
-/*  Beats are arranged in a <TransitionSeries> with a <fade()> cross-  */
-/*  fade between each pair of adjacent beats. The transition duration */
-/*  is computed dynamically as a percentage of the shorter adjacent   */
-/*  beat (see src/lib/transitionDuration.ts). Each transition plays  */
-/*  a short whoosh.wav (see src/lib/sceneSfx.ts) as a UI feedback    */
-/*  sound — see Step 6b in CLAUDE.md.                                */
+/*  Why this no longer uses <TransitionSeries>:                        */
+/*    The cross-fade between beats needs to happen at the SAME global */
+/*    time as the spoken audio transition in the narration. The Python */
+/*    pipeline emits `startFrame` for every beat (the absolute frame   */
+/*    in the composition at which the beat begins). <TransitionSeries */
+/*    .Sequence> only supports `durationInFrames` — NOT `from` — so   */
+/*    beats are forced back-to-back from frame 0, which desyncs them  */
+/*    from the global word timestamps in `public/timestamps.json`.    */
+/*                                                                     */
+/*    Instead, each beat is laid out at its absolute `startFrame` via  */
+/*    a regular <Sequence from={startFrame} durationInFrames=...>.    */
+/*    Adjacent beats overlap by `computeTransitionFrames()` frames;  */
+/*    the overlap is the cross-fade window. During the overlap, the  */
+/*    outgoing beat's <SceneTransition> drives its exit fade while    */
+/*    the incoming beat's <SceneTransition> drives its entrance fade,  */
+/*    producing the same visual cross-fade that <TransitionSeries>    */
+/*    would have given us — but at the correct global frame.          */
+/*                                                                     */
+/*    The whoosh SFX is mounted inside the outgoing beat's <Sequence> */
+/*    for `transitionFrames` frames ending at the next beat's         */
+/*    startFrame. Volume is constant over those frames.               */
 /*                                                                     */
 /*  A looping ambient track plays underneath the narration for the    */
 /*  whole composition. Volume fades in over the first second and then */
 /*  holds at AMBIENT_SFX_VOLUME so it stays a quiet bed under the     */
-/*  narration, the whoosh, and the typing clicks — see Step 6d.      */
+/*  narration, the whoosh, and the typing clicks.                    */
 /*                                                                     */
 /*  Data inputs (all in /public, loaded at composition mount time):   */
 /*    - narration.mp3   → narrationSrc (this component)               */
@@ -96,73 +109,6 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 
   const allBeats = beats.beats as Beat[];
 
-  // Build a flat list of <TransitionSeries.Sequence /> and
-  // <TransitionSeries.Transition /> children. <TransitionSeries> does
-  // NOT allow wrappers (Fragments, divs, custom components, etc.)
-  // between its direct children — it inspects each child and throws
-  // on anything that isn't a Sequence / Transition / Overlay.
-  //
-  // We therefore iterate over each beat and push the literal
-  // <TransitionSeries.Sequence> plus the (optional) following
-  // <TransitionSeries.Transition> into a flat array, which is what
-  // we render as the direct children of <TransitionSeries>.
-  //
-  // The actual beat content (component, fallback message, kinetic
-  // captions) is rendered INSIDE the <TransitionSeries.Sequence> by
-  // <BeatContent> (the content-only helper from src/beats/renderBeat.tsx).
-  // We can't wrap a <BeatContent> component as the child because
-  // <TransitionSeries> checks `current.type` and a custom component
-  // function doesn't match `SeriesSequence` (or `Transition`).
-  const sequenceAndTransition: React.ReactNode[] = [];
-  allBeats.forEach((beat, index) => {
-    const next = allBeats[index + 1];
-    const isLast = !next;
-    const beatWords = sliceWordsForBeat(words, beat.startFrame, beat.durationInFrames, fps);
-    const showCaptions = shouldShowKineticCaptions(beat.type);
-
-    sequenceAndTransition.push(
-      <TransitionSeries.Sequence
-        key={`beat-${index}`}
-        durationInFrames={beat.durationInFrames}
-        name={`Beat ${index}: ${beat.type}`}
-      >
-        <BeatContent
-          beat={beat}
-          allWords={words}
-          beatIndex={index}
-          fps={fps}
-        />
-
-        {showCaptions ? (
-          <BeatKineticCaptions
-            text={beat.text}
-            words={beatWords}
-            durationInFrames={beat.durationInFrames}
-            beatType={beat.type}
-            fps={fps}
-          />
-        ) : null}
-      </TransitionSeries.Sequence>,
-    );
-
-    if (!isLast) {
-      sequenceAndTransition.push(
-        <TransitionSeries.Transition
-          key={`transition-${index}`}
-          presentation={fade()}
-          timing={linearTiming({
-            durationInFrames: computeTransitionFrames(
-              beat.durationInFrames,
-              next.durationInFrames,
-            ),
-          })}
-        >
-          <Audio src={TRANSITION_SFX_URL} volume={TRANSITION_SFX_VOLUME} />
-        </TransitionSeries.Transition>,
-      );
-    }
-  });
-
   return (
     <AbsoluteFill
       style={{
@@ -172,9 +118,9 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
     >
       {/*
         PersistentBackground is mounted ONCE at the root, OUTSIDE any
-        <Sequence>/<TransitionSeries>. This means `useCurrentFrame()`
-        inside it returns the global composition frame, so the background
-        animates continuously across all beats (and through cross-fades)
+        <Sequence>. This means `useCurrentFrame()` inside it returns
+        the global composition frame, so the background animates
+        continuously across all beats (and through cross-fades)
         instead of restarting at 0 every time a new beat starts.
       */}
       <PersistentBackground />
@@ -186,6 +132,9 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         (the default `npx remotion render`) AND client-side rendering
         (e.g. <Player> / web-renderer), unlike <Audio> from `remotion`
         which becomes <Html5Audio> and is unsupported client-side.
+
+        The audio plays in its own (unmodified) timeline starting at
+        global frame 0, which is what syncs the visuals to the words.
       */}
       {narrationSrc ? <Audio src={staticFile(narrationSrc)} /> : null}
 
@@ -218,24 +167,98 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
       />
 
       {/*
-        Render beats as a flat list of <TransitionSeries.Sequence> and
-        <TransitionSeries.Transition> children. The list is built in
-        the .forEach() above so each beat's `durationInFrames` is
-        editable in Studio (per the Remotion video-editing rule).
+        Beat layout.
 
-        NOTE: <TransitionSeries.Sequence> does NOT support a `from`
-        prop — only `durationInFrames`. Beat ordering is therefore
-        determined by array order in beats.json, not by per-beat
-        `startFrame`. `calculateMetadata` derives the composition
-        duration from sum(beatDurations) - sum(transitionFrames).
+        Each beat is mounted at its absolute `startFrame` via
+        <Sequence from={beat.startFrame} durationInFrames=...>.
 
-        SFX: each <TransitionSeries.Transition> also renders a short
-        whoosh.wav at its start (volume 0.5, no loop). The first beat
-        has no incoming transition, so no SFX is played for it. The
-        last transition's tail is the final beat's exit — also marked
-        with a whoosh for symmetry.
+        Adjacent beats overlap by `computeTransitionFrames()` frames.
+        During the overlap:
+          - the outgoing beat is still mounted (its <SceneTransition>
+            drives an opacity fade via `exitProgress`)
+          - the incoming beat is mounted at its `startFrame` (its
+            <SceneTransition> drives an opacity fade-in via
+            `entranceProgress`)
+        The two opacities multiply to produce the visual cross-fade.
+        Because the beats are positioned in absolute coordinates, the
+        click-track and the captions — which use `w.start * fps` (a
+        global frame number from WhisperX) — line up with the audio.
+
+        The whoosh SFX is mounted inside the OUTGOING beat's
+        <Sequence> for `transitionFrames` frames, ending at the next
+        beat's startFrame. The first beat has no outgoing transition
+        (no incoming either), so no SFX plays for it. The final beat
+        has no outgoing transition so the closing fade-out is silent.
+
+        NOTE: <Sequence from={...}> on a child of <AbsoluteFill> shifts
+        that child's `useCurrentFrame()` to 0 at the `from` boundary,
+        so all of the beat's existing animations (which read
+        `useCurrentFrame()` expecting 0 at the start of the beat)
+        continue to work without modification.
+
+        We render an outer <Sequence> for the WHOLE composition first,
+        so that any future per-composition overlays (e.g. intro card,
+        outro) can be added with a single `from` and a duration.
       */}
-      <TransitionSeries>{sequenceAndTransition}</TransitionSeries>
+      {allBeats.map((beat, index) => {
+        const next = allBeats[index + 1];
+        const isLast = !next;
+        const transitionFrames = isLast
+          ? 0
+          : computeTransitionFrames(
+              beat.durationInFrames,
+              next.durationInFrames,
+            );
+
+        // The cross-fade window starts `transitionFrames` frames before
+        // the end of this beat, and ends at this beat's last frame.
+        // The whoosh SFX lives in that window.
+        const whooshFrom = isLast
+          ? 0
+          : Math.max(
+              0,
+              beat.startFrame + beat.durationInFrames - transitionFrames,
+            );
+
+        return (
+          <Sequence
+            key={`beat-${index}`}
+            from={beat.startFrame}
+            durationInFrames={beat.durationInFrames}
+            name={`Beat ${index}: ${beat.type}`}
+          >
+            <BeatContent
+              beat={beat}
+              allWords={words}
+              beatIndex={index}
+              fps={fps}
+            />
+
+            {shouldShowKineticCaptions(beat.type) ? (
+              <BeatKineticCaptions
+                text={beat.text}
+                words={words}
+                durationInFrames={beat.durationInFrames}
+                beatType={beat.type}
+                fps={fps}
+                startFrame={beat.startFrame}
+              />
+            ) : null}
+
+            {!isLast && transitionFrames > 0 ? (
+              <Sequence
+                from={whooshFrom - beat.startFrame}
+                durationInFrames={transitionFrames}
+              >
+                <Audio
+                  src={TRANSITION_SFX_URL}
+                  volume={TRANSITION_SFX_VOLUME}
+                />
+              </Sequence>
+            ) : null}
+          </Sequence>
+        );
+      })}
     </AbsoluteFill>
   );
 };
@@ -243,21 +266,20 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
 /* ------------------------------------------------------------------ */
 /*  Dynamic duration via calculateMetadata                             */
 /*                                                                     */
-/*  totalDuration = sum(beatDurations) - sum(transitionFrames)         */
-/*  The transition frames must match what the orchestrator renders,   */
-/*  so we use the SAME computeTransitionFrames() helper.               */
+/*  totalDuration = beats.json's `totalDurationInFrames`.             */
 /*                                                                     */
-/*  Note: in this orchestrator, calculateMetadata is intentionally    */
-/*  sync — it derives the duration from `props.beats` which is        */
-/*  already populated by Root.tsx's async renderDataCalculateMetadata */
-/*  (which fetches beats.json + timestamps.json from /public and      */
-/*  injects them into props). The orchestrator then takes the         */
-/*  already-resolved props and produces the final duration.           */
+/*  Why we don't subtract transitions:                                */
+/*    Each beat is mounted at its absolute `startFrame`, so adjacent  */
+/*    beats overlap by `computeTransitionFrames()` frames. The         */
+/*    composition's `totalDurationInFrames` is the END of the last    */
+/*    beat, which is `lastBeat.startFrame + lastBeat.durationInFrames`*/
+/*    (or higher if the last beat's `exitProgress` continues past     */
+/*    its nominal end — the Python pipeline already pads the last     */
+/*    beat's duration to cover its exit). The orchestrator therefore  */
+/*    uses `beats.totalDurationInFrames` directly.                    */
 /*                                                                     */
-/*  If the upstream fetch in Root.tsx failed, `props.beats.beats`     */
-/*  will be empty and this function returns `durationInFrames: 1` —   */
-/*  which makes the render a single-frame "still". We warn loudly in  */
-/*  that case so the user knows the public JSONs are missing.         */
+/*  If `props.beats.beats` is empty (upstream fetch failed), we       */
+/*  return `durationInFrames: 1` and warn — same behavior as before.  */
 /* ------------------------------------------------------------------ */
 
 export const calculateMetadata: CalculateMetadataFunction<
@@ -276,18 +298,10 @@ export const calculateMetadata: CalculateMetadataFunction<
     return { durationInFrames: 1 };
   }
 
-  const sumDurations = allBeats.reduce(
-    (acc, b) => acc + b.durationInFrames,
-    0,
-  );
-
-  let sumTransitions = 0;
-  for (let i = 0; i < allBeats.length - 1; i++) {
-    sumTransitions += computeTransitionFrames(
-      allBeats[i].durationInFrames,
-      allBeats[i + 1].durationInFrames,
-    );
-  }
-
-  return { durationInFrames: Math.max(1, sumDurations - sumTransitions) };
+  // The Python pipeline already accounts for the cross-fade overlap in
+  // `totalDurationInFrames`, so we use it directly. This keeps the
+  // orchestrator's declared duration in lock-step with the rendered
+  // timeline, which is what makes the audio and the components stay
+  // in sync.
+  return { durationInFrames: props.beats.totalDurationInFrames };
 };

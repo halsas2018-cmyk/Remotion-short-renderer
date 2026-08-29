@@ -19,8 +19,7 @@ import {
   MotionGraphicsVideoProps,
   calculateMetadata,
 } from "./MotionGraphicsVideo";
-import type { Word } from "./beats/words";
-import type { TimedBeats } from "./beats/types";
+import { TimedBeatsSchema, WordListSchema, type Word, type TimedBeats } from "./beats/types";
 
 /* ------------------------------------------------------------------ */
 /*  Render data                                                       */
@@ -40,30 +39,34 @@ import type { TimedBeats } from "./beats/types";
 /* ------------------------------------------------------------------ */
 
 // ------------------------------------------------------------------
-// Zod schemas for the two JSON files (Horizon 0.2 / 0.3 — 1.1 ships
-// the schema, the strict top-level validation, and the hard-error
-// path; 1.2 / 1.3 will add per-beat and per-word validation in
-// subsequent commits).
+// Hard-error fetch (Horizon 0.1 — replaces silent fallback).
 //
-// For now we use a permissive schema (every beat is `unknown` and
-// every word is a `z.unknown()` field) so we don't break on shapes
-// we haven't yet learned to validate. The point of this commit is
-// to replace the silent fallback with a hard error when the FILES
-// are missing or the top-level shape is wrong — not to validate
-// every field.
+// Behavior:
+//   - Missing JSON files THROW with a [MotionGraphicsVideo]-prefixed
+//     error.
+//   - Non-2xx responses THROW with the HTTP status + status text.
+//   - JSON parse errors THROW with the underlying error message.
+//   - Top-level Zod validation failures THROW with the field path
+//     of the first invalid field.
+//   - AbortError is still treated as a benign cancellation (Studio
+//     prop change mid-fetch). The orchestrator falls back to
+//     defaultProps in that case because there's nothing meaningful
+//     to render against.
+//
+// Per-beat Zod validation (Horizon 0.2 / 1.2): the top-level schema
+// delegates to `src/beats/registry.ts::validateBeatMetadata` for each
+// `beats[i]`. If a beat's `type` is unknown or the per-type metadata
+// shape is wrong (e.g. `key_statement.emphasisWords` is a number
+// instead of a string array), the user gets a clear error like:
+//
+//   [MotionGraphicsVideo] public/beats.json failed schema validation
+//   at "beats[3].metadata": key_statement.emphasisWords must be an
+//   array, got number
+//
+// Per-word validation (Horizon 0.3 / 1.3) is not yet implemented
+// here — the top-level word shape is validated, but overlapping /
+// zero-duration word dedupe is a separate step.
 // ------------------------------------------------------------------
-
-const TimedBeatsSchema = z.object({
-  fps: z.number().int().positive(),
-  totalDurationInFrames: z.number().int().nonnegative(),
-  beats: z.array(z.unknown()),
-});
-
-const WordSchema = z.object({
-  word: z.string(),
-  start: z.number().nonnegative(),
-  end: z.number().nonnegative(),
-});
 
 const RenderDataError = (message: string, cause?: unknown): Error => {
   if (cause instanceof Error) {
@@ -85,22 +88,6 @@ interface RenderDataResult {
   totalDurationInFrames: number;
 }
 
-// ------------------------------------------------------------------
-// Hard-error fetch (Horizon 0.1 — replaces silent fallback).
-//
-// Behavior changes from the previous commit:
-//   - Missing JSON files now THROW. Previously we returned
-//     `durationInFrames: 1` and the user got a 1-frame MP4 with no
-//     explanation.
-//   - Invalid top-level JSON shape (e.g. `beats.fps` is a string)
-//     THROWS with the exact field path that failed Zod validation.
-//   - Network errors (non-2xx, fetch rejected) THROW.
-//   - AbortError is still treated as a benign cancellation (the
-//     user changed props in Studio before the previous fetch
-//     resolved). The orchestrator falls back to defaultProps in
-//     that case because there's nothing meaningful to render
-//     against.
-// ------------------------------------------------------------------
 const fetchRenderData = async (
   abortSignal: AbortSignal,
 ): Promise<RenderDataResult | null> => {
@@ -160,8 +147,7 @@ const fetchRenderData = async (
     );
   }
 
-  const wordsArraySchema = z.array(WordSchema).nonempty();
-  const wordsParsed = wordsArraySchema.safeParse(wordsRaw);
+  const wordsParsed = WordListSchema.safeParse(wordsRaw);
   if (!wordsParsed.success) {
     const issue = wordsParsed.error.issues[0];
     const path = issue?.path.join(".") || "(root)";
@@ -569,11 +555,12 @@ export const RemotionRoot = () => (
 
       The "1" duration is a placeholder; the async calculateMetadata runs
       before the composition is registered and supplies the real number.
-      If the fetch fails (missing file, network error, bad JSON),
-      renderDataCalculateMetadata THROWS — Remotion surfaces the error in
-      the render log, the render aborts, and the user sees a clear
-      "[MotionGraphicsVideo] public/beats.json fetch failed: HTTP 404"
-      message instead of a 1-frame MP4.
+      If the fetch fails (missing file, network error, bad JSON, schema
+      mismatch), renderDataCalculateMetadata THROWS — Remotion surfaces
+      the error in the render log, the render aborts, and the user sees
+      a clear "[MotionGraphicsVideo] public/beats.json failed schema
+      validation at \"beats[3].metadata\": ..." message instead of a
+      1-frame MP4.
     */}
     <Composition
       id="MotionGraphicsVideo"

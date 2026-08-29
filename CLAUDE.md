@@ -111,7 +111,7 @@ To render a different story, copy the four files above into `public/` and render
 
 ---
 
-## Phase 1 (Horizon 0) — Renderer Hardening — ✅ COMPLETE (next: Horizon 2)
+## Phase 1 (Horizon 0) — Renderer Hardening — ✅ COMPLETE
 
 Goal: lock in stability of the render pipeline before adding new features. Everything is local, no APIs, no hosting, no spend. **Horizon 0 is now complete** (commits a73dd19 for 1.1, 78e3f69 for 1.2, then a series of commits for 1.3, 1.4-cancelled, 1.5). Next up: Horizon 2 (component coverage + visuals).
 
@@ -258,7 +258,58 @@ The original 1.4 spec called for a file-based audio plan log that the smoke test
   ./scripts/render-smoke.sh              # default: always renders
   ```
 
-**Horizon 0 is now complete. Next up: Horizon 2 (component coverage + visuals).**
+---
+
+## Phase 2: Horizon 2 — Component Coverage + Better Visuals — ⭐ ACTIVE
+
+Goal: extend the beat-type library with the visual vocabulary needed for news stories that aren't finance / tech. The work is structured as a priority-ordered list of new beat types in `ROADMAP.md` § 2.1, each one a copy-paste of the `KeyStatement` / `HeadlineCard` design pattern.
+
+### 2.1 — `headline_card` (big-text intro beat for the story hook) — ✅ DONE
+
+**Before this change:** stories opened with a `key_statement` beat — a smaller-text card on the white-card design system. The first 1.5–2s of every video felt like a regular beat instead of a story hook. There was no way to mark the opening of a story as a distinct visual moment.
+
+**After this change:** a new `headline_card` beat type renders a much-larger headline on the same white-card chrome as the rest of the library, with cycling `Highlight` / `Circle` / `Underline` annotations on emphasis words, a 30–40% entrance rule, a slider border, shimmer, and the standard idle bounce / 3D-tilt / glow-pulse. The Python pipeline can now emit `{"type": "headline_card", ...}` for the story hook and the orchestrator picks the right component automatically.
+
+**What changed:**
+- `src/HeadlineCard.tsx` (new) — the component. Mirrors `KeyStatement.tsx` line-for-line on the design-system primitives (font, accent palette, card chrome, slider, shimmer, decorative dots, idle motion, 30–40% entrance rule) and only changes the headline sizing math (slightly larger `baseFontSize` / `emphasisFontSize` caps and no `exitDirection` prop).
+- `src/beats/types.ts` — added `"headline_card"` to the `BeatType` union.
+- `src/beats/registry.ts` — added a `headlineCardMetadata` Zod schema (`{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?, backgroundColor?, accentColor?, textColor?}`) and a registry entry mapping `headline_card` → `HeadlineCard`. Colour fields are all optional so the Python pipeline can omit them and let the component fall back to the default palette.
+- `src/Root.tsx`:
+  - `HeadlineCardTest` test composition (portrait 1080×1920, 120 frames, default `text: "The gamble works while AI chips are scarce"`, `emphasisWords: ["gamble", "scarce"]`).
+  - `KeyStatementTest` test composition added at the same time (same defaults) so the two components can be diffed side-by-side in Studio.
+- `src/MotionGraphicsVideo.tsx` — unchanged. The orchestrator looks up the component by `beat.type` via `getBeatComponent(type)` from the registry, so adding a new beat type needs no orchestrator change.
+- `src/SceneTransition.tsx` — unchanged. The new component is mounted by `BeatContent` inside the orchestrator's existing `<SceneTransition>` wrapper, so the per-beat entrance fade + cross-fade are inherited.
+- `Root.tsx::renderDataCalculateMetadata` — unchanged. The Zod validation auto-discovers the new schema via `getBeatSchemas(type)` in the registry.
+
+**Design-system compliance:**
+- Portrait 1080×1920 ✅
+- Transparent `AbsoluteFill` overlay on `PersistentBackground` ✅
+- White card with shadow, border, border-radius ✅
+- Top 4px gradient accent bar (`#e86c00 → #f97316`) ✅
+- Space Grotesk via `@remotion/google-fonts/SpaceGrotesk` ✅
+- `fitText` for headline sizing (longest word fits the text area, then `Math.min(maxSize, fittedSize * factor)`) ✅
+- All entrance animations complete by `Math.round(durationInFrames * 0.4)` ✅
+- No exit animation — `SceneTransition` (mounted by the orchestrator) owns entry + cross-fade ✅
+- Idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t*0.03)`) ✅
+- Accent palette: `#e86c00` / `#f97316` / `rgba(232, 108, 0, 0.4)` ✅
+- Emphasis words cycle `Highlight` → `Circle` → `Underline` from `@remotion/rough-notation` ✅
+- `durationInFrames` forwarded as a prop ✅
+
+**How to verify:**
+```bash
+npx remotion studio --no-open
+# Open http://localhost:3000/HeadlineCardTest in your browser
+# Confirm: card with top accent bar, white chrome, large centered headline,
+#           "gamble" and "scarce" cycle through Highlight → Circle → Underline
+#           entrance animation completes by frame 48 (40% of 120),
+#           idle motion is the gentle bounce + 3D tilt + glow pulse.
+
+# Render the full video (uses Python pipeline's beats.json with a headline_card
+# beat at index 0):
+./scripts/render-smoke.sh
+```
+
+**Next up in 2.1:** the remaining priorities — `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card` (deferred to 4.x), `scrollytelling`, `ticker_tape`. Each one is a copy-paste of the `KeyStatement` / `HeadlineCard` design pattern with the per-type field set swapped out. The Zod schema in the registry is the only file that needs a per-type customisation beyond the copy-paste.
 
 ---
 
@@ -348,6 +399,15 @@ Components are located in `src/` and follow these conventions:
 - Responsive sizing with `fitText` for optimal text scaling
 - **Timing**: Internal animations complete by ~50% of duration, then holds idle state
 - **No exit animation**: Designed to be wrapped by SceneTransition
+
+#### HeadlineCard.tsx
+- Big-text intro beat for the story hook (Horizon 2.1.1)
+- Same design-system primitives as `KeyStatement` (white card, top accent bar, slider, shimmer, decorative dots, idle bounce / 3D-tilt / glow pulse, 30–40% entrance rule)
+- Larger headline sizing math (slightly larger `baseFontSize` / `emphasisFontSize` caps)
+- No `exitDirection` prop
+- Emphasis words cycle `Highlight` → `Circle` → `Underline` from `@remotion/rough-notation`
+- Mounted on a transparent `AbsoluteFill` overlay — `PersistentBackground` provides the canvas behind the card
+- Test composition: `HeadlineCardTest` in `src/Root.tsx` (portrait 1080×1920, 120 frames, default `text: "The gamble works while AI chips are scarce"`, `emphasisWords: ["gamble", "scarce"]`)
 
 #### ChartLine.tsx
 - Renders line charts with animated drawing
@@ -458,6 +518,7 @@ Audio ambient SFX (root, looping, fades in over 1s)
 src/
 ├── Root.tsx                          # Compositions registry + renderDataCalculateMetadata + audio plan log ✅ DONE
 ├── MotionGraphicsVideo.tsx           # Main orchestrator ✅ DONE
+├── HeadlineCard.tsx                  # Horizon 2.1.1 — big-text intro beat ✅ DONE
 ├── beats/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
@@ -497,7 +558,7 @@ public/                                # All render data lives here (single-fold
 ```
 
 ### Step 1: Beat Type System (`src/beats/types.ts`) — ✅ DONE (commit 78e3f69)
-- `BeatType` union of all 15 supported types
+- `BeatType` union of all 16 supported types (added `headline_card` under Horizon 2.1.1)
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
 - `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
 - **1.2 update:** `PerBeatSchema` + `TimedBeatsSchema` validate each beat at the top level against the per-type Zod schema in the registry. See Phase 1 (Horizon 0) / 1.2 above.
@@ -512,6 +573,7 @@ Maps each `BeatType` to:
 
 **Zod schemas** (per-beat-type top-level shape contracts):
 - `key_statement` → `{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?}`
+- `headline_card` → `{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?, backgroundColor?, accentColor?, textColor?}` (added under Horizon 2.1.1)
 - `plain_text` → `{type, text, startFrame, durationInFrames, endFrame?}`
 - `icon_text` → `{type, text, startFrame, durationInFrames, endFrame?, icon, emphasisWords?}`
 - `chart_line` → `{…, points[{label,value}], exitDirection?}`
@@ -558,7 +620,7 @@ Inside each `<Sequence>`:
 `map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`.
 
 It is suppressed for text/card heavy beat types (the on-screen text is already the caption):
-`key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`.
+`key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`, `headline_card`.
 
 The gate is implemented in `src/beats/renderBeat.tsx` as:
 
@@ -582,6 +644,7 @@ const shouldShowKineticCaptions = (beatType: string): boolean =>
 - `versus`: `{left: "..."}` → `{left: {label: "..."}}` (same for `right`)
 - `timeline`: `["a", "b"]` → `[{marker: "Step 1", label: "a"}, ...]`
 - `process_flow`: `["a", "b"]` → `[{marker: "1", label: "a"}, ...]` (Timeline fallback)
+- `headline_card`: pass-through (Python emits top-level `text` + `emphasisWords?` which the component reads directly)
 - all others: pass through
 
 ### Step 4b: Dynamic Cross-Fade Between Beats — ✅ DONE
@@ -682,6 +745,7 @@ Per-beat wrapper around `KineticCaptions` that:
 - `defaultProps` passes only placeholder values (`beats: empty, words: [], narrationSrc: "narration.mp3"`) because the real values come from the fetch.
 - The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and render (in Studio or via CLI). No code change required.
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
+- **2.1.1 update:** added `HeadlineCardTest` and `KeyStatementTest` test compositions. Both are portrait 1080×1920, 120 frames, with the same default `text` and `emphasisWords` so the two components can be diffed side-by-side in Studio.
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 - **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
 - **1.3 update:** the parsed `words[]` is run through `src/beats/words.ts::dedupeOverlappingWords` to drop overlapping / zero-duration entries before being injected into `props.words`. A `console.warn` lists how many were dropped (and that the Python pipeline's WhisperX step is the likely culprit).
@@ -722,13 +786,13 @@ Per-beat wrapper around `KineticCaptions` that:
     - ⏳ Managed render farm (Horizon 7)
     - ⏳ YouTube auto-publish (Horizon 8) — manual upload from Studio for now
 24. **IN PROGRESS — Horizon 2 — Component Coverage + Better Visuals**
-    - ⏳ Priority 2.1.1: `headline_card` beat type (`src/components/HeadlineCard.tsx`)
-    - ⏳ Remaining 2.1 priorities: `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card`, `scrollytelling`, `ticker_tape`
+    - ✅ **2.1.1 — `headline_card` beat type (priority 1 of 8) — DONE**
+    - ⏳ Remaining 2.1 priorities: `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card` (deferred to 4.x), `scrollytelling`, `ticker_tape`
     - ⏳ 2.2: per-type Zod schemas + unit tests
     - ⏳ 2.3: idle motion library (`src/lib/idleMotion/`)
     - ⏳ 2.4: emphasis words → component-level highlights
     - ⏳ 2.5: visual polish pass on existing components
-23. **DEFERRED until laptop/GPU available (Mode B)**
+25. **DEFERRED until laptop/GPU available (Mode B)**
     - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
     - ⏳ Hosted dashboard (Horizon 6)
     - ⏳ Managed render farm (Horizon 7)
@@ -744,7 +808,7 @@ Per-beat wrapper around `KineticCaptions` that:
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component. It also provides the per-beat `BeatContext` so `KineticCaptions` can rebase words to local frames.
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
-10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption. The gate is centralized in `renderBeat.tsx` via `CAPTION_VISIBLE_BEAT_TYPES`.
+10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption (now also includes `headline_card` added under 2.1.1). The gate is centralized in `renderBeat.tsx` via `CAPTION_VISIBLE_BEAT_TYPES`.
 11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
 12. **Easing on per-beat entrance/exit** — `SceneTransition` uses `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) for entrance and `Easing.bezier(0.7, 0, 0.84, 0)` for exit. Same entrance easing on the default `translateY` slide-up.
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. The Python pipeline pre-accounts for this overlap and emits `totalDurationInFrames` accordingly; the orchestrator uses that value directly without re-subtracting.
@@ -764,7 +828,8 @@ Per-beat wrapper around `KineticCaptions` that:
 27. **Audio observability is not a side-channel log (0.4 + 1.4 cancelled)** — The original Horizon 0.4 spec asked for a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on every `<Audio>` mount. We tried four mechanisms (`onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body). All four produced zero output during a `still` (single-frame) render. Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked, and there is no place inside the React tree from which to emit a per-mount log line during a `still`. We then pivoted (Horizon 1.4) to a file-based audio plan log: `Root.tsx::renderDataCalculateMetadata` would compute the whoosh slot list + click count and append one JSON line to `out/audio-mounts.log`, and the smoke test would assert on that file. That implementation hit two unfixable problems: (a) `process.versions.node` is shimmed in Remotion's render context, so the "am I in real Node?" guard was unreliable, and (b) webpack's static analysis still tried to follow the dynamic `require("node:fs")` even after the `remotion.config.ts` fallback. **Final fix:** drop the entire 0.4 + 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`. `Root.tsx` no longer computes or writes the audio plan. `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams (narration, ambient, per-transition whoosh, per-word click) are still observable through the React tree itself; per-mount observability would be a future horizon, gated on a real `npx remotion render` smoke test (not `still`).
 28. **Last-render hash cache lives under `scripts/`, not `src/lib/` (1.5)** — The hash helper (`scripts/lastRenderHash.mjs`) was originally placed in `src/lib/`, but Remotion's webpack bundler walks `src/Root.tsx`'s input graph and discovered the file even though nothing imported it, then tried to resolve `node:fs` / `node:crypto` in a browser context and failed with "Module not found: Error: Can't resolve 'fs'". Moving the helper to `scripts/` puts it outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build. The canonical hash input is the two file bodies concatenated byte-for-byte with **NO separator**; an earlier version inserted a single `0x0a` (LF) byte between them, which (a) `createHash().update(0x0a)` rejected as `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)`, and (b) never matched the bash side of `cat beats.json timestamps.json | sha256sum`, which adds no separator. The smoke script's `--skip-if-unchanged` flag uses this hash to short-circuit duplicate renders in <1s; a non-`--skip-if-unchanged` invocation always re-renders and rewrites the cache.
 29. **Cache key scope is beats + words only (1.5)** — The visible output is fully determined by `public/beats.json` and `public/timestamps.json`; changing `public/narration.mp3` or `public/sfx-ambient.mp3` does not change a single pixel. MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes), so we deliberately exclude audio files from the cache key. If you change a SFX mapping in `src/lib/sceneSfx.ts` in a way that affects the visible render (e.g. a new whoosh SFX or a different default volume), bump `LAST_RENDER_HASH_VERSION` in `scripts/lastRenderHash.mjs` to invalidate all old caches automatically — the version prefix on the cached hash is compared on every read, and stale-version records are treated as "no cache" and fall through to a fresh render.
-30. **Design system rules — portrait 1080×1920, white card on transparent overlay, `SceneTransition` owns entrance/exit, 30–40% entrance rule, Space Grotesk, accent palette, `rough-notation` from `@remotion/rough-notation`, `fitText` for headlines, `durationInFrames` forwarded as a prop.** The full 13-rule contract and the audit checklist live in the "Design System Rules" section near the top of this doc. Every component in `src/components/` conforms; new components MUST conform too. The next component you build (e.g. `QuoteAttribution`, `StatPill`) should be a copy of `KeyStatement` with the per-type field set swapped out — do not invent a new layout. If a future component genuinely can't fit the contract, document the exception in this section before merging.
+30. **Design system rules — portrait 1080×1920, white card on transparent overlay, `SceneTransition` owns entrance/exit, 30–40% entrance rule, Space Grotesk, accent palette, `rough-notation` from `@remotion/rough-notation`, `fitText` for headlines, `durationInFrames` forwarded as a prop.** The full 13-rule contract and the audit checklist live in the "Design System Rules" section near the top of this doc. Every component in `src/components/` conforms; new components MUST conform too. The next component you build (e.g. `quote_attribution`, `stat_pill`) should be a copy of `KeyStatement` with the per-type field set swapped out — do not invent a new layout. If a future component genuinely can't fit the contract, document the exception in this section before merging.
+31. **`headline_card` is the canonical "copy-paste template" for new text-based beat types (2.1.1)** — `HeadlineCard.tsx` and `KeyStatement.tsx` are byte-for-byte identical on the design-system primitives (font, palette, card chrome, slider, shimmer, decorative dots, idle motion, 30–40% entrance rule). They differ only in: (a) headline sizing math (slightly larger `baseFontSize` / `emphasisFontSize` caps in `HeadlineCard`), and (b) `KeyStatement` has an `exitDirection` prop while `HeadlineCard` does not. Every text-based beat type added in 2.1 (`stat_pill`, `quote_attribution`, etc.) should start as a copy-paste of one of these two, swap in the per-type Zod schema in `src/beats/registry.ts`, and then iterate on the per-type visuals. Do not invent a new layout, font, or palette — the design system's whole point is that 16+ beat types look like one library.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -783,3 +848,9 @@ Per-beat wrapper around `KineticCaptions` that:
 ```
 
 The Python pipeline emits `totalDurationInFrames: 1143` already accounting for the cross-fade overlap (`computeTransitionFrames` per pair). The orchestrator uses that value as-is, lays each beat at its `startFrame`, and lets the natural overlap produce the cross-fade. The first beat has no outgoing transition, so no whoosh plays for it; subsequent beats each play a whoosh in their last `transitionFrames` frames (≈4–15 frames, 0.13–0.5s at 30fps). Data-vis beats (`timeline` in this example) play a mouse-click per word in their captions via `BeatKineticCaptions`. The ambient track loops under everything for the full 1143 frames (~38 seconds). The audio streams (narration, ambient, per-transition whoosh, per-word click) all mount correctly because they live in the React tree, not in a side-channel log. There is no audio-plan-log file written; the Horizon 1.4 attempt to write one was cancelled (see 1.4 above for the reasoning). If you need per-mount audio observability in a future horizon, gate the verification on a full `npx remotion render` smoke test, not on `npx remotion still`.
+
+**With Horizon 2.1.1 (`headline_card`) shipped**, the Python pipeline can now also emit:
+```json
+{ "type": "headline_card", "text": "Dick's just dropped 15% after missing its forecast", "emphasisWords": ["15%", "missing"], "startFrame": 0, "durationInFrames": 96 }
+```
+as the story hook for the first beat of the timeline. The orchestrator picks `HeadlineCard` from the registry, mounts it inside the existing `<SceneTransition>`, and renders the same white-card chrome / top accent bar / slider / shimmer / idle motion as `KeyStatement`, with the larger headline sizing that signals "this is the story's intro".

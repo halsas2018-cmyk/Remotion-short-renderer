@@ -81,6 +81,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 0.4 — Per-mount `<Audio>` `console.log` lines** — ~~CANCELLED~~ (per-mount `console.log` doesn't fire during a `still` render; see 0.4 / 1.4 entries below for the full reasoning)
 - **Horizon 0.5 — Last-render composition-hash cache + `--skip-if-unchanged`** — ✅ DONE (commits f432ced, f3d01f2, 7be612b, d75be97, 6c096fa, 5c7349c; see 0.5 entry below)
 - **Horizon 1.4 — File-based audio plan log** — ~~CANCELLED~~ (shipped, then dropped; `process.versions.node` guard was unreliable in the render context — see 1.4 entry below)
+- **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
 
 ---
 
@@ -133,6 +134,61 @@ The render pipeline is now functioning but fragile. Lock in stability before add
 
 ---
 
+## Horizon 2 — Component Coverage + Better Visuals (1–2 weeks, **$0**)
+
+The 13 beat types in the registry are mostly cosmetic variants of three primitives: text-over-card, bar/number, and 3D scene. The next round adds the visual vocabulary needed for news stories that aren't finance / tech. All components render with local assets (no stock-photo APIs, no Lottie CDN dependency).
+
+### 2.1 New beat types (in priority order)
+| Type | When to use it | Component | Status |
+|---|---|---|---|
+| `headline_card` | Big-text intro beat (story hook) | `src/HeadlineCard.tsx` | ✅ **DONE (2.1.1)** |
+| `stat_pill` | Single big number with label | reuse `ChartCounter`, add `StatPill` variant | ⏳ next |
+| `quote_attribution` | Multi-line quote with author avatar | `src/components/QuoteAttribution.tsx` | ⏳ todo |
+| `compare_split` | Side-by-side comparison without versus framing | reuse `BeforeAfter` with horizontal split | ⏳ todo |
+| `location_pulse` | Generic 2D location callout (cheaper than `Map3D`) | `src/components/LocationPulse.tsx` | ⏳ todo |
+| `image_card` | AI-generated or news-photo with caption | `src/components/ImageCard.tsx` | ⏳ deferred to 4.x |
+| `scrollytelling` | Long-form beat with a scrolling text panel (for "explainers") | `src/components/Scrollytelling.tsx` | ⏳ todo |
+| `ticker_tape` | Bottom-of-screen news ticker for multi-story intros | `src/components/TickerTape.tsx` | ⏳ todo |
+
+### 2.1.1 — `headline_card` — ✅ DONE (this is the canonical copy-paste template for 2.1)
+
+**Why this was first:** every YouTube Shorts video in the catalogue opens with a story hook. A `key_statement` beat is too small to signal "this is the intro" — the viewer's eye treats it like any other text beat. `headline_card` makes the opening beat a distinct visual moment with a noticeably larger headline on the same white-card design system.
+
+**What shipped:**
+- `src/HeadlineCard.tsx` — the component. **Byte-for-byte identical to `KeyStatement.tsx` on the design-system primitives** (Space Grotesk via `@remotion/google-fonts/SpaceGrotesk`, accent palette `#e86c00` / `#f97316`, white card with shadow + border + 28–32px radius, top 4px gradient accent bar, slider border, shimmer, decorative dots, idle bounce `sin(t) * 6px` + 3D tilt `sin(t*0.05) * 2deg` + glow pulse `1 + 0.15 * sin(t*0.03)`, 30–40% entrance rule, transparent `AbsoluteFill` overlay on `PersistentBackground`). The only differences are: (a) larger `baseFontSize` / `emphasisFontSize` caps, and (b) no `exitDirection` prop. **This is the canonical copy-paste template for every new text-based beat type in 2.1.**
+- `src/beats/types.ts` — added `"headline_card"` to the `BeatType` union (now 16 supported types).
+- `src/beats/registry.ts` — added a `headlineCardMetadata` Zod schema (`{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?, backgroundColor?, accentColor?, textColor?}`) and a registry entry mapping `headline_card` → `HeadlineCard`. All colour fields are optional — the component falls back to the default palette if the Python pipeline omits them.
+- `src/Root.tsx` — added `HeadlineCardTest` and `KeyStatementTest` test compositions (portrait 1080×1920, 120 frames, same default `text` and `emphasisWords`) so the two can be diffed side-by-side in Studio. `MotionGraphicsVideo` is unchanged — the orchestrator looks up the component by `beat.type` via `getBeatComponent(type)` from the registry, so adding a new beat type needs no orchestrator change.
+- `src/beats/renderBeat.tsx` — added `headline_card` to the suppressed list for kinetic captions (it's a text/card beat; the on-screen text IS the caption).
+- No orchestrator changes (`MotionGraphicsVideo.tsx`, `SceneTransition.tsx` unchanged).
+- No Zod/registry dispatcher changes (`types.ts` already auto-discovers new schemas via `getBeatSchemas(type)`).
+
+**Design-system compliance:** portrait 1080×1920, transparent overlay on `PersistentBackground`, white card chrome, top accent bar, Space Grotesk, accent palette, 30–40% entrance rule, `SceneTransition`-owned entrance/exit, emphasis cycling `Highlight` → `Circle` → `Underline` from `@remotion/rough-notation`, `fitText` for headline sizing, `durationInFrames` forwarded as a prop. **Tick every box on the audit checklist.**
+
+**Reuse pattern for the next 6 components in 2.1:** copy `HeadlineCard.tsx` (or `KeyStatement.tsx`), swap the per-type Zod schema in `registry.ts`, change the `getBeatComponent` mapping, register a test composition in `Root.tsx`. Do not invent a new layout, font, or palette — the design system's whole point is that 16+ beat types look like one library.
+
+### 2.2 Per-type metadata Zod schemas
+- Each new component ships with a Zod schema in `src/beats/registry.ts` (already the pattern). Add unit tests in `src/beats/registry.test.ts` that feed in malformed metadata and assert the error message.
+- Add round-trip tests: take a `Beat` from `output/.../_generated_log.json`, feed it through `validateBeatMetadata`, assert the parsed shape is what the component expects.
+
+### 2.3 Idle motion library
+- Many components currently sit still during the `idleProgress` phase (the middle 64% of a beat). Add a small set of reusable idle animations in `src/lib/idleMotion/`:
+  - `breath` — gentle scale pulse
+  - `drift` — small position oscillation
+  - `shimmer` — highlight sweep across a card
+- Components opt in by calling `useIdleMotion("breath")` inside a `<SceneTransition>`.
+
+### 2.4 Beat-emphasis words → component-level highlights
+- Currently the orchestrator passes `emphasisWords` to `KeyStatement` / `IconText` / `PlainText` for the "static" highlight rings.
+- Extend the system: `versus`, `before_after`, `quote_card` should also accept `emphasisWords` and highlight the corresponding `value` / `label` / `quote` tokens.
+- This requires the registry to add `emphasisWords` to each component's expected prop shape, and a small `<EmphasisText>` helper that draws the same Highlight / Circle / Underline annotation as `KineticCaptions` does.
+
+### 2.5 Visual polish pass on existing components
+- Walk through every `*Test` composition in `Root.tsx` and pick one beat type per day to improve visually. This is a "20% effort, 80% polish" loop that compounds.
+- Track changes in a `components/CHANGELOG.md` so the visual language is consistent across the library.
+
+---
+
 ## Horizon 1 — Local Batch Renderer (defer until laptop, **$0**)
 
 **Defer trigger: you have a laptop/desktop with a real GPU.** For now, see Mode A in the "Render Mode" section above — render in the browser via Studio.
@@ -169,44 +225,6 @@ A single video takes ~2 minutes to render locally. You don't need a web UI to st
 
 ---
 
-## Horizon 2 — Component Coverage + Better Visuals (1–2 weeks, **$0**)
-
-The 13 beat types in the registry are mostly cosmetic variants of three primitives: text-over-card, bar/number, and 3D scene. The next round adds the visual vocabulary needed for news stories that aren't finance / tech. All components render with local assets (no stock-photo APIs, no Lottie CDN dependency).
-
-### 2.1 New beat types (in priority order)
-| Type | When to use it | Component |
-|---|---|---|
-| `headline_card` | Big-text intro beat (story hook) | `src/components/HeadlineCard.tsx` |
-| `stat_pill` | Single big number with label | reuse `ChartCounter`, add `StatPill` variant |
-| `quote_attribution` | Multi-line quote with author avatar | `src/components/QuoteAttribution.tsx` |
-| `compare_split` | Side-by-side comparison without versus framing | reuse `BeforeAfter` with horizontal split |
-| `location_pulse` | Generic 2D location callout (cheaper than `Map3D`) | `src/components/LocationPulse.tsx` |
-| `image_card` | AI-generated or news-photo with caption | `src/components/ImageCard.tsx` (deferred until 4.x) |
-| `scrollytelling` | Long-form beat with a scrolling text panel (for "explainers") | `src/components/Scrollytelling.tsx` |
-| `ticker_tape` | Bottom-of-screen news ticker for multi-story intros | `src/components/TickerTape.tsx` |
-
-### 2.2 Per-type metadata Zod schemas
-- Each new component ships with a Zod schema in `src/beats/registry.ts` (already the pattern). Add unit tests in `src/beats/registry.test.ts` that feed in malformed metadata and assert the error message.
-- Add round-trip tests: take a `Beat` from `output/.../_generated_log.json`, feed it through `validateBeatMetadata`, assert the parsed shape is what the component expects.
-
-### 2.3 Idle motion library
-- Many components currently sit still during the `idleProgress` phase (the middle 64% of a beat). Add a small set of reusable idle animations in `src/lib/idleMotion/`:
-  - `breath` — gentle scale pulse
-  - `drift` — small position oscillation
-  - `shimmer` — highlight sweep across a card
-- Components opt in by calling `useIdleMotion("breath")` inside a `<SceneTransition>`.
-
-### 2.4 Beat-emphasis words → component-level highlights
-- Currently the orchestrator passes `emphasisWords` to `KeyStatement` / `IconText` / `PlainText` for the "static" highlight rings.
-- Extend the system: `versus`, `before_after`, `quote_card` should also accept `emphasisWords` and highlight the corresponding `value` / `label` / `quote` tokens.
-- This requires the registry to add `emphasisWords` to each component's expected prop shape, and a small `<EmphasisText>` helper that draws the same Highlight / Circle / Underline annotation as `KineticCaptions` does.
-
-### 2.5 Visual polish pass on existing components
-- Walk through every `*Test` composition in `Root.tsx` and pick one beat type per day to improve visually. This is a "20% effort, 80% polish" loop that compounds.
-- Track changes in a `components/CHANGELOG.md` so the visual language is consistent across the library.
-
----
-
 ## Horizon 3 — Smart Beat Generation (1–2 weeks, **$0–$5/day LLM spend**)
 
 The current `beat_generator.py` uses a single LLM call to assign beat types to word chunks. This produces monotonous sequences ("key_statement, icon_text, key_statement, icon_text, ..."). The next round introduces story-level visual planning.
@@ -216,6 +234,7 @@ The current `beat_generator.py` uses a single LLM call to assign beat types to w
 ### 3.1 Story-level visual planning
 - Before per-beat generation, run a second LLM pass that produces a **story arc** — 1 intro beat, 1–2 explanation beats, 1 climax beat, 1 outro beat.
 - Pass this arc to the per-beat generator as a constraint, so the output is structured rather than homogeneous.
+- **With 2.1.1 done, the intro beat can now be a `headline_card` instead of a `key_statement`** — the Python pipeline should emit `{"type": "headline_card", ...}` for the first beat of the timeline so the story hook gets the bigger headline.
 
 ### 3.2 Beat type diversity budget
 - The per-beat prompt should be told: "this story must include at least one of each: `chart_line`, `map_3d`, `quote_attribution`". This forces visual variety.
@@ -433,14 +452,16 @@ These were considered and removed because they don't pass the cost lens or the i
 | Horizon | Effort | Cost | Mode | Output |
 |---|---|---|---|---|
 | 0 — Renderer Hardening | 1–2 days | $0 | A or B | Stable, observable, deterministic renders |
-| 1 — Local Batch Renderer | 3–5 days | $0 | B only | 6 videos/day on a laptop, log-file monitoring |
 | 2 — Component Coverage | 1–2 weeks | $0 | A or B | 13 beat types, idle motion library, emphasis text |
 | 3 — Smart Beat Generation | 1–2 weeks | $0–$5/day LLM | A or B | Story-arc planning, diversity budget, auto-pacing |
 | 4 — Local Asset Pipeline | 1–2 weeks | $0 (4.1 needs GPU) | A or B | Local images, ambient tracks, logo variants |
 | 5 — Interaction, Player, Analytics | 1–2 weeks | $0 | A or B | Local player, offline heatmap, file telemetry |
+| 1 — Local Batch Renderer | 3–5 days | $0 | B only | 6 videos/day on a laptop, log-file monitoring |
 | 6 — Hosted Dashboard & Multi-Story | 1–2 weeks | $5–$30/month VPS | B only | Web dashboard, intro/outro, format switch |
 | 7 — Managed Render Farm | 1 week | $20–$100/month | B only | Containerized renderer, push queue, alerts |
 | 8 — YouTube Auto-Publish | 1 week | $0 (OAuth approval time) | A: manual, B: auto | Auto-upload + scheduling |
 | 9 — E2E Tests, CI, Production Polish | ongoing | $0 (free CI minutes) | A or B | Visual regression, e2e script, release pipeline |
 
 **The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.
+
+**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 4.5 tasks in Horizon 2.

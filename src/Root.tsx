@@ -170,9 +170,13 @@ export const renderDataCalculateMetadata: CalculateMetadataFunction<
   };
 
   // Write the plan to out/audio-mounts.log. Failures are warned, not
-  // thrown — a broken log file shouldn't kill the render.
+  // thrown — a broken log file shouldn't kill the render. The
+  // projectRoot is resolved inside writeAudioPlanLog (it tries
+  // process.cwd() first, then falls back to walking up from
+  // __dirname to find package.json) so the call site doesn't need
+  // to know where it's running from.
   try {
-    writeAudioPlanLog(plan, process.cwd());
+    writeAudioPlanLog(plan);
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn(

@@ -130,6 +130,17 @@ export type AudioPlanLog = {
  * mounts, so the log is written even during a `still` (single-frame)
  * render.
  *
+ * `projectRoot` is optional. If omitted, the function derives the
+ * directory from `process.cwd()` when available. In Remotion's
+ * renderer bundle, `process.cwd` is sometimes NOT a callable
+ * function (Remotion polyfills `process` partially — the global
+ * `process` object exists but `process.cwd` is `undefined` because
+ * there's no Node `cwd` API in the browser-side shim). When that
+ * happens, the function falls back to walking up from the bundle's
+ * own location via `__dirname` (which Remotion's bundler DOES
+ * expose reliably) until it finds a directory that contains a
+ * `package.json`, and uses that as the project root.
+ *
  * Uses `(0, eval)("require")("fs")` and `(0, eval)("require")("path")`
  * to load the Node built-ins via CommonJS at runtime. The `eval`
  * boundary hides the module names from webpack's static analyzer so
@@ -144,7 +155,7 @@ export type AudioPlanLog = {
  */
 export const writeAudioPlanLog = (
   plan: AudioPlanLog,
-  projectRoot: string,
+  projectRoot?: string,
 ): boolean => {
   // Bail early if we are not running in Node. `process` exists in Node
   // and in the browser when a bundler polyfills it; the safer check is
@@ -159,7 +170,53 @@ export const writeAudioPlanLog = (
   const fs = nodeRequire("fs") as typeof import("fs");
   const path = nodeRequire("path") as typeof import("path");
 
-  const outDir = path.join(projectRoot, "out");
+  let root: string;
+  if (projectRoot) {
+    root = projectRoot;
+  } else {
+    // Prefer process.cwd() if it's callable.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const proc: any = typeof process !== "undefined" ? process : undefined;
+    if (proc && typeof proc.cwd === "function") {
+      try {
+        root = proc.cwd();
+      } catch {
+        root = "";
+      }
+    } else {
+      root = "";
+    }
+
+    // Fallback: walk up from __dirname until we find a package.json.
+    // Remotion's renderer bundle exposes __dirname even when
+    // process.cwd is missing. The sceneSfx.ts module itself lives at
+    // <projectRoot>/src/lib/sceneSfx.ts, so going up 2 levels lands
+    // us at the project root.
+    if (!root) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fromDir: string | undefined = (globalThis as any).__dirname;
+      if (fromDir) {
+        let dir = fromDir;
+        for (let i = 0; i < 8; i++) {
+          if (fs.existsSync(path.join(dir, "package.json"))) {
+            root = dir;
+            break;
+          }
+          const parent = path.dirname(dir);
+          if (parent === dir) break; // hit filesystem root
+          dir = parent;
+        }
+      }
+    }
+
+    if (!root) {
+      // Last-ditch fallback: use the current working directory string
+      // (path.join handles "" as ".").
+      root = ".";
+    }
+  }
+
+  const outDir = path.join(root, "out");
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
   }

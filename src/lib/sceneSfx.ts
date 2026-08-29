@@ -130,16 +130,9 @@ export type AudioPlanLog = {
  * mounts, so the log is written even during a `still` (single-frame)
  * render.
  *
- * `projectRoot` is optional. If omitted, the function derives the
- * directory from `process.cwd()` when available. In Remotion's
- * renderer bundle, `process.cwd` is sometimes NOT a callable
- * function (Remotion polyfills `process` partially — the global
- * `process` object exists but `process.cwd` is `undefined` because
- * there's no Node `cwd` API in the browser-side shim). When that
- * happens, the function falls back to walking up from the bundle's
- * own location via `__dirname` (which Remotion's bundler DOES
- * expose reliably) until it finds a directory that contains a
- * `package.json`, and uses that as the project root.
+ * `projectRoot` is preferred when supplied. If omitted, the function
+ * derives the directory from `process.cwd()` when available, then
+ * falls back to walking up from `__dirname` looking for `package.json`.
  *
  * Uses `(0, eval)("require")("fs")` and `(0, eval)("require")("path")`
  * to load the Node built-ins via CommonJS at runtime. The `eval`
@@ -149,51 +142,17 @@ export type AudioPlanLog = {
  * runtime in Node, `eval("require")` returns the real CommonJS
  * `require` and the file write succeeds.
  *
- * NOOPs gracefully on non-Node environments (e.g. if the same bundle
- * somehow gets executed in a browser despite the eval trick). Returns
- * `false` in that case so the caller can decide whether to warn.
+ * If we are NOT in real Node (the eval fails or the require throws),
+ * the function re-throws so the caller's try/catch in Root.tsx
+ * surfaces a warn and the render continues. We intentionally do NOT
+ * silently `return false` on the eval failure — that path made the
+ * smoke test report an empty log with no warn, which was impossible
+ * to debug.
  */
 export const writeAudioPlanLog = (
   plan: AudioPlanLog,
   projectRoot?: string,
 ): boolean => {
-  // ------------------------------------------------------------------
-  // Node-only file write. We use a synchronous dynamic import of the
-  // Node built-ins `fs` and `path`. `writeAudioPlanLog` is only ever
-  // called from `Root.tsx::renderDataCalculateMetadata`, which only
-  // runs server-side (in the `remotion render` / `remotion still`
-  // Node process). It is NEVER called from the browser bundle.
-  //
-  // Why not `(0, eval)("require")("fs")` like the previous version?
-  //   Because the Remotion renderer bundle is ESM-compiled, so
-  //   `require` is not a real symbol in scope — the bare identifier
-  //   `require` is a CommonJS-only concept. Inside an ESM module,
-  //   `eval("require")` throws `ReferenceError: require is not
-  //   defined` at runtime. The previous `(0, eval)("require")` trick
-  //   hid the module name "fs" from webpack's static analyzer, but
-  //   the `require` identifier itself was the problem.
-  //
-  // Why not `await import("fs")`?
-  //   Same webpack concern as above: webpack sees the literal string
-  //   "fs" in the source and tries to bundle it for the browser
-  //   bundle, which fails. BUT — since `writeAudioPlanLog` is only
-  //   ever called from a server-only code path, we don't ship a
-  //   browser bundle at all. The only bundles we ship are the server
-  //   bundle (which has `fs` available) and the Studio bundle (which
-  //   never calls this function).
-  //
-  // Why not a top-level `import fs from "fs"`?
-  //   Same webpack problem. The `import` statement is statically
-  //   visible to webpack, which tries to resolve it for every bundle
-  //   it emits (including the browser bundle if any file ever
-  //   transitively imports this module).
-  //
-  // The fix: gate the dynamic import behind a synchronous
-  // Node-detect check, and use `require` *if it actually exists in
-  // the global scope* (the CJS case). If we're in an ESM-only
-  // runtime, fall back to throwing — the caller's try/catch will
-  // turn it into a warn and the render keeps going.
-  // ------------------------------------------------------------------
   // ------------------------------------------------------------------
   // Real-Node detection. A genuine Node runtime has
   // `process.versions.node` set to a string like "v20.10.0".
@@ -214,7 +173,17 @@ export const writeAudioPlanLog = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const proc: any = typeof process !== "undefined" ? process : undefined;
   if (!proc || !proc.versions || typeof proc.versions.node !== "string") {
-    return false;
+    // Re-throw so the caller's try/catch in Root.tsx surfaces a warn
+    // in the render log. Silently returning false here was the bug
+    // that made the smoke test report an empty audio-mounts.log with
+    // no diagnostic to grep for. The smoke test's `tail -n 50
+    // ${STDERR_LOG}` will now show a clear "writeAudioPlanLog:
+    // not running in real Node" message instead of empty stderr.
+    throw new Error(
+      "writeAudioPlanLog: not running in real Node (process.versions.node is " +
+        String(proc?.versions?.node) +
+        "); cannot write out/audio-mounts.log",
+    );
   }
 
   // From here down we are guaranteed to be in real Node, so

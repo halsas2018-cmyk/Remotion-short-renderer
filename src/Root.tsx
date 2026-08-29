@@ -1,7 +1,8 @@
 import React from "react";
 import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsVideo";
-import { HeadlineCard, HeadlineCardSchema } from "./HeadlineCard";
+import { HeadlineCard } from "./HeadlineCard";
+import { KeyStatement } from "./KeyStatement";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
 
@@ -139,6 +140,23 @@ const HeadlineCardTestComposition: React.FC = () => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/*  KeyStatement test composition                                      */
+/*                                                                     */
+/*  Single-beat composition for visual QA of the gold-standard         */
+/*  text component. Same portrait dimensions; same default text so  */
+/*  you can side-by-side HeadlineCardTest with KeyStatementTest.    */
+/* ------------------------------------------------------------------ */
+
+const KeyStatementTestComposition: React.FC = () => {
+  return (
+    <KeyStatement
+      text="The gamble works while AI chips are scarce"
+      emphasisWords={["gamble", "scarce"]}
+    />
+  );
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -163,6 +181,18 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="HeadlineCardTest"
         component={HeadlineCardTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          text: "The gamble works while AI chips are scarce",
+          emphasisWords: ["gamble", "scarce"],
+        }}
+      />
+      <Composition
+        id="KeyStatementTest"
+        component={KeyStatementTestComposition}
         durationInFrames={120}
         fps={30}
         width={1080}

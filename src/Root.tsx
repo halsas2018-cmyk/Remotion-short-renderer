@@ -170,13 +170,37 @@ export const renderDataCalculateMetadata: CalculateMetadataFunction<
   };
 
   // Write the plan to out/audio-mounts.log. Failures are warned, not
-  // thrown — a broken log file shouldn't kill the render. The
-  // projectRoot is resolved inside writeAudioPlanLog (it tries
-  // process.cwd() first, then falls back to walking up from
-  // __dirname to find package.json) so the call site doesn't need
-  // to know where it's running from.
+  // thrown — a broken log file shouldn't kill the render.
+  //
+  // We pass `projectRoot` explicitly so the helper doesn't have to
+  // guess it. We use the same `process.cwd()`-or-`process.env.PWD`
+  // strategy the smoke script uses (the bash script does
+  // `cd "${PROJECT_ROOT}"` then runs `npx remotion still`, so the
+  // cwd is the project root). If `process.cwd()` is unavailable
+  // (it shouldn't be — Remotion runs `still` in a real Node
+  // process), we fall back to `PWD` env var, then to the
+  // helper's own auto-resolution (which walks up looking for
+  // package.json).
+  //
+  // The fact that the helper's auto-resolution was sometimes
+  // landing in the wrong place (e.g. inside node_modules/.cache
+  // when webpack substituted __dirname) was the root cause of
+  // the 1.4 audio plan log being empty in the smoke test. Passing
+  // projectRoot explicitly removes the ambiguity.
+  let projectRoot: string | undefined;
   try {
-    writeAudioPlanLog(plan);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const proc: any = typeof process !== "undefined" ? process : undefined;
+    if (proc && typeof proc.cwd === "function") {
+      projectRoot = proc.cwd();
+    } else if (proc && typeof proc.env?.PWD === "string") {
+      projectRoot = proc.env.PWD;
+    }
+  } catch {
+    // ignore — let writeAudioPlanLog fall back to its own resolution
+  }
+  try {
+    writeAudioPlanLog(plan, projectRoot);
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn(

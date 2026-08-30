@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { useSceneOrbit } from "./lib/sceneMotion";
 
 interface ChartComparison3DProps {
   items: Array<{ label: string; value: number }>;
@@ -27,8 +28,10 @@ const ENTRANCE_ROT_Y = -32; // scene starts swung far to one side...
 const REST_ROT_Y = -10; // ...and settles to a resting angle
 const ENTRANCE_ROT_X = 20; // looking down onto the floor at first...
 const REST_ROT_X = 9; // ...then levels off
-const IDLE_SWING_Y = 8; // idle orbit amplitude (degrees)
-const IDLE_SWING_X = 2;
+const IDLE_SWING_Y = 8; // idle orbit amplitude (degrees) — owned by useSceneOrbit
+const IDLE_SWING_X = 2; // idle orbit amplitude (degrees) — owned by useSceneOrbit
+const SCENE_BOB_FREQ = 0.05; // cycles per frame — stays as a local (translate, not rotate)
+const SCENE_BOB_AMP_PX = 6; // px
 
 // Winner bar = orange gradient, losers = neutral slate
 const WINNER = {
@@ -94,19 +97,24 @@ export const ChartComparison3D: React.FC<ChartComparison3DProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // ---- Scene camera: dramatic swing-in, then slow orbit ----
+  // ---- Scene camera: dramatic swing-in (owned by component), then idle orbit (owned by hook) ----
   const settleT = interpolate(frame, [0, sceneSettleDur], [0, 1], {
     easing: easeOutExpo,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const rotY =
-    ENTRANCE_ROT_Y + (REST_ROT_Y - ENTRANCE_ROT_Y) * settleT +
-    Math.sin(frame * 0.03) * IDLE_SWING_Y * idleBlend;
-  const rotX =
-    ENTRANCE_ROT_X + (REST_ROT_X - ENTRANCE_ROT_X) * settleT +
-    Math.cos(frame * 0.024) * IDLE_SWING_X * idleBlend;
-  const sceneBob = Math.sin(frame * 0.05) * 6 * idleBlend;
+  const entranceRotY = ENTRANCE_ROT_Y + (REST_ROT_Y - ENTRANCE_ROT_Y) * settleT;
+  const entranceRotX = ENTRANCE_ROT_X + (REST_ROT_X - ENTRANCE_ROT_X) * settleT;
+  const orbit = useSceneOrbit({
+    idleBlend,
+    swingYDeg: IDLE_SWING_Y,
+    swingXDeg: IDLE_SWING_X,
+  });
+  const rotY = entranceRotY + orbit.rotationY;
+  const rotX = entranceRotX + orbit.rotationX;
+  // sceneBob stays as a local — it's a translateY, not a rotation, so it
+  // doesn't belong in useSceneOrbit (which is rotations-only by design).
+  const sceneBob = Math.sin(frame * SCENE_BOB_FREQ) * SCENE_BOB_AMP_PX * idleBlend;
 
   // ---- Geometry ----
   const padding = Math.max(80, width * 0.11);

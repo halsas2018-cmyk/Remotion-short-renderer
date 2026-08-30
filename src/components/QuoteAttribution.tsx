@@ -10,6 +10,7 @@ import {
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText } from "@remotion/layout-utils";
+import { useIdleMotion } from "../lib/idleMotion";
 
 const { fontFamily } = loadFont("normal", {
   weights: ["500", "700"],
@@ -79,10 +80,14 @@ export const QuoteAttribution: React.FC<QuoteAttributionProps> = ({
   const cardEntranceDuration = Math.max(12, Math.round(durationInFrames * 0.07));
 
   const isIdle = frame > entranceEndFrame;
-  const cardBounceOffset = isIdle
-    ? Math.sin(frame * 0.08 * Math.PI * 2) * 6
-    : 0;
-  const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
+  // Card idle bounce + 3D tilt (shared useIdleMotion hook).
+  // We pass `glow: false` because the card transform doesn't use scale,
+  // and the radial-blur glow sibling has its own scale: glowPulse local.
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false,
+  });
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
@@ -231,8 +236,8 @@ export const QuoteAttribution: React.FC<QuoteAttributionProps> = ({
                 extrapolateLeft: "clamp",
                 extrapolateRight: "clamp",
               }),
-              translate: `0px ${cardBounceOffset}px`,
-              rotate: `x ${cardTiltDeg}deg`,
+              translate: `0px ${idle.translateY}px`,
+              rotate: `x ${idle.rotateX}deg`,
             }}
           >
             {/* Top accent bar */}

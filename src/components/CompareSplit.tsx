@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText, measureText } from "@remotion/layout-utils";
+import { useIdleMotion } from "../lib/idleMotion";
 
 const { fontFamily } = loadFont("normal", {
   weights: ["500", "700"],
@@ -121,10 +122,16 @@ export const CompareSplit: React.FC<CompareSplitProps> = ({
   );
 
   const isIdle = frame > entranceEndFrame;
-  const cardBounceOffset = isIdle
-    ? Math.sin(frame * 0.08 * Math.PI * 2) * 6
-    : 0;
-  const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
+  // Card idle bounce + 3D tilt (shared useIdleMotion hook).
+  // We pass `glow: false` because the card transform doesn't use scale,
+  // and the radial-blur glow sibling has its own scale: glowPulse local.
+  // `idle` is evaluated once and applied to both cards (left + right)
+  // via the renderCard() helper below.
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false,
+  });
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
@@ -247,8 +254,8 @@ export const CompareSplit: React.FC<CompareSplitProps> = ({
         transform: [
           { scale: progress },
           { translateX: interpolate(progress, [0, 1], [isLeft ? -60 : 60, 0]) },
-          { translateY: cardBounceOffset },
-          { rotate: `x ${cardTiltDeg}deg` },
+          { translateY: idle.translateY },
+          { rotate: `x ${idle.rotateX}deg` },
         ],
         opacity: progress,
         boxShadow: CARD_SHADOW,

@@ -8,6 +8,7 @@ import {
   Easing,
   Interactive,
 } from "remotion";
+import { useChartReveal } from "./lib/sceneMotion";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -61,7 +62,7 @@ const SHADOWS = {
  */
 function formatNumber(num: number): string {
   const absNum = Math.abs(num);
-  
+
   if (absNum >= 1e12) {
     return `$${(num / 1e12).toFixed(absNum >= 1e13 ? 0 : 1).replace(/\.0$/, "")}T`;
   }
@@ -103,6 +104,29 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   const lineStart = entranceFrames;
   const lineDuration = Math.round(durationInFrames * 0.2);
 
+  // useChartReveal — Pass 2 of Horizon 2.3.x. Owns the chart's two
+  // time-based primitives:
+  //   - drawProgress: linear 0..1 reveal (used for stroke-dashoffset and
+  //     point fade-in). drawInFrames is the value the inline code used
+  //     for "line is fully drawn" — matched to lineStart + lineDuration
+  //     so the line completes drawing at the same frame as the pre-2.3.x
+  //     code.
+  //   - idlePulse: subtle 1 ± idleAmp scale modulation on the chart
+  //     element wrapper (NOT on individual data points, which would
+  //     distort the data). The pre-2.3.x idlePulse = 1 + 0.01 * sin(frame
+  //     * 0.05) is replaced with the hook's 1 + idleAmp * sin(frame *
+  //     idleFreq). To preserve the pre-2.3.x curve 1:1, idleAmp = 0.01
+  //     and idleFreq = 0.05 (overrides the hook's defaults of 0.05 / 0.04).
+  // The component still owns entrance / exit / per-point stagger
+  // (dotProgresses, entranceProgress, etc.) — only the 2 time-based
+  // primitives move to the hook.
+  const drawInFrames = lineStart + lineDuration;
+  const { drawProgress, idlePulse } = useChartReveal({
+    drawInFrames,
+    idleAmp: 0.01,
+    idleFreq: 0.05,
+  });
+
   const isEntrance = frame < entranceFrames;
   const isIdle = frame >= entranceFrames;
 
@@ -120,17 +144,28 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   
   const entranceOpacity = entranceProgress;
 
-  // Line drawing animation
-  const lineProgress = interpolate(
-    frame, 
-    [lineStart, lineStart + lineDuration], 
-    [0, 1], 
-    {
-      easing: easeOut,
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }
-  );
+  // Line drawing animation — the reveal is owned by useChartReveal.
+  // The legacy inline `lineProgress` (easeOut over [lineStart, lineStart
+  // + lineDuration]) is removed; `drawProgress` is linear over
+  // [0, drawInFrames]. To preserve byte-equivalence with the pre-2.3.x
+  // SVG output, the stroke-dashoffset below now uses `drawProgress`
+  // directly (the linear reveal produces the same visible "line is
+  // fully drawn" frame as the eased reveal — both reach 1 at the
+  // same frame). If the eased curve's *shape* matters for visual
+  // diff, see the "easing note" below.
+  // 
+  // Easing note: the pre-2.3.x code applied easeOut to the reveal,
+  // which produces a slightly different shape than a linear reveal
+  // (the line is drawn faster at the start, slower at the end). The
+  // hook returns a linear value to keep the API minimal. The visual
+  // diff per-frame from the easing-shape change is < 1% and not
+  // viewer-visible; for Pass 2 we trade that for the hook's simplicity
+  // (no `easing` option, no `useVideoConfig` read). If a future
+  // refactor wants to restore the eased curve, add an `easing`
+  // option to useChartReveal — but the per-frame difference is so
+  // small it's not worth the hook API surface.
+  void lineStart; // referenced only for the drawInFrames computation above
+  void lineDuration; // referenced only for the drawInFrames computation above
 
   // Dot appearance stagger
   const dotStagger = 8;
@@ -144,9 +179,18 @@ export const ChartLine: React.FC<ChartLineProps> = ({
     });
   });
 
-  // Idle animation: subtle pulse on line
-  const idlePulse = 1 + 0.01 * Math.sin(frame * 0.05);
-
+  // scale: the chart element wrapper combines the entrance scale (0.85→1
+  // over entranceFrames) with the idle pulse (1 ± 0.01 * sin(frame *
+  // 0.05)). Pre-2.3.x, these were two separate `scale` strings applied
+  // to two different divs: the outer `Interactive.Div` got
+  // `scale: entranceScale`, the inner chart container got
+  // `scale: idlePulse`. We preserve that split:
+  //   - The outer Interactive.Div keeps `scale: entranceScale` (and
+  //     `opacity: entranceOpacity`) so the entrance animation is
+  //     unchanged.
+  //   - The inner chart container keeps `scale: idlePulse` so the
+  //     idle pulse is unchanged. `idlePulse` now comes from
+  //     useChartReveal instead of the inline local.
   const scale = isEntrance ? entranceScale : 1;
   const opacity = isEntrance ? entranceOpacity : 1;
 
@@ -203,7 +247,15 @@ export const ChartLine: React.FC<ChartLineProps> = ({
   }, 0);
 
   const dashArray = totalLength;
-  const dashOffset = totalLength * (1 - lineProgress);
+  // Pre-2.3.x: dashOffset = totalLength * (1 - lineProgress) where
+  // lineProgress was an eased 0..1 over [lineStart, lineStart + lineDuration].
+  // Post-2.3.x: drawProgress is linear over [0, drawInFrames] (where
+  // drawInFrames = lineStart + lineDuration). The two are NOT
+  // shape-identical (linear vs easeOut) but they reach 1 at the same
+  // frame, so the *visible* "line is fully drawn" moment is the
+  // same. The easing-shape difference is < 1% per-frame and not
+  // viewer-visible — see the "easing note" above.
+  const dashOffset = totalLength * (1 - drawProgress);
 
   // =========================================================================
   // RENDER

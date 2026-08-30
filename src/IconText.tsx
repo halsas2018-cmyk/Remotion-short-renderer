@@ -10,6 +10,7 @@ import {
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { fitText, fillTextBox, measureText } from "@remotion/layout-utils";
 import * as LucideIcons from "lucide-react";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface IconTextProps {
   icon: string;
@@ -208,10 +209,16 @@ export const IconText: React.FC<IconTextProps> = ({
   // Idle state — begins after textEndFrame (Rule 1)
   const isIdle = frame > textEndFrame;
   const idleTimeSeconds = isIdle ? (frame - textEndFrame) / fps : 0;
-  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
-  // Card bounce animation (idle) - 6px vertical bounce matching other components
-  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+  // Card idle bounce + subtle 3D tilt (shared useIdleMotion hook).
+  // We compose the bounce/tilt into the existing centering transform
+  // string below, so we only need the individual fields (not the
+  // composed `transform`).
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false, // glow is a separate element (radial blur); it has its own scale/opacity
+  });
 
   // Glow pulse animation (idle)
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
@@ -275,7 +282,7 @@ export const IconText: React.FC<IconTextProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
+          transform: `translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)`,
           width: availableWidth,
           display: "flex",
           flexDirection: "column",

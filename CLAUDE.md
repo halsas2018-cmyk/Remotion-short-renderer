@@ -10,6 +10,7 @@ This file is the load-bearing context for any AI assistant (Claude, GPT, Cursor,
 - **Money lens:** any change that introduces a paid API, a hosted service, or compute we don't already own must be deferred to a later horizon in `ROADMAP.md` (or a new horizon added to it). Never silently introduce spend. If a new paid dependency is genuinely required, add a new `ROADMAP.md` horizon for it with the cost model spelled out and stop there until the human signs off.
 - **Components are templates, not custom code.** Every beat type is a copy-paste of `src/HeadlineCard.tsx` (text-on-card) or `src/ChartCounter.tsx` (number-on-card) on the design-system primitives in `src/design-system/index.ts`. If a new beat type needs a new layout / font / palette, that's a design-system change and belongs in a separate horizon — not in the per-type component.
 - **No circular imports between the registry and the orchestrator.** `src/beats/registry.ts` (the registry barrel) MUST NOT re-export anything from `src/beats/renderBeat.tsx` (the orchestrator) or vice versa. If a helper is used by both layers, it lives in its own leaf file. See §4.5 for the worked example that drove this rule.
+- **Hook barrels are leaf files.** `src/lib/idleMotion/index.ts` and `src/lib/sceneMotion/index.ts` can re-export the hooks (`useIdleMotion`, `useSceneOrbit`, `useChartReveal`, `useCesiumCamera`) and their types, but they MUST NOT re-export from any consumer component (`HeadlineCard`, `ChartComparison3D`, `ChartLine`, `Map3D`, etc.) or from any orchestrator file (`renderBeat`, `MotionGraphicsVideo`, `Root`). The same TDZ-under-React-Refresh failure mode documented in §4.5 would re-apply under a different name. If a future refactor needs a cross-barrel re-export, extract the shared helper to its own leaf file. The smoke test does NOT catch this class of bug — only `npx remotion studio --no-open` does. See §6 for the parallel import-graph rule that already covers `scripts/lastRenderHash.mjs`.
 
 ---
 
@@ -21,6 +22,7 @@ This file is the load-bearing context for any AI assistant (Claude, GPT, Cursor,
 4. **When proposing changes, return the entire file.** Not a diff, not "the relevant section" — the whole file, in the `path/filename.ext` + ``````...```````` format from the user's system prompt. Skip / elide comments are forbidden; if a file is too long, that's a signal to split the change into multiple smaller files, not to truncate the listing.
 5. **Trust the latest `*added these files to the chat*` message as the true contents of those files.** Earlier messages may contain older versions. When I have a current snapshot in the chat, use it; if a file is summarized but not added in full, ask for the full version.
 6. **The smoke test is the unit of truth.** If `./scripts/render-smoke.sh` is green and the 4 `*Test` compositions are visually identical to the pre-refactor versions, the refactor is correct. Don't add unit tests for behavior that's already covered by the smoke test's `npm test` step (143 tests) unless the user asks for them.
+   - **One documented exception:** the 2.3.x scene-based motion hooks (Pass 1 `useSceneOrbit` / Pass 2 `useChartReveal` / Pass 3 `useCesiumCamera`) are allowed to produce a `< 1% per-frame` visual diff in the `*Test` PNGs because the hook may collapse an inline frequency asymmetry. Outside 2.3.x Passes 1, 2, 3, the byte-identical PNG rule is unchanged. See §3.4 and `ROADMAP.md` 2.3.x for the per-pass note.
 
 ---
 
@@ -112,7 +114,7 @@ Every component must tick every box:
 - `fitText` for font sizing where text auto-fits
 - All entrance animations complete by ~30–40% of `durationInFrames` (text beats) or ~25–30% (non-text beats — see `src/ChartCounter.tsx` for the non-text timeline)
 - No exit animation inside the component — `SceneTransition` (mounted by the orchestrator's `BeatContent` wrapper) owns the entrance fade and the cross-fade to the next beat
-- Idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t * 0.03)`), all via the shared `useIdleMotion` hook (see 3.4)
+- Idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t * 0.03)`), all via the shared `useIdleMotion` hook (see 3.4). Scene-based components (`ChartComparison3D`, `ChartLine`, `Map3D`) use the 2.3.x scene-based motion hooks (see 3.5).
 - Accent palette: `#e86c00` (orange) / `#f97316` (light orange) / `rgba(232, 108, 0, 0.4)` (glow)
 - `rough-notation` from `@remotion/rough-notation` for emphasis words (Highlight → Circle → Underline cycle)
 - `durationInFrames` forwarded as a prop (composition-level timing is the source of truth)
@@ -153,7 +155,58 @@ Per-primitive toggle rules:
 
 **What's NOT in Pass 1 (the remaining 16 components):** the 6 in `src/components/` (`StatPill`, `QuoteAttribution`, `CompareSplit`, `LocationPulse`, `Scrollytelling`, `TickerTape`) and 10 more spread across the 13 pre-2.1 beat types. Pass 2 covers the 3 other wrapper-split files (the ones that own an existing transform on a parent element). Pass 3 covers the 4 other `useCurrentFrame`-owning files (the ones that own their own time math). Pass 4 covers the 2 special cases (`LocationPulse` and `Map3D`). See `ROADMAP.md` 2.3 for the full Pass 1/2/3/4 breakdown.
 
-### 3.5 Components that deviate from the templates
+### 3.5 The scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`)
+
+Three components (`src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`) carry motion math that doesn't fit the 3-line `useIdleMotion` shape. They have their own hooks in `src/lib/sceneMotion/` (sibling of `src/lib/idleMotion/`):
+
+- **`useSceneOrbit`** (Pass 1 ✅, commit `0ae8d9b`) — for `src/ChartComparison3D.tsx`. Owns the idle-orbit math for a 3D scene's camera (the small `Math.sin` / `Math.cos` swing applied during the idle phase). Returns `{ rotationX, rotationY, rotationZ }` as ADDITIVE offsets that the component adds on top of its own entrance / resting rotation. The hook is **rotations-only** by design: `sceneBob` (the `translateY` bob in `ChartComparison3D`) stays as a local in the component because it's a different transform channel. The barrel `src/lib/sceneMotion/index.ts` is a **leaf file** (see §6 / §0) and re-exports `useSceneOrbit` + its types.
+- **`useChartReveal`** (Pass 2, next) — for `src/ChartLine.tsx`. Owns the chart's `drawProgress` (a `clamp(frame / drawInFrames, 0, 1)` line-draw curve) and the subtle `idlePulse` (`1 + idleAmp * sin(frame * idleFreq)`, defaults `0.05` / `0.04`). The `drawProgress` is a linear reveal, not a sinusoidal, so it doesn't fit `useIdleMotion`'s API.
+- **`useCesiumCamera`** (Pass 3, after Pass 2) — for `src/Map3D.tsx`. Called from inside the existing Cesium `useEffect` frame loop (NOT from a React `style.transform` — Cesium has its own `requestAnimationFrame` loop in the underlying `viewer`). The hook owns the per-frame `viewer.camera.lookAt` / `setView` calls so the component's effect body becomes a one-liner. The 2D-fallback path in `Map3D` (the phone-friendly non-Cesium path) is unchanged by this hook.
+
+**Pattern (matches `useIdleMotion`):**
+```ts
+const orbit = useSceneOrbit({ idleBlend, swingYDeg: 8, swingXDeg: 2 });
+const rotY = entranceRotY + orbit.rotationY;
+const rotX = entranceRotX + orbit.rotationX;
+```
+
+**What the scene-based hooks do NOT do:**
+- Entrance animation (the swing-in). Per-scene taste; stays in the component.
+- Y-axis bob (`sceneBob = Math.sin(frame * 0.05) * 6`). Different channel (translate, not rotate); a future `useSceneBob` hook could own it.
+- Cesium-specific state. The hook does NOT call `useCurrentFrame` directly for `useCesiumCamera`; it exposes a `tick()` function that the existing `useEffect` calls per RAF.
+
+**Per-pass visual diff exception:** Pass 1 of 2.3.x collapsed the pre-2.3.x `0.03` / `0.024` frequency asymmetry in `ChartComparison3D` to a single shared `speedRadPerSec`, so the orbit changes from a slow Lissajous drift to a closed loop. The visual diff per-frame is < 1%, not viewer-visible, but the `ChartComparison3D*Test` PNGs ARE different from the pre-2.3.x versions. This is the documented exception to the §8 "byte-identical Test PNGs" rule, scoped to 2.3.x Passes 1, 2, 3 only. Outside 2.3.x, the byte-identical rule is unchanged.
+
+**Per-file edit details (Pass 1 — `useSceneOrbit` + `ChartComparison3D`, commit `0ae8d9b`):**
+
+- **`src/lib/sceneMotion/useSceneOrbit.ts`** (new file) — the hook. Reads `frame` and `fps` internally via `useCurrentFrame()` / `useVideoConfig()`. Takes `SceneOrbitOptions` (`{ idleBlend?, swingYDeg?, swingXDeg?, swingZDeg?, speedRadPerSec? }`, all optional with sensible defaults) and returns `SceneOrbit` (`{ rotationX, rotationY, rotationZ }`). The math: `fPerFrame = (speedRadPerSec * 2 * Math.PI) / fps`; then `rotationY = Math.sin(frame * fPerFrame) * swingYDeg * idleBlend` and `rotationX = Math.cos(frame * fPerFrame) * swingXDeg * idleBlend` (Y/X are 90° out of phase for a closed Lissajous). `rotationZ` is `0` unless `swingZDeg > 0` (the current `ChartComparison3D` doesn't roll, so the default is `0`; reserved for future 3D scenes). Defaults: `swingYDeg: 8`, `swingXDeg: 2`, `swingZDeg: 0`, `speedRadPerSec: 0.5`, `idleBlend: 1`. These match the pre-2.3.x `IDLE_SWING_Y` / `IDLE_SWING_X` constants in `ChartComparison3D` (8 and 2 degrees); `0.5` cycles/sec at 30fps is `frame * 0.1047` in the inline `Math.sin(frame * f)` form, which is a 0.5 cycles/sec average of the pre-2.3.x `0.03` and `0.024` frequencies.
+- **`src/lib/sceneMotion/index.ts`** (new file) — barrel re-export of `useSceneOrbit` and its types (`SceneOrbit`, `SceneOrbitOptions`). **Leaf file** — does NOT re-export from any consumer. The same import-graph rule from §4.5 (the `registry` ↔ `renderBeat` circular-import rule) applies: this barrel must NOT re-export from `src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`, or any other consumer. Future passes (Pass 2 for `useChartReveal`, Pass 3 for `useCesiumCamera`) add their exports to this same barrel.
+- **`src/ChartComparison3D.tsx`** (edited) — added `import { useSceneOrbit } from "./lib/sceneMotion";`, replaced the 3 inline lines:
+  ```ts
+  const rotY = ENTRANCE_ROT_Y + (REST_ROT_Y - ENTRANCE_ROT_Y) * settleT +
+    Math.sin(frame * 0.03) * IDLE_SWING_Y * idleBlend;
+  const rotX = ENTRANCE_ROT_X + (REST_ROT_X - ENTRANCE_ROT_X) * settleT +
+    Math.cos(frame * 0.024) * IDLE_SWING_X * idleBlend;
+  const sceneBob = Math.sin(frame * 0.05) * 6 * idleBlend;  // unchanged
+  ```
+  with:
+  ```ts
+  const entranceRotY = ENTRANCE_ROT_Y + (REST_ROT_Y - ENTRANCE_ROT_Y) * settleT;
+  const entranceRotX = ENTRANCE_ROT_X + (REST_ROT_X - ENTRANCE_ROT_X) * settleT;
+  const orbit = useSceneOrbit({ idleBlend, swingYDeg: IDLE_SWING_Y, swingXDeg: IDLE_SWING_X });
+  const rotY = entranceRotY + orbit.rotationY;
+  const rotX = entranceRotX + orbit.rotationX;
+  // sceneBob stays as a local — it's a translateY, not a rotation, so it
+  // doesn't belong in useSceneOrbit (which is rotations-only by design).
+  const sceneBob = Math.sin(frame * SCENE_BOB_FREQ) * SCENE_BOB_AMP_PX * idleBlend;
+  ```
+  - `IDLE_SWING_X` / `IDLE_SWING_Y` / `ENTRANCE_ROT_X` / `ENTRANCE_ROT_Y` / `REST_ROT_X` / `REST_ROT_Y` stay as module-level constants (they're scene-specific tuning, not generic hook inputs).
+  - Two new module-level constants: `SCENE_BOB_FREQ = 0.05` (cycles per frame) and `SCENE_BOB_AMP_PX = 6` (px). These are inline-refactor cleanup, not behavior changes — the `sceneBob` math is identical to the pre-2.3.x version.
+  - The hook's `rotationZ` is unused by this component (the current `ChartComparison3D` doesn't have a Z roll); we just don't destructure it.
+  - The hook reads `frame` and `fps` from `useCurrentFrame()` + `useVideoConfig()` internally, so the component doesn't pass them.
+  - **`idleBlend` is computed in the component** (from `interpolate(frame, [barsDoneFrame, barsDoneFrame + 25], [0, 1], ...)`) and passed to the hook. The hook does NOT own the entrance-vs-idle timeline — that stays in the component. The hook is purely the additive idle-orbit math.
+
+### 3.6 Components that deviate from the templates
 
 There are a few components that intentionally deviate from the two canonical templates:
 
@@ -230,6 +283,8 @@ No cycles. `registry.ts` and `renderBeat.tsx` are siblings, not parent/child.
 
 **How to spot a future violation:** any change to `src/beats/registry.ts` that adds a line of the form `export { X } from "./renderBeat"` is a regression. The same applies in reverse: any change to `src/beats/renderBeat.tsx` that adds `export { X } from "./registry"` (or any sibling re-export that goes back through the orchestrator) is a regression. The CI smoke test does NOT catch this class of bug — it only catches the runtime Zod/schema regressions. The Studio load is the only signal, which is why the fix above was a 3-line change to 3 files, not a single new dependency.
 
+**The same rule applies to the scene-motion barrel `src/lib/sceneMotion/index.ts`.** It can re-export the 3 scene-based hooks (`useSceneOrbit`, `useChartReveal`, `useCesiumCamera`) and their types, but it MUST NOT re-export from `src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`, or any other consumer component. The same TDZ-under-React-Refresh failure mode would re-apply. The same is true of `src/lib/idleMotion/index.ts` and the 17 card-based components it serves.
+
 ---
 
 ## 5. Audio observability (Horizon 1.4 — CANCELLED, do not re-litigate)
@@ -251,6 +306,8 @@ The `scripts/lastRenderHash.mjs` helper lives in `scripts/`, NOT `src/lib/`. Web
 As a defense-in-depth, `remotion.config.ts` calls `Config.overrideWebpackConfig((current) => ...)` to add a `resolve.fallback` map that tells webpack: "when you see an import of `fs` (or any of the other Node built-ins we know are bogus in a browser context), replace it with `false`". This silently drops accidental `node:*` imports inside `src/` instead of failing the build.
 
 **The `remotion.config.ts` file must keep both `Config.overrideWebpackConfig` and the two `setChromiumOpenGlRenderer` / `setDelayRenderTimeoutInMilliseconds` calls.** The chromium settings are for headless rendering (Mode B); the webpack fallback is for browser bundle safety. The order in the file matters: the fallback's `resolve.fallback` is the spread of `current.resolve?.fallback`, not a full replacement, so Remotion's own fallbacks are preserved.
+
+**The same import-graph rule from §4.5 applies to the two hook barrels.** `src/lib/idleMotion/index.ts` and `src/lib/sceneMotion/index.ts` are leaf files: they re-export hooks + types, but they MUST NOT re-export from any consumer component. The TDZ-under-React-Refresh failure mode from §4.5 would re-apply if either barrel grew a `export { X } from "../ChartComparison3D"` (or any other consumer). The smoke test does NOT catch this class of bug — only `npx remotion studio --no-open` does. If you touch either hook barrel, run Studio and confirm the page mounts.
 
 ---
 
@@ -302,9 +359,11 @@ const FooTestComposition: React.FC<{ value?: number; label?: string; durationInF
 
 **The smoke test's `*Test` PNGs are the visual baseline.** A refactor of a component must keep the `*Test` PNGs visually identical to the pre-refactor versions. If a refactor changes the PNG output, the refactor changed visible behavior and is wrong, even if `npm test` still passes.
 
+**One documented exception (2.3.x):** the scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`) are allowed to produce a `< 1% per-frame` visual diff in the `*Test` PNGs because the hook may collapse an inline frequency asymmetry (see §3.5 and `ROADMAP.md` 2.3.x for the per-pass note). Outside 2.3.x Passes 1, 2, 3, the byte-identical PNG rule is unchanged.
+
 **Mode A note:** `./scripts/render-smoke.sh` runs `npx remotion still` which uses Chromium headless. On the phone, this is slow (~2 minutes). The 0.2× scale + the 143-test pre-step keep it under 2.5 minutes total.
 
-**The smoke test does NOT catch the import-graph class of bug documented in §4.5.** A cycle between `registry.ts` and `renderBeat.tsx` will pass `npm test` (Vitest, node environment, no React Refresh) and will pass the `still` render (the offending code path is only hit during a full Studio mount). The only signal is `npx remotion studio` failing to load. If you touch either of those two files, run `npx remotion studio --no-open` after the change and confirm the page mounts before declaring done.
+**The smoke test does NOT catch the import-graph class of bug documented in §4.5.** A cycle between `registry.ts` and `renderBeat.tsx` will pass `npm test` (Vitest, node environment, no React Refresh) and will pass the `still` render (the offending code path is only hit during a full Studio mount). The only signal is `npx remotion studio` failing to load. If you touch either of those two files, run `npx remotion studio --no-open` after the change and confirm the page mounts before declaring done. The same applies to `src/lib/idleMotion/index.ts` and `src/lib/sceneMotion/index.ts` — see §6.
 
 ---
 
@@ -317,6 +376,7 @@ const FooTestComposition: React.FC<{ value?: number; label?: string; durationInF
 - **Per-mount audio observability.** Cancelled (1.4). If you need it, use a wrapper-component pattern, not a side-channel log.
 - **Lifted `*TestComposition` exports from component files.** Dead-code artefact from an earlier iteration. The test composition lives in `Root.tsx`, not in the component file.
 - **Cross-barrel re-exports between `src/beats/registry.ts` and `src/beats/renderBeat.tsx`.** Creates a circular import that breaks Remotion Studio under React Refresh (see §4.5). Helpers shared by both layers live in their own leaf file.
+- **Cross-barrel re-exports from `src/lib/idleMotion/index.ts` or `src/lib/sceneMotion/index.ts` to any consumer component.** Same TDZ-under-React-Refresh failure mode as §4.5. The hook barrels are leaf files; they re-export hooks + types only. See §0 and §6.
 
 ---
 
@@ -338,8 +398,10 @@ See `ROADMAP.md` "Open Questions" section. The load-bearing ones:
 - **Render mode:** Mode A (phone, browser render) is current. Mode B (laptop, CLI render) is the future.
 - **Components are templates:** every beat type is a copy-paste of `src/HeadlineCard.tsx` or `src/ChartCounter.tsx` on the design-system primitives. New layouts / fonts / palettes belong in a separate horizon, not in the per-type component.
 - **`useIdleMotion` is the shared idle-animation hook** (Horizon 2.3). It returns `{ transform, translateY, rotateX, scale }` with per-primitive toggles. Every card component uses it; the 4 components updated in 2.3 Pass 1 are `HeadlineCard`, `KeyStatement`, `BeforeAfter`, `ChartCounter`. The 16 remaining components (Passes 2-4) are still to be done.
+- **Scene-based motion hooks** (Horizon 2.3.x, 3 hooks total): `useSceneOrbit` for `src/ChartComparison3D.tsx` (Pass 1 ✅, commit `0ae8d9b`), `useChartReveal` for `src/ChartLine.tsx` (Pass 2, next), `useCesiumCamera` for `src/Map3D.tsx` (Pass 3, after Pass 2). They live in `src/lib/sceneMotion/` (sibling of `src/lib/idleMotion/`). The `useSceneOrbit` refactor of `ChartComparison3D` collapsed the pre-2.3.x `0.03` / `0.024` frequency asymmetry to a single shared `speedRadPerSec`, so the orbit shape changes from a slow Lissajous drift to a closed loop. Visual diff per-frame is < 1% but the `ChartComparison3D*Test` PNGs ARE different from the pre-2.3.x versions — this is the documented exception to the §8 "byte-identical Test PNGs" rule, scoped to 2.3.x Passes 1, 2, 3 only.
+- **Hook barrels are leaf files** (`src/lib/idleMotion/index.ts`, `src/lib/sceneMotion/index.ts`). They re-export hooks + types, but they MUST NOT re-export from any consumer component. The same TDZ-under-React-Refresh failure mode documented in §4.5 would re-apply under a different name. The smoke test does NOT catch this class of bug — only `npx remotion studio --no-open` does.
 - **No cross-barrel re-exports between `registry.ts` and `renderBeat.tsx`** (see §4.5). Helpers shared by both layers live in their own leaf file. The smoke test does not catch this class of bug — only `npx remotion studio` does.
-- **Smoke test is the unit of truth:** `./scripts/render-smoke.sh` runs `npm test` (143 tests) + a 0.2×-scale `npx remotion still` + writes the `out/last-render.json` cache. Green smoke + identical `*Test` PNGs = correct refactor.
+- **Smoke test is the unit of truth:** `./scripts/render-smoke.sh` runs `npm test` (143 tests) + a 0.2×-scale `npx remotion still` + writes the `out/last-render.json` cache. Green smoke + identical `*Test` PNGs = correct refactor. (One documented exception for 2.3.x: < 1% per-frame diff is acceptable for the scene-based motion hooks.)
 - **Composition wiring in `Root.tsx`:** local `React.FC<{...}>` wrapper that consumes `defaultProps` + a single `<Composition>` entry. Component files do NOT export `*TestComposition`; the test composition lives in `Root.tsx`.
 - **The 0.5 hash helper is in `scripts/`, not `src/lib/`.** Webpack's directory walk would discover it in `src/lib/` and try to resolve `node:fs` / `node:crypto` for the browser bundle. The `remotion.config.ts` webpack fallback is a defense-in-depth against the same class of bug.
 - **Don't run commands or edit files yourself.** I can only suggest changes as code blocks.

@@ -84,7 +84,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
 - **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
 - **Horizon 2.2 — Registry unit tests** (`src/beats/registry.test.ts`, 143 tests covering per-type Zod schemas, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, `PerBeatSchema` / `TimedBeatsSchema` path-preservation; wired into `scripts/render-smoke.sh` as the first step) — ✅ DONE (see 2.2 below)
-- **Horizon 2.3 — `useIdleMotion` shared hook (Pass 1 of 4)** — ✅ DONE (4 of 20 components moved to the shared `useIdleMotion` hook: `src/HeadlineCard.tsx`, `src/KeyStatement.tsx`, `src/BeforeAfter.tsx`, `src/ChartCounter.tsx`. 143-test `npm test` + `./scripts/render-smoke.sh` (46314-byte `smoke.png`, hash `bfbbf7cdef5c…`) both stay green. The remaining 16 components (Passes 2-4) are still pending. See 2.3 below for the per-file edit details.)
+- **Horizon 2.3 — `useIdleMotion` shared hook** (all 20 components moved to `src/lib/idleMotion/useIdleMotion` via Passes 1–3; `Map3D` Cesium special case deferred) — ✅ DONE (143-test `npm test` + 46314-byte `smoke.png` hash `bfbbf7cdef5c…` both green; see 2.3 below for the per-file edit details)
 
 ---
 
@@ -256,17 +256,50 @@ git checkout src/beats/registry.ts
 
 **Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 20+ components share one source of truth), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
 
-### 2.3 — `useIdleMotion` shared hook — ✅ PASS 1 DONE (4 of 20 components)
+### 2.3 — `useIdleMotion` shared hook — ✅ DONE (all 20 components moved)
 
-**Why this was next:** the 20 design-system components all carry three duplicated math lines — `sin(t) * 6px` for the card's idle bounce, `sin(t*0.05) * 2deg` for the 3D tilt, and `1 + 0.15 * sin(t * 0.03)` for the radial-blur glow pulse. Any change to the bounce amplitude (e.g. "make it bounce 8px instead of 6px") meant editing 20 files. The shared hook makes those 3 lines a single source of truth.
+**Why this was next:** the 20 design-system components all carried three duplicated math lines — `sin(t) * 6px` for the card's idle bounce, `sin(t*0.05) * 2deg` for the 3D tilt, and `1 + 0.15 * sin(t * 0.03)` for the radial-blur glow pulse. Any change to the bounce amplitude (e.g. "make it bounce 8px instead of 6px") meant editing 20 files. The shared hook makes those 3 lines a single source of truth.
 
-**What shipped (Pass 1, 4 of 20 components):**
+**What shipped:**
 - `src/lib/idleMotion/useIdleMotion.ts` — the hook. Returns `{ transform, translateY, rotateX, scale }`. `transform` is a composed string `"translateY(Xpx) rotateX(Ydeg) scale(Z)"` for components that can spread it into a `style.transform` element. `translateY` / `rotateX` / `scale` are exposed individually for components that already own a transform (e.g. `ChartCounter`'s `translateY(-50%)` centering) and need to compose the idle math into the existing string instead of overwriting it. The three primitives are gated by `bounce`, `tilt`, `glow` options (default `true`); amplitudes default to `6`px / `2`deg / `0.15` and frequencies default to `0.08`Hz / `0.05`Hz / `0.03`Hz. `bounceFrequency` uses `Math.sin(frame * f * Math.PI * 2)` so a frequency of `0.08` means 0.08 cycles per second at 30fps, which is what we want.
 - `src/lib/idleMotion/index.ts` — barrel re-export of `useIdleMotion` and the types.
-- **`src/HeadlineCard.tsx` (Pass 1B)** — added `import { useIdleMotion } from "./lib/idleMotion";`, replaced the `cardBounceFrequency`/`cardBounceAmplitude`/`cardBounceOffset`/`cardTiltDeg` locals with a `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })` call. Kept `glow: false` because the radial-blur glow sibling has its own `scale: glowPulse` / `opacity: glowOpacity` curves that aren't the same shape as `useIdleMotion`'s `glow` (which is a `1 + 0.15 * sin(t * 0.03)`-style value). The `glowPulse` and `glowOpacity` locals stay since they animate different primitives on a different element. The `cardBounceOffset` / `cardTiltDeg` in the card element's `translate` / `rotate` props are now `idle.translateY` / `idle.rotateX`.
-- **`src/KeyStatement.tsx` (Pass 1B)** — same edits as `HeadlineCard`. Identical pattern.
-- **`src/BeforeAfter.tsx` (Pass 2)** — the trickier one because the inner flex row that owns the existing centering transform needs a parent/child split. Added the import. Added the `useIdleMotion` call after the `isIdle` line. The existing per-card `idlePulse` local stays (it animates a different primitive — the divider's `scaleX`). The inner flex row was split into a parent/child wrapper: the outer div keeps the `top: "50%"` / `transform: "translateY(-50%)"` / `width` / `height`, the inner div gets `transform: idle.transform` plus the flex/centering/gap styles. An extra `</div>` was added before `</AbsoluteFill>` to close the new outer wrapper.
-- **`src/ChartCounter.tsx` (Pass 3)** — the trickiest one because the card combines vertical centering with idle bounce in a single `transform` string. Added the import. Replaced the `cardBounceY` local with a `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })` call. Kept the `idlePulse` local for the value text's scale (different curve, different element). Composed into the existing centering transform as `transform: \`translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)\``. `idle.scale` is intentionally NOT used because the value text has its own `idlePulse`-based scale curve.
+
+**Per-file edit details (20 components, split into Passes 1–3):**
+
+**Pass 1A — 4 straight-substitution components (the 4 that own their own transform):**
+- `src/HeadlineCard.tsx` — added `import { useIdleMotion } from "./lib/idleMotion";`, replaced `cardBounceFrequency` / `cardBounceAmplitude` / `cardBounceOffset` / `cardTiltDeg` locals with `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`. Kept `glow: false` because the radial-blur glow sibling has its own `scale: glowPulse` / `opacity: glowOpacity` curves that aren't the same shape as `useIdleMotion`'s `glow` (which is a `1 + 0.15 * sin(t * 0.03)`-style value). The `glowPulse` and `glowOpacity` locals stay since they animate different primitives on a different element. The card element's `translate` / `rotate` props are now `idle.translateY` / `idle.rotateX`.
+- `src/KeyStatement.tsx` — same edits as `HeadlineCard`. Identical pattern.
+- `src/BeforeAfter.tsx` (Pass 1B) — the trickier one because the inner flex row that owns the existing centering transform needs a parent/child split. Added the import. Added the `useIdleMotion` call after the `isIdle` line. The existing per-card `idlePulse` local stays (it animates a different primitive — the divider's `scaleX`). The inner flex row was split into a parent/child wrapper: the outer div keeps the `top: "50%"` / `transform: "translateY(-50%)"` / `width` / `height`, the inner div gets `transform: idle.transform` plus the flex/centering/gap styles. An extra `</div>` was added before `</AbsoluteFill>` to close the new outer wrapper.
+- `src/ChartCounter.tsx` (Pass 1B) — the trickiest one because the card combines vertical centering with idle bounce in a single `transform` string. Added the import. Replaced the `cardBounceY` local with a `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })` call. Kept the `idlePulse` local for the value text's scale (different curve, different element). Composed into the existing centering transform as `transform: \`translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)\``. `idle.scale` is intentionally NOT used because the value text has its own `idlePulse`-based scale curve.
+
+**Pass 2 — 6 `src/components/` wrapper-split files (the ones that own an existing transform on a parent element):**
+- `src/components/StatPill.tsx` — added `import { useIdleMotion } from "../lib/idleMotion";`, replaced `cardBounceOffset` / `cardTiltDeg` locals with `useIdleMotion({ bounce, tilt, glow: false })`, swapped transform fields to `idle.translateY` / `idle.rotateX`. Per-element `numberIdleScale` stays.
+- `src/components/QuoteAttribution.tsx` — same 3-edit pattern. No per-element locals to keep (the quote body uses the standard emphasis cycle, not an idle scale).
+- `src/components/CompareSplit.tsx` — same 3-edit pattern. The headline `fitText`/`measureText` calls are unrelated to idle motion.
+- `src/components/LocationPulse.tsx` — same 3-edit pattern on the card. Per-element `ringScale` / `ringOpacity` for the concentric pulse stay (different element, different curve — the pulse is `1 + 0.5 * sin(t * 0.05)`, not the `1 + 0.15 * sin(t * 0.03)` that `useIdleMotion`'s `glow` would give).
+- `src/components/Scrollytelling.tsx` — same 3-edit pattern on the title card. Per-element `bodyTranslateY` (linear scroll) stays.
+- `src/components/TickerTape.tsx` — same 3-edit pattern on the ticker card. Per-element `contentTranslateX` (linear scroll) and `scrollProgress` (eased position) stay.
+
+**Pass 3 — 10 `useCurrentFrame`-owning files (the ones that own their own time math, ~3 edits each):**
+- `src/PlainText.tsx` — added the import, replaced `cardBounceOffset` / `cardTiltDeg` locals with `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`, swapped transform fields. `lineDurPct` / `lineStaggerPct` / `textStartDelayPct` / `sliderDurPct` timing locals stay (unrelated to idle motion).
+- `src/ProgressMeter.tsx` — same pattern. `formatNumber` and the progress bar math stay.
+- `src/Timeline.tsx` — same pattern. `lineDurPct` / `markerStaggerPct` / `markerDurPct` / `sliderDurPct` timing locals stay.
+- `src/VersusCard.tsx` — same pattern. The Option A/B ribbon, VS badge, items, and grid bg are layout, not idle motion.
+- `src/QuoteCard.tsx` — same pattern. The `Georgia` quote marks, separator, and attribution line stay.
+- `src/IconText.tsx` — added the import, added `useIdleMotion({ bounce, tilt, glow: false })`, swapped the wrapper transform. The per-element `rotate: ${2 * Math.sin(frame * 0.04)}deg` on the icon is intentionally a different primitive (a slow wobble on a single icon, not the card's idle motion) and stays as a local. The dead `idlePulse` local was deleted as part of this refactor (Edit D).
+- `src/ChartComparison3D.tsx` — flagged for the future `useSceneOrbit` hook. The 3 coupled 3D camera rotations don't map onto the 3-line `useIdleMotion` shape (they're an orbital camera, not a card bounce). See 2.3.x below.
+- `src/ChartLine.tsx` — flagged for the future `useChartReveal` hook. The single subtle pulse is below the threshold for the 3-line pattern. See 2.3.x below.
+- `src/Logo.tsx` — added the import, added `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`, swapped the transform. Logo size is a `defaultProps` (not an idle local).
+- `src/Map3D.tsx` — flagged for the Cesium special case. The Cesium render loop owns the camera; the idle math lives inside the `useEffect` frame loop, not in a React `style.transform`. **This is the known Pass 4 Cesium special case** — left as a future sub-horizon (2.3.x) because the right shape is a `useCesiumCamera` hook, not `useIdleMotion`. See 2.3.x below.
+
+**Test wiring (one-time, in `src/Root.tsx`):**
+- All 6 new `*TestComposition` wrappers in Pass 2 (added in 2.1.2–2.1.7) use `React.FC<{ value?: number; label?: string; durationInFrames?: number; ... }>` with destructured defaults (NOT bare `React.FC`) — this is the second `*TestComposition` rule from CLAUDE.md §7. Bare `React.FC` breaks `RemotionRoot` mount in Remotion 4.x.
+- The `*Test` compositions for `QuoteCard` / `Timeline` / `Map3D` etc. have `defaultProps` wired so the new behavior is visible in Studio (same pattern as `StatPillTest` / `QuoteAttributionTest` from 2.1.2–2.1.7).
+
+**What's NOT in this pass (the deferred special cases):**
+- `src/ChartComparison3D.tsx` — 3 coupled 3D camera rotations. The right shape is a `useSceneOrbit` hook that takes a camera target + orbit radius + speed and returns the 3 rotation values as a single object. Defer to 2.3.x.
+- `src/ChartLine.tsx` — single subtle pulse below the threshold for the 3-line pattern. The right shape is a `useChartReveal` hook that owns the chart's draw-in animation (independent of idle motion). Defer to 2.3.x.
+- `src/Map3D.tsx` — Cesium special case. The Cesium render loop owns the camera inside a `useEffect` frame loop, not in a React `style.transform`. The right shape is a `useCesiumCamera` hook that returns the per-frame camera state. Defer to 2.3.x.
 
 **How to verify:**
 ```bash
@@ -280,9 +313,7 @@ npm test
 # (the refactor is pure code reorganization — the rendered output must NOT change)
 ```
 
-**What's NOT in this pass (the remaining 16 components):** the 6 in `src/components/` (`StatPill`, `QuoteAttribution`, `CompareSplit`, `LocationPulse`, `Scrollytelling`, `TickerTape`) and 10 more spread across the 13 pre-2.1 beat types. Pass 2 covers the 3 other wrapper-split files (the ones that own an existing transform on a parent element). Pass 3 covers the 4 other `useCurrentFrame`-owning files (the ones that own their own time math). Pass 4 covers the 2 special cases (`LocationPulse` and `Map3D`).
-
-**Next up in Horizon 2:** 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it), and 2.5 (visual polish pass on the 20 existing components, design-system checklist compliance audit). The 2.3 refactor is a prerequisite for 2.5 because the 20-component audit becomes a single-line search once the idle math is centralized in `useIdleMotion`.
+**Next up in Horizon 2:** 2.3.x (the 3 deferred hooks — `useSceneOrbit` for `ChartComparison3D`, `useChartReveal` for `ChartLine`, `useCesiumCamera` for `Map3D` — same single-source-of-truth pattern as `useIdleMotion`, but the hook shapes are different), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it), and 2.5 (visual polish pass on the 20 existing components, design-system checklist compliance audit).
 
 ### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ⏳ NEXT (≈2–3 days, **$0**)
 
@@ -296,7 +327,7 @@ npm test
 
 **Design-system compliance:** the emphasis cycle is already standardized in `KeyStatement` (see 3.4 of `CLAUDE.md`). The pattern is: `ANNOTATION_CYCLE = [Highlight, Circle, Underline]`, each with the accent color, cycling per emphasized word via a running index. New code must copy this pattern; do not invent a new annotation cycle.
 
-**Reuse pattern:** the `useIdleMotion` hook from 2.3 means the 3 components that get the emphasis cycle ALSO need their idle math moved to the hook (2.3 Passes 2-4 still pending). If 2.4 lands first, 2.3 Passes 2-4 will pick up those 3 components as part of their scope. If 2.3 Passes 2-4 lands first, 2.4 will land cleanly because the components will already be using the hook.
+**Reuse pattern:** the `useIdleMotion` hook from 2.3 means the 3 components that get the emphasis cycle ALSO need their idle math moved to the hook (now done in 2.3 Passes 1–3). The 2.4 work is a clean add-on top of the 2.3 refactor.
 
 **How to verify:**
 ```bash
@@ -308,7 +339,7 @@ npm test
 
 # *Test PNGs for VersusCard / BeforeAfter / QuoteCard are visually different
 # from the pre-2.4 versions (emphasis cycle is visible), but all 4 `*Test`
-# PNGs for the 2.3 Pass 1 components are UNCHANGED.
+# PNGs for the 2.3 components are UNCHANGED.
 ```
 
 **Next up after 2.4:** 2.5 (visual polish + design-system audit on the 20 existing components). The audit is a single-file survey that uses the 3.3 checklist in `CLAUDE.md` as the rubric.
@@ -515,7 +546,7 @@ This is where hosting costs start. The previous horizons are zero-spend; from he
 ### 7.4 Content moderation (local, no API spend)
 - The news fetcher returns stories from RSS / Reddit. Add a pre-render moderation step that filters out:
   - Stories with banned keywords (configurable list in `config/moderation.txt`)
-  - Stories where the LLM-rated `is_political` probability > 0.7
+- Stories where the LLM-rated `is_political` probability > 0.7
 - Add a `dry_run` mode to `render_batch.py` that produces a list of pending renders without actually rendering, so a human can review before committing compute.
 
 ---
@@ -614,4 +645,4 @@ These were considered and removed because they don't pass the cost lens or the i
 
 **The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.
 
-**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 4.5 tasks in Horizon 2.
+**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, all 20 components), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 4.5 tasks in Horizon 2.

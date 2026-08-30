@@ -3,6 +3,7 @@ import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsVideo";
 import { HeadlineCard } from "./HeadlineCard";
 import { KeyStatement } from "./KeyStatement";
+import { ChartCounter } from "./ChartCounter";
 import { StatPill } from "./components/StatPill";
 import { QuoteAttribution } from "./components/QuoteAttribution";
 import { CompareSplit } from "./components/CompareSplit";
@@ -163,6 +164,16 @@ const KeyStatementTestComposition: React.FC = () => {
   );
 };
 
+const ChartCounterTestComposition: React.FC = () => {
+  return (
+    <ChartCounter
+      value={70_000_000_000}
+      label="in debt"
+      durationInFrames={90}
+    />
+  );
+};
+
 const StatPillTestComposition: React.FC = () => {
   return (
     <StatPill
@@ -268,6 +279,19 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{
           text: "The gamble works while AI chips are scarce",
           emphasisWords: ["gamble", "scarce"],
+        }}
+      />
+      <Composition
+        id="ChartCounterTest"
+        component={ChartCounterTestComposition}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          value: 70_000_000_000,
+          label: "in debt",
+          durationInFrames: 90,
         }}
       />
       <Composition

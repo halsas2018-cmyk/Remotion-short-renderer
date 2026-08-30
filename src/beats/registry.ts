@@ -13,6 +13,12 @@ import { VersusCard } from "../components/VersusCard";
 import { BeforeAfter } from "../components/BeforeAfter";
 import { Map3D } from "../components/Map3D";
 import { QuoteCard } from "../QuoteCard";
+import { StatPill } from "../components/StatPill";
+import { QuoteAttribution } from "../components/QuoteAttribution";
+import { CompareSplit } from "../components/CompareSplit";
+import { LocationPulse } from "../components/LocationPulse";
+import { Scrollytelling } from "../components/Scrollytelling";
+import { TickerTape } from "../components/TickerTape";
 import { BeatType } from "./types";
 
 /* ------------------------------------------------------------------ */
@@ -180,6 +186,67 @@ const quoteCardMetadata = z
   })
   .passthrough();
 
+const statPillMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("stat_pill"),
+    value: z.union([z.string(), z.number()]),
+    label: z.string(),
+    prefix: z.string().optional(),
+    suffix: z.string().optional(),
+  })
+  .passthrough();
+
+const quoteAttributionMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("quote_attribution"),
+    quote: z.string(),
+    attribution: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+const compareSplitMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("compare_split"),
+    left: z.string(),
+    right: z.string(),
+    leftLabel: z.string().optional(),
+    rightLabel: z.string().optional(),
+  })
+  .passthrough();
+
+const locationPulseMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("location_pulse"),
+    locationName: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+  })
+  .passthrough();
+
+const scrollytellingMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("scrollytelling"),
+    title: z.string(),
+    body: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+const tickerTapeMetadata = z
+  .object({
+    ...beatBase,
+    type: z.literal("ticker_tape"),
+    stories: z.array(z.string()),
+    label: z.string().optional(),
+  })
+  .passthrough();
+
 /* ------------------------------------------------------------------ */
 /*  Registry entry.                                                  */
 /*  `beatSchema` is the per-type top-level Zod schema.               */
@@ -223,6 +290,12 @@ export const registry: Record<BeatType, RegistryEntry> = {
   // the primary renderer. See CLAUDE.md §2.1.1 and 2.1 (quote_attribution
   // is the next copy-paste of HeadlineCard.tsx).
   quote_card: buildEntry(QuoteCard, quoteCardMetadata),
+  stat_pill: buildEntry(StatPill, statPillMetadata),
+  quote_attribution: buildEntry(QuoteAttribution, quoteAttributionMetadata),
+  compare_split: buildEntry(CompareSplit, compareSplitMetadata),
+  location_pulse: buildEntry(LocationPulse, locationPulseMetadata),
+  scrollytelling: buildEntry(Scrollytelling, scrollytellingMetadata),
+  ticker_tape: buildEntry(TickerTape, tickerTapeMetadata),
 };
 
 export const getBeatComponent = (type: string): React.ComponentType<any> | null => {

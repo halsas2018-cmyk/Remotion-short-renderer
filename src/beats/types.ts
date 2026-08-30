@@ -21,6 +21,12 @@ export const BeatType = [
   "map_3d",
   "process_flow",
   "quote_card",
+  "stat_pill",          // 2.1.2
+  "quote_attribution",  // 2.1.3
+  "compare_split",      // 2.1.4
+  "location_pulse",     // 2.1.5
+  "scrollytelling",     // 2.1.6
+  "ticker_tape",        // 2.1.7
 ] as const;
 export type BeatType = (typeof BeatType)[number];
 

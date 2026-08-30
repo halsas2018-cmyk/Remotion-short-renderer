@@ -3,6 +3,12 @@ import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsVideo";
 import { HeadlineCard } from "./HeadlineCard";
 import { KeyStatement } from "./KeyStatement";
+import { StatPill } from "./components/StatPill";
+import { QuoteAttribution } from "./components/QuoteAttribution";
+import { CompareSplit } from "./components/CompareSplit";
+import { LocationPulse } from "./components/LocationPulse";
+import { Scrollytelling } from "./components/Scrollytelling";
+import { TickerTape } from "./components/TickerTape";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
 
@@ -157,6 +163,68 @@ const KeyStatementTestComposition: React.FC = () => {
   );
 };
 
+const StatPillTestComposition: React.FC = () => {
+  return (
+    <StatPill
+      value={70_000_000_000}
+      label="in debt"
+    />
+  );
+};
+
+const QuoteAttributionTestComposition: React.FC = () => {
+  return (
+    <QuoteAttribution
+      quote="The best way to predict the future is to invent it."
+      attribution="Alan Kay"
+    />
+  );
+};
+
+const CompareSplitTestComposition: React.FC = () => {
+  return (
+    <CompareSplit
+      left="$50M"
+      right="$75M"
+      leftLabel="Q1"
+      rightLabel="Q2"
+    />
+  );
+};
+
+const LocationPulseTestComposition: React.FC = () => {
+  return (
+    <LocationPulse
+      locationName="Cupertino, California"
+      latitude={37.33}
+      longitude={-122.03}
+    />
+  );
+};
+
+const ScrollytellingTestComposition: React.FC = () => {
+  return (
+    <Scrollytelling
+      title="Why AI Chips Matter"
+      body={"The semiconductor shortage reshaped the entire tech industry.\nFoundries raced to add capacity.\nDesigners had to optimize for older nodes.\nCloud providers locked in multi-year supply contracts.\n\nThe result: a new normal where chip supply is a strategic asset."}
+      emphasisWords={["shortage", "strategic"]}
+    />
+  );
+};
+
+const TickerTapeTestComposition: React.FC = () => {
+  return (
+    <TickerTape
+      stories={[
+        "FED HOLDS RATES STEADY",
+        "AI CHIP DEMAND SURGES",
+        "TECH EARNINGS BEAT EXPECTATIONS",
+      ]}
+      label="BREAKING"
+    />
+  );
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -201,6 +269,60 @@ export const RemotionRoot: React.FC = () => {
           text: "The gamble works while AI chips are scarce",
           emphasisWords: ["gamble", "scarce"],
         }}
+      />
+      <Composition
+        id="StatPillTest"
+        component={StatPillTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="QuoteAttributionTest"
+        component={QuoteAttributionTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="CompareSplitTest"
+        component={CompareSplitTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="LocationPulseTest"
+        component={LocationPulseTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="ScrollytellingTest"
+        component={ScrollytellingTestComposition}
+        durationInFrames={180}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="TickerTapeTest"
+        component={TickerTapeTestComposition}
+        durationInFrames={150}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
       />
     </>
   );

@@ -82,6 +82,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 0.5 — Last-render composition-hash cache + `--skip-if-unchanged`** — ✅ DONE (commits f432ced, f3d01f2, 7be612b, d75be97, 6c096fa, 5c7349c; see 0.5 entry below)
 - **Horizon 1.4 — File-based audio plan log** — ~~CANCELLED~~ (shipped, then dropped; `process.versions.node` guard was unreliable in the render context — see 1.4 entry below)
 - **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
+- **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
 
 ---
 
@@ -142,20 +143,20 @@ The 13 beat types in the registry are mostly cosmetic variants of three primitiv
 | Type | When to use it | Component | Status |
 |---|---|---|---|
 | `headline_card` | Big-text intro beat (story hook) | `src/HeadlineCard.tsx` | ✅ **DONE (2.1.1)** |
-| `stat_pill` | Single big number with label | reuse `ChartCounter`, add `StatPill` variant | ⏳ next |
-| `quote_attribution` | Multi-line quote with author avatar | `src/components/QuoteAttribution.tsx` | ⏳ todo |
-| `compare_split` | Side-by-side comparison without versus framing | reuse `BeforeAfter` with horizontal split | ⏳ todo |
-| `location_pulse` | Generic 2D location callout (cheaper than `Map3D`) | `src/components/LocationPulse.tsx` | ⏳ todo |
+| `stat_pill` | Single big number with label | `src/components/StatPill.tsx` | ✅ **DONE (2.1.2)** |
+| `quote_attribution` | Multi-line quote with author block | `src/components/QuoteAttribution.tsx` | ✅ **DONE (2.1.3)** |
+| `compare_split` | Side-by-side comparison without versus framing | `src/components/CompareSplit.tsx` | ✅ **DONE (2.1.4)** |
+| `location_pulse` | 2D location callout (cheaper than `Map3D`) | `src/components/LocationPulse.tsx` | ✅ **DONE (2.1.5)** |
 | `image_card` | AI-generated or news-photo with caption | `src/components/ImageCard.tsx` | ⏳ deferred to 4.x |
-| `scrollytelling` | Long-form beat with a scrolling text panel (for "explainers") | `src/components/Scrollytelling.tsx` | ⏳ todo |
-| `ticker_tape` | Bottom-of-screen news ticker for multi-story intros | `src/components/TickerTape.tsx` | ⏳ todo |
+| `scrollytelling` | Long-form beat with a scrolling text panel (for "explainers") | `src/components/Scrollytelling.tsx` | ✅ **DONE (2.1.6)** |
+| `ticker_tape` | Bottom-of-screen news ticker for multi-story intros | `src/components/TickerTape.tsx` | ✅ **DONE (2.1.7)** |
 
 ### 2.1.1 — `headline_card` — ✅ DONE (this is the canonical copy-paste template for 2.1)
 
 **Why this was first:** every YouTube Shorts video in the catalogue opens with a story hook. A `key_statement` beat is too small to signal "this is the intro" — the viewer's eye treats it like any other text beat. `headline_card` makes the opening beat a distinct visual moment with a noticeably larger headline on the same white-card design system.
 
 **What shipped:**
-- `src/HeadlineCard.tsx` — the component. **Byte-for-byte identical to `KeyStatement.tsx` on the design-system primitives** (Space Grotesk via `@remotion/google-fonts/SpaceGrotesk`, accent palette `#e86c00` / `#f97316`, white card with shadow + border + 28–32px radius, top 4px gradient accent bar, slider border, shimmer, decorative dots, idle bounce `sin(t) * 6px` + 3D tilt `sin(t*0.05) * 2deg` + glow pulse `1 + 0.15 * sin(t*0.03)`, 30–40% entrance rule, transparent `AbsoluteFill` overlay on `PersistentBackground`). The only differences are: (a) larger `baseFontSize` / `emphasisFontSize` caps, and (b) no `exitDirection` prop. **This is the canonical copy-paste template for every new text-based beat type in 2.1.**
+- `src/HeadlineCard.tsx` — the component. **Byte-for-byte identical to `KeyStatement.tsx` on the design-system primitives** (Space Grotesk via `@remotion/google-fonts/SpaceGrotesk`, accent palette `#e86c00` / `#f97316`, white card with shadow + border + 28–32px radius, top 4px gradient accent bar, slider border, shimmer, decorative dots, idle bounce `sin(t) * 6px` + 3D tilt `sin(t*0.05) * 2deg` + glow pulse `1 + 0.15 * sin(t * 0.03)`, 30–40% entrance rule, transparent `AbsoluteFill` overlay on `PersistentBackground`). The only differences are: (a) larger `baseFontSize` / `emphasisFontSize` caps, and (b) no `exitDirection` prop. **This is the canonical copy-paste template for every new text-based beat type in 2.1.**
 - `src/beats/types.ts` — added `"headline_card"` to the `BeatType` union (now 16 supported types).
 - `src/beats/registry.ts` — added a `headlineCardMetadata` Zod schema (`{type, text, startFrame, durationInFrames, endFrame?, emphasisWords?, backgroundColor?, accentColor?, textColor?}`) and a registry entry mapping `headline_card` → `HeadlineCard`. All colour fields are optional — the component falls back to the default palette if the Python pipeline omits them.
 - `src/Root.tsx` — added `HeadlineCardTest` and `KeyStatementTest` test compositions (portrait 1080×1920, 120 frames, same default `text` and `emphasisWords`) so the two can be diffed side-by-side in Studio. `MotionGraphicsVideo` is unchanged — the orchestrator looks up the component by `beat.type` via `getBeatComponent(type)` from the registry, so adding a new beat type needs no orchestrator change.
@@ -167,25 +168,43 @@ The 13 beat types in the registry are mostly cosmetic variants of three primitiv
 
 **Reuse pattern for the next 6 components in 2.1:** copy `HeadlineCard.tsx` (or `KeyStatement.tsx`), swap the per-type Zod schema in `registry.ts`, change the `getBeatComponent` mapping, register a test composition in `Root.tsx`. Do not invent a new layout, font, or palette — the design system's whole point is that 16+ beat types look like one library.
 
-### 2.2 Per-type metadata Zod schemas
-- Each new component ships with a Zod schema in `src/beats/registry.ts` (already the pattern). Add unit tests in `src/beats/registry.test.ts` that feed in malformed metadata and assert the error message.
-- Add round-trip tests: take a `Beat` from `output/.../_generated_log.json`, feed it through `validateBeatMetadata`, assert the parsed shape is what the component expects.
+### 2.1.2–2.1.7 — `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `scrollytelling`, `ticker_tape` — ✅ DONE (6 new beat types)
 
-### 2.3 Idle motion library
-- Many components currently sit still during the `idleProgress` phase (the middle 64% of a beat). Add a small set of reusable idle animations in `src/lib/idleMotion/`:
-  - `breath` — gentle scale pulse
-  - `drift` — small position oscillation
-  - `shimmer` — highlight sweep across a card
-- Components opt in by calling `useIdleMotion("breath")` inside a `<SceneTransition>`.
+**Why these were next:** after `headline_card` shipped, the 6 remaining 2.1 priorities are the visual vocabulary needed for news stories that aren't finance / tech. Each is a copy-paste of `HeadlineCard.tsx` or `KeyStatement.tsx` on the design-system primitives, with the per-type field set swapped out — exactly the pattern called out in 2.1.1 and CLAUDE.md §31. `image_card` is deferred to 4.x (needs local image generation per Horizon 4.1, which itself needs a GPU / Mode B).
 
-### 2.4 Beat-emphasis words → component-level highlights
-- Currently the orchestrator passes `emphasisWords` to `KeyStatement` / `IconText` / `PlainText` for the "static" highlight rings.
-- Extend the system: `versus`, `before_after`, `quote_card` should also accept `emphasisWords` and highlight the corresponding `value` / `label` / `quote` tokens.
-- This requires the registry to add `emphasisWords` to each component's expected prop shape, and a small `<EmphasisText>` helper that draws the same Highlight / Circle / Underline annotation as `KineticCaptions` does.
+**What shipped (6 new components in `src/components/`):**
+- `StatPill.tsx` (2.1.2) — pill-shaped white card with a single oversized number (`value: number | string`) above a `label: string`. Accepts optional `prefix` / `suffix`. Number uses the gradient text effect. Zod schema: `statPillMetadata` in `src/beats/registry.ts`.
+- `QuoteAttribution.tsx` (2.1.3) — multi-line quote (Space Grotesk) flanked by large `Georgia` opening/closing quote marks, a separator line, and an attribution line (`&mdash; {attribution}`). Supports `emphasisWords?` with the standard `Highlight` → `Circle` → `Underline` cycle. **Replaces the design-system non-conformant `QuoteCard.tsx` for new code; the existing `quote_card` beat type is unchanged and continues to render `QuoteCard`.** Zod schema: `quoteAttributionMetadata`.
+- `CompareSplit.tsx` (2.1.4) — two equal cards side-by-side with neutral accent colors (no red/green framing, no decorative Legacy/Modern tags — that's `before_after`'s job). Optional `leftLabel` / `rightLabel` for category headers. Uses `fitText` + `measureText` for headline sizing (same as `BeforeAfter`). Zod schema: `compareSplitMetadata`.
+- `LocationPulse.tsx` (2.1.5) — 2D location callout (cheaper than `Map3D` for "just point at a place" beats). White card with the location name, a 2D grid + pin + concentric pulse ring (idle animation), and the coordinates below. Zod schema: `locationPulseMetadata`.
+- `Scrollytelling.tsx` (2.1.6) — long-form text with a fixed title (top) and a scrolling body (bottom). The body scrolls linearly across the idle phase, with top/bottom white fades for a soft mask. Supports `emphasisWords?`. Zod schema: `scrollytellingMetadata`.
+- `TickerTape.tsx` (2.1.7) — bottom-of-screen news ticker. Accent gradient label on the left (`"BREAKING"`, configurable), scrolling headlines on the right (joined with `   •   `, duplicated for a seamless loop). Scrolling is `Easing.linear` across the idle phase. Zod schema: `tickerTapeMetadata`.
 
-### 2.5 Visual polish pass on existing components
-- Walk through every `*Test` composition in `Root.tsx` and pick one beat type per day to improve visually. This is a "20% effort, 80% polish" loop that compounds.
-- Track changes in a `components/CHANGELOG.md` so the visual language is consistent across the library.
+**Wiring (one-time, at the registry layer):**
+- `src/beats/types.ts` — added 6 union members: `"stat_pill"`, `"quote_attribution"`, `"compare_split"`, `"location_pulse"`, `"scrollytelling"`, `"ticker_tape"`.
+- `src/beats/registry.ts` — added 6 imports, 6 Zod schemas (per-type top-level, `.passthrough()` so the per-type fields aren't stripped — see 0.2 / 1.2), and 6 registry entries. Zod validation errors now surface e.g. `beats[1].quote: Invalid input: expected string, received number` for the new types too.
+- `src/beats/renderBeat.tsx` — **no change.** All 6 new types accept the Python shape directly (no `adaptMetadata` translation needed), and they're all text/card heavy so they're correctly excluded from `CAPTION_VISIBLE_BEAT_TYPES` (kinetic captions suppressed).
+- `src/Root.tsx` — added 6 thin `*TestComposition` wrappers and 6 `<Composition>` registrations so each new component can be QA'd in Studio (`StatPillTest`, `QuoteAttributionTest`, `CompareSplitTest`, `LocationPulseTest`, `ScrollytellingTest`, `TickerTapeTest`). All are portrait 1080×1920. `MotionGraphicsVideo` is unchanged — the orchestrator auto-discovers the new components via `getBeatComponent(type)`.
+- `src/SceneTransition.tsx` — unchanged. The new components sit inside the orchestrator's existing `<SceneTransition>` wrapper, inheriting entrance fade + cross-fade for free.
+
+**Design-system compliance (all 6 components):** portrait 1080×1920 ✅ · transparent `AbsoluteFill` overlay on `PersistentBackground` ✅ · white card with shadow, 1px `#e8e8e8` border, 28–48px border-radius ✅ · top 4px gradient accent bar (`#e86c00` → `#f97316`) ✅ · `loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] })` from `@remotion/google-fonts/SpaceGrotesk` ✅ · `fitText` for font sizing where appropriate ✅ · all entrance animations complete by ~30–40% of `durationInFrames` ✅ · no exit animation inside the component ✅ · idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t * 0.03)`) ✅ · accent palette `#e86c00` / `#f97316` / `rgba(232, 108, 0, 0.4)` ✅ · `rough-notation` from `@remotion/rough-notation` for emphasis words (QuoteAttribution, Scrollytelling) ✅ · `durationInFrames` forwarded as a prop ✅ · slider border + decorative dots + shimmer ✅.
+
+**How to verify:**
+```bash
+npx remotion studio --no-open
+# Open each Test in your browser and confirm the design-system primitives:
+#   - http://localhost:3000/StatPillTest          (big number + label, pill-shaped card)
+#   - http://localhost:3000/QuoteAttributionTest  (multi-line quote + author block)
+#   - http://localhost:3000/CompareSplitTest      (two equal cards, neutral colors)
+#   - http://localhost:3000/LocationPulseTest     (location name + 2D map + pulsing ring)
+#   - http://localhost:3000/ScrollytellingTest    (title fixed, body scrolling)
+#   - http://localhost:3000/TickerTapeTest        (BREAKING label + scrolling headlines)
+
+# Then drop a 6-beat fixture into public/ and re-render the full video:
+./scripts/render-smoke.sh
+```
+
+**Next up in Horizon 2:** 2.2 (per-type Zod schemas + unit tests in `src/beats/registry.test.ts`), 2.3 (idle motion library in `src/lib/idleMotion/`), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
 
 ---
 

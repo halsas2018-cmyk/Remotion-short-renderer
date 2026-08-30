@@ -227,7 +227,7 @@ json.dump(data, open("public/timestamps.json.bak", "w"))
 The original 1.4 spec called for a file-based audio plan log that the smoke test would assert on. After two implementation attempts and a deep dive into the failure modes, **both 1.4 and Horizon 0.4 (the per-mount `console.log` lines it was meant to replace) were cancelled**. The orchestration works fine without the side-channel log: the audio streams (narration, ambient, per-transition whoosh, per-word click) all mount correctly because they live in the React tree, not in a side-channel log. Full reasoning lives in `ROADMAP.md` ("What's already done" and "0.4" / "1.4" entries). The takeaway:
 
 - **0.4 was unworkable from the start.** Every attempt to emit a per-mount `[audio] <label> src=… volume=… frames=[from, to) <meta>` `console.log` line on `<Audio>` mount failed during a `still` (single-frame) render. We tried four mechanisms: `onMount` on `<Audio>`, `useEffect(..., [])` in a sibling `<AudioMountLog>`, `useState(() => logAudioMount(...))` initializer, and `useRef(false)` + direct log in the function body. **All four produced zero output.** Remotion's `still` command uses a render-only code path that bypasses the React lifecycle entirely — it just reads the composition dimensions and renders a frame using the `calculateMetadata`-supplied data, without committing the tree. So the function body of the components isn't even invoked. There is no place inside the React tree from which to emit a per-mount log line during a `still`.
-- **1.4 was the file-based replacement for 0.4.** We pivoted to computing the audio plan in `Root.tsx::renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout) and appending one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test would read the file and assert one valid JSON line was present. The implementation shipped behind a `process.versions.node` guard, but that guard was unreliable: Remotion's render context shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The cache file was never written in practice. The two `remotion.config.ts` workarounds (`resolve.fallback: { fs: false, ... }` and moving the helper to `scripts/`) were enough to keep the render working, but the actual writeAudioPlanLog call still failed at runtime.
+- **1.4 was the file-based replacement for 0.4.** We pivoted to computing the audio plan in `Root.tsx::renderDataCalculateMetadata` (whoosh slots + click count, mirroring the orchestrator's layout) and appending one JSON line per render to `out/audio-mounts.log` via `fs.appendFileSync`. The smoke test would read the file and assert one valid JSON line was present. The implementation shipped behind a `process.versions.node` guard, but that guard was unreliable: Remotion's render context shims `process` (so `process.env` etc. work) but `process.versions.node` is `undefined`. The cache file was never written in practice. The two `remotion.config.ts` workarounds (`resolve.fallback: { fs: false, ... }` and moving the helper to `scripts/`) were enough to keep the render working, but the actual `writeAudioPlanLog` call still failed at runtime.
 - **Final fix:** drop the entire 1.4 surface area. `src/lib/sceneSfx.ts` no longer exports `writeAudioPlanLog` / `AudioPlanLog` / `WhooshSlot`; `Root.tsx` no longer computes or writes the audio plan; `scripts/render-smoke.sh` no longer asserts on `out/audio-mounts.log` (exit code 3 is gone). The orchestrator's audio streams are still observable through the React tree itself; per-mount observability would be a future horizon (likely tied to a real `npx remotion render` smoke test, not `still`).
 - **Do not re-litigate 0.4 / 1.4.** If a future horizon (e.g. 9.x CI) needs per-mount audio observability, write the per-mount log lines from inside a wrapper that the orchestrator mounts unconditionally and gate the verification on a full `npx remotion render` smoke test, not on `npx remotion still`. The `still` path will never produce per-mount logs.
 
@@ -245,7 +245,7 @@ The original 1.4 spec called for a file-based audio plan log that the smoke test
   2. If the cache matches, prints `==> SKIP: input hash matches v1:<hash> (rendered <ISO>)` and exits 0 without re-rendering.
   3. If the cache is missing, malformed, or stale-version, falls through to the render path (never fails on a missing cache — fresh checkouts just render).
   4. After a successful render, writes `out/last-render.json` via `writeLastRenderHash`. The write is non-fatal: a failed cache write prints `==> WARN: …` and the render still exits 0.
-- **What is NOT in the cache key** (intentional): `public/narration.mp3` and `public/sfx-ambient.mp3`. The visible output is fully determined by beats + words, and MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes). If you change a SFX mapping in `sceneSfx.ts` in a way that affects the visible render, bump `LAST_RENDER_HASH_VERSION` to invalidate old caches automatically.
+- **What is NOT in the cache key** (intentional): `public/narration.mp3` and `public/sfx-ambient.mp3`. The visible output is fully determined by beats + words, and MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes). If you change a SFX mapping in `sceneSfx.ts` in a way that affects the visible render, bump `LAST_RENDER_HASH_VERSION` to invalidate all old caches automatically — the version prefix on the cached hash is compared on every read, and stale-version records are treated as "no cache" and fall through to a fresh render.
 - **The helper lives under `scripts/`, not `src/lib/`** (commit 7be612b). Webpack's bundle input is rooted at `src/Root.tsx`; it walks every sibling `.ts` file in any imported directory. The first attempt put the helper in `src/lib/`, and webpack discovered it via the directory walk even though nothing imported it — and then tried to resolve `node:fs` / `node:crypto` in a browser context, failing with "Module not found: Error: Can't resolve 'fs'". Moving to `scripts/` puts the file outside the bundle's input graph entirely. As an additional safety net, `remotion.config.ts` sets `resolve.fallback: { fs: false, path: false, crypto: false, ... }` so any future accidental `node:*` import inside `src/` is silently dropped from the browser bundle instead of failing the build.
 - **Bug fix: hash separator** (commit 5c7349c). An earlier version of the helper and the smoke script's Node one-liner inserted a single `0x0a` (LF) byte between the two file bodies in the digest. That was wrong on two counts: (a) `createHash().update(0x0a)` throws `ERR_INVALID_ARG_TYPE: data argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received type number (10)` — Node doesn't accept raw numbers; you have to wrap them in `Buffer.from([0x0a])` or `"\n"`. (b) The bash side does NOT add a separator, so the two hashes would never have agreed even if (a) hadn't thrown. Both issues are fixed by dropping the separator entirely.
 - **Usage:**
@@ -309,7 +309,93 @@ npx remotion studio --no-open
 ./scripts/render-smoke.sh
 ```
 
-**Next up in 2.1:** the remaining priorities — `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card` (deferred to 4.x), `scrollytelling`, `ticker_tape`. Each one is a copy-paste of the `KeyStatement` / `HeadlineCard` design pattern with the per-type field set swapped out. The Zod schema in the registry is the only file that needs a per-type customisation beyond the copy-paste.
+### 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape` — ✅ DONE
+
+**Why these were next:** after `headline_card` shipped, the 6 remaining 2.1 priorities are the visual vocabulary needed for news stories that aren't finance / tech. Each is a copy-paste of `HeadlineCard.tsx` / `KeyStatement.tsx` on the design-system primitives, with the per-type field set swapped out. `image_card` is deferred to 4.x (needs local image generation per Horizon 4.1, which itself needs a GPU / Mode B).
+
+**What shipped (6 new components in `src/components/`):**
+- `StatPill.tsx` (2.1.2) — pill-shaped white card with a single oversized number (`value: number | string`) above a `label: string`. Accepts optional `prefix` / `suffix`. Number uses the gradient text effect.
+- `QuoteAttribution.tsx` (2.1.3) — multi-line quote (Space Grotesk) flanked by large `Georgia` opening/closing quote marks, a separator line, and an attribution line (`&mdash; {attribution}`). Supports `emphasisWords?` with the standard `Highlight` → `Circle` → `Underline` cycle. **Replaces the design-system non-conformant `QuoteCard.tsx` for new code; the existing `quote_card` beat type is unchanged and continues to render `QuoteCard`.**
+- `CompareSplit.tsx` (2.1.4) — two equal cards side-by-side with neutral accent colors (no red/green framing, no decorative Legacy/Modern tags — that's `before_after`'s job). Optional `leftLabel` / `rightLabel` for category headers. Uses `fitText` + `measureText` for headline sizing (same as `BeforeAfter`).
+- `LocationPulse.tsx` (2.1.5) — 2D location callout (cheaper than `Map3D` for "just point at a place" beats). White card with the location name, a 2D grid + pin + concentric pulse ring (idle animation), and the coordinates below.
+- `Scrollytelling.tsx` (2.1.6) — long-form text with a fixed title (top) and a scrolling body (bottom). The body scrolls linearly across the idle phase, with top/bottom white fades for a soft mask. Supports `emphasisWords?`.
+- `TickerTape.tsx` (2.1.7) — bottom-of-screen news ticker. Accent gradient label on the left (`"BREAKING"`, configurable), scrolling headlines on the right (joined with `   •   `, duplicated for a seamless loop). Scrolling is `Easing.linear` across the idle phase.
+
+**Wiring (one-time, at the registry layer):**
+- `src/beats/types.ts` — added 6 union members: `"stat_pill"`, `"quote_attribution"`, `"compare_split"`, `"location_pulse"`, `"scrollytelling"`, `"ticker_tape"`. The `BeatType` union is now 20 members.
+- `src/beats/registry.ts` — added 6 imports, 6 Zod schemas (per-type top-level, `.passthrough()` so the per-type fields aren't stripped — see 0.2 / 1.2), and 6 registry entries. Zod validation errors now surface e.g. `beats[1].quote: Invalid input: expected string, received number` for the new types too.
+- `src/beats/renderBeat.tsx` — **no change.** All 6 new types accept the Python shape directly (no `adaptMetadata` translation needed), and they're all text/card heavy so they're correctly excluded from `CAPTION_VISIBLE_BEAT_TYPES` (kinetic captions suppressed).
+- `src/Root.tsx` — added 6 thin `*TestComposition` wrappers and 6 `<Composition>` registrations so each new component can be QA'd in Studio (`StatPillTest`, `QuoteAttributionTest`, `CompareSplitTest`, `LocationPulseTest`, `ScrollytellingTest`, `TickerTapeTest`). All are portrait 1080×1920.
+- `src/SceneTransition.tsx` — unchanged. The new components sit inside the orchestrator's existing `<SceneTransition>` wrapper, inheriting entrance fade + cross-fade for free.
+
+**Design-system compliance (all 6 components):** portrait 1080×1920 ✅ · transparent `AbsoluteFill` overlay on `PersistentBackground` ✅ · white card with shadow, 1px `#e8e8e8` border, 28–48px border-radius ✅ · top 4px gradient accent bar (`#e86c00` → `#f97316`) ✅ · `loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] })` from `@remotion/google-fonts/SpaceGrotesk` ✅ · `fitText` for font sizing where appropriate ✅ · all entrance animations complete by ~30–40% of `durationInFrames` ✅ · no exit animation inside the component ✅ · idle: bounce (`sin(t) * 6px`) + 3D tilt (`sin(t*0.05) * 2deg`) + glow pulse (`1 + 0.15 * sin(t*0.03)`) ✅ · accent palette `#e86c00` / `#f97316` / `rgba(232, 108, 0, 0.4)` ✅ · `rough-notation` from `@remotion/rough-notation` for emphasis words (QuoteAttribution, Scrollytelling) ✅ · `durationInFrames` forwarded as a prop ✅ · slider border + decorative dots + shimmer ✅.
+
+**How to verify:**
+```bash
+npx remotion studio --no-open
+# Open each Test in your browser and confirm the design-system primitives:
+#   - http://localhost:3000/StatPillTest          (big number + label, pill-shaped card)
+#   - http://localhost:3000/QuoteAttributionTest  (multi-line quote + author block)
+#   - http://localhost:3000/CompareSplitTest      (two equal cards, neutral colors)
+#   - http://localhost:3000/LocationPulseTest     (location name + 2D map + pulsing ring)
+#   - http://localhost:3000/ScrollytellingTest    (title fixed, body scrolling)
+#   - http://localhost:3000/TickerTapeTest        (BREAKING label + scrolling headlines)
+
+# Then drop a 6-beat fixture into public/ and re-render the full video:
+./scripts/render-smoke.sh
+```
+
+### 2.2 — Registry unit tests — ✅ DONE
+
+**Before this change:** the 20-beat registry (13 originals + `headline_card` + 6 new) was validated only at render time. A too-permissive Zod schema or a forgotten `adaptMetadata` branch would silently produce a broken render and we'd find out from the user.
+
+**After this change:** `npm test` runs a Vitest unit-test suite with **143 tests** that guard the per-beat Zod schemas, the `adaptMetadata` adapter, the `getBeatComponent` / `isBeatTypeSupported` registry helpers, the kinetic-captions gate, and the `PerBeatSchema` / `TimedBeatsSchema` dispatcher. The smoke script (`scripts/render-smoke.sh`) runs the suite as its first step and exits 1 with a clear error if the tests fail — before paying for the ~2-minute `remotion still` render.
+
+**What changed:**
+- **Vitest installed** as a dev dependency (`vitest@^1` in `package.json`), with two scripts: `test` (single-run, CI mode) and `test:watch` (re-runs on file changes during development). Vitest 1.6 is the version that resolved from the `^1` range.
+- **`vitest.config.ts`** at the repo root, with:
+  - `include: ["src/**/*.test.ts"]` — only the registry test file matches, but the pattern leaves room for future unit tests (e.g. `transitionDuration.test.ts`, `words.test.ts`).
+  - `environment: "node"` — pure-data tests, no React, no jsdom, no React Testing Library. Each test runs in ~1ms because there's no component tree to mount.
+  - `exclude: ["node_modules/**", "out/**", "dist/**", "public/**"]` — the `out/` and `public/` excludes are non-default but load-bearing: `out/` is where `scripts/render-smoke.sh` writes `smoke.png` and `last-render.json`, and `public/` has the runtime render data (`narration.mp3` is a binary, `beats.json` / `timestamps.json` are not test inputs). Without these excludes, Vitest's default `node_modules` exclusion wouldn't catch them.
+  - The file uses `//` line comments (not JSDoc) because esbuild chokes on `**/` inside a JSDoc block — that was the first error from `npm test` (commit 4923a62 fixed it).
+- **`src/beats/registry.test.ts`** with 143 tests across 9 `describe` blocks:
+  1. **per-type validation (60 tests, 20 types × 3 cases each)** — one `describe` per registered beat type, each running three cases via a `runTypeTests` helper: (a) minimal valid fixture passes, (b) optional fields are preserved, (c) a wrong-type value for a required field throws a `ZodError` with the field's path (e.g. `["icon"]` for `icon_text` with `icon: 42`, not an opaque `["metadata"]`). This is the regression test for the Horizon 0.2 / 1.2 `.passthrough()` fix — without `.passthrough()`, every per-type field would be stripped and the schema would never see it.
+  2. **`getBeatComponent` (25 tests)** — 20 positive cases (`it.each(BeatType)`) + 5 negative cases (unknown type, empty string, wrong case `"KEY_STATEMENT"`, wrong separator `"key-statement"`, wrong separator `"key statement"`).
+  3. **`isBeatTypeSupported` (23 tests)** — 20 positive + 3 negative.
+  4. **registry / BeatType sync (1 test)** — bidirectional equality check: `[...Object.keys(registry)].sort() === [...BeatType].sort()`. This is the regression test for the 11-stale-`../components/...` imports that were fixed earlier: a type added to `BeatType` without a registry entry (or vice versa) trips this test loudly.
+  5. **`shouldShowKineticCaptions` (20 tests)** — 6 data-vis types return `true`, 14 text/card types return `false`. Uses `it.each(BeatType.filter(t => !CAPTION_VISIBLE_BEAT_TYPES.has(t)))` to keep the test in lock-step with the gate set.
+  6. **`adaptMetadata` (8 tests)** — covers `versus` (string → `{label, value, items}`), the `versus` object-input edge case (currently overwrites with empty default; flagged for future review since the Python pipeline always emits the string variant), `timeline` (string[] → `{marker, label}[]` with `Step N` markers), `process_flow` (string[] → events with numeric `"1"` markers — the Timeline fallback's design), and pass-through for 3 representative text-only types.
+  7. **`TimedBeatsSchema` (4 tests)** — one happy-path test with all 20 registered types round-tripping through the dispatcher, plus 3 negative tests: unknown type reports path `["beats", 0, "type"]`, per-type field error reports path `["beats", 0, "icon"]` (the regression test for the 0.2 path-preservation fix), and empty `beats[]` is rejected (the schema's `.min(1)` constraint).
+  8. **`PerBeatSchema` (2 tests)** — minimal valid + unknown-type rejection at path `["type"]`.
+  9. **Test helpers** — `baseBeat(type, extras)`, `expectZodErrorAt(fn, path)`, `runTypeTests(config)`. The helpers are small (~30 lines) and exist to keep the 20 per-type blocks DRY.
+- **`scripts/render-smoke.sh` updated** to run the tests as the FIRST step, before the ~2-minute `remotion still` render. If `npm test` fails, the smoke script prints `==> FAIL: registry unit tests failed. Fix before re-running smoke test.` and exits 1. The test step always runs — even with `--skip-if-unchanged` — because the test pass is the schema-equivalence guarantee, not the render-cache guarantee. The smoke script's test block uses `npm test --silent 2>&1 | tail -n 20` so the last 20 lines of a failing test show in the smoke log.
+- **`adaptMetadata` re-exported** from `src/beats/registry.ts` via `export { adaptMetadata } from "./renderBeat"` so the test file can `import { adaptMetadata } from "./registry"` without the orchestrator having to change its import path. The adapter is still defined and called in `renderBeat.tsx`; the registry barrel just re-exports it for test convenience.
+
+**How to verify:**
+```bash
+# Run just the test suite (≈7s, 143 tests):
+npm test
+
+# Run the test suite in watch mode (re-runs on file change):
+npm run test:watch
+
+# Run the full smoke pipeline (tests + 1-frame render):
+./scripts/render-smoke.sh
+./scripts/render-smoke.sh --skip-if-unchanged   # skips render if cache matches
+
+# Negative test: deliberately break a per-type schema and confirm
+# the test catches it with a field-path error:
+sed -i 's/text: z.string()/text: z.any()/' src/beats/registry.ts
+npm test
+# Should print: "FAIL src/beats/registry.test.ts > per-type validation > key_statement > rejects text with wrong type"
+# The "wrong type" case is no longer rejected because z.any() accepts
+# everything, so the expectZodErrorAt assertion fires. Restore with:
+git checkout src/beats/registry.ts
+```
+
+**Runtime cost:** zero. The tests run on every `npm test` invocation (~7s) and on every `./scripts/render-smoke.sh` invocation (~2 minutes total, of which ~7s is the test phase). The test step is also the fastest way to catch a schema regression before it makes it to a render.
+
+**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 20+ components share one source of truth), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
 
 ---
 
@@ -523,7 +609,8 @@ src/
 │   ├── registry.ts                   # Maps beat.type → React component + Zod schema ✅ DONE
 │   ├── renderBeat.tsx                # Renders a single beat ✅ DONE
 │   ├── types.ts                      # Beat type definitions + per-beat Zod schema ✅ DONE
-│   └── words.ts                      # Word timestamp type + dedupeOverlappingWords ✅ DONE
+│   ├── words.ts                      # Word timestamp type + dedupeOverlappingWords ✅ DONE
+│   └── registry.test.ts              # Horizon 2.2 — 143-test Vitest suite for the registry ✅ DONE
 ├── SceneTransition.tsx               # Per-beat entrance/exit with Easing.bezier ✅ DONE
 ├── PersistentBackground.tsx          # Background (logo + 2D scrolling grid) ✅ DONE
 ├── Logo.tsx                          # 3D S-NEWS voxel logo
@@ -539,6 +626,12 @@ src/
 │   ├── VersusCard.tsx                # fitText/measureText sizing + beautified VS badge ✅ DONE
 │   ├── BeforeAfter.tsx               # fitText/measureText headline sizing ✅ DONE
 │   ├── Map3D.tsx                     # Only `map_3d` is used
+│   ├── StatPill.tsx                  # Horizon 2.1.2 ✅ DONE
+│   ├── QuoteAttribution.tsx          # Horizon 2.1.3 ✅ DONE
+│   ├── CompareSplit.tsx              # Horizon 2.1.4 ✅ DONE
+│   ├── LocationPulse.tsx             # Horizon 2.1.5 ✅ DONE
+│   ├── Scrollytelling.tsx            # Horizon 2.1.6 ✅ DONE
+│   ├── TickerTape.tsx                # Horizon 2.1.7 ✅ DONE
 │   └── KineticCaptions.tsx           # Local-frame word rebasing ✅ DONE
 ├── audio/
 │   ├── BeatKineticCaptions.tsx       # Per-beat wrapper + typing SFX + local-context ✅ DONE
@@ -558,7 +651,7 @@ public/                                # All render data lives here (single-fold
 ```
 
 ### Step 1: Beat Type System (`src/beats/types.ts`) — ✅ DONE (commit 78e3f69)
-- `BeatType` union of all 16 supported types (added `headline_card` under Horizon 2.1.1)
+- `BeatType` union of all 20 supported types (added `headline_card` under Horizon 2.1.1, then `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape` under 2.1.2–2.1.7)
 - `Beat` object: `{type, startFrame, durationInFrames, metadata}`
 - `TimedBeats`: wraps beats with `fps` and `totalDurationInFrames`
 - **1.2 update:** `PerBeatSchema` + `TimedBeatsSchema` validate each beat at the top level against the per-type Zod schema in the registry. See Phase 1 (Horizon 0) / 1.2 above.
@@ -586,6 +679,7 @@ Maps each `BeatType` to:
 - `map_3d` → `{…, locationName, latitude, longitude, buildings?}`
 - `process_flow` → `{…, steps[]}`
 - `quote_card` → `{…, quote, author?}`
+- 2.1.2–2.1.7 additions: `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape` (all `.passthrough()` per the 1.2 fix; see `src/beats/registry.test.ts` for the per-type field contracts)
 
 **Active beat types** (what the Python pipeline currently emits):
 - `map_3d` (not `map_location`)
@@ -620,7 +714,8 @@ Inside each `<Sequence>`:
 `map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`.
 
 It is suppressed for text/card heavy beat types (the on-screen text is already the caption):
-`key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`, `headline_card`.
+`key_statement`, `plain_text`, `icon_text`, `versus`, `before_after`, `process_flow`, `quote_card`, `headline_card`,
+plus all 2.1.2–2.1.7 text/card types: `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `scrollytelling`, `ticker_tape`.
 
 The gate is implemented in `src/beats/renderBeat.tsx` as:
 
@@ -638,14 +733,17 @@ const shouldShowKineticCaptions = (beatType: string): boolean =>
   CAPTION_VISIBLE_BEAT_TYPES.has(beatType);
 ```
 
-…and used inside the orchestrator after word-slicing.
+…and used inside the orchestrator after word-slicing. `shouldShowKineticCaptions` is also re-exported as `shouldShowCaptions` (alias) for the orchestrator.
 
 **Metadata adapter (`adaptMetadata`):** Python emits a *minimal* shape per beat (`versus.left` is a string, `timeline.events` is a string array) but the existing components expect a *rich* shape (`VersusCard` wants `{label, value, items}` objects; `Timeline` wants `{marker, label}` objects). `adaptMetadata(type, raw, text)` runs before Zod validation and converts the minimal shape into the rich shape. Adapters:
 - `versus`: `{left: "..."}` → `{left: {label: "..."}}` (same for `right`)
 - `timeline`: `["a", "b"]` → `[{marker: "Step 1", label: "a"}, ...]`
 - `process_flow`: `["a", "b"]` → `[{marker: "1", label: "a"}, ...]` (Timeline fallback)
 - `headline_card`: pass-through (Python emits top-level `text` + `emphasisWords?` which the component reads directly)
+- `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `scrollytelling`, `ticker_tape`: pass-through (Python emits the per-type fields at the top level; the new components read them directly)
 - all others: pass through
+
+The adapter is re-exported from `src/beats/registry.ts` via `export { adaptMetadata } from "./renderBeat"` so the Phase 2.2 test file (`src/beats/registry.test.ts`) can `import { adaptMetadata } from "./registry"` without breaking the orchestrator's existing import path.
 
 ### Step 4b: Dynamic Cross-Fade Between Beats — ✅ DONE
 Adjacent beats overlap by `computeTransitionFrames(out, in)` frames. The Python pipeline already knows this overlap and emits `totalDurationInFrames` accounting for it. The orchestrator does NOT subtract transition frames — it lays each beat at its absolute `startFrame` and lets the natural overlap produce the cross-fade.
@@ -746,10 +844,12 @@ Per-beat wrapper around `KineticCaptions` that:
 - The four data files all live in `public/` — `narration.mp3`, `beats.json`, `timestamps.json`, `sfx-ambient.mp3`. Drop them in `public/` and render (in Studio or via CLI). No code change required.
 - All existing `*Test` compositions are preserved in the same root file with their hard-coded `defaultProps` (they don't need the JSONs).
 - **2.1.1 update:** added `HeadlineCardTest` and `KeyStatementTest` test compositions. Both are portrait 1080×1920, 120 frames, with the same default `text` and `emphasisWords` so the two components can be diffed side-by-side in Studio.
+- **2.1.2–2.1.7 update:** added 6 more `*Test` compositions — `StatPillTest`, `QuoteAttributionTest`, `CompareSplitTest`, `LocationPulseTest`, `ScrollytellingTest`, `TickerTapeTest`. All portrait 1080×1920, 120 frames, with sensible defaults from the new components.
 - **1.1 update:** the async `calculateMetadata` THROWS on missing files, non-2xx responses, JSON parse errors, or top-level Zod schema failures (instead of silently falling back to a 1-frame video). The error message includes the filename and either the HTTP status or the Zod issue path. The `AbortError` path (Studio prop change mid-fetch) still returns `null` so it doesn't spam the log.
 - **1.2 update:** the Zod validation now also covers per-beat shape (delegates to `src/beats/registry.ts::getBeatSchemas` per beat). If a beat's `type` is unknown or the per-type fields don't match (e.g. `icon_text.icon` is missing, `key_statement.emphasisWords` is a number), the user gets a clear error like `beats[1].icon: Invalid input` and the render aborts.
 - **1.3 update:** the parsed `words[]` is run through `src/beats/words.ts::dedupeOverlappingWords` to drop overlapping / zero-duration entries before being injected into `props.words`. A `console.warn` lists how many were dropped (and that the Python pipeline's WhisperX step is the likely culprit).
 - **1.5 update:** the smoke script (`scripts/render-smoke.sh`) grew a `--skip-if-unchanged` flag that compares the SHA-256 of `public/beats.json` + `public/timestamps.json` to the hash in `out/last-render.json` and skips re-rendering if they match. See 1.5 above for the full reasoning and the `scripts/lastRenderHash.mjs` helper.
+- **2.2 update:** the same smoke script now runs `npm test` as its first step. If the registry unit-test suite fails, the smoke script exits 1 with `==> FAIL: registry unit tests failed.` and the render is skipped. See 2.2 above for the full test inventory.
 
 ### Step 9: Build Order Status
 1. ~~`beats/types.ts` + `beats/registry.ts` — type foundation~~ ✅
@@ -787,11 +887,9 @@ Per-beat wrapper around `KineticCaptions` that:
     - ⏳ YouTube auto-publish (Horizon 8) — manual upload from Studio for now
 24. **IN PROGRESS — Horizon 2 — Component Coverage + Better Visuals**
     - ✅ **2.1.1 — `headline_card` beat type (priority 1 of 8) — DONE**
-    - ⏳ Remaining 2.1 priorities: `stat_pill`, `quote_attribution`, `compare_split`, `location_pulse`, `image_card` (deferred to 4.x), `scrollytelling`, `ticker_tape`
-    - ⏳ 2.2: per-type Zod schemas + unit tests
-    - ⏳ 2.3: idle motion library (`src/lib/idleMotion/`)
-    - ⏳ 2.4: emphasis words → component-level highlights
-    - ⏳ 2.5: visual polish pass on existing components
+    - ✅ **2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape` (priorities 2–7 of 8) — DONE**
+    - ✅ **2.2 — Per-type Zod schemas + Vitest unit-test suite (143 tests in `src/beats/registry.test.ts`, wired into `scripts/render-smoke.sh` as the first step) — DONE**
+    - ⏳ Remaining: 2.3 (idle motion library in `src/lib/idleMotion/`), 2.4 (emphasis words → component-level highlights), 2.5 (visual polish)
 25. **DEFERRED until laptop/GPU available (Mode B)**
     - ⏳ Local batch renderer (Horizon 1) — see Render Mode section at top
     - ⏳ Hosted dashboard (Horizon 6)
@@ -808,7 +906,7 @@ Per-beat wrapper around `KineticCaptions` that:
 7. **Failure handling** — Bad Python output is shown in-place as a red/blue fallback message inside the offending beat's sequence, not as a render crash.
 8. **BeatKineticCaptions wrapper** — Created to bridge the new orchestrator's per-beat word slicing to the existing `KineticCaptions` API without modifying that component. It also provides the per-beat `BeatContext` so `KineticCaptions` can rebase words to local frames.
 9. **Metadata adapter (`adaptMetadata`)** — Converts Python's minimal beat shapes (string `left`/`right`, string `events[]`, string `steps[]`) into the rich object shapes the existing components expect, BEFORE Zod validation. Keeps the components untouched while accepting the Python pipeline's output format.
-10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption (now also includes `headline_card` added under 2.1.1). The gate is centralized in `renderBeat.tsx` via `CAPTION_VISIBLE_BEAT_TYPES`.
+10. **Kinetic captions gate** — `BeatKineticCaptions` is rendered only for data-vis beat types (`map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`). Suppressed for text/card heavy types where the on-screen text is the caption (now also includes `headline_card` + all 2.1.2–2.1.7 text/card types). The gate is centralized in `renderBeat.tsx` via `CAPTION_VISIBLE_BEAT_TYPES`.
 11. **3D-only map and chart comparison** — The Python pipeline emits `map_3d` (not `map_location`) and `chart_comparison_3d` (not `chart_comparison`). The 2D variants are not currently in use.
 12. **Easing on per-beat entrance/exit** — `SceneTransition` uses `Easing.bezier(0.16, 1, 0.3, 1)` (Remotion skill default) for entrance and `Easing.bezier(0.7, 0, 0.84, 0)` for exit. Same entrance easing on the default `translateY` slide-up.
 13. **Dynamic cross-fade duration** — `computeTransitionFrames(out, in)` (in `src/lib/transitionDuration.ts`) returns `clamp(round(0.15 * min(out, in)), 4, 15)`. The Python pipeline pre-accounts for this overlap and emits `totalDurationInFrames` accordingly; the orchestrator uses that value directly without re-subtracting.
@@ -830,6 +928,7 @@ Per-beat wrapper around `KineticCaptions` that:
 29. **Cache key scope is beats + words only (1.5)** — The visible output is fully determined by `public/beats.json` and `public/timestamps.json`; changing `public/narration.mp3` or `public/sfx-ambient.mp3` does not change a single pixel. MP3 mtime+size is not a useful content hash (TTS re-exports produce different mtimes for identical bytes), so we deliberately exclude audio files from the cache key. If you change a SFX mapping in `src/lib/sceneSfx.ts` in a way that affects the visible render (e.g. a new whoosh SFX or a different default volume), bump `LAST_RENDER_HASH_VERSION` in `scripts/lastRenderHash.mjs` to invalidate all old caches automatically — the version prefix on the cached hash is compared on every read, and stale-version records are treated as "no cache" and fall through to a fresh render.
 30. **Design system rules — portrait 1080×1920, white card on transparent overlay, `SceneTransition` owns entrance/exit, 30–40% entrance rule, Space Grotesk, accent palette, `rough-notation` from `@remotion/rough-notation`, `fitText` for headlines, `durationInFrames` forwarded as a prop.** The full 13-rule contract and the audit checklist live in the "Design System Rules" section near the top of this doc. Every component in `src/components/` conforms; new components MUST conform too. The next component you build (e.g. `quote_attribution`, `stat_pill`) should be a copy of `KeyStatement` with the per-type field set swapped out — do not invent a new layout. If a future component genuinely can't fit the contract, document the exception in this section before merging.
 31. **`headline_card` is the canonical "copy-paste template" for new text-based beat types (2.1.1)** — `HeadlineCard.tsx` and `KeyStatement.tsx` are byte-for-byte identical on the design-system primitives (font, palette, card chrome, slider, shimmer, decorative dots, idle motion, 30–40% entrance rule). They differ only in: (a) headline sizing math (slightly larger `baseFontSize` / `emphasisFontSize` caps in `HeadlineCard`), and (b) `KeyStatement` has an `exitDirection` prop while `HeadlineCard` does not. Every text-based beat type added in 2.1 (`stat_pill`, `quote_attribution`, etc.) should start as a copy-paste of one of these two, swap in the per-type Zod schema in `src/beats/registry.ts`, and then iterate on the per-type visuals. Do not invent a new layout, font, or palette — the design system's whole point is that 16+ beat types look like one library.
+32. **Registry unit tests are the type-system-equivalent guard, not a render guard (2.2)** — The 143-test Vitest suite in `src/beats/registry.test.ts` runs in `node` environment with no React, no jsdom, no visual regression. It catches schema regressions (`text: z.any()` replacing `text: z.string()`), registry/BeatType-union sync failures (a new type added without a registry entry or vice versa), `adaptMetadata` shape regressions (the Python pipeline's string `left`/`right` must be converted to `{label, value, items}` objects before reaching `VersusCard`), and `shouldShowKineticCaptions` gate drift. The suite runs in ~7s and is wired into `scripts/render-smoke.sh` as the first step, so a broken schema fails the smoke script before paying for the ~2-minute render. Tests are pure data — no file system, no network, no environment variables. The only non-trivial helper is `runTypeTests(config)`, which runs the same three-case pattern (valid / optional / invalid-path) for every registered beat type. Future test files (`src/lib/transitionDuration.test.ts`, `src/beats/words.test.ts`) should follow the same pattern: pure-data assertions against pure helpers, with the smoke script picking them up automatically via the `src/**/*.test.ts` glob in `vitest.config.ts`.
 
 ### Real `beats.json` Example (current reference)
 ```json
@@ -854,3 +953,7 @@ The Python pipeline emits `totalDurationInFrames: 1143` already accounting for t
 { "type": "headline_card", "text": "Dick's just dropped 15% after missing its forecast", "emphasisWords": ["15%", "missing"], "startFrame": 0, "durationInFrames": 96 }
 ```
 as the story hook for the first beat of the timeline. The orchestrator picks `HeadlineCard` from the registry, mounts it inside the existing `<SceneTransition>`, and renders the same white-card chrome / top accent bar / slider / shimmer / idle motion as `KeyStatement`, with the larger headline sizing that signals "this is the story's intro".
+
+**With Horizon 2.1.2–2.1.7 shipped**, the Python pipeline can additionally emit the six new visual-vocabulary beat types — `stat_pill` (single big number with label), `quote_attribution` (multi-line quote with author), `compare_split` (two equal cards side-by-side), `location_pulse` (2D location callout cheaper than `map_3d`), `scrollytelling` (long-form text with scrolling body), and `ticker_tape` (bottom-of-screen news ticker). Each is a copy-paste of `HeadlineCard.tsx` on the design-system primitives with the per-type field set swapped out, and each is registered in `src/beats/registry.ts` with its own Zod schema. The orchestrator picks the right component automatically via `getBeatComponent(beat.type)`; no orchestrator change is needed to enable a new beat type, only the registry entry and the test composition in `Root.tsx`.
+
+**With Horizon 2.2 shipped**, the same `npm test` (or `./scripts/render-smoke.sh`) invocation that you use to verify a render now also verifies the registry contract: per-type schemas accept valid fixtures, reject wrong-type values with the correct field path, and the 20-type `BeatType` union is in lock-step with the 20-entry registry. A test that takes 7s and runs on every commit is the new fastest way to catch a schema regression before it makes it to a render.

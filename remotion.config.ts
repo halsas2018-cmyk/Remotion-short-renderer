@@ -56,11 +56,9 @@ Config.overrideWebpackConfig((current) => {
   return {
     ...current,
     resolve: {
-      ...(current.resolve ?? {}),
-      // `false` is webpack's signal to drop the module from the bundle
-      // without erroring. We list every Node built-in the project
-      // might accidentally reach for from inside a `src/` file.
+      ...current.resolve,
       fallback: {
+        ...(current.resolve?.fallback ?? {}),
         fs: false,
         path: false,
         crypto: false,
@@ -70,7 +68,6 @@ Config.overrideWebpackConfig((current) => {
         buffer: false,
         url: false,
         child_process: false,
-        ...((current.resolve as { fallback?: Record<string, unknown> } | undefined)?.fallback ?? {}),
       },
     },
   };

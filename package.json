@@ -21,6 +21,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.516",
+    "rough-notation": "^0.5.1",
     "tailwindcss": "4.0.0"
   },
   "devDependencies": {

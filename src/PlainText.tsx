@@ -8,6 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface PlainTextProps {
   text: string;
@@ -89,12 +90,7 @@ export const PlainText: React.FC<PlainTextProps> = ({
   const shimmerSpeed = 25;
   const shimmerStart = textEndFrame;
 
-  // Card bounce during idle
-  const cardBounceFrequency = 0.08;
-  const cardBounceAmplitude = 6;
-  const cardBounceOffset = isIdle
-    ? Math.sin(frame * cardBounceFrequency * Math.PI * 2) * cardBounceAmplitude
-    : 0;
+  const idle = useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false });
 
   // Glow pulse animation (idle)
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
@@ -289,7 +285,8 @@ export const PlainText: React.FC<PlainTextProps> = ({
               alignItems: "center",
               textAlign: "center",
               transform: [
-                { translateY: cardBounceOffset },
+                { translateY: idle.translateY },
+                { rotateX: idle.rotateX },
               ],
             }}
           >

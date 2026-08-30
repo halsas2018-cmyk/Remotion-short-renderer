@@ -11,6 +11,7 @@ import {
   fitText,
   measureText,
 } from "@remotion/layout-utils";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface VersusSide {
   label: string;
@@ -146,7 +147,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   // Idle state — begins after entranceEndFrame (Rule 1)
   const isIdle = frame > entranceEndFrame;
   const idleTimeSeconds = isIdle ? (frame - entranceEndFrame) / fps : 0;
-  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
+  const idle = useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false });
   const idleVS = isIdle ? 1 + 0.04 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.6) : 1;
 
   // Shimmer timing — starts after each card's entrance completes
@@ -229,11 +230,15 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     { translateX: interpolate(leftProgress, [0, 1], [-80, 0]) },
     { scale: interpolate(leftProgress, [0, 1], [0.92, 1]) },
     { rotate: interpolate(leftProgress, [0, 1], [-2, 0]) },
+    { translateY: idle.translateY },
+    { rotateX: idle.rotateX },
   ];
   const rightTransform = [
     { translateX: interpolate(rightProgress, [0, 1], [80, 0]) },
     { scale: interpolate(rightProgress, [0, 1], [0.92, 1]) },
     { rotate: interpolate(rightProgress, [0, 1], [2, 0]) },
+    { translateY: idle.translateY },
+    { rotateX: idle.rotateX },
   ];
 
   // === Card body shared style — extracted so we can keep left/right in sync ===

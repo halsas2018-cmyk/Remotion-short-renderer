@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface ProgressMeterProps {
   value: number;
@@ -115,8 +116,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
   const idleGlow = isIdle ? 0.3 + 0.2 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 0.3;
 
-  // Card bounce animation (idle) - 6px vertical bounce matching other components
-  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+  const idle = useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false });
 
   // Subtitle bounce during idle
   const subtitleBounceFrequency = 0.15;
@@ -203,7 +203,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
+          transform: `translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)`,
           width: availableWidth,
           height: size,
           display: "flex",

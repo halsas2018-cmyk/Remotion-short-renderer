@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface QuoteCardProps {
   quote: string;
@@ -88,6 +89,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const allAnimationsDone = marksEnd;
   const isIdle = frame > allAnimationsDone;
   const idleTimeSeconds = (frame - allAnimationsDone) / fps;
+  const idle = useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false });
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
   // Shimmer timing
@@ -255,6 +257,10 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
+              transform: [
+                { translateY: idle.translateY },
+                { rotateX: idle.rotateX },
+              ],
             }}
           >
             {/* Accent top bar with matching curved corners */}

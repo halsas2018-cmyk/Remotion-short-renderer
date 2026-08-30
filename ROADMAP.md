@@ -84,6 +84,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
 - **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
 - **Horizon 2.2 — Registry unit tests** (`src/beats/registry.test.ts`, 143 tests covering per-type Zod schemas, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, `PerBeatSchema` / `TimedBeatsSchema` path-preservation; wired into `scripts/render-smoke.sh` as the first step) — ✅ DONE (see 2.2 below)
+- **Horizon 2.3 — `useIdleMotion` shared hook (Pass 1 of 4)** — ✅ DONE (4 of 20 components moved to the shared `useIdleMotion` hook: `src/HeadlineCard.tsx`, `src/KeyStatement.tsx`, `src/BeforeAfter.tsx`, `src/ChartCounter.tsx`. 143-test `npm test` + `./scripts/render-smoke.sh` (46314-byte `smoke.png`, hash `bfbbf7cdef5c…`) both stay green. The remaining 16 components (Passes 2-4) are still pending. See 2.3 below for the per-file edit details.)
 
 ---
 
@@ -254,6 +255,87 @@ git checkout src/beats/registry.ts
 **Runtime cost:** zero. The tests run on every `npm test` invocation (~7s) and on every `./scripts/render-smoke.sh` invocation (~2 minutes total, of which ~7s is the test phase). The test step is also the fastest way to catch a schema regression before it makes it to a render.
 
 **Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 20+ components share one source of truth), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
+
+### 2.3 — `useIdleMotion` shared hook — ✅ PASS 1 DONE (4 of 20 components)
+
+**Why this was next:** the 20 design-system components all carry three duplicated math lines — `sin(t) * 6px` for the card's idle bounce, `sin(t*0.05) * 2deg` for the 3D tilt, and `1 + 0.15 * sin(t * 0.03)` for the radial-blur glow pulse. Any change to the bounce amplitude (e.g. "make it bounce 8px instead of 6px") meant editing 20 files. The shared hook makes those 3 lines a single source of truth.
+
+**What shipped (Pass 1, 4 of 20 components):**
+- `src/lib/idleMotion/useIdleMotion.ts` — the hook. Returns `{ transform, translateY, rotateX, scale }`. `transform` is a composed string `"translateY(Xpx) rotateX(Ydeg) scale(Z)"` for components that can spread it into a `style.transform` element. `translateY` / `rotateX` / `scale` are exposed individually for components that already own a transform (e.g. `ChartCounter`'s `translateY(-50%)` centering) and need to compose the idle math into the existing string instead of overwriting it. The three primitives are gated by `bounce`, `tilt`, `glow` options (default `true`); amplitudes default to `6`px / `2`deg / `0.15` and frequencies default to `0.08`Hz / `0.05`Hz / `0.03`Hz. `bounceFrequency` uses `Math.sin(frame * f * Math.PI * 2)` so a frequency of `0.08` means 0.08 cycles per second at 30fps, which is what we want.
+- `src/lib/idleMotion/index.ts` — barrel re-export of `useIdleMotion` and the types.
+- **`src/HeadlineCard.tsx` (Pass 1B)** — added `import { useIdleMotion } from "./lib/idleMotion";`, replaced the `cardBounceFrequency`/`cardBounceAmplitude`/`cardBounceOffset`/`cardTiltDeg` locals with a `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })` call. Kept `glow: false` because the radial-blur glow sibling has its own `scale: glowPulse` / `opacity: glowOpacity` curves that aren't the same shape as `useIdleMotion`'s `glow` (which is a `1 + 0.15 * sin(t * 0.03)`-style value). The `glowPulse` and `glowOpacity` locals stay since they animate different primitives on a different element. The `cardBounceOffset` / `cardTiltDeg` in the card element's `translate` / `rotate` props are now `idle.translateY` / `idle.rotateX`.
+- **`src/KeyStatement.tsx` (Pass 1B)** — same edits as `HeadlineCard`. Identical pattern.
+- **`src/BeforeAfter.tsx` (Pass 2)** — the trickier one because the inner flex row that owns the existing centering transform needs a parent/child split. Added the import. Added the `useIdleMotion` call after the `isIdle` line. The existing per-card `idlePulse` local stays (it animates a different primitive — the divider's `scaleX`). The inner flex row was split into a parent/child wrapper: the outer div keeps the `top: "50%"` / `transform: "translateY(-50%)"` / `width` / `height`, the inner div gets `transform: idle.transform` plus the flex/centering/gap styles. An extra `</div>` was added before `</AbsoluteFill>` to close the new outer wrapper.
+- **`src/ChartCounter.tsx` (Pass 3)** — the trickiest one because the card combines vertical centering with idle bounce in a single `transform` string. Added the import. Replaced the `cardBounceY` local with a `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })` call. Kept the `idlePulse` local for the value text's scale (different curve, different element). Composed into the existing centering transform as `transform: \`translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)\``. `idle.scale` is intentionally NOT used because the value text has its own `idlePulse`-based scale curve.
+
+**How to verify:**
+```bash
+# Tests still pass (143 green)
+npm test
+
+# Smoke still green (46314-byte smoke.png, hash bfbbf7cdef5c…)
+./scripts/render-smoke.sh
+
+# Each refactored *Test PNG is visually identical to the pre-refactor version
+# (the refactor is pure code reorganization — the rendered output must NOT change)
+```
+
+**What's NOT in this pass (the remaining 16 components):** the 6 in `src/components/` (`StatPill`, `QuoteAttribution`, `CompareSplit`, `LocationPulse`, `Scrollytelling`, `TickerTape`) and 10 more spread across the 13 pre-2.1 beat types. Pass 2 covers the 3 other wrapper-split files (the ones that own an existing transform on a parent element). Pass 3 covers the 4 other `useCurrentFrame`-owning files (the ones that own their own time math). Pass 4 covers the 2 special cases (`LocationPulse` and `Map3D`).
+
+**Next up in Horizon 2:** 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it), and 2.5 (visual polish pass on the 20 existing components, design-system checklist compliance audit). The 2.3 refactor is a prerequisite for 2.5 because the 20-component audit becomes a single-line search once the idle math is centralized in `useIdleMotion`.
+
+### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ⏳ NEXT (≈2–3 days, **$0**)
+
+**Why this is next:** the `KeyStatement` / `HeadlineCard` / `QuoteAttribution` / `Scrollytelling` components already have a working `emphasisWords` → `rough-notation` cycle (Highlight → Circle → Underline from `@remotion/rough-notation`). Three of the older beat types — `versus`, `before_after`, `quote_card` — accept `emphasisWords` from the Python pipeline but the prop is currently a no-op in the component (or only highlights a label without the cycle). This horizon adds the cycle to those three so the Python pipeline can drive emphasis on any of the 7 text-on-card beat types uniformly.
+
+**Scope (3 components, ~6 edits):**
+- `src/VersusCard.tsx` — add `Highlight` / `Circle` / `Underline` cycle around the `label` (and optionally `items[]` rows).
+- `src/BeforeAfter.tsx` — already has accent tags ("BEFORE" / "AFTER") but no emphasis cycle. Add it to the headline text on each card.
+- `src/QuoteCard.tsx` — older variant of `QuoteAttribution`; add the cycle around the quote words.
+- The `*Test` compositions in `src/Root.tsx` need `emphasisWords: [...]` added to their `defaultProps` so the new behavior is visible in Studio.
+
+**Design-system compliance:** the emphasis cycle is already standardized in `KeyStatement` (see 3.4 of `CLAUDE.md`). The pattern is: `ANNOTATION_CYCLE = [Highlight, Circle, Underline]`, each with the accent color, cycling per emphasized word via a running index. New code must copy this pattern; do not invent a new annotation cycle.
+
+**Reuse pattern:** the `useIdleMotion` hook from 2.3 means the 3 components that get the emphasis cycle ALSO need their idle math moved to the hook (2.3 Passes 2-4 still pending). If 2.4 lands first, 2.3 Passes 2-4 will pick up those 3 components as part of their scope. If 2.3 Passes 2-4 lands first, 2.4 will land cleanly because the components will already be using the hook.
+
+**How to verify:**
+```bash
+# Tests still pass
+npm test
+
+# Smoke still green
+./scripts/render-smoke.sh
+
+# *Test PNGs for VersusCard / BeforeAfter / QuoteCard are visually different
+# from the pre-2.4 versions (emphasis cycle is visible), but all 4 `*Test`
+# PNGs for the 2.3 Pass 1 components are UNCHANGED.
+```
+
+**Next up after 2.4:** 2.5 (visual polish + design-system audit on the 20 existing components). The audit is a single-file survey that uses the 3.3 checklist in `CLAUDE.md` as the rubric.
+
+### 2.5 — Visual polish + design-system compliance audit — ⏳ FUTURE (≈3–4 days, **$0**)
+
+**Why this is last in Horizon 2:** after 2.3 (centralized idle math) and 2.4 (standardized emphasis cycle), the only remaining work is a per-component audit against the 3.3 checklist in `CLAUDE.md`. This is a sweep, not a feature: every component is checked against the 14 design-system primitives and any deviation is fixed or explicitly accepted.
+
+**Scope (20 components, ~14 primitives each = ~280 checks):**
+- All 20 registered beat types are in scope. The 9 `*Test` compositions in `src/Root.tsx` give the visual baseline; the audit produces a `docs/DESIGN_SYSTEM_AUDIT.md` table with one row per component, one column per primitive, and a ✅ / ❌ / ⚠️ (deviation, accepted) status.
+- Deviations that need fixing: missing `SceneTransition` wrapper, missing accent bar, off-palette color, missing `useIdleMotion` hook, missing `fitText` for auto-sizing text, off-timing entrance animation (>50% of `durationInFrames` for text beats; >30% for non-text beats).
+- Deviations that can be explicitly accepted (⚠️): the 3 components in 3.5 of `CLAUDE.md` (`BeforeAfter`, `QuoteAttribution`, `CompareSplit`, `LocationPulse`) have legitimate layout differences (two-card, quote-mark framing, neutral-color comparison, 2D map). Their design-system primitives are still compliant; only the layout deviates.
+
+**How to verify:**
+```bash
+# Tests still pass
+npm test
+
+# Smoke still green
+./scripts/render-smoke.sh
+
+# *Test PNGs are visually identical to the pre-2.5 versions (the audit
+# is read-only for the 17 components that pass; the 3 components that
+# need fixes will have visible changes)
+```
+
+**Next up after 2.5:** Horizon 3 (smart beat generation, **$0–$5/day LLM spend**). The 2.x arc is complete: 7 new beat types, 1 shared idle-motion library, 1 standardized emphasis cycle, 1 design-system audit. That's the visual vocabulary the rest of the project needs.
 
 ---
 

@@ -9,6 +9,7 @@ This file is the load-bearing context for any AI assistant (Claude, GPT, Cursor,
 - **Source of truth for project status, in-flight work, and deferred work is `ROADMAP.md`.** If a horizon / task is not in `ROADMAP.md`, do not invent it.
 - **Money lens:** any change that introduces a paid API, a hosted service, or compute we don't already own must be deferred to a later horizon in `ROADMAP.md` (or a new horizon added to it). Never silently introduce spend. If a new paid dependency is genuinely required, add a new `ROADMAP.md` horizon for it with the cost model spelled out and stop there until the human signs off.
 - **Components are templates, not custom code.** Every beat type is a copy-paste of `src/HeadlineCard.tsx` (text-on-card) or `src/ChartCounter.tsx` (number-on-card) on the design-system primitives in `src/design-system/index.ts`. If a new beat type needs a new layout / font / palette, that's a design-system change and belongs in a separate horizon — not in the per-type component.
+- **No circular imports between the registry and the orchestrator.** `src/beats/registry.ts` (the registry barrel) MUST NOT re-export anything from `src/beats/renderBeat.tsx` (the orchestrator) or vice versa. If a helper is used by both layers, it lives in its own leaf file. See §4.5 for the worked example that drove this rule.
 
 ---
 
@@ -174,11 +175,60 @@ The beat type system is the load-bearing invariant. The 20 registered types are 
 - **The component mapping:** `src/beats/registry.ts::getBeatComponent(type)` (one per type).
 - **The "is this a data-vis beat" gate:** `src/beats/renderBeat.tsx::CAPTION_VISIBLE_BEAT_TYPES` (6 types: `chart_line`, `chart_counter`, `chart_pie`, `map_3d`, `progress_meter`, `timeline`).
 - **The "is this beat type supported" gate:** `src/beats/registry.ts::isBeatTypeSupported(type)`.
-- **The shape translator:** `src/beats/registry.ts::adaptMetadata(type, metadata)` (calls `src/beats/renderBeat.tsx::adaptMetadata` under the hood — it's re-exported from the registry barrel for test convenience).
+- **The shape translator:** `src/beats/adaptMetadata.ts::adaptMetadata(type, metadata)` (re-exported from the registry barrel for test convenience — see §4.5 for the import-graph rule that drove this split).
 - **The orchestrator:** `src/MotionGraphicsVideo.tsx` (composes the 20 beat types into a single video via `<Sequence from={…}>` + `<SceneTransition>` wrapper).
 - **The 143 unit tests:** `src/beats/registry.test.ts` — covers per-type Zod validation, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, and `PerBeatSchema` / `TimedBeatsSchema` path-preservation. The 143-test pass is the first step of `./scripts/render-smoke.sh`; a failure there means the schema broke and the smoke test won't even try to render.
 
 **The bidirectional registry↔BeatType sync test** (`[...Object.keys(registry)].sort() === [...BeatType].sort()`) is the load-bearing guard against the "added the type but forgot the entry" / "added the entry but forgot the type" class of bug. Do not weaken this test. If a new type breaks it, fix the registry and the union together.
+
+### 4.5 Import graph: the `registry` ↔ `renderBeat` rule (do not break)
+
+The registry barrel (`src/beats/registry.ts`) and the orchestrator (`src/beats/renderBeat.tsx`) sit on opposite sides of the import graph:
+
+- `renderBeat.tsx` imports from `registry.ts` (it calls `getBeatComponent`, `validateBeatMetadata`, `isBeatTypeSupported`).
+- `registry.ts` is imported by the test file (`src/beats/registry.test.ts`) and by anything that needs `adaptMetadata`.
+
+**`registry.ts` MUST NOT import from `renderBeat.tsx`, and `renderBeat.tsx` MUST NOT import from `registry.ts` AND have `registry.ts` re-export from it.** Either direction of that pair creates a cycle.
+
+**The original mistake (commit prior to f18a696):** `adaptMetadata` was defined in `renderBeat.tsx` (because that's where it's first called, in `BeatContent`). The test file wanted `import { adaptMetadata } from "./registry"` to keep its import surface narrow. The naive fix was `export { adaptMetadata } from "./renderBeat"` at the bottom of `registry.ts`. That worked for `npm test` (143/143 green) but broke `npx remotion studio`:
+
+```
+Loading Remotion...
+ERROR: Uncaught ReferenceError: Cannot access 'adaptMetadata' before initialization
+SOURCE: http://127.0.0.1:3003/bundle.js
+LINE: 301246
+COLUMN: 13
+STACK: ReferenceError: Cannot access 'adaptMetadata' before initialization
+  at Module.adaptMetadata (http://127.0.0.1:3003/bundle.js:10166:60)
+  at Module.adaptMetadata (http://127.0.0.1:3003/bundle.js:9864:108)
+  at Object.registerExportsForReactRefresh (http://127.0.0.1:3003/bundle.js:13695:42)
+  at ./src/beats/registry.ts (http://127.0.0.1:3003/bundle.js:10129:25)
+```
+
+**Why this happens (TDZ under React Refresh):**
+1. Webpack loads `renderBeat.tsx` first (it sits on the orchestrator's import path).
+2. `renderBeat.tsx` imports from `registry.ts` at the top of the file.
+3. `registry.ts` runs the `export { adaptMetadata } from "./renderBeat"` re-export, which in ESM terms is a live binding to `renderBeat.tsx::adaptMetadata`.
+4. `renderBeat.tsx` is still mid-execution (the import is still being resolved); `adaptMetadata` is in the **temporal dead zone**.
+5. Remotion's React Refresh (`registerExportsForReactRefresh`) walks the module's exports to wrap them — the moment it touches the `adaptMetadata` live binding, it throws the TDZ error.
+6. The error fires inside `registerExportsForReactRefresh` in the bundle, not inside the test, which is why `npm test` (Vitest, node environment) passed while `npx remotion studio` (webpack browser bundle with React Refresh) broke.
+
+**The fix (commit f18a696, "fix: break circular import by extracting adaptMetadata to own file"):**
+1. **New file** `src/beats/adaptMetadata.ts` — pure data-shaping function, no imports from `registry.ts` or `renderBeat.tsx`. Leaf node in the import graph.
+2. **`src/beats/renderBeat.tsx`** — local `adaptMetadata` definition removed; replaced with `import { adaptMetadata } from "./adaptMetadata";` at the top. `BeatContent`'s local call `const adaptedProps = adaptMetadata(beat.type, validatedBeat);` is unchanged.
+3. **`src/beats/registry.ts`** — the re-export line changed from `export { adaptMetadata } from "./renderBeat";` to `export { adaptMetadata } from "./adaptMetadata";`. The test file's `import { adaptMetadata } from "./registry"` keeps working; the orchestrator imports directly from `./adaptMetadata`.
+
+**After the fix the import graph is a DAG:**
+
+```
+registry.test.ts  ──▶  registry.ts  ──▶  adaptMetadata.ts  ◀──  renderBeat.tsx
+```
+
+No cycles. `registry.ts` and `renderBeat.tsx` are siblings, not parent/child.
+
+**The rule, stated precisely:** if a helper is used by both the registry barrel AND the orchestrator, it lives in its own file (or in a more-specific leaf), and both layers import from that file. The barrel can re-export it for test convenience. The orchestrator must NEVER re-export through the barrel back into itself.
+
+**How to spot a future violation:** any change to `src/beats/registry.ts` that adds a line of the form `export { X } from "./renderBeat"` is a regression. The same applies in reverse: any change to `src/beats/renderBeat.tsx` that adds `export { X } from "./registry"` (or any sibling re-export that goes back through the orchestrator) is a regression. The CI smoke test does NOT catch this class of bug — it only catches the runtime Zod/schema regressions. The Studio load is the only signal, which is why the fix above was a 3-line change to 3 files, not a single new dependency.
 
 ---
 
@@ -254,6 +304,8 @@ const FooTestComposition: React.FC<{ value?: number; label?: string; durationInF
 
 **Mode A note:** `./scripts/render-smoke.sh` runs `npx remotion still` which uses Chromium headless. On the phone, this is slow (~2 minutes). The 0.2× scale + the 143-test pre-step keep it under 2.5 minutes total.
 
+**The smoke test does NOT catch the import-graph class of bug documented in §4.5.** A cycle between `registry.ts` and `renderBeat.tsx` will pass `npm test` (Vitest, node environment, no React Refresh) and will pass the `still` render (the offending code path is only hit during a full Studio mount). The only signal is `npx remotion studio` failing to load. If you touch either of those two files, run `npx remotion studio --no-open` after the change and confirm the page mounts before declaring done.
+
 ---
 
 ## 9. What's deliberately NOT in this codebase
@@ -264,6 +316,7 @@ const FooTestComposition: React.FC<{ value?: number; label?: string; durationInF
 - **`@remotion/transition`.** Removed. Cross-fades are owned by the orchestrator's `<SceneTransition>` wrapper, not a TransitionSeries.
 - **Per-mount audio observability.** Cancelled (1.4). If you need it, use a wrapper-component pattern, not a side-channel log.
 - **Lifted `*TestComposition` exports from component files.** Dead-code artefact from an earlier iteration. The test composition lives in `Root.tsx`, not in the component file.
+- **Cross-barrel re-exports between `src/beats/registry.ts` and `src/beats/renderBeat.tsx`.** Creates a circular import that breaks Remotion Studio under React Refresh (see §4.5). Helpers shared by both layers live in their own leaf file.
 
 ---
 
@@ -285,6 +338,7 @@ See `ROADMAP.md` "Open Questions" section. The load-bearing ones:
 - **Render mode:** Mode A (phone, browser render) is current. Mode B (laptop, CLI render) is the future.
 - **Components are templates:** every beat type is a copy-paste of `src/HeadlineCard.tsx` or `src/ChartCounter.tsx` on the design-system primitives. New layouts / fonts / palettes belong in a separate horizon, not in the per-type component.
 - **`useIdleMotion` is the shared idle-animation hook** (Horizon 2.3). It returns `{ transform, translateY, rotateX, scale }` with per-primitive toggles. Every card component uses it; the 4 components updated in 2.3 Pass 1 are `HeadlineCard`, `KeyStatement`, `BeforeAfter`, `ChartCounter`. The 16 remaining components (Passes 2-4) are still to be done.
+- **No cross-barrel re-exports between `registry.ts` and `renderBeat.tsx`** (see §4.5). Helpers shared by both layers live in their own leaf file. The smoke test does not catch this class of bug — only `npx remotion studio` does.
 - **Smoke test is the unit of truth:** `./scripts/render-smoke.sh` runs `npm test` (143 tests) + a 0.2×-scale `npx remotion still` + writes the `out/last-render.json` cache. Green smoke + identical `*Test` PNGs = correct refactor.
 - **Composition wiring in `Root.tsx`:** local `React.FC<{...}>` wrapper that consumes `defaultProps` + a single `<Composition>` entry. Component files do NOT export `*TestComposition`; the test composition lives in `Root.tsx`.
 - **The 0.5 hash helper is in `scripts/`, not `src/lib/`.** Webpack's directory walk would discover it in `src/lib/` and try to resolve `node:fs` / `node:crypto` for the browser bundle. The `remotion.config.ts` webpack fallback is a defense-in-depth against the same class of bug.

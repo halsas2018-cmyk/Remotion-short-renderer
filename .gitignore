@@ -3,3 +3,4 @@ output/
 out/
 .env
 .aider*
+coverage/

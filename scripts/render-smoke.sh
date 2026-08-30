@@ -126,6 +126,29 @@ echo "    skip-if-unchanged:  ${SKIP_IF_UNCHANGED}"
 mkdir -p "${OUT_DIR}"
 
 # ------------------------------------------------------------------
+# Phase 2.2 — registry unit tests.
+#
+# Run the Vitest unit-test suite BEFORE the ~2-minute render. If the
+# tests fail, the smoke test fails fast. The test suite is the
+# type-system-equivalent guard, not a render-equivalent guard, so
+# it always runs — even with --skip-if-unchanged. The render cache
+# is for visible-output equivalence (beats + words bytes), not for
+# test-pass equivalence; a broken schema should fail the smoke
+# script regardless of whether the visible output changed.
+#
+# We tail the last 20 lines so a failing test produces a readable
+# assertion in the smoke log. The pipeline uses `set -o pipefail`
+# (set at the top of this script) so the if-check sees the exit
+# code of `npm test`, not the exit code of `tail`.
+# ------------------------------------------------------------------
+echo "==> Running registry unit tests (Phase 2.2)…"
+if ! npm test --silent 2>&1 | tail -n 20; then
+  echo "==> FAIL: registry unit tests failed. Fix before re-running smoke test." >&2
+  exit 1
+fi
+echo "==> OK: registry unit tests passed."
+
+# ------------------------------------------------------------------
 # Horizon 0.5 — skip-if-unchanged check.
 #
 # We compute the hash here in bash (cat | sha256sum) and then

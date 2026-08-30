@@ -320,3 +320,8 @@ export const validateBeatMetadata = (type: string, beat: unknown): any => {
 };
 
 export const isBeatTypeSupported = (type: string): boolean => type in registry;
+
+// Re-export the metadata adapter from renderBeat.tsx so tests can
+// import it from the registry barrel without breaking the orchestrator's
+// existing import path. Phase 2.2: see src/beats/registry.test.ts.
+export { adaptMetadata } from "./renderBeat";

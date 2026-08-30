@@ -114,9 +114,13 @@ export const BeatContent: React.FC<BeatContentProps> = ({
 
 /* ------------------------------------------------------------------ */
 /*  Per-type metadata adapter                                         */
+/*                                                                     */
+/*  Exported (Phase 2.2) so the registry unit tests can import it    */
+/*  without breaking the orchestrator's existing import path.         */
+/*  `BeatContent` still calls it as a local function.                */
 /* ------------------------------------------------------------------ */
 
-const adaptMetadata = (
+export const adaptMetadata = (
   type: string,
   beat: Record<string, unknown>,
 ): Record<string, unknown> => {

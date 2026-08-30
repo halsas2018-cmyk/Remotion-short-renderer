@@ -10,6 +10,7 @@ import {
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText } from "@remotion/layout-utils";
+import { useIdleMotion } from "./lib/idleMotion";
 
 /* ------------------------------------------------------------------ */
 /*  Google Font — type-safe, blocks rendering until the font is      */
@@ -109,13 +110,12 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
     return entry;
   });
 
-  // Card idle bounce + subtle 3D tilt (matches KeyStatement)
-  const cardBounceFrequency = 0.08;
-  const cardBounceAmplitude = 6;
-  const cardBounceOffset = isIdle
-    ? Math.sin(frame * cardBounceFrequency * Math.PI * 2) * cardBounceAmplitude
-    : 0;
-  const cardTiltDeg = isIdle ? Math.sin(frame * 0.05) * 2 : 0;
+  // Card idle bounce + subtle 3D tilt (shared useIdleMotion hook)
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false, // glow is a separate element (radial blur); it has its own scale/opacity
+  });
 
   // Per-emphasis-word bounce (idle loop)
   const bounceFrequency = 0.25;
@@ -335,8 +335,8 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                   extrapolateRight: "clamp",
                 },
               ),
-              translate: `0px ${cardBounceOffset}px`,
-              rotate: `x ${cardTiltDeg}deg`,
+              translate: `0px ${idle.translateY}px`,
+              rotate: `x ${idle.rotateX}deg`,
             }}
           >
             {/* Top accent bar with matching curved corners. */}

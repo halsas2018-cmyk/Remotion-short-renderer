@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText } from "@remotion/layout-utils";
+import { useIdleMotion } from "./lib/idleMotion";
 
 // Google Font — type-safe, blocks rendering until the font is ready.
 const { fontFamily } = loadFont("normal", {
@@ -88,8 +89,20 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
 
   const isIdle = frame > entranceEnd;
   const idleTimeSeconds = isIdle ? (frame - entranceEnd) / fps : 0;
+  // `idlePulse` (per-value scale) is used by the value text only — not the same
+  // as useIdleMotion's primitives, so it stays as a local.
   const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
-  const cardBounceY = isIdle ? 6 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 0;
+
+  // Card idle bounce + 3D tilt (shared useIdleMotion hook).
+  // We compose the bounce/tilt into the existing centering transform string
+  // below, so we only need the individual fields (not the composed `transform`).
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false,
+  });
+
+  // Glow pulse animation (idle) — same as before; lives on the radial-blur sibling.
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
@@ -141,7 +154,7 @@ export const ChartCounter: React.FC<ChartCounterProps> = ({
           top: "50%",
           left: padding,
           right: padding,
-          transform: `translateY(-50%) translateY(${cardBounceY}px)`,
+          transform: `translateY(-50%) translateY(${idle.translateY}px) rotateX(${idle.rotateX}deg)`,
           width: availableWidth,
           display: "flex",
           justifyContent: "center",

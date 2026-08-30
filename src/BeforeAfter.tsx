@@ -12,6 +12,7 @@ import {
   fillTextBox,
   measureText,
 } from "@remotion/layout-utils";
+import { useIdleMotion } from "./lib/idleMotion";
 
 interface BeforeAfterProps {
   beforeLabel: string;
@@ -226,6 +227,14 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const isIdle = frame > entranceEndFrame;
   const idleTimeSeconds = isIdle ? (frame - entranceEndFrame) / fps : 0;
   const idlePulse = isIdle ? 1 + 0.02 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.5) : 1;
+
+  // Shared idle motion — applied to the outer wrapper (see below) so it
+  // doesn't conflict with the per-card transform arrays.
+  const idle = useIdleMotion({
+    bounce: isIdle,
+    tilt: isIdle,
+    glow: false,
+  });
 
   // Card slide-in complete progress (for triggering scaleX animation)
   const beforeSlideDone = interpolate(frame, [beforeDuration, beforeDuration + 10], [0, 1], {
@@ -453,6 +462,13 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           transform: "translateY(-50%)",
           width: availableWidth,
           height: cardHeight,
+        }}
+      >
+      <div
+        style={{
+          transform: idle.transform,
+          width: "100%",
+          height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -832,6 +848,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
             }}
           />
         </article>
+      </div>
       </div>
     </AbsoluteFill>
   );

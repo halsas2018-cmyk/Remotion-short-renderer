@@ -83,6 +83,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 1.4 — File-based audio plan log** — ~~CANCELLED~~ (shipped, then dropped; `process.versions.node` guard was unreliable in the render context — see 1.4 entry below)
 - **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
 - **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
+- **Horizon 2.2 — Registry unit tests** (`src/beats/registry.test.ts`, 143 tests covering per-type Zod schemas, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, `PerBeatSchema` / `TimedBeatsSchema` path-preservation; wired into `scripts/render-smoke.sh` as the first step) — ✅ DONE (see 2.2 below)
 
 ---
 
@@ -204,7 +205,55 @@ npx remotion studio --no-open
 ./scripts/render-smoke.sh
 ```
 
-**Next up in Horizon 2:** 2.2 (per-type Zod schemas + unit tests in `src/beats/registry.test.ts`), 2.3 (idle motion library in `src/lib/idleMotion/`), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
+### 2.2 — Registry unit tests — ✅ DONE
+
+**Why this was next:** the 20-beat registry (13 originals + `headline_card` + 6 new) is the load-bearing type system. Zod schemas, the `adaptMetadata` adapter, `getBeatComponent` / `isBeatTypeSupported`, and the kinetic-captions gate all hang off `src/beats/registry.ts` and `src/beats/renderBeat.tsx`. The previous "validation" was just whatever happened at render time — a too-permissive Zod schema or a forgotten `adaptMetadata` branch would silently produce a broken render and we'd find out from the user. This horizon makes that class of bug a fast-failing test instead.
+
+**What shipped:**
+- **Vitest installed** as a dev dependency (`vitest@^1` in `package.json`), with two scripts: `test` (single-run, CI mode) and `test:watch` (re-runs on file changes during development). Vitest 1.6 is the version that resolved from the `^1` range.
+- **`vitest.config.ts`** at the repo root, with:
+  - `include: ["src/**/*.test.ts"]` — only the registry test file matches, but the pattern leaves room for future unit tests (e.g. `transitionDuration.test.ts`, `words.test.ts`).
+  - `environment: "node"` — pure-data tests, no React, no jsdom, no React Testing Library. Each test runs in ~1ms because there's no component tree to mount.
+  - `exclude: ["node_modules/**", "out/**", "dist/**", "public/**"]` — the `out/` and `public/` excludes are non-default but load-bearing: `out/` is where `scripts/render-smoke.sh` writes `smoke.png` and `last-render.json`, and `public/` has the runtime render data (`narration.mp3` is a binary, `beats.json` / `timestamps.json` are not test inputs). Without these excludes, Vitest's default `node_modules` exclusion wouldn't catch them.
+  - The file uses `//` line comments (not JSDoc) because esbuild chokes on `**/` inside a JSDoc block — that was the first error from `npm test` (commit 4923a62 fixed it).
+- **`src/beats/registry.test.ts`** with 143 tests across 9 `describe` blocks:
+  1. **per-type validation (60 tests, 20 types × 3 cases each)** — one `describe` per registered beat type, each running three cases via a `runTypeTests` helper: (a) minimal valid fixture passes, (b) optional fields are preserved, (c) a wrong-type value for a required field throws a `ZodError` with the field's path (e.g. `["icon"]` for `icon_text` with `icon: 42`, not an opaque `["metadata"]`). This is the regression test for the Horizon 0.2 / 1.2 `.passthrough()` fix — without `.passthrough()`, every per-type field would be stripped and the schema would never see it.
+  2. **`getBeatComponent` (25 tests)** — 20 positive cases (`it.each(BeatType)`) + 5 negative cases (unknown type, empty string, wrong case `"KEY_STATEMENT"`, wrong separator `"key-statement"`, wrong separator `"key statement"`).
+  3. **`isBeatTypeSupported` (23 tests)** — 20 positive + 3 negative.
+  4. **registry / BeatType sync (1 test)** — bidirectional equality check: `[...Object.keys(registry)].sort() === [...BeatType].sort()`. This is the regression test for the 11-stale-`../components/...` imports that were fixed earlier: a type added to `BeatType` without a registry entry (or vice versa) trips this test loudly.
+  5. **`shouldShowKineticCaptions` (20 tests)** — 6 data-vis types return `true`, 14 text/card types return `false`. Uses `it.each(BeatType.filter(t => !CAPTION_VISIBLE_BEAT_TYPES.has(t)))` to keep the test in lock-step with the gate set.
+  6. **`adaptMetadata` (8 tests)** — covers `versus` (string → `{label, value, items}`), the `versus` object-input edge case (currently overwrites with empty default; flagged for future review since the Python pipeline always emits the string variant), `timeline` (string[] → `{marker, label}[]` with `Step N` markers), `process_flow` (string[] → events with numeric `"1"` markers — the Timeline fallback's design), and pass-through for 3 representative text-only types.
+  7. **`TimedBeatsSchema` (4 tests)** — one happy-path test with all 20 registered types round-tripping through the dispatcher, plus 3 negative tests: unknown type reports path `["beats", 0, "type"]`, per-type field error reports path `["beats", 0, "icon"]` (the regression test for the 0.2 path-preservation fix), and empty `beats[]` is rejected (the schema's `.min(1)` constraint).
+  8. **`PerBeatSchema` (2 tests)** — minimal valid + unknown-type rejection at path `["type"]`.
+  9. **Test helpers** — `baseBeat(type, extras)`, `expectZodErrorAt(fn, path)`, `runTypeTests(config)`. The helpers are small (~30 lines) and exist to keep the 20 per-type blocks DRY.
+- **`scripts/render-smoke.sh` updated** to run the tests as the FIRST step, before the ~2-minute `remotion still` render. If `npm test` fails, the smoke script prints `==> FAIL: registry unit tests failed. Fix before re-running smoke test.` and exits 1. The test step always runs — even with `--skip-if-unchanged` — because the test pass is the schema-equivalence guarantee, not the render-cache guarantee. The smoke script's test block uses `npm test --silent 2>&1 | tail -n 20` so the last 20 lines of a failing test show in the smoke log.
+- **`adaptMetadata` re-exported** from `src/beats/registry.ts` via `export { adaptMetadata } from "./renderBeat"` so the test file can `import { adaptMetadata } from "./registry"` without the orchestrator having to change its import path. The adapter is still defined and called in `renderBeat.tsx`; the registry barrel just re-exports it for test convenience.
+
+**How to verify:**
+```bash
+# Run just the test suite (≈7s, 143 tests):
+npm test
+
+# Run the test suite in watch mode (re-runs on file change):
+npm run test:watch
+
+# Run the full smoke pipeline (tests + 1-frame render):
+./scripts/render-smoke.sh
+./scripts/render-smoke.sh --skip-if-unchanged   # skips render if cache matches
+
+# Negative test: deliberately break a per-type schema and confirm
+# the test catches it with a field-path error:
+sed -i 's/text: z.string()/text: z.any()/' src/beats/registry.ts
+npm test
+# Should print: "FAIL src/beats/registry.test.ts > per-type validation > key_statement > rejects text with wrong type"
+# The "wrong type" case is no longer rejected because z.any() accepts
+# everything, so the expectZodErrorAt assertion fires. Restore with:
+git checkout src/beats/registry.ts
+```
+
+**Runtime cost:** zero. The tests run on every `npm test` invocation (~7s) and on every `./scripts/render-smoke.sh` invocation (~2 minutes total, of which ~7s is the test phase). The test step is also the fastest way to catch a schema regression before it makes it to a render.
+
+**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 20+ components share one source of truth), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
 
 ---
 

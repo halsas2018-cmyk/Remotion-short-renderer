@@ -164,12 +164,20 @@ const KeyStatementTestComposition: React.FC = () => {
   );
 };
 
-const ChartCounterTestComposition: React.FC = () => {
+const ChartCounterTestComposition: React.FC<{
+  value?: number;
+  label?: string;
+  durationInFrames?: number;
+}> = ({
+  value = 70_000_000_000,
+  label = "in debt",
+  durationInFrames = 90,
+}) => {
   return (
     <ChartCounter
-      value={70_000_000_000}
-      label="in debt"
-      durationInFrames={90}
+      value={value}
+      label={label}
+      durationInFrames={durationInFrames}
     />
   );
 };

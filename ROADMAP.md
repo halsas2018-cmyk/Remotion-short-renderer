@@ -84,7 +84,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 2.1.1 — `headline_card` beat type** (`src/HeadlineCard.tsx`, registered in `src/beats/registry.ts`, `HeadlineCardTest` composition in `src/Root.tsx`) — ✅ DONE (this is the **canonical "copy-paste template"** for every new text-based beat type in 2.1; see the new section below for the 2.1.1 details)
 - **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
 - **Horizon 2.2 — Registry unit tests** (`src/beats/registry.test.ts`, 143 tests covering per-type Zod schemas, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, `PerBeatSchema` / `TimedBeatsSchema` path-preservation; wired into `scripts/render-smoke.sh` as the first step) — ✅ DONE (see 2.2 below)
-- **Horizon 2.3 — `useIdleMotion` shared hook** (all 20 components moved to `src/lib/idleMotion/useIdleMotion` via Passes 1–3; `Map3D` Cesium special case deferred) — ✅ DONE (143-test `npm test` + 46314-byte `smoke.png` hash `bfbbf7cdef5c…` both green; see 2.3 below for the per-file edit details)
+- **Horizon 2.3 — `useIdleMotion` shared hook** (17/20 card-based components moved to `src/lib/idleMotion/useIdleMotion` via Passes 1–3; the 3 scene-based components — `ChartComparison3D`, `ChartLine`, `Map3D` — deferred to **2.3.x** because their idle math needs different hook shapes, not the 3-line `useIdleMotion` pattern) — 🟡 PARTIALLY DONE (17/20 + sub-horizon open; see 2.3 and 2.3.x below for the per-file edit details and the deferred scope)
 
 ---
 
@@ -228,7 +228,7 @@ npx remotion studio --no-open
   8. **`PerBeatSchema` (2 tests)** — minimal valid + unknown-type rejection at path `["type"]`.
   9. **Test helpers** — `baseBeat(type, extras)`, `expectZodErrorAt(fn, path)`, `runTypeTests(config)`. The helpers are small (~30 lines) and exist to keep the 20 per-type blocks DRY.
 - **`scripts/render-smoke.sh` updated** to run the tests as the FIRST step, before the ~2-minute `remotion still` render. If `npm test` fails, the smoke script prints `==> FAIL: registry unit tests failed. Fix before re-running smoke test.` and exits 1. The test step always runs — even with `--skip-if-unchanged` — because the test pass is the schema-equivalence guarantee, not the render-cache guarantee. The smoke script's test block uses `npm test --silent 2>&1 | tail -n 20` so the last 20 lines of a failing test show in the smoke log.
-- **`adaptMetadata` re-exported** from `src/beats/registry.ts` via `export { adaptMetadata } from "./renderBeat"` so the test file can `import { adaptMetadata } from "./registry"` without the orchestrator having to change its import path. The adapter is still defined and called in `renderBeat.tsx`; the registry barrel just re-exports it for test convenience.
+- **`adaptMetadata` re-exported** from `src/beats/registry.ts` via `export { adaptMetadata } from "./adaptMetadata"` so the test file can `import { adaptMetadata } from "./registry"` without the orchestrator having to change its import path. The adapter is defined in its own leaf file `src/beats/adaptMetadata.ts` (no imports from `registry.ts` or `renderBeat.tsx`); the registry barrel just re-exports it for test convenience. The orchestrator imports directly from `./adaptMetadata`. This split was driven by the circular-import / TDZ error documented in CLAUDE.md §4.5 (commit `f18a696`).
 
 **How to verify:**
 ```bash
@@ -254,17 +254,17 @@ git checkout src/beats/registry.ts
 
 **Runtime cost:** zero. The tests run on every `npm test` invocation (~7s) and on every `./scripts/render-smoke.sh` invocation (~2 minutes total, of which ~7s is the test phase). The test step is also the fastest way to catch a schema regression before it makes it to a render.
 
-**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 20+ components share one source of truth), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
+**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 17 card-based components share one source of truth), 2.3.x (the 3 scene-based hooks — `useSceneOrbit` for `ChartComparison3D`, `useChartReveal` for `ChartLine`, `useCesiumCamera` for `Map3D` — same single-source-of-truth pattern, but the hook shapes are different), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
 
-### 2.3 — `useIdleMotion` shared hook — ✅ DONE (all 20 components moved)
+### 2.3 — `useIdleMotion` shared hook — 🟡 PARTIALLY DONE (17/20 card-based components moved)
 
-**Why this was next:** the 20 design-system components all carried three duplicated math lines — `sin(t) * 6px` for the card's idle bounce, `sin(t*0.05) * 2deg` for the 3D tilt, and `1 + 0.15 * sin(t * 0.03)` for the radial-blur glow pulse. Any change to the bounce amplitude (e.g. "make it bounce 8px instead of 6px") meant editing 20 files. The shared hook makes those 3 lines a single source of truth.
+**Why this was next:** the 20 design-system components all carried three duplicated math lines — `sin(t) * 6px` for the card's idle bounce, `sin(t*0.05) * 2deg` for the 3D tilt, and `1 + 0.15 * sin(t * 0.03)` for the radial-blur glow pulse. Any change to the bounce amplitude (e.g. "make it bounce 8px instead of 6px") meant editing 20 files. The shared hook makes those 3 lines a single source of truth — for the 17 card-based components. The 3 scene-based components (`ChartComparison3D`, `ChartLine`, `Map3D`) need different hook shapes and are deferred to **2.3.x** (see below).
 
 **What shipped:**
 - `src/lib/idleMotion/useIdleMotion.ts` — the hook. Returns `{ transform, translateY, rotateX, scale }`. `transform` is a composed string `"translateY(Xpx) rotateX(Ydeg) scale(Z)"` for components that can spread it into a `style.transform` element. `translateY` / `rotateX` / `scale` are exposed individually for components that already own a transform (e.g. `ChartCounter`'s `translateY(-50%)` centering) and need to compose the idle math into the existing string instead of overwriting it. The three primitives are gated by `bounce`, `tilt`, `glow` options (default `true`); amplitudes default to `6`px / `2`deg / `0.15` and frequencies default to `0.08`Hz / `0.05`Hz / `0.03`Hz. `bounceFrequency` uses `Math.sin(frame * f * Math.PI * 2)` so a frequency of `0.08` means 0.08 cycles per second at 30fps, which is what we want.
 - `src/lib/idleMotion/index.ts` — barrel re-export of `useIdleMotion` and the types.
 
-**Per-file edit details (20 components, split into Passes 1–3):**
+**Per-file edit details (17/20 card-based components, split into Passes 1–3):**
 
 **Pass 1A — 4 straight-substitution components (the 4 that own their own transform):**
 - `src/HeadlineCard.tsx` — added `import { useIdleMotion } from "./lib/idleMotion";`, replaced `cardBounceFrequency` / `cardBounceAmplitude` / `cardBounceOffset` / `cardTiltDeg` locals with `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`. Kept `glow: false` because the radial-blur glow sibling has its own `scale: glowPulse` / `opacity: glowOpacity` curves that aren't the same shape as `useIdleMotion`'s `glow` (which is a `1 + 0.15 * sin(t * 0.03)`-style value). The `glowPulse` and `glowOpacity` locals stay since they animate different primitives on a different element. The card element's `translate` / `rotate` props are now `idle.translateY` / `idle.rotateX`.
@@ -280,26 +280,23 @@ git checkout src/beats/registry.ts
 - `src/components/Scrollytelling.tsx` — same 3-edit pattern on the title card. Per-element `bodyTranslateY` (linear scroll) stays.
 - `src/components/TickerTape.tsx` — same 3-edit pattern on the ticker card. Per-element `contentTranslateX` (linear scroll) and `scrollProgress` (eased position) stay.
 
-**Pass 3 — 10 `useCurrentFrame`-owning files (the ones that own their own time math, ~3 edits each):**
+**Pass 3 — 7 `useCurrentFrame`-owning files (the ones that own their own time math, ~3 edits each):**
 - `src/PlainText.tsx` — added the import, replaced `cardBounceOffset` / `cardTiltDeg` locals with `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`, swapped transform fields. `lineDurPct` / `lineStaggerPct` / `textStartDelayPct` / `sliderDurPct` timing locals stay (unrelated to idle motion).
 - `src/ProgressMeter.tsx` — same pattern. `formatNumber` and the progress bar math stay.
 - `src/Timeline.tsx` — same pattern. `lineDurPct` / `markerStaggerPct` / `markerDurPct` / `sliderDurPct` timing locals stay.
 - `src/VersusCard.tsx` — same pattern. The Option A/B ribbon, VS badge, items, and grid bg are layout, not idle motion.
 - `src/QuoteCard.tsx` — same pattern. The `Georgia` quote marks, separator, and attribution line stay.
 - `src/IconText.tsx` — added the import, added `useIdleMotion({ bounce, tilt, glow: false })`, swapped the wrapper transform. The per-element `rotate: ${2 * Math.sin(frame * 0.04)}deg` on the icon is intentionally a different primitive (a slow wobble on a single icon, not the card's idle motion) and stays as a local. The dead `idlePulse` local was deleted as part of this refactor (Edit D).
-- `src/ChartComparison3D.tsx` — flagged for the future `useSceneOrbit` hook. The 3 coupled 3D camera rotations don't map onto the 3-line `useIdleMotion` shape (they're an orbital camera, not a card bounce). See 2.3.x below.
-- `src/ChartLine.tsx` — flagged for the future `useChartReveal` hook. The single subtle pulse is below the threshold for the 3-line pattern. See 2.3.x below.
 - `src/Logo.tsx` — added the import, added `useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false })`, swapped the transform. Logo size is a `defaultProps` (not an idle local).
-- `src/Map3D.tsx` — flagged for the Cesium special case. The Cesium render loop owns the camera; the idle math lives inside the `useEffect` frame loop, not in a React `style.transform`. **This is the known Pass 4 Cesium special case** — left as a future sub-horizon (2.3.x) because the right shape is a `useCesiumCamera` hook, not `useIdleMotion`. See 2.3.x below.
 
 **Test wiring (one-time, in `src/Root.tsx`):**
 - All 6 new `*TestComposition` wrappers in Pass 2 (added in 2.1.2–2.1.7) use `React.FC<{ value?: number; label?: string; durationInFrames?: number; ... }>` with destructured defaults (NOT bare `React.FC`) — this is the second `*TestComposition` rule from CLAUDE.md §7. Bare `React.FC` breaks `RemotionRoot` mount in Remotion 4.x.
 - The `*Test` compositions for `QuoteCard` / `Timeline` / `Map3D` etc. have `defaultProps` wired so the new behavior is visible in Studio (same pattern as `StatPillTest` / `QuoteAttributionTest` from 2.1.2–2.1.7).
 
-**What's NOT in this pass (the deferred special cases):**
-- `src/ChartComparison3D.tsx` — 3 coupled 3D camera rotations. The right shape is a `useSceneOrbit` hook that takes a camera target + orbit radius + speed and returns the 3 rotation values as a single object. Defer to 2.3.x.
-- `src/ChartLine.tsx` — single subtle pulse below the threshold for the 3-line pattern. The right shape is a `useChartReveal` hook that owns the chart's draw-in animation (independent of idle motion). Defer to 2.3.x.
-- `src/Map3D.tsx` — Cesium special case. The Cesium render loop owns the camera inside a `useEffect` frame loop, not in a React `style.transform`. The right shape is a `useCesiumCamera` hook that returns the per-frame camera state. Defer to 2.3.x.
+**What's NOT in this pass (the 3 deferred scene-based components):**
+- `src/ChartComparison3D.tsx` — 3 coupled 3D camera rotations. The right shape is a `useSceneOrbit` hook that takes a camera target + orbit radius + speed and returns the 3 rotation values as a single object. Defer to **2.3.x**.
+- `src/ChartLine.tsx` — single subtle pulse below the threshold for the 3-line pattern. The right shape is a `useChartReveal` hook that owns the chart's draw-in animation (independent of idle motion). Defer to **2.3.x**.
+- `src/Map3D.tsx` — Cesium special case. The Cesium render loop owns the camera inside a `useEffect` frame loop, not in a React `style.transform`. The right shape is a `useCesiumCamera` hook that returns the per-frame camera state. Defer to **2.3.x**.
 
 **How to verify:**
 ```bash
@@ -313,7 +310,62 @@ npm test
 # (the refactor is pure code reorganization — the rendered output must NOT change)
 ```
 
-**Next up in Horizon 2:** 2.3.x (the 3 deferred hooks — `useSceneOrbit` for `ChartComparison3D`, `useChartReveal` for `ChartLine`, `useCesiumCamera` for `Map3D` — same single-source-of-truth pattern as `useIdleMotion`, but the hook shapes are different), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it), and 2.5 (visual polish pass on the 20 existing components, design-system checklist compliance audit).
+**Next up in Horizon 2:** **2.3.x** (the 3 scene-based hooks — same single-source-of-truth pattern, but different hook shapes), then 2.4 (emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), then 2.5 (visual polish pass on the 20 existing components).
+
+### 2.3.x — Scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`) — ⏳ NEXT (≈2–3 days, **$0**)
+
+**Why this is the next sub-horizon:** ROADMAP.md §2.3 deferred three components because their idle / motion math doesn't fit the 3-line `useIdleMotion` shape — they're 3D scenes, charts, and a Cesium render loop, not card-bounce/tilt/glow primitives. The pattern is the same (one source of truth per primitive), but the hook shapes are different.
+
+**What to build (3 hooks, 3 consumers):**
+
+1. **`src/lib/sceneMotion/useSceneOrbit.ts`** — for `src/ChartComparison3D.tsx`.
+   - Signature: `useSceneOrbit(opts: { target: [number, number, number]; radius: number; speedRadPerSec: number; }): { rotationX: number; rotationY: number; rotationZ: number; }`.
+   - The current `ChartComparison3D` has 3 coupled `Math.sin` / `Math.cos` expressions for the orbital camera (one each for `rotationX`, `rotationY`, `rotationZ`), tied to the same `frame * speedRadPerSec` driver. They should be moved to the hook as a single return object.
+   - The component passes `frame` implicitly via `useCurrentFrame()`; the hook reads it. `target` is the scene's camera focal point (defaults to `[0, 0, 0]`). `radius` is the orbit radius. `speedRadPerSec` defaults to `0.15`.
+   - `src/lib/sceneMotion/index.ts` — barrel re-export.
+
+2. **`src/lib/sceneMotion/useChartReveal.ts`** — for `src/ChartLine.tsx`.
+   - Signature: `useChartReveal(opts: { drawInFrames: number; idleAmp?: number; idleFreq?: number; }): { drawProgress: number; idlePulse: number; }`.
+   - Owns both the chart's `drawProgress` (a `clamp(frame / drawInFrames, 0, 1)` line-draw curve) and the subtle `idlePulse` (`1 + idleAmp * sin(frame * idleFreq)`, defaults `0.05` / `0.04`). The current `ChartLine` has these inline as 2 locals.
+   - The `drawProgress` is a linear reveal, not a sinusoidal, so it doesn't fit `useIdleMotion`'s API.
+
+3. **`src/lib/sceneMotion/useCesiumCamera.ts`** — for `src/Map3D.tsx`.
+   - Signature: `useCesiumCamera(viewerRef: React.RefObject<Cesium.Viewer>, opts: { orbitSpeedRadPerSec: number; }): { cameraState: Cesium.CameraState; }`.
+   - Called from inside the existing Cesium `useEffect` frame loop (not from a React `style.transform`). The hook owns the per-frame `viewer.camera.lookAt` / `setView` calls so the component's effect body is just `useCesiumCamera(viewerRef, { orbitSpeedRadPerSec: 0.1 })`.
+   - The hook does NOT call `useCurrentFrame` directly (Cesium has its own `requestAnimationFrame` loop in the underlying `viewer`); instead it exposes a `tick()` function that the existing `useEffect` calls per RAF.
+   - **Web fallback:** the existing `Map3D` has a non-Cesium 2D fallback for the phone (Cesium's WebGL is unreliable on mobile Chromium). The hook should detect `viewerRef.current == null` and return `{ cameraState: null }` so the component's render path falls through to the 2D fallback unchanged.
+
+**Per-file edit details (3 consumers, ~6 edits):**
+- `src/ChartComparison3D.tsx` — remove the 3 inline `Math.sin` / `Math.cos` expressions; import `useSceneOrbit` from `./lib/sceneMotion`; call `const { rotationX, rotationY, rotationZ } = useSceneOrbit({ target: [0, 0, 0], radius: 5, speedRadPerSec: 0.15 })`. Spread the 3 values into the existing `rotation` prop. `*Test` PNG must be visually identical.
+- `src/ChartLine.tsx` — remove the 2 inline `drawProgress` / `idlePulse` locals; import `useChartReveal` from `./lib/sceneMotion`; call `const { drawProgress, idlePulse } = useChartReveal({ drawInFrames: Math.floor(durationInFrames * 0.3), idleAmp: 0.05, idleFreq: 0.04 })`. The `*Test` PNG must be visually identical.
+- `src/Map3D.tsx` — move the per-frame camera logic out of the `useEffect` body and into `useCesiumCamera`; the effect body becomes a one-liner: `useCesiumCamera(viewerRef, { orbitSpeedRadPerSec: 0.1 })`. The 2D-fallback path is unchanged. The `*Test` PNG must be visually identical (or, if the hook is in the Cesium path only, the 2D-fallback `*Test` is identical and the Cesium path is verified via a separate `*CesiumTest` composition in `Root.tsx`).
+
+**Test wiring (one-time, in `src/Root.tsx`):**
+- The 3 `*Test` compositions get `defaultProps` updated to expose the new behavior (orbit speed for `ChartComparison3DTest`, draw-in duration for `ChartLineTest`, lat/lng for `Map3DTest`) — same pattern as 2.3.
+- If the Cesium `useCesiumCamera` refactor is invasive, add a separate `Map3DCesiumTest` composition that mounts Cesium (with a stub `viewer` ref) and assert the page still loads in Studio. The 2D fallback remains the `*Test` baseline.
+
+**Design-system compliance:** the 3 hooks live in `src/lib/sceneMotion/` (sibling to `src/lib/idleMotion/`) with a barrel re-export. They follow the same pattern as `useIdleMotion`: pure function of `useCurrentFrame()` (or, for Cesium, a `tick()` callback), per-primitive options, single return shape. **No new dependencies.**
+
+**Reuse pattern:** once `useSceneOrbit` and `useCesiumCamera` exist, any future 3D scene (e.g. a `bar_chart_3d` beat type in 4.x) reuses them rather than inlining its own orbital camera math.
+
+**How to verify:**
+```bash
+# Tests still pass
+npm test
+
+# Smoke still green (46314-byte smoke.png, hash bfbbf7cdef5c…)
+./scripts/render-smoke.sh
+
+# Studio still loads (the §4.5 import-graph rule still applies — the new
+# `src/lib/sceneMotion/` barrel must NOT re-export from any consumer file)
+npx remotion studio --no-open
+
+# *Test PNGs for ChartComparison3D / ChartLine / Map3D are visually
+# identical to the pre-2.3.x versions (the refactor is pure code
+# reorganization — the rendered output must NOT change).
+```
+
+**Next up after 2.3.x:** 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it).
 
 ### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ⏳ NEXT (≈2–3 days, **$0**)
 
@@ -327,7 +379,7 @@ npm test
 
 **Design-system compliance:** the emphasis cycle is already standardized in `KeyStatement` (see 3.4 of `CLAUDE.md`). The pattern is: `ANNOTATION_CYCLE = [Highlight, Circle, Underline]`, each with the accent color, cycling per emphasized word via a running index. New code must copy this pattern; do not invent a new annotation cycle.
 
-**Reuse pattern:** the `useIdleMotion` hook from 2.3 means the 3 components that get the emphasis cycle ALSO need their idle math moved to the hook (now done in 2.3 Passes 1–3). The 2.4 work is a clean add-on top of the 2.3 refactor.
+**Reuse pattern:** the `useIdleMotion` hook from 2.3 (and the `useSceneOrbit` / `useChartReveal` / `useCesiumCamera` hooks from 2.3.x) means the 3 components that get the emphasis cycle ALSO need their idle math moved to the relevant hook. The 2.4 work is a clean add-on top of the 2.3 + 2.3.x refactor.
 
 **How to verify:**
 ```bash
@@ -366,7 +418,7 @@ npm test
 # need fixes will have visible changes)
 ```
 
-**Next up after 2.5:** Horizon 3 (smart beat generation, **$0–$5/day LLM spend**). The 2.x arc is complete: 7 new beat types, 1 shared idle-motion library, 1 standardized emphasis cycle, 1 design-system audit. That's the visual vocabulary the rest of the project needs.
+**Next up after 2.5:** Horizon 3 (smart beat generation, **$0–$5/day LLM spend**). The 2.x arc is complete: 7 new beat types, 1 shared idle-motion library, 3 scene-based motion hooks, 1 standardized emphasis cycle, 1 design-system audit. That's the visual vocabulary the rest of the project needs.
 
 ---
 
@@ -645,4 +697,4 @@ These were considered and removed because they don't pass the cost lens or the i
 
 **The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.
 
-**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, all 20 components), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 4.5 tasks in Horizon 2.
+**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, 17/20 card-based components), 2.3.x (scene-based motion hooks for the 3 scene-based components — `useSceneOrbit` / `useChartReveal` / `useCesiumCamera`), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 5 tasks in Horizon 2.

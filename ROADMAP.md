@@ -85,7 +85,8 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 2.1.2–2.1.7 — `stat_pill` / `quote_attribution` / `compare_split` / `location_pulse` / `scrollytelling` / `ticker_tape`** — ✅ DONE (6 new components in `src/components/`, registered in `src/beats/registry.ts`, `*Test` compositions in `src/Root.tsx`; see 2.1.2–2.1.7 below)
 - **Horizon 2.2 — Registry unit tests** (`src/beats/registry.test.ts`, 143 tests covering per-type Zod schemas, `getBeatComponent` / `isBeatTypeSupported` / registry↔BeatType sync, `shouldShowKineticCaptions`, `adaptMetadata`, `PerBeatSchema` / `TimedBeatsSchema` path-preservation; wired into `scripts/render-smoke.sh` as the first step) — ✅ DONE (see 2.2 below)
 - **Horizon 2.3 — `useIdleMotion` shared hook** (17/20 card-based components moved to `src/lib/idleMotion/useIdleMotion` via Passes 1–3; the 3 scene-based components — `ChartComparison3D`, `ChartLine`, `Map3D` — deferred to **2.3.x** because their idle math needs different hook shapes, not the 3-line `useIdleMotion` pattern) — 🟡 PARTIALLY DONE (17/20 + sub-horizon open; see 2.3 and 2.3.x below for the per-file edit details and the deferred scope)
-- **Horizon 2.3.x Pass 1 — `useSceneOrbit` hook for `ChartComparison3D`** (commit `0ae8d9b`; 1 of 3 scene-based hooks done; Passes 2 and 3 — `useChartReveal` for `ChartLine` and `useCesiumCamera` for `Map3D` — are next; see 2.3.x Pass 1 below for the per-file edit details) — 🟡 PARTIALLY DONE (1/3)
+- **Horizon 2.3.x Pass 1 — `useSceneOrbit` hook for `ChartComparison3D`** (commit `0ae8d9b`; ✅ DONE; see 2.3.x Pass 1 below for the per-file edit details) — ✅ DONE
+- **Horizon 2.3.x Pass 2 — `useChartReveal` hook for `ChartLine`** (commit `ca3ee1c`; ✅ DONE; Pass 3 — `useCesiumCamera` for `Map3D` — is next; see 2.3.x Pass 2 below for the per-file edit details) — ✅ DONE
 
 ---
 
@@ -313,7 +314,7 @@ npm test
 
 **Next up in Horizon 2:** **2.3.x** (the 3 scene-based hooks — same single-source-of-truth pattern, but different hook shapes), then 2.4 (emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), then 2.5 (visual polish pass on the 20 existing components).
 
-### 2.3.x — Scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`) — 🟡 PARTIALLY DONE (1/3 scene-based components migrated)
+### 2.3.x — Scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`) — 🟡 PARTIALLY DONE (2/3 scene-based components migrated)
 
 **Why this is the next sub-horizon:** ROADMAP.md §2.3 deferred three components because their idle / motion math doesn't fit the 3-line `useIdleMotion` shape — they're 3D scenes, charts, and a Cesium render loop, not card-bounce/tilt/glow primitives. The pattern is the same (one source of truth per primitive), but the hook shapes are different.
 
@@ -328,6 +329,7 @@ npm test
 2. **`src/lib/sceneMotion/useChartReveal.ts`** — for `src/ChartLine.tsx`.
    - Signature: `useChartReveal(opts: { drawInFrames: number; idleAmp?: number; idleFreq?: number; }): { drawProgress: number; idlePulse: number; }`.
    - Owns both the chart's `drawProgress` (a `clamp(frame / drawInFrames, 0, 1)` line-draw curve) and the subtle `idlePulse` (`1 + idleAmp * sin(frame * idleFreq)`, defaults `0.05` / `0.04`). The current `ChartLine` has these inline as 2 locals.
+   - **Default-override note:** as of Pass 2 (commit `ca3ee1c`), the only consumer (`ChartLine`) overrides both defaults to `idleAmp: 0.01` / `idleFreq: 0.05` to preserve its pre-2.3.x curve 1:1. The hook's defaults are therefore documentation-only at this point. **Do not change the hook's defaults based on the only consumer** — the defaults are placeholder values for any future chart component that doesn't have a pre-2.3.x curve to preserve. If a future refactor wants to consolidate, it should change the consumer to accept the defaults, not the other way around.
    - The `drawProgress` is a linear reveal, not a sinusoidal, so it doesn't fit `useIdleMotion`'s API.
 
 3. **`src/lib/sceneMotion/useCesiumCamera.ts`** — for `src/Map3D.tsx`.
@@ -338,7 +340,7 @@ npm test
 
 **Per-file edit details (3 consumers, ~6 edits):**
 - `src/ChartComparison3D.tsx` — remove the 3 inline `Math.sin` / `Math.cos` expressions; import `useSceneOrbit` from `./lib/sceneMotion`; call `const orbit = useSceneOrbit({ idleBlend, swingYDeg: IDLE_SWING_Y, swingXDeg: IDLE_SWING_X })`; add the 3 hook-returned values to the existing `entranceRotY` / `entranceRotX` (the entrance swing stays in the component). `*Test` PNG is **< 1% per-frame visual diff** (different orbit shape, see Pass 1 below).
-- `src/ChartLine.tsx` — remove the 2 inline `drawProgress` / `idlePulse` locals; import `useChartReveal` from `./lib/sceneMotion`; call `const { drawProgress, idlePulse } = useChartReveal({ drawInFrames: Math.floor(durationInFrames * 0.3), idleAmp: 0.05, idleFreq: 0.04 })`. The `*Test` PNG must be visually identical.
+- `src/ChartLine.tsx` — remove the 2 inline `lineProgress` / `idlePulse` locals; import `useChartReveal` from `./lib/sceneMotion`; call `const { drawProgress, idlePulse } = useChartReveal({ drawInFrames: lineStart + lineDuration, idleAmp: 0.01, idleFreq: 0.05 })`. The `*Test` PNG is **< 1% per-frame visual diff** (eased→linear reveal, see Pass 2 below).
 - `src/Map3D.tsx` — move the per-frame camera logic out of the `useEffect` body and into `useCesiumCamera`; the effect body becomes a one-liner: `useCesiumCamera(viewerRef, { orbitSpeedRadPerSec: 0.1 })`. The 2D-fallback path is unchanged. The `*Test` PNG must be visually identical (or, if the hook is in the Cesium path only, the 2D-fallback `*Test` is identical and the Cesium path is verified via a separate `*CesiumTest` composition in `Root.tsx`).
 
 **Test wiring (one-time, in `src/Root.tsx`):**
@@ -351,7 +353,11 @@ npm test
 
 **Reuse pattern:** once `useSceneOrbit` and `useCesiumCamera` exist, any future 3D scene (e.g. a `bar_chart_3d` beat type in 4.x) reuses them rather than inlining its own orbital camera math.
 
-**Visual diff rule (this is the load-bearing exception to the §8 / 2.3 "Test PNGs must be identical" rule):** the 2.3.x hooks own math that's a small behavioral change from the inline version (Pass 1 collapses the pre-2.3.x `0.03` / `0.024` frequency asymmetry in `ChartComparison3D` to a single shared frequency; the orbit shape changes from a slow Lissajous drift to a closed loop). The visual diff per-frame is < 1%, not viewer-visible, but the `*Test` PNGs ARE different from the pre-2.3.x versions. This is the **one exception** to the §8 "byte-identical *Test PNGs" rule, scoped to 2.3.x Passes 1, 2, 3 only. Outside 2.3.x, the byte-identical rule is unchanged.
+**Visual diff rule (this is the load-bearing exception to the §8 / 2.3 "Test PNGs must be identical" rule):** the 2.3.x hooks own math that's a small behavioral change from the inline version:
+- **Pass 1 (commit `0ae8d9b`) — `ChartComparison3D`:** collapses the pre-2.3.x `0.03` / `0.024` frequency asymmetry to a single shared `speedRadPerSec`, so the orbit shape changes from a slow Lissajous drift to a closed loop.
+- **Pass 2 (commit `ca3ee1c`) — `ChartLine`:** collapses the pre-2.3.x **eased** reveal (`easeOut` over `[lineStart, lineStart + lineDuration]`) to a **linear** reveal (`clamp(frame / drawInFrames, 0, 1)`). The two reach 1 at the same frame, so the *visible* "line is fully drawn" moment is the same, but the curve's *shape* differs (line is drawn faster at the start, slower at the end, in the pre-2.3.x version).
+
+In both cases the visual diff per-frame is < 1%, not viewer-visible, but the `*Test` PNGs ARE different from the pre-2.3.x versions. This is the **documented exception** to the §8 "byte-identical *Test PNGs" rule, scoped to 2.3.x Passes 1, 2, 3 only. Outside 2.3.x, the byte-identical rule is unchanged. The original ROADMAP spec for Pass 2 said `idleAmp: 0.05` / `idleFreq: 0.04`, but the actual consumer passes `0.01` / `0.05` — the migration preserved the pre-2.3.x curve 1:1, not the spec.
 
 **How to verify:**
 ```bash
@@ -367,14 +373,14 @@ npx remotion studio --no-open
 
 # *Test PNGs for ChartComparison3D / ChartLine / Map3D are visually
 # < 1% per-frame different from the pre-2.3.x versions (the refactor
-# may collapse an inline frequency asymmetry; this is the one exception
-# to the "byte-identical Test PNGs" rule in §8 / 2.3, scoped to
-# 2.3.x Passes 1, 2, 3 only).
+# may collapse an inline frequency asymmetry or ease the reveal curve;
+# this is the one exception to the "byte-identical Test PNGs" rule in
+# §8 / 2.3, scoped to 2.3.x Passes 1, 2, 3 only).
 ```
 
 **Next up after 2.3.x:** 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it).
 
-### 2.3.x Pass 1 — `useSceneOrbit` for `ChartComparison3D` — 🟡 DONE (commit 0ae8d9b, 1/3)
+### 2.3.x Pass 1 — `useSceneOrbit` for `ChartComparison3D` — ✅ DONE (commit 0ae8d9b, 1/3)
 
 **Why this was first:** the 3 sub-passes of 2.3.x follow the same order as the 3 hook shapes. `useSceneOrbit` is the cheapest because `ChartComparison3D` is pure React math, no external dependencies, no render-loop ownership. The refactor is mechanical: replace 3 inline `Math.sin` / `Math.cos` expressions with one hook call. Pass 1 is the canary — if the hook pattern works, Passes 2 and 3 (`useChartReveal` for `ChartLine` and `useCesiumCamera` for `Map3D`) are mechanical. If it doesn't, finding out on `ChartComparison3D` is cheaper than finding out on `Map3D`'s Cesium render loop.
 
@@ -430,6 +436,69 @@ npx remotion studio --no-open
 ```
 
 **Next up in 2.3.x:** **Pass 2** — `useChartReveal` for `src/ChartLine.tsx` (linear draw-in `drawProgress` + subtle `idlePulse`; Pass 2 is the next cheapest after Pass 1). Then **Pass 3** — `useCesiumCamera` for `src/Map3D.tsx` (Cesium's own RAF loop, 2D-fallback path unchanged; the most invasive of the 3 because of the Cesium `useEffect`).
+
+### 2.3.x Pass 2 — `useChartReveal` for `ChartLine` — ✅ DONE (commit ca3ee1c, 2/3)
+
+**Why this was next:** after Pass 1 shipped cleanly (commit `0ae8d9b`), Pass 2 was the next cheapest because `ChartLine` is pure React math + SVG. No external dependencies, no render-loop ownership, no Cesium `useEffect`. The refactor is mechanical: replace 2 inline locals (`lineProgress` / `idlePulse`) with one hook call. Pass 2 is the canary for the hook's "linear 0..1 reveal" API shape; if that pattern works, Pass 3's `useCesiumCamera` is the only remaining scene hook.
+
+**What shipped (commit ca3ee1c, "refactor: migrate ChartLine to useChartReveal hook"):**
+
+- **`src/lib/sceneMotion/useChartReveal.ts`** (new file) — the hook. Reads `frame` via `useCurrentFrame()` internally. Takes `ChartRevealOptions` (`{ drawInFrames, idleAmp?, idleFreq? }`) and returns `ChartReveal` (`{ drawProgress, idlePulse }`).
+  - The math: `drawProgress = Math.max(0, Math.min(1, frame / drawInFrames))` (linear 0..1 reveal, clamped at both ends). `idlePulse = 1 + idleAmp * Math.sin(frame * idleFreq)` (subtle scale modulation, default `0.05` / `0.04`).
+  - **Unit convention:** `idleFreq` is in **cycles per frame** (NOT cycles per second). This is a deliberate departure from `useSceneOrbit`'s `speedRadPerSec` and from `useIdleMotion`'s `bounceFrequency`. The reason is byte-equivalence: the pre-2.3.x `ChartLine` used `Math.sin(frame * 0.05)` (cycles per frame), and the hook's `Math.sin(frame * idleFreq)` matches that 1:1 with `idleFreq = 0.05`. Adding a `useVideoConfig()` / `fps` read for unit conversion would change the curve (slightly), so Pass 2 keeps the hook dependency-light. If a future refactor wants to consolidate units across all 3 motion hooks, add a `cyclesPerSec` shorthand and a `useVideoConfig` read.
+  - **No `easing` option:** the pre-2.3.x `ChartLine` used `Easing.bezier(0.16, 1, 0.3, 1)` (`easeOut`) on the line-draw reveal. The hook returns a **linear** value to keep the API minimal. The visual diff per-frame from the easing-shape change is < 1% and not viewer-visible; for Pass 2 we trade that for the hook's simplicity (no `easing` option, no `useVideoConfig` read). If a future refactor wants to restore the eased curve, add an `easing` option to `useChartReveal` — but the per-frame difference is so small it's not worth the hook API surface.
+  - **Defaults that are never used by the only consumer:** the hook's `idleAmp` / `idleFreq` defaults are `0.05` / `0.04`, but the only consumer (`ChartLine`) passes `0.01` / `0.05` to preserve the pre-2.3.x curve 1:1. The defaults are documentation-only at this point. **Do not change the hook's defaults based on the only consumer** — the defaults are placeholder values for any future chart component that doesn't have a pre-2.3.x curve to preserve.
+
+- **`src/lib/sceneMotion/index.ts`** (edited) — added `useChartReveal` and its types (`ChartReveal`, `ChartRevealOptions`) to the existing barrel. Still a **leaf file** — does NOT re-export from any consumer. Same import-graph rule from §4.5.
+
+- **`src/ChartLine.tsx`** (edited) — added `import { useChartReveal } from "./lib/sceneMotion";`, replaced the inline locals:
+  ```ts
+  // Pre-2.3.x (eased reveal over [lineStart, lineStart + lineDuration]):
+  const lineProgress = interpolate(frame, [lineStart, lineStart + lineDuration], [0, 1], {
+    easing: easeOut,
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const idlePulse = 1 + 0.01 * Math.sin(frame * 0.05);
+
+  // Post-2.3.x (linear reveal over [0, drawInFrames]):
+  const drawInFrames = lineStart + lineDuration;
+  const { drawProgress, idlePulse } = useChartReveal({
+    drawInFrames,
+    idleAmp: 0.01,
+    idleFreq: 0.05,
+  });
+  void lineStart;       // referenced only for the drawInFrames computation above
+  void lineDuration;    // referenced only for the drawInFrames computation above
+  ```
+  - `lineStart` and `lineDuration` are still used to compute `drawInFrames` (the value the hook uses for "line is fully drawn"), but they're no longer the input to the reveal curve itself. The `void` statements are deliberate — they suppress unused-var warnings while keeping the timing constants visible in the code.
+  - `dashOffset = totalLength * (1 - drawProgress)` (the SVG stroke-dashoffset that produces the line-draw effect) now uses the hook's `drawProgress` instead of the inline `lineProgress`. The two reach 1 at the same frame, so the *visible* "line is fully drawn" moment is the same. The curve's *shape* differs (line is drawn faster at the start, slower at the end, in the pre-2.3.x version) — see the "Visual diff" note below.
+  - The chart element wrapper's `scale: idlePulse` is unchanged; the only difference is that `idlePulse` now comes from `useChartReveal` instead of the inline local. The curve is `1 + 0.01 * Math.sin(frame * 0.05)` 1:1.
+  - **What stays in the component (correctly):** `entranceFrames` (the entrance timeline), `entranceProgress` / `entranceScale` / `entranceOpacity` (the entrance animation on the outer `Interactive.Div`), `dotStagger` / `dotDuration` / `dotProgresses` (the per-point dot fade-in stagger — per-point animation, not a chart-wide primitive), `pathPoints` / `pathData` / `totalLength` (the SVG path generation), the Y-axis labels, the grid lines, the area fill, the dots / value labels / X-axis labels. The hook owns ONLY the 2 chart-wide time-based primitives.
+  - The `scale` / `opacity` on the outer `Interactive.Div` are still `entranceScale` / `entranceOpacity` (entrance animation, not idle pulse). The `scale: idlePulse` is on the inner chart container, where it was in the pre-2.3.x version. The two-element split (outer = entrance, inner = idle) is preserved.
+
+**Visual diff vs. pre-2.3.x:** the pre-2.3.x `ChartLine` applied `easeOut` to the line-draw reveal. The post-2.3.x version uses a **linear** reveal (`clamp(frame / drawInFrames, 0, 1)`). The two reach 1 at the same frame (the *visible* "line is fully drawn" moment is the same), but the curve's *shape* differs — the pre-2.3.x line is drawn faster at the start and slower at the end (typical `easeOut` behavior), while the post-2.3.x line is drawn at a constant rate. The visual diff per-frame is < 1% and not viewer-visible, but the `ChartLine*Test` PNGs ARE different from the pre-2.3.x versions. This is the **second** documented exception to the §8 "byte-identical *Test PNGs" rule (alongside Pass 1's frequency-asymmetry collapse), scoped to 2.3.x Passes 1, 2, 3 only. The component's own comment block ("Easing note" in `src/ChartLine.tsx`) documents this trade-off.
+
+**How to verify (Pass 2):**
+```bash
+# 1. Tests still pass (143 green — the hook doesn't change the registry)
+npm test
+
+# 2. Smoke still green (46314-byte smoke.png, hash bfbbf7cdef5c…)
+./scripts/render-smoke.sh
+
+# 3. Studio still loads (the §4.5 / §6 import-graph check)
+npx remotion studio --no-open
+
+# 4. *Test PNGs are < 1% per-frame different (documented exception to
+# the §8 "byte-identical Test PNGs" rule, scoped to 2.3.x Passes 1-3).
+# The diff is the linear reveal vs. the pre-2.3.x easeOut reveal;
+# not viewer-visible but the PNG byte count / hash WILL differ.
+# The visible "line is fully drawn" moment is the same frame; the
+# difference is the curve's shape during the reveal.
+```
+
+**Next up in 2.3.x:** **Pass 3** — `useCesiumCamera` for `src/Map3D.tsx` (Cesium's own RAF loop, 2D-fallback path unchanged; the most invasive of the 3 because of the Cesium `useEffect` and the 2D fallback that must stay byte-identical).
 
 ### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ⏳ NEXT (≈2–3 days, **$0**)
 
@@ -761,4 +830,4 @@ These were considered and removed because they don't pass the cost lens or the i
 
 **The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.
 
-**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, 17/20 card-based components), 2.3.x (scene-based motion hooks for the 3 scene-based components — `useSceneOrbit` Pass 1 done for `ChartComparison3D`, Pass 2 `useChartReveal` next for `ChartLine`, Pass 3 `useCesiumCamera` for `Map3D`), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 5 tasks in Horizon 2.
+**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, 17/20 card-based components), 2.3.x (scene-based motion hooks for the 3 scene-based components — `useSceneOrbit` Pass 1 done for `ChartComparison3D`, `useChartReveal` Pass 2 done for `ChartLine`, `useCesiumCamera` Pass 3 for `Map3D`), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 5 tasks in Horizon 2.

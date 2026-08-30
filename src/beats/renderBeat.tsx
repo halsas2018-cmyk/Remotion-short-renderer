@@ -7,6 +7,7 @@ import {
   validateBeatMetadata,
   isBeatTypeSupported,
 } from "./registry";
+import { adaptMetadata } from "./adaptMetadata";
 import type { Word } from "./words";
 
 /* ------------------------------------------------------------------ */
@@ -110,56 +111,6 @@ export const BeatContent: React.FC<BeatContentProps> = ({
       />
     </SceneTransition>
   );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Per-type metadata adapter                                         */
-/*                                                                     */
-/*  Exported (Phase 2.2) so the registry unit tests can import it    */
-/*  without breaking the orchestrator's existing import path.         */
-/*  `BeatContent` still calls it as a local function.                */
-/* ------------------------------------------------------------------ */
-
-export const adaptMetadata = (
-  type: string,
-  beat: Record<string, unknown>,
-): Record<string, unknown> => {
-  switch (type) {
-    case "versus": {
-      const leftStr = typeof beat.left === "string" ? beat.left : "";
-      const rightStr = typeof beat.right === "string" ? beat.right : "";
-      return {
-        ...beat,
-        left: { label: leftStr, value: "", items: [] },
-        right: { label: rightStr, value: "", items: [] },
-      };
-    }
-
-    case "timeline": {
-      const events = Array.isArray(beat.events)
-        ? (beat.events as unknown[]).map((e, i) => {
-            if (typeof e === "string") {
-              return { marker: `Step ${i + 1}`, label: e };
-            }
-            return e;
-          })
-        : [];
-      return { ...beat, events };
-    }
-
-    case "process_flow": {
-      const steps = Array.isArray(beat.steps)
-        ? (beat.steps as unknown[]).map((s, i) => {
-            const labelStr = typeof s === "string" ? s : "";
-            return { marker: `${i + 1}`, label: labelStr };
-          })
-        : [];
-      return { ...beat, events: steps };
-    }
-
-    default:
-      return beat;
-  }
 };
 
 /* ------------------------------------------------------------------ */

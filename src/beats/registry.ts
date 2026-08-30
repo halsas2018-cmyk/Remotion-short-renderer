@@ -322,14 +322,17 @@ export const validateBeatMetadata = (type: string, beat: unknown): any => {
 export const isBeatTypeSupported = (type: string): boolean => type in registry;
 
 /* ------------------------------------------------------------------ */
-/*  Barrel re-export of `adaptMetadata` from `renderBeat.tsx`.        */
+/*  Barrel re-export of `adaptMetadata` from `./adaptMetadata`.       */
 /*                                                                     */
-/*  The adapter is defined and called locally in `renderBeat.tsx`     */
-/*  (where `BeatContent` invokes it), but the registry unit tests    */
-/*  import it from `./registry` to keep their import surface narrow. */
-/*  This re-export makes `adaptMetadata` reachable from the test     */
-/*  layer without forcing the orchestrator to change its import path */
-/*  (see ROADMAP §2.2).                                               */
+/*  `adaptMetadata` is defined in its own leaf file (no imports from  */
+/*  the registry or the orchestrator) so this re-export doesn't      */
+/*  create a circular import with `renderBeat.tsx` (which itself     */
+/*  imports from the registry). The previous `from "./renderBeat"`   */
+/*  re-export hit a TDZ error under Remotion's React Refresh path.  */
+/*                                                                     */
+/*  The test file imports from `./registry` to keep its import       */
+/*  surface narrow; the orchestrator imports directly from           */
+/*  `./adaptMetadata`. Both go through the same function.            */
 /* ------------------------------------------------------------------ */
 
-export { adaptMetadata } from "./renderBeat";
+export { adaptMetadata } from "./adaptMetadata";

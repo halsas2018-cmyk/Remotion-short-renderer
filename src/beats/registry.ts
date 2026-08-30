@@ -321,3 +321,15 @@ export const validateBeatMetadata = (type: string, beat: unknown): any => {
 
 export const isBeatTypeSupported = (type: string): boolean => type in registry;
 
+/* ------------------------------------------------------------------ */
+/*  Barrel re-export of `adaptMetadata` from `renderBeat.tsx`.        */
+/*                                                                     */
+/*  The adapter is defined and called locally in `renderBeat.tsx`     */
+/*  (where `BeatContent` invokes it), but the registry unit tests    */
+/*  import it from `./registry` to keep their import surface narrow. */
+/*  This re-export makes `adaptMetadata` reachable from the test     */
+/*  layer without forcing the orchestrator to change its import path */
+/*  (see ROADMAP §2.2).                                               */
+/* ------------------------------------------------------------------ */
+
+export { adaptMetadata } from "./renderBeat";

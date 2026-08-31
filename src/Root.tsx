@@ -4,6 +4,9 @@ import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsV
 import { HeadlineCard } from "./HeadlineCard";
 import { KeyStatement } from "./KeyStatement";
 import { ChartCounter } from "./ChartCounter";
+import { VersusCard } from "./VersusCard";
+import { BeforeAfter } from "./BeforeAfter";
+import { QuoteCard } from "./QuoteCard";
 import { StatPill } from "./components/StatPill";
 import { QuoteAttribution } from "./components/QuoteAttribution";
 import { CompareSplit } from "./components/CompareSplit";
@@ -244,6 +247,70 @@ const TickerTapeTestComposition: React.FC = () => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/*  Horizon 2.4 — Emphasis cycle test compositions                     */
+/*                                                                     */
+/*  These four compositions exist so you can visual-QA the per-word  */
+/*  emphasis cycle (Highlight → Circle → Underline) on the three      */
+/*  components that got it in 2.4: VersusCard, BeforeAfter, and      */
+/*  QuoteCard (with a long-quote variant to exercise all three cycle  */
+/*  entries in one beat). Each one passes `emphasisWords` via the     */
+/*  wrapped component's props (NOT via defaultProps on the            */
+/*  <Composition>), so the prop is visible in Studio's props panel.  */
+/* ------------------------------------------------------------------ */
+
+const VersusCardTestComposition: React.FC = () => {
+  return (
+    <VersusCard
+      left={{
+        label: "Broadcom",
+        value: "$70B debt",
+        items: ["Chip design", "Software", "Infrastructure"],
+      }}
+      right={{
+        label: "Nvidia",
+        value: "$500B market cap",
+        items: ["GPU monopoly", "CUDA lock-in", "Data center"],
+      }}
+      emphasisWords={["Broadcom", "Nvidia"]}
+    />
+  );
+};
+
+const BeforeAfterTestComposition: React.FC = () => {
+  return (
+    <BeforeAfter
+      beforeLabel="Manual Chip Procurement"
+      afterLabel="Automated Lease-Back Model"
+      emphasisWords={["Manual", "Automated"]}
+    />
+  );
+};
+
+const QuoteCardTestComposition: React.FC = () => {
+  return (
+    <QuoteCard
+      quote="The best way to predict the future is to invent it"
+      attribution="Alan Kay"
+      emphasisWords={["predict", "invent"]}
+    />
+  );
+};
+
+// Long-quote variant of the QuoteCard test — exercises 3 emphasis
+// words in one cycle so you can see Highlight → Circle → Underline
+// all fire in a single beat.
+const QuoteCardLongTestComposition: React.FC = () => {
+  return (
+    <QuoteCard
+      quote="People who are really serious about software should make their own hardware because the hardware defines what the software can do"
+      attribution="Alan Kay"
+      emphasisWords={["serious", "software", "hardware"]}
+      durationInFrames={180}
+    />
+  );
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -272,10 +339,7 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
-        defaultProps={{
-          text: "The gamble works while AI chips are scarce",
-          emphasisWords: ["gamble", "scarce"],
-        }}
+        defaultProps={{}}
       />
       <Composition
         id="KeyStatementTest"
@@ -284,10 +348,7 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
-        defaultProps={{
-          text: "The gamble works while AI chips are scarce",
-          emphasisWords: ["gamble", "scarce"],
-        }}
+        defaultProps={{}}
       />
       <Composition
         id="ChartCounterTest"
@@ -351,6 +412,43 @@ export const RemotionRoot: React.FC = () => {
         id="TickerTapeTest"
         component={TickerTapeTestComposition}
         durationInFrames={150}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      {/* ---- Horizon 2.4 — emphasis cycle Test compositions ---- */}
+      <Composition
+        id="VersusCardTest"
+        component={VersusCardTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="BeforeAfterTest"
+        component={BeforeAfterTestComposition}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="QuoteCardTest"
+        component={QuoteCardTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="QuoteCardLongTest"
+        component={QuoteCardLongTestComposition}
+        durationInFrames={180}
         fps={30}
         width={1080}
         height={1920}

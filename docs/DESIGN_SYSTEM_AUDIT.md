@@ -9,8 +9,8 @@
 **Phase progress:**
 - Phase 0 (audit scaffold): ✅ done (commit `1e621e9`)
 - Phase 1 (per-component file reads): 🔄 in progress
-  - Batch A (4 §2.3 Pass 1 files): 3 of 4 done (`KeyStatement`, `HeadlineCard`, `BeforeAfter`); 1 remaining (`ChartCounter`)
-  - Batch B (6 §2.3 Pass 2 files in `src/components/`): not started
+  - Batch A (4 §2.3 Pass 1 files): ✅ done (`KeyStatement`, `HeadlineCard`, `BeforeAfter`, `ChartCounter`)
+  - Batch B (6 §2.3 Pass 2 files in `src/components/`): 🔄 2 of 6 done (`StatPill`, `QuoteAttribution`); 4 remaining (`CompareSplit`, `LocationPulse`, `Scrollytelling`, `TickerTape`)
   - Batch C (7 §2.3 Pass 3 files): not started
   - Batch D (3 §2.3.x scene-based files): not started
 
@@ -94,16 +94,16 @@ From `src/beats/types.ts::BeatType` (20 members) and `src/beats/registry.ts::reg
 | 12 | `Map3D` (`src/Map3D.tsx`) | · | · | ⚠️ no card (voxel map is content) | n/a | n/a (no text) | n/a | · | · | ✅ none (entrance-only, one-shot) | · | n/a | · | n/a | · |
 | 13 | `ProcessFlow` (reuses `Timeline`) | · | · | · | · | · | n/a | · | · | · (via `Timeline`) | · | n/a | · | n/a | · |
 | 14 | `QuoteCard` (`src/QuoteCard.tsx`) | · | · | · | · | · | · | · | · | · useIdleMotion (Pass 3) | · | ✅ (2.4, typewriter-aware) | · | · | · |
-| 15 | `StatPill` (`src/components/StatPill.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | n/a (fixed-size number) | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | n/a | ✅ | n/a | ✅ |
-| 16 | `QuoteAttribution` (`src/components/QuoteAttribution.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | · | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 15 | `StatPill` (`src/components/StatPill.tsx`) | ✅ | ✅ | ⚠️ (pill radius 48–54px, above §3.3 baseline 28–48px) | ✅ | ✅ | n/a (fixed-size number) | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | n/a (§2.1.4 "optional") | ✅ | n/a | ✅ |
+| 16 | `QuoteAttribution` (`src/components/QuoteAttribution.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 17 | `CompareSplit` (`src/components/CompareSplit.tsx`) | · | · | · | ⚠️ (accent on outer container, not inner cards) | · | · | · | · | ✅ useIdleMotion (Pass 2) | · | n/a | · | · | · |
 | 18 | `LocationPulse` (`src/components/LocationPulse.tsx`) | · | · | ⚠️ (2D map surface is content, not card) | · | · | n/a (location name is fixed) | · | · | ✅ useIdleMotion (Pass 2) | · | n/a | · | · | · |
 | 19 | `Scrollytelling` (`src/components/Scrollytelling.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (scrolling body) | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 20 | `TickerTape` (`src/components/TickerTape.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | n/a (fixed headlines) | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | ✅ (per-headline) | ✅ | ✅ | ✅ |
 
-**Pre-filled cell counts:** 75 of 280 cells pre-filled from Phase 0. Phase 1 added 42 cells (3 rows × 14 cols) for rows 1, 2, 11. Total: 117 of 280. Remaining 163 cells are `·` for Phase 1 batches B/C/D.
+**Pre-filled cell counts:** 75 of 280 cells pre-filled from Phase 0. Phase 1 added 42 cells (3 rows × 14 cols) for rows 1, 2, 11. Phase 1 Batch A completion added 14 cells (row 6). Phase 1 Batch B start added 28 cells (rows 15, 16). Total: 159 of 280. Remaining 121 cells are `·` for Phase 1 batches B (4 files), C (7 files), D (3 files).
 
-**❌ count after Batch A:** 1 (row 11 col 5, `BeforeAfter` missing Space Grotesk).
+**❌ count after Batch A + Batch B start:** 1 (row 11 col 5, `BeforeAfter` missing Space Grotesk).
 
 ---
 
@@ -120,6 +120,7 @@ These are the cells where I'm pre-filling ⚠️ with a one-line rationale, base
 | 11 | `BeforeAfter` | #4 (top accent bar) | The accent bar is on the inner cards, color-coded red (BEFORE) and green (AFTER) to semantically distinguish the two sides. The pre-Phase-1 rationale ("accent on outer container") was wrong — the bar IS on the inner cards; the deviation is the red/green semantic color-coding, not the location. The comparison's meaning depends on the color split. **Accepted: this is the load-bearing visual for the `before_after` beat type.** |
 | 11 | `BeforeAfter` | #10 (accent palette) | Off-palette red (`#dc2626`, `#fee2e2`, `#fecaca`) and green (`#16a34a`, `#dcfce7`, `#bbf7d0`) are used to semantically distinguish BEFORE from AFTER. Substituting the accent palette (`#e86c00` / `#f97316`) would erase the comparison's meaning — both sides would look identical except for the label. **Accepted: the red/green split IS the visual. Same rationale as the #4 deviation; both cells deviate for the same reason.** |
 | 12 | `Map3D` | #3 (white card chrome) | Pure-CSS 3D voxel map; a card chrome would clip the perspective transform. Per `CLAUDE.md` §3.5 / ROADMAP §2.3.x Pass 3. |
+| 15 | `StatPill` | #3 (white card chrome) | Pill-style component uses a 48–54px border-radius (vs. the §3.3 baseline 28–48px). The "pill = more rounded" deviation is intentional and documented in the component's in-file comment (`borderRadius: max(48, width*0.05) // Pill = more rounded`). The deviation is within the spirit of §3.3 (a pill is a card with a larger radius, not a separate primitive). |
 | 17 | `CompareSplit` | #4 (top accent bar) | Two-card layout; same as `VersusCard` / `BeforeAfter`. Per `CLAUDE.md` §3.6. |
 | 18 | `LocationPulse` | #3 (white card chrome) | The 2D map surface (grid + pin + ring) is the content; the white card surrounds the map. Per `CLAUDE.md` §3.6. |
 
@@ -166,28 +167,29 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 
 | Primitive | Filled cells | ✅ | ❌ | ⚠️ | n/a | · (pending) |
 |---|---|---|---|---|---|---|
-| 1. Portrait 1080×1920 | 4 | 4 | 0 | 0 | 0 | 16 |
-| 2. Transparent overlay | 4 | 4 | 0 | 0 | 0 | 16 |
-| 3. White card chrome | 4 | 3 | 0 | 1 (`BeforeAfter` 2px border) | 0 | 16 |
-| 4. Top accent bar | 4 | 3 | 0 | 1 (`BeforeAfter` red/green) | 0 | 16 |
-| 5. Space Grotesk | 4 | 3 | **1 (`BeforeAfter` missing)** | 0 | 0 | 16 |
-| 6. `fitText` | 4 | 3 | 0 | 0 | 0 | 16 |
-| 7. Entrance timing | 4 | 4 | 0 | 0 | 0 | 16 |
-| 8. No exit animation | 4 | 4 | 0 | 0 | 0 | 16 |
-| 9. Motion hook | 4 | 4 | 0 | 0 | 0 | 16 |
-| 10. Accent palette | 4 | 3 | 0 | 1 (`BeforeAfter` red/green) | 0 | 16 |
-| 11. `rough-notation` emphasis | 4 | 3 | 0 | 0 | 1 (`BeforeAfter` is applicable, filled) | 16 |
-| 12. `durationInFrames` prop | 4 | 4 | 0 | 0 | 0 | 16 |
-| 13. Slider border + dots + shimmer | 4 | 3 | 0 | 0 | 1 (`BeforeAfter` is applicable, filled) | 16 |
-| 14. `<SceneTransition>` wrapper | 4 | 4 | 0 | 0 | 0 | 16 |
+| 1. Portrait 1080×1920 | 7 | 7 | 0 | 0 | 0 | 13 |
+| 2. Transparent overlay | 7 | 7 | 0 | 0 | 0 | 13 |
+| 3. White card chrome | 7 | 5 | 0 | 2 (`BeforeAfter` 2px border, `StatPill` pill radius) | 0 | 13 |
+| 4. Top accent bar | 7 | 6 | 0 | 1 (`BeforeAfter` red/green) | 0 | 13 |
+| 5. Space Grotesk | 7 | 6 | **1 (`BeforeAfter` missing)** | 0 | 0 | 13 |
+| 6. `fitText` | 7 | 6 | 0 | 0 | 0 | 13 |
+| 7. Entrance timing | 7 | 7 | 0 | 0 | 0 | 13 |
+| 8. No exit animation | 7 | 7 | 0 | 0 | 0 | 13 |
+| 9. Motion hook | 7 | 7 | 0 | 0 | 0 | 13 |
+| 10. Accent palette | 7 | 6 | 0 | 1 (`BeforeAfter` red/green) | 0 | 13 |
+| 11. `rough-notation` emphasis | 7 | 5 | 0 | 0 | 1 (`StatPill` §2.1.4 "optional") | 13 |
+| 12. `durationInFrames` prop | 7 | 7 | 0 | 0 | 0 | 13 |
+| 13. Slider border + dots + shimmer | 7 | 5 | 0 | 0 | 1 (`StatPill` data-vis) | 13 |
+| 14. `<SceneTransition>` wrapper | 7 | 7 | 0 | 0 | 0 | 13 |
 
-**Filled cells:** 56 (rows 1, 2, 6, 11 fully filled; 4 primitives × 4 components = 16 + 1 partial = 17 n/a + ⚠️). Wait — let me recount: 4 components × 14 primitives = 56 cells. Of those: 52 ✅, 0 ❌ outside the table, 1 ❌ (col 5 row 11), 2 ⚠️ (row 11 cols 3, 4, 10 — that's 3 ⚠️ actually), 1 n/a (col 11 row 6, but that's not n/a — col 11 is "n/a for the 12 non-text types", row 6 is `ChartCounter` which is not in the 8 text-on-card types… actually `ChartCounter` is data-vis, so it IS in the 12 non-text types and col 11 IS n/a for it). So 52 ✅ + 1 ❌ + 3 ⚠️ + 0 n/a = 56. Wait, that's 56. Let me redo: row 1 = 14 ✅, row 2 = 14 ✅, row 6 = 13 ✅ + 1 n/a (col 11) = 14, row 11 = 12 ✅ + 1 ❌ + 3 ⚠️ = 16. **That's 56 cells, but row 11 has 15 not 14. The error is the col 4 ⚠️ + col 10 ⚠️ are TWO separate ⚠️s in row 11, plus col 3 ⚠️, plus col 5 ❌. So row 11 is: 10 ✅ + 1 ❌ + 3 ⚠️ = 14. Good. Total: 14+14+14+14 = 56.** ✓
-
-**Actual counts after Batch A:** 52 ✅, 1 ❌, 3 ⚠️, 0 n/a (in the 56 filled cells of rows 1, 2, 6, 11).
+**Filled cells:** 98 (7 rows × 14 cols). Of those: 92 ✅, 1 ❌, 4 ⚠️, 1 n/a.
 
 **`BeforeAfter` ❌ to fix in Phase 2:** 1 (col 5, missing Space Grotesk).
 
-**`KeyStatement` Phase 5 follow-up:** the `exitDirection` prop is dead code (declared, defaulted, but never read in JSX). Not a 2.5 ❌, but worth removing in a future horizon.
+**Phase 5 follow-ups (out of scope for 2.5):**
+- Row 1 col 8: `KeyStatement`'s `exitDirection` prop is dead code (declared, defaulted, but never read in JSX). Remove in a future horizon.
+- Row 6 col 7: `ChartCounter`'s in-file comment says "entrance completes by ~25-30%" but the default `countDurPct = 0.20` is 20%. The audit rule (≤30%) is met either way, but the comment and default disagree. Reconcile in a future horizon.
+- Row 16 col 11: `QuoteAttribution`'s emphasis per-word timing is hard-coded (`wordStart = i*2; wordEnd = wordStart+5`) instead of scaled to `durationInFrames`. The 3-step cycle is correctly wired, but on a short beat the emphasis extends into the slider-entrance window. Fix the timing scaling in a future horizon.
 
 ---
 
@@ -198,4 +200,4 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 3. **Phase 2:** group the ❌s by primitive. Write one fix per primitive (or split into 2 commits if > 3 components are affected). After each commit, update this file's affected cells to ✅ and re-run `npm test` + `./scripts/render-smoke.sh`.
 4. **Phase 3:** confirm all ⚠️ cells have a rationale. If any ⚠️ is missing one, add it.
 5. **Phase 4:** re-run the verification chain. Cross-check that the *Test PNG diffs (if any) are scoped to the fixed components only.
-6. **Phase 5:** list any non-2.5 follow-ups the audit surfaced (e.g. `ANNOTATION_CYCLE` consolidation to `useEmphasisCycle` hook, the `Logo` card-chrome question, `KeyStatement` `exitDirection` dead code, etc.) in a new "2.5 follow-ups" section at the bottom of this file.
+6. **Phase 5:** list any non-2.5 follow-ups the audit surfaced (e.g. `ANNOTATION_CYCLE` consolidation to `useEmphasisCycle` hook, the `Logo` card-chrome question, `KeyStatement` `exitDirection` dead code, `ChartCounter` entrance comment/default reconciliation, `QuoteAttribution` emphasis timing scaling, etc.) in a new "2.5 follow-ups" section at the bottom of this file.

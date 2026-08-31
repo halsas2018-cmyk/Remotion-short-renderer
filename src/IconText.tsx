@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { fitText, fillTextBox, measureText } from "@remotion/layout-utils";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import * as LucideIcons from "lucide-react";
 import { useIdleMotion } from "./lib/idleMotion";
 
@@ -24,6 +25,13 @@ interface IconTextProps {
   wordStaggerPct?: number;
   sliderDurPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -119,7 +127,7 @@ export const IconText: React.FC<IconTextProps> = ({
   const fitTextResult = fitText({
     text,
     withinWidth: textContentWidth,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily,
     fontWeight: "500",
     maxFontSize: Math.max(72, width * 0.065),
     minFontSize: 48,
@@ -132,7 +140,7 @@ export const IconText: React.FC<IconTextProps> = ({
     maxBoxWidth: textContentWidth,
     maxLines: 10, // Allow up to 10 lines
     fontSize: baseFontSize,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily,
     fontWeight: "500",
     lineHeight: 1.4,
   });
@@ -161,7 +169,7 @@ export const IconText: React.FC<IconTextProps> = ({
     const testText = testLineWords.join(" ");
     const { width: lineWidth } = measureText({
       text: testText,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily,
       fontSize: baseFontSize,
       fontWeight: "500",
     });
@@ -530,7 +538,7 @@ export const IconText: React.FC<IconTextProps> = ({
                               fontSize: baseFontSize,
                               fontWeight: wordHasEmphasis ? 700 : 500,
                               color: DARK_TEXT,
-                              fontFamily: "system-ui, sans-serif",
+                              fontFamily,
                               lineHeight: 1.4,
                               letterSpacing: -1,
                               textAlign: "center",

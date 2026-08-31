@@ -8,6 +8,7 @@ import {
   Easing,
   Interactive,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useChartReveal } from "./lib/sceneMotion";
 
 // ============================================================================
@@ -28,6 +29,13 @@ interface ChartLineProps {
 // ============================================================================
 // CONSTANTS & CONFIGURATION
 // ============================================================================
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -375,7 +383,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                           fontSize: 16,
                           fontWeight: 600,
                           color: COLORS.darkText,
-                          fontFamily: "system-ui, sans-serif",
+                          fontFamily,
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -455,7 +463,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                             fontSize: 16,
                             fontWeight: 700,
                             color: COLORS.accent,
-                            fontFamily: "system-ui, sans-serif",
+                            fontFamily,
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -492,7 +500,7 @@ export const ChartLine: React.FC<ChartLineProps> = ({
                             fontSize: 14,
                             fontWeight: 500,
                             color: COLORS.mediumText,
-                            fontFamily: "system-ui, sans-serif",
+                            fontFamily,
                             whiteSpace: "nowrap",
                           }}
                         >

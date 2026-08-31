@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface TimelineEvent {
@@ -22,6 +23,13 @@ interface TimelineProps {
   markerDurPct?: number;
   sliderDurPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -266,7 +274,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                         fontSize: markerFontSize,
                         fontWeight: 800,
                         color: ACCENT_COLOR,
-                        fontFamily: "system-ui, sans-serif",
+                        fontFamily,
                         lineHeight: 1,
                         whiteSpace: "nowrap",
                       }}
@@ -303,7 +311,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                           fontSize: labelFontSize,
                           fontWeight: 600,
                           color: DARK_TEXT,
-                          fontFamily: "system-ui, sans-serif",
+                          fontFamily,
                           lineHeight: 1.35,
                         }}
                       >

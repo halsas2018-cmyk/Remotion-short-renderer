@@ -7,12 +7,20 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useSceneOrbit } from "./lib/sceneMotion";
 
 interface ChartComparison3DProps {
   items: Array<{ label: string; value: number }>;
   durationInFrames?: number; // Optional override; defaults to composition duration
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -311,8 +319,7 @@ export const ChartComparison3D: React.FC<ChartComparison3DProps> = ({
                       boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
                       fontSize: Math.max(24, Math.min(slot * 0.085, 32)),
                       fontWeight: 700,
-                      fontFamily:
-                        "'Space Grotesk', 'Inter', system-ui, sans-serif",
+                      fontFamily,
                       color: DARK_TEXT,
                       whiteSpace: "nowrap",
                       letterSpacing: -0.5,
@@ -356,7 +363,7 @@ export const ChartComparison3D: React.FC<ChartComparison3DProps> = ({
                       style={{
                         fontSize: Math.max(38, Math.min(barW * 0.34, 58)),
                         fontWeight: 700,
-                        fontFamily: "'Space Grotesk', 'Inter', system-ui, sans-serif",
+                        fontFamily,
                         color: "#ffffff",
                         letterSpacing: -1,
                         textShadow: "0 2px 8px rgba(0,0,0,0.25)",

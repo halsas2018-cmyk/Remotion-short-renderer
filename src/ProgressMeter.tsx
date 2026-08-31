@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface ProgressMeterProps {
@@ -21,6 +22,13 @@ interface ProgressMeterProps {
   labelDurPct?: number;
   sliderDurPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -402,7 +410,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                     fontSize: valueFontSize,
                     fontWeight: 800,
                     color: ACCENT_COLOR,
-                    fontFamily: "system-ui, sans-serif",
+                    fontFamily,
                     lineHeight: 1,
                     letterSpacing: -2,
                     opacity: numberProgress,
@@ -434,7 +442,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                     fontSize: labelFontSize,
                     fontWeight: 700,
                     color: DARK_TEXT,
-                    fontFamily: "system-ui, sans-serif",
+                    fontFamily,
                     letterSpacing: 2,
                     textTransform: "uppercase",
                     marginTop: 16,
@@ -455,7 +463,7 @@ export const ProgressMeter: React.FC<ProgressMeterProps> = ({
                     fontSize: subtitleFontSize,
                     fontWeight: 500,
                     color: MEDIUM_TEXT,
-                    fontFamily: "system-ui, sans-serif",
+                    fontFamily,
                     letterSpacing: 1,
                     marginTop: 12,
                     opacity: labelProgress,

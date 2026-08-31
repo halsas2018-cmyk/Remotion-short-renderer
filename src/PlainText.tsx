@@ -8,6 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface PlainTextProps {
@@ -20,6 +21,13 @@ interface PlainTextProps {
   textStartDelayPct?: number;
   sliderDurPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -413,7 +421,7 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       fontSize: baseFontSize,
                       fontWeight: lineHasEmphasis ? 700 : 500,
                       color: DARK_TEXT,
-                      fontFamily: "system-ui, sans-serif",
+                      fontFamily,
                       lineHeight: 1.4,
                       letterSpacing: -1,
                       textAlign: "center",

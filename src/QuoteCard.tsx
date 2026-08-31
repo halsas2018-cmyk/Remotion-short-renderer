@@ -8,6 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface QuoteCardProps {
@@ -26,6 +27,13 @@ interface QuoteCardProps {
   wordStaggerPct?: number;
   wordStartDelayPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -460,7 +468,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                   fontSize: quoteFontSize,
                   fontWeight: 700,
                   color: DARK_TEXT,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   lineHeight: 1.35,
                   letterSpacing: -1,
                   marginBottom: 32,
@@ -531,7 +539,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                   fontSize: attrFontSize,
                   fontWeight: 600,
                   color: MEDIUM_TEXT,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   letterSpacing: 1.5,
                   textTransform: "uppercase",
                   marginTop: 24,

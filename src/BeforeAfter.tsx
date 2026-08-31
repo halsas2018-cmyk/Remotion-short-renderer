@@ -13,6 +13,7 @@ import {
   fillTextBox,
   measureText,
 } from "@remotion/layout-utils";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface BeforeAfterProps {
@@ -31,6 +32,13 @@ interface BeforeAfterProps {
   wordStaggerPct?: number;
   wordStartDelayPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -82,7 +90,7 @@ const wrapLabel = (params: {
   const fitted = fitText({
     text,
     withinWidth: maxWidth,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily,
     fontWeight: String(fontWeight),
     maxFontSize,
     minFontSize,
@@ -92,7 +100,7 @@ const wrapLabel = (params: {
   const box = fillTextBox({
     maxBoxWidth: maxWidth,
     maxLines,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily,
     fontSize,
     fontWeight: String(fontWeight),
     lineHeight: 1.18,
@@ -109,7 +117,7 @@ const wrapLabel = (params: {
     const candidate = isSpace ? words.join("") + tok : words.join("") + tok;
     const { exceedsBox } = box.add({
       text: isSpace ? tok : candidate,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily,
       fontSize,
       fontWeight: String(fontWeight),
     });
@@ -147,7 +155,7 @@ const greedyWrap = (
     const next = current ? `${current} ${words[i]}` : words[i];
     const { width } = measureText({
       text: next,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily,
       fontSize,
       fontWeight: String(fontWeight),
     });
@@ -159,7 +167,7 @@ const greedyWrap = (
         const remaining = words.slice(i).join(" ");
         const { width: remW } = measureText({
           text: remaining,
-          fontFamily: "system-ui, sans-serif",
+          fontFamily,
           fontSize,
           fontWeight: String(fontWeight),
         });
@@ -386,7 +394,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
       );
       const { width: lw } = measureText({
         text: longest,
-        fontFamily: "system-ui, sans-serif",
+        fontFamily,
         fontSize: size,
         fontWeight: "800",
       });
@@ -506,7 +514,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               transformOrigin: "center bottom",
               fontSize: wordFontSize,
               fontWeight: isEmphasized ? 800 : 800,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               lineHeight: 1.18,
               letterSpacing: -1.5,
               margin: "0 0.06em",
@@ -726,7 +734,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               fontSize: tagFontSize,
               fontWeight: 700,
               color: BEFORE_TAG_COLOR,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               letterSpacing: 2,
               textTransform: "uppercase",
               backgroundColor: BEFORE_TAG_BG,
@@ -751,7 +759,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               fontSize: beforeHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               lineHeight: 1.18,
               letterSpacing: -1.5,
               wordBreak: "break-word",
@@ -786,7 +794,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
                   fontSize: tagFontSize + 2,
                   fontWeight: 600,
                   color: BEFORE_TAG_COLOR,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   backgroundColor: BEFORE_TAG_BG,
                   border: `1px solid ${BEFORE_TAG_BORDER}`,
                   padding: `${tagPaddingY}px ${tagPaddingX + 4}px`,
@@ -928,7 +936,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               fontSize: tagFontSize,
               fontWeight: 700,
               color: AFTER_TAG_COLOR,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               letterSpacing: 2,
               textTransform: "uppercase",
               backgroundColor: AFTER_TAG_BG,
@@ -953,7 +961,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               fontSize: afterHeadlineFontSize,
               fontWeight: 800,
               color: DARK_TEXT,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               lineHeight: 1.18,
               letterSpacing: -1.5,
               wordBreak: "break-word",
@@ -988,7 +996,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
                   fontSize: tagFontSize + 2,
                   fontWeight: 600,
                   color: AFTER_TAG_COLOR,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   backgroundColor: AFTER_TAG_BG,
                   border: `1px solid ${AFTER_TAG_BORDER}`,
                   padding: `${tagPaddingY}px ${tagPaddingX + 4}px`,

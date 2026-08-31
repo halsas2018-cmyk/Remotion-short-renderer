@@ -12,6 +12,7 @@ import {
   fitText,
   measureText,
 } from "@remotion/layout-utils";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface VersusSide {
@@ -35,6 +36,13 @@ interface VersusCardProps {
   wordStaggerPct?: number;
   wordStartDelayPct?: number;
 }
+
+// Google Font — type-safe, blocks rendering until the font is ready.
+// Space Grotesk: geometric display face, punchy for kinetic typography.
+const { fontFamily } = loadFont("normal", {
+  weights: ["500", "700"],
+  subsets: ["latin"],
+});
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
@@ -77,7 +85,7 @@ const resolveFittedSize = (
   const fitted = fitText({
     text,
     withinWidth: maxWidth,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily,
     fontWeight: String(fontWeight),
     maxFontSize,
     minFontSize,
@@ -89,7 +97,7 @@ const resolveFittedSize = (
   while (size > minFontSize) {
     const { width } = measureText({
       text,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily,
       fontSize: size,
       fontWeight: String(fontWeight),
     });
@@ -368,7 +376,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
             transformOrigin: "center bottom",
             fontSize: wordFontSize,
             fontWeight: isEmphasized ? 800 : 700,
-            fontFamily: "system-ui, sans-serif",
+            fontFamily,
             lineHeight: 1.1,
             letterSpacing: -0.8,
             margin: "0 0.04em",
@@ -447,7 +455,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
               fontSize: itemFontSize,
               fontWeight: 500,
               color: MEDIUM_TEXT,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -572,7 +580,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
               fontSize: tagFontSize,
               fontWeight: 800,
               color: "#4338ca",
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               letterSpacing: 2,
               textTransform: "uppercase",
               backgroundColor: "rgba(99, 102, 241, 0.10)",
@@ -602,7 +610,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                 fontSize: leftLabelSize,
                 fontWeight: 700,
                 color: DARK_TEXT,
-                fontFamily: "system-ui, sans-serif",
+                fontFamily,
                 letterSpacing: -0.8,
                 lineHeight: 1.1,
                 maxWidth: "100%",
@@ -622,7 +630,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                   fontSize: leftValueSize,
                   fontWeight: 800,
                   color: ACCENT_COLOR,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   lineHeight: 1.1,
                   letterSpacing: -1.5,
                   maxWidth: "100%",
@@ -706,7 +714,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                 fontSize: vsFontSize,
                 fontWeight: 900,
                 color: ACCENT_DEEP,
-                fontFamily: "system-ui, sans-serif",
+                fontFamily,
                 letterSpacing: 1.5,
                 textShadow: "0 1px 2px rgba(255, 255, 255, 0.6)",
               }}
@@ -767,7 +775,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
               fontSize: tagFontSize,
               fontWeight: 800,
               color: ACCENT_DEEP,
-              fontFamily: "system-ui, sans-serif",
+              fontFamily,
               letterSpacing: 2,
               textTransform: "uppercase",
               backgroundColor: "rgba(232, 108, 0, 0.10)",
@@ -797,7 +805,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                 fontSize: rightLabelSize,
                 fontWeight: 700,
                 color: DARK_TEXT,
-                fontFamily: "system-ui, sans-serif",
+                fontFamily,
                 letterSpacing: -0.8,
                 lineHeight: 1.1,
                 maxWidth: "100%",
@@ -817,7 +825,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                   fontSize: rightValueSize,
                   fontWeight: 800,
                   color: ACCENT_COLOR,
-                  fontFamily: "system-ui, sans-serif",
+                  fontFamily,
                   lineHeight: 1.1,
                   letterSpacing: -1.5,
                   maxWidth: "100%",

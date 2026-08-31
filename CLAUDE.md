@@ -47,6 +47,7 @@ Anything that touches a paid API, a hosted service, or compute we don't already 
 | Managed render farm (Fly.io, Hetzner, GitHub Actions paid) | 🟡 Horizon 7, Mode B only | `ROADMAP.md` Horizon 7 |
 | Hosted dashboard (VPS + FastAPI + SQLite) | 🟡 Horizon 6, Mode B only | `ROADMAP.md` Horizon 6 |
 | YouTube Data API v3 (free but needs OAuth approval) | 🟡 Horizon 8 | `ROADMAP.md` Horizon 8 |
+| OpenRouter `:free` tier (e.g. `poolside/laguna-s-2.1:free`, `minimax/minimax-m3:free`) | 🟡 used in `llm_client.py` | needs `$10` in OpenRouter credits to unlock 1000 free model requests/day; without credits, the free tier hits `Rate limit exceeded: free-models-per-day` and the pipeline can't smoke-test those rows. Add a paid row (drop the `:free` suffix) for unbounded use. |
 
 **If a new feature needs something not in the ✅ or 🟡 rows, STOP. Add a new horizon to `ROADMAP.md` with the cost model spelled out, and stop there until the human signs off.**
 

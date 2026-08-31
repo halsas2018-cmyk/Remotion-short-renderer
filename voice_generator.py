@@ -72,23 +72,6 @@ def _resolve_pacing(format_tag: str | None) -> tuple[str, str]:
     if format_tag:
         print(f"  [voice] unknown format '{format_tag}', falling back to defaults")
     return VOICE, RATE
-    """Run edge-tts and write the audio file."""
-    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
-    # Use a longer timeout for the actual save operation
-    await asyncio.wait_for(communicate.save(output_path), timeout=TTS_TIMEOUT)
-    # Verify the generated file has reasonable duration
-    import subprocess
-    result = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-         "-of", "default=noprint_wrappers=1:nokey=1", output_path],
-        capture_output=True, text=True, timeout=10
-    )
-    if result.returncode == 0 and result.stdout.strip():
-        duration = float(result.stdout.strip())
-        # For 110-150 words at +20% rate, expect 25-45s audio
-        if duration < 15:
-            raise RuntimeError(f"Generated audio too short ({duration:.1f}s) — likely truncated")
-    return Path(output_path)
 
 
 def generate_narration(text: str, output_path: str = None,

@@ -141,6 +141,7 @@ const versusMetadata = z
     text: z.string().optional(),
     left: z.union([z.string(), z.object({ label: z.string() })]),
     right: z.union([z.string(), z.object({ label: z.string() })]),
+    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 
@@ -151,6 +152,7 @@ const beforeAfterMetadata = z
     text: z.string().optional(),
     beforeLabel: z.string(),
     afterLabel: z.string(),
+    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 
@@ -183,6 +185,7 @@ const quoteCardMetadata = z
     quote: z.string(),
     attribution: z.string().optional(),
     author: z.string().optional(),
+    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 

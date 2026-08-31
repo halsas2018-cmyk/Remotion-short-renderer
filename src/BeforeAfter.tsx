@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import {
   fitText,
   fillTextBox,
@@ -18,12 +19,17 @@ interface BeforeAfterProps {
   beforeLabel: string;
   afterLabel: string;
   durationInFrames?: number; // Optional override; defaults to composition duration
+  emphasisWords?: string[];
   // Timing percentages for internal animation only
   beforeDurPct?: number;
   afterDelayPct?: number;
   afterDurPct?: number;
   dividerDurPct?: number;
   sliderDurPct?: number;
+  // Per-word emphasis cycle timing (Horizon 2.4)
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  wordStartDelayPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -46,6 +52,14 @@ const AFTER_ACCENT_BAR = "#16a34a";
 const DIVIDER_COLOR = ACCENT_COLOR;
 const SLIDER_COLOR = "#1a1a1a"; // Black slider
 const DIVIDER_BORDER_RADIUS = 16; // Card border radius used for the divider
+
+// Rough-notation variety — cycle annotation style per emphasized word
+// (mirrors the pattern in src/KeyStatement.tsx)
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
 
 // Wraps a single label into lines that fit a max width, using fillTextBox
 // from @remotion/layout-utils. Returns the lines, the resolved fontSize,
@@ -166,6 +180,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   beforeLabel,
   afterLabel,
   durationInFrames: propsDurationInFrames,
+  emphasisWords = [],
   // CLAUDE.md Rule 1: Non-text cards must complete entrance by 25-30% of durationInFrames
   // Defaults tuned so entranceEndFrame ≈ 28% (midpoint of 25-30%)
   beforeDurPct = 0.12,        // 12% - BEFORE card entrance
@@ -174,6 +189,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   dividerDurPct = 0.03,       // 3%  - divider entrance (12+3+10+3 = 28%)
   // CLAUDE.md Rule 3: Slider starts at entranceEndFrame, duration ~45%
   sliderDurPct = 0.45,        // 45% - slider border draw duration
+  // Per-word emphasis cycle (Horizon 2.4) — runs after each side's slide-in
+  wordDurPct = 0.10,
+  wordStaggerPct = 0.03,
+  wordStartDelayPct = 0.15,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -196,7 +215,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   // entranceEndFrame = when all content (cards + divider) have finished animating in
   // Target: 25-30% of durationInFrames (Rule 1 for non-text cards)
   const entranceEndFrame = dividerStart + dividerDuration; // ≈ 28% with defaults
-  
+
   // Slider (Rule 3): starts at entranceEndFrame, duration ~45%
   const sliderStart = entranceEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
@@ -383,6 +402,172 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
   const beforeHeadlineFontSize = resolveFinalFontSize(beforeHeadline);
   const afterHeadlineFontSize = resolveFinalFontSize(afterHeadline);
 
+  // ============================================
+  // Per-word emphasis cycle (Horizon 2.4)
+  // ============================================
+  const wordDuration = Math.round(durationInFrames * wordDurPct);
+  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+  const wordStartDelay = Math.round(durationInFrames * wordStartDelayPct);
+  const beforeWordStart = wordStartDelay;
+  const afterWordStart = afterStart + wordStartDelay;
+
+  const emphasisSet = new Set(
+    emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
+  );
+
+  // One running index across both sides so the cycle doesn't reset
+  // at the BEFORE→AFTER boundary.
+  let runIndex = 0;
+  const advanceAnnotation = () => {
+    const entry = ANNOTATION_CYCLE[runIndex % ANNOTATION_CYCLE.length];
+    runIndex += 1;
+    return entry;
+  };
+
+  // Render the wrapped headline lines as a per-word array so the
+  // emphasis cycle can target individual words across line breaks.
+  // Preserves the pre-2.4 visual when emphasisWords is empty.
+  const renderHeadlineWords = (
+    lines: string[],
+    sideWordStart: number,
+    fittedSize: number,
+  ): React.ReactNode => {
+    // Flatten wrapped lines into a single word stream while preserving
+    // the original spacing between words on the same line. The visual
+    // is byte-equivalent to the pre-2.4 version when no emphasis matches.
+    const tokens: string[] = [];
+    lines.forEach((line, li) => {
+      const lineWords = line.split(/\s+/).filter(Boolean);
+      lineWords.forEach((w, wi) => {
+        tokens.push(w);
+        // Append a space separator EXCEPT after the last word of the
+        // last line. Spaces render via the inline-block margin in the
+        // span style below.
+        const isLastInLine = wi === lineWords.length - 1;
+        const isLastLine = li === lines.length - 1;
+        if (!(isLastInLine && isLastLine)) tokens.push(" ");
+      });
+    });
+
+    if (emphasisSet.size === 0) {
+      // No emphasis — render each line as a single block (pre-2.4 path).
+      return lines.map((line, i) => (
+        <span
+          key={i}
+          style={{ display: "block", maxWidth: "100%" }}
+        >
+          {line}
+        </span>
+      ));
+    }
+
+    // Render per-word. Each non-space token gets a per-word entrance +
+    // optional AnnotationComponent wrap.
+    let wordCounter = 0;
+    return lines.map((line, lineIdx) => {
+      const lineWords = line.split(/\s+/).filter(Boolean);
+      const wordNodes = lineWords.map((w, wi) => {
+        const cleanWord = w.toLowerCase().replace(/[.,!?;:]$/, "");
+        const isEmphasized = emphasisSet.has(cleanWord);
+        const wordStartFrame = sideWordStart + wordCounter * wordStagger;
+        const wordEndFrame = wordStartFrame + wordDuration;
+        const annotation = isEmphasized ? advanceAnnotation() : null;
+        const emphasisBump = isEmphasized ? Math.max(0, fittedSize * 0.10) : 0;
+        const wordFontSize = fittedSize + emphasisBump;
+        wordCounter += 1;
+
+        const wordContent = (
+          <span
+            style={{
+              display: "inline-block",
+              opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+              translate: `0px ${
+                interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
+                  easing: easeOutExpo,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                })
+              }px`,
+              scale: interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+                output: "perceptual-scale",
+              }),
+              rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              })}deg`,
+              transformOrigin: "center bottom",
+              fontSize: wordFontSize,
+              fontWeight: isEmphasized ? 800 : 800,
+              fontFamily: "system-ui, sans-serif",
+              lineHeight: 1.18,
+              letterSpacing: -1.5,
+              margin: "0 0.06em",
+              ...(isEmphasized
+                ? {
+                    backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }
+                : { color: DARK_TEXT }),
+              filter: `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [6, 0], {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              })}px)`,
+              willChange: "transform, opacity, filter",
+            }}
+          >
+            {w}
+          </span>
+        );
+
+        if (isEmphasized && annotation) {
+          const AnnotationComponent = annotation.Component;
+          return (
+            <AnnotationComponent
+              key={`w-${lineIdx}-${wi}`}
+              color={annotation.color}
+              strokeWidth={3}
+              padding={4}
+              progress={interpolate(
+                frame,
+                [wordStartFrame, wordEndFrame + 5],
+                [0, 1],
+                {
+                  easing: easeOutExpo,
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                }
+              )}
+            >
+              {wordContent}
+            </AnnotationComponent>
+          );
+        }
+        return (
+          <span key={`w-${lineIdx}-${wi}`}>{wordContent}</span>
+        );
+      });
+      return (
+        <span
+          key={`line-${lineIdx}`}
+          style={{ display: "block", maxWidth: "100%" }}
+        >
+          {wordNodes}
+        </span>
+      );
+    });
+  };
+
   // Shimmer position calculation (0-100% top position, loops)
   const getShimmerTop = (shimmerStartFrame: number) => {
     if (frame < shimmerStartFrame) return "-100%"; // Hidden before start
@@ -558,7 +743,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           {/*
             Headline — wrapped lines from wrapLabel(). Uses the exact
             fontSize that fitText() / measureText() resolved, so the
-            text never overflows the card.
+            text never overflows the card. (Horizon 2.4: now rendered
+            per-word to support the emphasis cycle.)
           */}
           <div
             style={{
@@ -579,17 +765,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               gap: 4,
             }}
           >
-            {beforeHeadline.lines.map((line, i) => (
-              <span
-                key={i}
-                style={{
-                  display: "block",
-                  maxWidth: "100%",
-                }}
-              >
-                {line}
-              </span>
-            ))}
+            {renderHeadlineWords(beforeHeadline.lines, beforeWordStart, beforeHeadlineFontSize)}
           </div>
 
           {/* Decorative elements for "before" state - elevated cards */}
@@ -769,6 +945,8 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
           {/*
             Headline — wrapped lines from wrapLabel(). Uses the exact
             fontSize that fitText() / measureText() resolved.
+            (Horizon 2.4: now rendered per-word to support the emphasis
+            cycle.)
           */}
           <div
             style={{
@@ -789,17 +967,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({
               gap: 4,
             }}
           >
-            {afterHeadline.lines.map((line, i) => (
-              <span
-                key={i}
-                style={{
-                  display: "block",
-                  maxWidth: "100%",
-                }}
-              >
-                {line}
-              </span>
-            ))}
+            {renderHeadlineWords(afterHeadline.lines, afterWordStart, afterHeadlineFontSize)}
           </div>
 
           {/* Decorative elements for "after" state - elevated cards */}
@@ -866,6 +1034,7 @@ export const BeforeAfterTest: React.FC = () => (
     defaultProps={{
       beforeLabel: "Manual Chip Procurement",
       afterLabel: "Automated Lease-Back Model",
+      emphasisWords: ["Manual", "Automated"],
     }}
   />
 );

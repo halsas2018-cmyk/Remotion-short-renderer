@@ -7,18 +7,24 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { useIdleMotion } from "./lib/idleMotion";
 
 interface QuoteCardProps {
   quote: string;
   attribution: string;
   durationInFrames?: number; // Optional override; defaults to composition duration
+  emphasisWords?: string[];
   // Timing percentages for internal animation only
   quoteDurPct?: number;
   attrDelayPct?: number;
   attrDurPct?: number;
   markDurPct?: number;
   sliderDurPct?: number;
+  // Per-word emphasis cycle timing (Horizon 2.4)
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  wordStartDelayPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -31,15 +37,32 @@ const LIGHT_TEXT = "rgba(26, 26, 26, 0.38)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
+// Rough-notation variety — cycle annotation style per emphasized word
+// (mirrors the pattern in src/KeyStatement.tsx)
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
+
 export const QuoteCard: React.FC<QuoteCardProps> = ({
   quote,
   attribution,
   durationInFrames: propsDurationInFrames,
+  emphasisWords = [],
   quoteDurPct = 0.50,
   attrDelayPct = 0.03,
   attrDurPct = 0.10,
   markDurPct = 0.10,
   sliderDurPct = 0.45,
+  // Per-word emphasis cycle (Horizon 2.4) — runs across the quote's
+  // reveal window. wordStartDelayPct aligns with the typewriter's
+  // first-word start (the first word starts at frame 0 of the
+  // quote's reveal), so defaults here are not relative to the beat
+  // start the way they are in KeyStatement.
+  wordDurPct = 0.04,
+  wordStaggerPct = 0.02,
+  wordStartDelayPct = 0.0,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -103,11 +126,41 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
   const currentWordIndex = Math.min(visibleWordCount, words.length - 1);
   const currentWordProgress = words.length * quoteProgress - visibleWordCount;
 
-  const displayWords = words.slice(0, visibleWordCount);
-  if (currentWordIndex < words.length && currentWordProgress > 0) {
-    const partialWord = words[currentWordIndex].slice(0, Math.ceil(words[currentWordIndex].length * currentWordProgress));
-    displayWords.push(partialWord);
-  }
+  // ============================================
+  // Per-word emphasis cycle (Horizon 2.4)
+  //
+  // The typewriter reveal is the dominant animation. The emphasis
+  // cycle must be subordinated to it: only fully-revealed words can
+  // carry an annotation (you can't stroke a half-typed word). The
+  // partial last word renders as plain text, no annotation.
+  // ============================================
+  const wordDuration = Math.round(durationInFrames * wordDurPct);
+  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+  const wordStartDelay = Math.round(durationInFrames * wordStartDelayPct);
+
+  const emphasisSet = new Set(
+    emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
+  );
+
+  let runIndex = 0;
+  const advanceAnnotation = () => {
+    const entry = ANNOTATION_CYCLE[runIndex % ANNOTATION_CYCLE.length];
+    runIndex += 1;
+    return entry;
+  };
+
+  // For each word, derive its typewriter window: it becomes visible at
+  // (currentWordIndex's progress reaches its own "1.0" mark). We use a
+  // linear mapping: word i becomes "fully visible" when quoteProgress
+  // >= (i + 1) / words.length. Convert that to a frame using
+  // quoteProgress's interpolation window.
+  const getWordStartFrame = (wordIndex: number): number => {
+    if (words.length === 0) return wordStartDelay;
+    // Linear mapping: word i's reveal completes at quoteProgress == (i+1)/N.
+    return Math.round(
+      wordStartDelay + ((wordIndex + 1) / words.length) * quoteDuration - wordDuration,
+    );
+  };
 
   // Responsive sizing
   const padding = Math.max(80, width * 0.11);
@@ -165,6 +218,102 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
     extrapolateRight: "clamp",
   });
 
+  // Render the quote text per-word so the emphasis cycle can target
+  // individual words. When no emphasis matches, the rendering is
+  // visually equivalent to the pre-2.4 `displayWords.join(" ")` block.
+  const renderQuoteWords = (): React.ReactNode => {
+    if (emphasisSet.size === 0 || words.length === 0) {
+      // Pre-2.4 path: render displayWords as a single string.
+      // (displayWords is already built above.)
+      return null; // signal to the caller to use the pre-2.4 path
+    }
+    return words.map((w, i) => {
+      const isFullyRevealed = i < visibleWordCount;
+      const isPartial = i === currentWordIndex && currentWordProgress > 0;
+      // If neither fully revealed nor partial, render nothing (yet).
+      if (!isFullyRevealed && !isPartial) return null;
+
+      const cleanWord = w.toLowerCase().replace(/[.,!?;:]$/, "");
+      const isEmphasized = emphasisSet.has(cleanWord);
+      const wordStartFrame = getWordStartFrame(i);
+      const wordEndFrame = wordStartFrame + wordDuration;
+      const annotation = isEmphasized && isFullyRevealed ? advanceAnnotation() : null;
+
+      // Display string: full word if fully revealed, otherwise the
+      // partial slice of the in-progress word.
+      const displayText = isFullyRevealed
+        ? w
+        : w.slice(0, Math.ceil(w.length * currentWordProgress));
+
+      // Don't wrap partial words in the annotation — you can't stroke
+      // a half-typed word. Force the partial word to render as plain
+      // text with a softer emphasis style.
+      const canAnnotate = isEmphasized && isFullyRevealed && annotation != null;
+
+      const wordStyle: React.CSSProperties = {
+        display: "inline-block",
+        margin: "0 0.04em",
+        opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+          easing: easeOutExpo,
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }),
+        translate: `0px ${
+          interpolate(frame, [wordStartFrame, wordEndFrame], [20, 0], {
+            easing: easeOutExpo,
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          })
+        }px`,
+        ...(isEmphasized
+          ? {
+              backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              fontWeight: 800,
+            }
+          : { fontWeight: 700, color: DARK_TEXT }),
+        willChange: "transform, opacity",
+      };
+
+      const wordContent = <span style={wordStyle}>{displayText}</span>;
+
+      if (canAnnotate && annotation) {
+        const AnnotationComponent = annotation.Component;
+        return (
+          <AnnotationComponent
+            key={i}
+            color={annotation.color}
+            strokeWidth={3}
+            padding={4}
+            progress={interpolate(
+              frame,
+              [wordStartFrame, wordEndFrame + 5],
+              [0, 1],
+              {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }
+            )}
+          >
+            {wordContent}
+          </AnnotationComponent>
+        );
+      }
+      return <span key={i}>{wordContent}</span>;
+    });
+  };
+
+  const hasEmphasis = emphasisSet.size > 0;
+  // Pre-2.4 displayWords (rebuilt here for the no-emphasis path).
+  const displayWords: string[] = words.slice(0, visibleWordCount);
+  if (currentWordIndex < words.length && currentWordProgress > 0 && !hasEmphasis) {
+    const partialWord = words[currentWordIndex].slice(0, Math.ceil(words[currentWordIndex].length * currentWordProgress));
+    displayWords.push(partialWord);
+  }
+
   return (
     <AbsoluteFill
       style={{
@@ -209,7 +358,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               boxSizing: "border-box",
               opacity: sliderProgress,
               filter: "drop-shadow(0 0 20px rgba(26, 26, 26, 0.15))",
-              borderRadius: sliderBorderRadius,
             }}
           >
             <svg
@@ -341,14 +489,21 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                     opacity: quoteProgress,
                   }}
                 />
-                
+
                 <span
                   style={{
                     opacity: quoteProgress,
                     transform: [{ translateY: interpolate(quoteProgress, [0, 1], [20, 0]) }],
+                    // Flex-wrap so per-word spans flow onto multiple lines
+                    // when the quote is long enough to wrap.
+                    display: "inline-flex",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                    rowGap: "0.1em",
+                    columnGap: "0.1em",
                   }}
                 >
-                  {displayWords.join(" ")}
+                  {hasEmphasis ? renderQuoteWords() : displayWords.join(" ")}
                 </span>
               </div>
 
@@ -438,6 +593,7 @@ export const QuoteCardTestComposition: React.FC = () => (
     defaultProps={{
       quote: "The best way to predict the future is to invent it",
       attribution: "Alan Kay",
+      emphasisWords: ["predict", "invent"],
     }}
   />
 );
@@ -454,6 +610,7 @@ export const QuoteCardLongTest: React.FC = () => (
     defaultProps={{
       quote: "People who are really serious about software should make their own hardware because the hardware defines what the software can do",
       attribution: "Alan Kay",
+      emphasisWords: ["serious", "software", "hardware"],
     }}
   />
 );

@@ -234,7 +234,7 @@ describe("per-type validation", () => {
     runTypeTests({
       type: "versus",
       required: { left: "a", right: "b" },
-      optional: { text: "context", endFrame: 90 },
+      optional: { text: "context", emphasisWords: ["a"], endFrame: 90 },
       invalid: { field: "left", value: 42, path: ["left"] },
     });
   });
@@ -243,7 +243,7 @@ describe("per-type validation", () => {
     runTypeTests({
       type: "before_after",
       required: { beforeLabel: "a", afterLabel: "b" },
-      optional: { text: "context", endFrame: 90 },
+      optional: { text: "context", emphasisWords: ["a"], endFrame: 90 },
       invalid: { field: "beforeLabel", value: 99, path: ["beforeLabel"] },
     });
   });
@@ -278,6 +278,7 @@ describe("per-type validation", () => {
         text: "context",
         attribution: "y",
         author: "z",
+        emphasisWords: ["x"],
         endFrame: 90,
       },
       invalid: { field: "quote", value: 99, path: ["quote"] },

@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import {
   fitText,
   measureText,
@@ -23,11 +24,16 @@ interface VersusCardProps {
   left: VersusSide;
   right: VersusSide;
   durationInFrames?: number; // Optional override; defaults to composition duration
+  emphasisWords?: string[];
   // Timing percentages for internal animation only
   sideDurPct?: number;
   sideStaggerPct?: number;
   dividerDurPct?: number;
   sliderDurPct?: number;
+  // Timing percentages for the per-word emphasis cycle (Horizon 2.4)
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  wordStartDelayPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -48,6 +54,14 @@ const DIVIDER_BG = "linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%)";
 const LEFT_GLOW = "radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.10) 0%, transparent 60%)";
 const RIGHT_GLOW = "radial-gradient(ellipse at 50% 0%, rgba(232, 108, 0, 0.12) 0%, transparent 60%)";
 const GRID_BG = "repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.03) 0, rgba(15, 23, 42, 0.03) 1px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.03) 0, rgba(15, 23, 42, 0.03) 1px, transparent 1px, transparent 32px)";
+
+// Rough-notation variety — cycle annotation style per emphasized word
+// (mirrors the pattern in src/KeyStatement.tsx)
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Circle, color: ACCENT_LIGHT },
+  { Component: Underline, color: ACCENT_COLOR },
+];
 
 // Resolves a font size for `text` so it fits within `maxWidth` at the
 // given font weight, capped between minFontSize and maxFontSize.
@@ -89,6 +103,7 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   left,
   right,
   durationInFrames: propsDurationInFrames,
+  emphasisWords = [],
   // CLAUDE.md Rule 1: Non-text cards must complete entrance by 25-30% of durationInFrames
   // Defaults tuned so entranceEndFrame ≈ 28% (midpoint of 25-30%)
   sideDurPct = 0.15,        // 15% - left/right card entrance duration
@@ -96,6 +111,10 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   dividerDurPct = 0.13,     // 13% - divider entrance (15% + 13% = 28% entranceEndFrame)
   // CLAUDE.md Rule 3: Slider starts at entranceEndFrame, duration ~45%
   sliderDurPct = 0.45,      // 45% - slider border draw duration
+  // Per-word emphasis cycle (Horizon 2.4) — starts after each side's slide-in
+  wordDurPct = 0.10,        // 10% - per-word reveal duration
+  wordStaggerPct = 0.03,    // 3%  - stagger between emphasized words
+  wordStartDelayPct = 0.18, // 18% - delay so words reveal after side slides in
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -114,13 +133,24 @@ export const VersusCard: React.FC<VersusCardProps> = ({
   const rightStart = leftStart + sideStagger;
   const dividerStart = leftStart + sideDuration;
   const dividerDuration = Math.round(durationInFrames * dividerDurPct);
-  
+
   // entranceEndFrame = when all content (cards + divider) have finished animating in
   // Target: 25-30% of durationInFrames (Rule 1 for non-text cards)
   const entranceEndFrame = dividerStart + dividerDuration; // ≈ 28% with defaults
-  
+
   const sliderStart = entranceEndFrame;
   const sliderDuration = Math.round(durationInFrames * sliderDurPct);
+
+  // ============================================
+  // Per-word emphasis cycle timing (Horizon 2.4)
+  // Each side gets a stagger start; words within a side are
+  // wordStaggerPct apart and each word takes wordDurPct frames.
+  // ============================================
+  const wordDuration = Math.round(durationInFrames * wordDurPct);
+  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+  const wordStartDelay = Math.round(durationInFrames * wordStartDelayPct);
+  const leftWordStart = leftStart + wordStartDelay;
+  const rightWordStart = rightStart + wordStartDelay;
 
   // Progress with smoother easing
   const leftProgress = interpolate(frame, [leftStart, leftStart + sideDuration], [0, 1], {
@@ -258,6 +288,136 @@ export const VersusCard: React.FC<VersusCardProps> = ({
     willChange: "transform, opacity",
     flexShrink: 0,
     backdropFilter: "blur(0.5px)",
+  };
+
+  // ============================================
+  // Per-word emphasis cycle (Horizon 2.4)
+  //
+  // Mirrors the pattern from src/KeyStatement.tsx:
+  //   - One running index across both sides
+  //   - Each emphasized word gets the next ANNOTATION_CYCLE entry
+  //   - Words split on whitespace; punctuation-stripped for matching
+  //   - Per-word entrance (opacity / translateY / scale / rotate / blur)
+  //   - Emphasized words get gradient text + the annotation wrap
+  // ============================================
+  const emphasisSet = new Set(
+    emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
+  );
+
+  // Pre-compute annotation assignments across both sides so the cycle
+  // doesn't reset at the boundary (left word 1 → Highlight, left word 2
+  // → Circle, right word 1 → Underline, etc.).
+  let runIndex = 0;
+
+  const advanceAnnotation = () => {
+    const entry = ANNOTATION_CYCLE[runIndex % ANNOTATION_CYCLE.length];
+    runIndex += 1;
+    return entry;
+  };
+
+  const renderLabelWords = (
+    label: string,
+    sideWordStart: number,
+    fittedSize: number,
+    valueForSize: number | null, // used to bump the emphasized word size
+  ): React.ReactNode => {
+    const words = label.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return null;
+    // If no emphasis matches, fall back to a single string render
+    // (preserves the pre-2.4 visual exactly).
+    if (emphasisSet.size === 0) {
+      return label;
+    }
+    return words.map((word, i) => {
+      const cleanWord = word.toLowerCase().replace(/[.,!?;:]$/, "");
+      const isEmphasized = emphasisSet.has(cleanWord);
+      const wordStartFrame = sideWordStart + i * wordStagger;
+      const wordEndFrame = wordStartFrame + wordDuration;
+      const annotation = isEmphasized ? advanceAnnotation() : null;
+      const wordFontSize = isEmphasized && valueForSize
+        ? Math.max(fittedSize, valueForSize)
+        : fittedSize;
+
+      const wordContent = (
+        <span
+          style={{
+            display: "inline-block",
+            opacity: interpolate(frame, [wordStartFrame, wordEndFrame], [0, 1], {
+              easing: easeOutExpo,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            }),
+            translate: `0px ${
+              interpolate(frame, [wordStartFrame, wordEndFrame], [40, 0], {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              })
+            }px`,
+            scale: interpolate(frame, [wordStartFrame, wordEndFrame], [0.7, 1], {
+              easing: easeOutExpo,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+              output: "perceptual-scale",
+            }),
+            rotate: `${interpolate(frame, [wordStartFrame, wordEndFrame], [-5, 0], {
+              easing: easeOutExpo,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })}deg`,
+            transformOrigin: "center bottom",
+            fontSize: wordFontSize,
+            fontWeight: isEmphasized ? 800 : 700,
+            fontFamily: "system-ui, sans-serif",
+            lineHeight: 1.1,
+            letterSpacing: -0.8,
+            margin: "0 0.04em",
+            ...(isEmphasized
+              ? {
+                  backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_LIGHT})`,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }
+              : { color: DARK_TEXT }),
+            filter: `blur(${interpolate(frame, [wordStartFrame, wordEndFrame], [8, 0], {
+              easing: easeOutExpo,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })}px)`,
+            willChange: "transform, opacity, filter",
+          }}
+        >
+          {word}
+          {i < words.length - 1 ? " " : ""}
+        </span>
+      );
+
+      if (isEmphasized && annotation) {
+        const AnnotationComponent = annotation.Component;
+        return (
+          <AnnotationComponent
+            key={i}
+            color={annotation.color}
+            strokeWidth={3}
+            padding={4}
+            progress={interpolate(
+              frame,
+              [wordStartFrame, wordEndFrame + 5],
+              [0, 1],
+              {
+                easing: easeOutExpo,
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }
+            )}
+          >
+            {wordContent}
+          </AnnotationComponent>
+        );
+      }
+      return <span key={i}>{wordContent}</span>;
+    });
   };
 
   // === Item row subcomponent (local) — uniform row with leading dot ===
@@ -448,9 +608,13 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                 maxWidth: "100%",
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: "0.04em",
               }}
             >
-              {left.label}
+              {renderLabelWords(left.label, leftWordStart, leftLabelSize, leftValueSize)}
             </div>
             {left.value && (
               <div
@@ -639,9 +803,13 @@ export const VersusCard: React.FC<VersusCardProps> = ({
                 maxWidth: "100%",
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: "0.04em",
               }}
             >
-              {right.label}
+              {renderLabelWords(right.label, rightWordStart, rightLabelSize, rightValueSize)}
             </div>
             {right.value && (
               <div
@@ -709,6 +877,7 @@ export const VersusCardTestComposition: React.FC = () => (
         value: "$500B market cap",
         items: ["GPU monopoly", "CUDA lock-in", "Data center"],
       },
+      emphasisWords: ["Broadcom", "Nvidia"],
     }}
   />
 );

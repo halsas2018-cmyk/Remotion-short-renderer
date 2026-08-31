@@ -142,6 +142,7 @@ ALSO generate:
 OUTPUT FORMAT (strict JSON, no markdown fences, no preamble):
 {{
   "script": "Sentence one. Sentence two. Sentence three...",
+  "format": "URGENT_BREAK|DEBATE|EXPLAINER",
   "headline_options": ["...", "...", "...", "...", "..."],
   "chosen_headline": "...",
   "youtube_title": "...",

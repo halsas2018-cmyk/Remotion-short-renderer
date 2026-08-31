@@ -237,8 +237,9 @@ def save_project(
     # 1. Voice generation (skip if --no-video)
     if not no_video:
         narration_path = project_dir / "narration.mp3"
-        print(f"  Generating narration...")
-        generate_narration(script, output_path=str(narration_path))
+        story_format = story.get("format")  # may be None — voice_generator falls back
+        print(f"  Generating narration (format={story_format or 'default'})...")
+        generate_narration(script, output_path=str(narration_path), format=story_format)
 
         # 2. Word timestamps via WhisperX
         print(f"  Extracting word timestamps...")

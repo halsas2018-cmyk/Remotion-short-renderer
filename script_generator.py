@@ -113,6 +113,17 @@ SCRIPT RULES:
 7. PLAIN NARRATION: clean punctuation for text-to-speech, no jargon, no acronyms
    without explanation, no emojis/symbols/markdown, no brackets or directions.
 
+8. FORMAT CLASSIFICATION: Before writing, classify this story into exactly
+   one of three formats, then match the script to it:
+   - "URGENT_BREAK" — time-sensitive, high-stakes news (launches, lawsuits,
+     market moves, breaking announcements). Short punchy sentences, present
+     tense, "just happened" framing, cold open with the outcome first.
+   - "DEBATE" — two legitimate opposing takes worth contrasting. Structure
+     as "here's take A... but here's take B", end on an open question.
+   - "EXPLAINER" — needs context/breakdown, less time-sensitive. Calmer
+     pacing, define terms before stakes, build to the "why this matters".
+   This drives the voice/pacing used for narration, so pick carefully.
+
 HEADLINE + YOUTUBE METADATA RULES:
 Generate 5 headline options (on-screen hook). Each must create a curiosity gap
 using a CONCRETE noun from the story (a name, tool, number, or group) — not a
@@ -229,7 +240,16 @@ def generate_script(story: dict, content: dict,
 
     script = parsed["script"].strip()
     word_count = len(script.split())
-    
+
+    # Resolve format tag: must be one of URGENT_BREAK / DEBATE / EXPLAINER.
+    # If missing or invalid, log a warning and fall back to URGENT_BREAK
+    # (Andrew, fast) — safe default that matches pre-change behavior.
+    fmt = (parsed.get("format") or "").strip().upper()
+    if fmt not in {"URGENT_BREAK", "DEBATE", "EXPLAINER"}:
+        print(f"  [validator] missing/invalid format '{parsed.get('format')}', "
+              f"defaulting to URGENT_BREAK")
+        fmt = "URGENT_BREAK"
+
     # Generate pre-chunked beats (~10 words each)
     pre_chunked_beats = _chunk_script_into_beats(script)
 
@@ -246,6 +266,7 @@ def generate_script(story: dict, content: dict,
 
     return {
         "script": script,
+        "format": fmt,
         "headline_options": parsed.get("headline_options", []),
         "headline": (parsed.get("chosen_headline") or "").strip(),
         "youtube_title": (parsed.get("youtube_title") or "").strip(),

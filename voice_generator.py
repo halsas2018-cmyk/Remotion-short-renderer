@@ -22,17 +22,56 @@ from pathlib import Path
 # Default TTS settings — tuned for YouTube Shorts
 # ---------------------------------------------------------------------------
 
+# Default voice (used when format is unknown or absent).
 VOICE = "en-US-AndrewNeural"
 RATE = "+20%"       # faster-paced for Shorts retention
 PITCH = "+0Hz"      # natural
 VOLUME = "+0%"      # default
+
+# Per-format voice + pacing. Three distinct Edge-TTS voices to break the
+# single-voice "AI slop" pattern, plus format-matched cadence.
+# URGENT_BREAK -> Andrew (warm/urgent, fast); DEBATE -> Aria (bright, neutral
+# conversational); EXPLAINER -> Eric (calm, authoritative, slower).
+FORMAT_PACING = {
+    "URGENT_BREAK": {"voice": "en-US-AndrewNeural", "rate": "+25%"},
+    "DEBATE":       {"voice": "en-US-AriaNeural",    "rate": "+15%"},
+    "EXPLAINER":    {"voice": "en-US-EricNeural",    "rate": "+10%"},
+}
+VALID_FORMATS = set(FORMAT_PACING.keys())
 
 OUTPUT_DIR = Path("output")
 TTS_TIMEOUT = 120.0  # seconds — increased for longer scripts (150 words @ +20% ≈ 40s audio)
 
 
 async def _generate(text: str, output_path: str, voice: str = VOICE,
-                    rate: str = RATE, pitch: str = PITCH, volume: str = VOLUME) -> Path:
+                    rate: str = RATE, pitch: str = PITCH, volume: str = VOLUME,
+                    _is_format_lookup: bool = False) -> Path:
+    """Run edge-tts and write the audio file."""
+    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
+    # Use a longer timeout for the actual save operation
+    await asyncio.wait_for(communicate.save(output_path), timeout=TTS_TIMEOUT)
+    # Verify the generated file has reasonable duration
+    import subprocess
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", output_path],
+        capture_output=True, text=True, timeout=10
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        duration = float(result.stdout.strip())
+        # For 110-150 words at +20% rate, expect 25-45s audio
+        if duration < 15:
+            raise RuntimeError(f"Generated audio too short ({duration:.1f}s) — likely truncated")
+    return Path(output_path)
+
+
+def _resolve_pacing(format_tag: str | None) -> tuple[str, str]:
+    """Return (voice, rate) for a given format tag, falling back to defaults."""
+    if format_tag and format_tag in FORMAT_PACING:
+        return FORMAT_PACING[format_tag]["voice"], FORMAT_PACING[format_tag]["rate"]
+    if format_tag:
+        print(f"  [voice] unknown format '{format_tag}', falling back to defaults")
+    return VOICE, RATE
     """Run edge-tts and write the audio file."""
     communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
     # Use a longer timeout for the actual save operation
@@ -53,7 +92,8 @@ async def _generate(text: str, output_path: str, voice: str = VOICE,
 
 
 def generate_narration(text: str, output_path: str = None,
-                       project_dir: Path = None) -> Path:
+                       project_dir: Path = None,
+                       format: str = None) -> Path:
     """
     Generate a narration MP3 from text.
 
@@ -81,10 +121,13 @@ def generate_narration(text: str, output_path: str = None,
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"  Generating narration ({len(clean_text.split())} words)...")
+    # Resolve voice + rate from format tag (with safe default fallback).
+    voice, rate = _resolve_pacing(format)
+    print(f"  Generating narration ({len(clean_text.split())} words, "
+          f"voice={voice}, rate={rate}, format={format or 'default'})...")
     # Use asyncio.run() but handle case where event loop is already running
     try:
-        result = asyncio.run(_generate(clean_text, output_path))
+        result = asyncio.run(_generate(clean_text, output_path, voice=voice, rate=rate))
     except RuntimeError as e:
         if "cannot be called from a running event loop" in str(e):
             # Fallback: run in a new thread with its own event loop
@@ -97,7 +140,9 @@ def generate_narration(text: str, output_path: str = None,
                     loop.close()
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(run_in_new_loop, _generate(clean_text, output_path))
+                future = executor.submit(run_in_new_loop,
+                                         _generate(clean_text, output_path,
+                                                   voice=voice, rate=rate))
                 result = future.result(timeout=TTS_TIMEOUT)
         else:
             raise

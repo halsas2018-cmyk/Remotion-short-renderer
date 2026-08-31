@@ -40,6 +40,9 @@ const beatBaseShape = {
   startFrame: z.number().nonnegative(),
   endFrame: z.number().nonnegative().optional(),
   durationInFrames: z.number().positive(),
+  // Horizon 3.4: per-beat pacing hint. Read by the orchestrator to
+  // adjust durationInFrames by ±20% ("fast" = shorter, "slow" = longer).
+  pacing: z.enum(["slow", "normal", "fast"]).optional(),
 };
 
 export const PerBeatSchema = z

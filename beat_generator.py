@@ -24,27 +24,46 @@ import llm_client
 # ---------------------------------------------------------------------------
 
 FPS = 30
-MAX_BEAT_DURATION_SECONDS = 3.0
-MAX_BEAT_FRAMES = int(MAX_BEAT_DURATION_SECONDS * FPS)        # 90 — target
-MAX_BEAT_FRAMES_SOFT = MAX_BEAT_FRAMES + 20                   # 110 — allow up to ~3.7s
-MAX_BEAT_FRAMES_HARD = MAX_BEAT_FRAMES + 40                   # 130 — absolute ceiling
-MIN_BEAT_FRAMES = 30  # Minimum beat duration (0.5s)
+# Horizon 3.3: cap raised to 180 (6s) for long quotes, floor raised to 45 (1.5s).
+# Hard ceiling still 200 (~6.7s) for the emergency force-fix path.
+MAX_BEAT_FRAMES = 180                  # target cap (~6.0s)
+MAX_BEAT_FRAMES_SOFT = 180             # beats > 6s get trimmed, not split
+MAX_BEAT_FRAMES_HARD = 200             # absolute ceiling (~6.7s)
+MIN_BEAT_FRAMES = 45  # Minimum beat duration (1.5s)
 
-# Valid beat types that map to Remotion components
+# Valid beat types that map to Remotion components.
+# Horizon 3.2: expanded to expose the 2.1.x components to the LLM so the
+# diversity-budget prompt rules can actually be satisfied.
 BEAT_TYPES = {
     "key_statement": ["emphasisWords"],
+    "headline_card": ["emphasisWords"],
     "icon_text": ["icon"],
-    "versus": ["left", "right"],
+    "chart_line": ["points"],
     "map_location": ["locationName", "latitude", "longitude"],
+    "map_3d": ["locationName", "latitude", "longitude", "buildings"],
     "quote_card": ["quote", "attribution"],
+    "quote_attribution": ["quote", "attribution"],
     "progress_meter": ["value", "maxValue", "label"],
     "timeline": ["events"],
     "process_flow": ["steps"],
+    "versus": ["left", "right"],
     "before_after": ["beforeLabel", "afterLabel"],
+    "stat_pill": ["value", "label"],
+    "compare_split": ["left", "right"],
+    "location_pulse": ["locationName", "latitude", "longitude"],
+    "scrollytelling": ["title", "body"],
+    "ticker_tape": ["stories", "label"],
 }
 
-# Types that can be auto-split if too long
-SPLITTABLE_TYPES = {"key_statement", "icon_text", "versus"}
+# Types that can be auto-split if too long.
+# 3.3: trimming handles most oversize beats now, so we only split the truly
+# oversized ones (> MAX_BEAT_FRAMES_HARD) where no other option works.
+SPLITTABLE_TYPES = {"key_statement", "icon_text", "versus", "headline_card"}
+
+# Diversity budget required by the 3.2 prompt. The LLM is told it MUST include
+# at least one of these somewhere in the story.
+DIVERSITY_REQUIRED = ["chart_line", "map_3d", "quote_attribution"]
+DIVERSITY_DATA_VIS = ["progress_meter", "timeline", "process_flow"]
 
 # Prompt size limits to stay under Groq free tier TPM (8000)
 MAX_SCRIPT_WORDS_IN_PROMPT = 170
@@ -98,6 +117,26 @@ def word_idx_to_end_frame(word_timestamps: list[dict], word_idx: int) -> int:
 def normalize_word(word: str) -> str:
     """Normalize word for comparison: lowercase, strip punctuation."""
     return word.strip(".,!?;:\"'()[]{}").lower()
+
+
+def target_frames_for_word_count(word_count: int) -> int:
+    """Horizon 3.3: auto-tuning formula. Returns target frame count for a beat
+    of N words. Floor 45 (1.5s), ceiling 180 (6.0s), linear in between."""
+    return max(MIN_BEAT_FRAMES, min(MAX_BEAT_FRAMES, int(round(word_count * 4.5))))
+
+
+def compute_pacing(text: str) -> str:
+    """Horizon 3.4: derive a per-beat pacing hint from word count.
+    - fast: 1–3 words  (rapid stat callouts)
+    - normal: 4–8 words (default)
+    - slow: 9+ words   (long quotes, explanations)
+    """
+    word_count = len(text.split()) if text else 0
+    if word_count <= 3:
+        return "fast"
+    if word_count <= 8:
+        return "normal"
+    return "slow"
 
 
 def build_word_index_map(word_timestamps: list[dict], script: str) -> list[int]:
@@ -186,6 +225,11 @@ def assign_frames_from_word_ranges(
     """
     Convert word indices (startWord/endWord) to frame numbers using Whisper timestamps.
     This is the single source of truth for frame timing.
+
+    Horizon 3.3: after computing the natural Whisper-aligned duration, trim
+    each beat to its word-count-based cap (max(45, min(180, wordCount*4.5))).
+    Beats that still exceed the cap after trimming are kept at the cap — the
+    split path (split_long_beats) handles only true oversize (>200 frames).
     """
     if not word_timestamps:
         return beats
@@ -213,6 +257,14 @@ def assign_frames_from_word_ranges(
         start_frame = word_idx_to_frame(word_timestamps, start_ts_idx)
         end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
         
+        # 3.3: trim to word-count-based cap (don't split — splitting destroys
+        # the LLM's narrative chunking). split_long_beats() handles true
+        # oversize beats separately.
+        word_count = end_word - start_word + 1
+        cap = target_frames_for_word_count(word_count)
+        if end_frame - start_frame > cap:
+            end_frame = start_frame + cap
+        
         # Ensure minimum duration
         if end_frame - start_frame < MIN_BEAT_FRAMES:
             end_frame = start_frame + MIN_BEAT_FRAMES
@@ -234,17 +286,17 @@ def assign_frames_from_word_ranges(
 
 
 def should_split_beat(beat: dict) -> bool:
-    """Determine if a beat should be split based on duration and type."""
+    """Determine if a beat should be split based on duration and type.
+    Horizon 3.3: only split when the beat exceeds MAX_BEAT_FRAMES_HARD, since
+    assign_frames_from_word_ranges() already trims beats down to MAX_BEAT_FRAMES."""
     dur = beat.get("durationInFrames", 0)
     beat_type = beat.get("type", "")
     
     if beat_type not in SPLITTABLE_TYPES:
         return False
-    if dur <= MAX_BEAT_FRAMES_SOFT:
-        return False          # within buffer — keep as one beat
     if dur <= MAX_BEAT_FRAMES_HARD:
-        return True           # split if easy (natural clause boundary)
-    return True               # must split — exceeds hard limit
+        return False  # trim path handles this
+    return True       # must split — exceeds hard limit
 
 
 def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_map: list[int]) -> list[dict]:
@@ -366,7 +418,7 @@ def split_long_beat(beat: dict, word_timestamps: list[dict], script: str, word_m
 
 def split_long_beats(beats: list[dict], word_timestamps: list[dict], script: str) -> list[dict]:
     """
-    Split beats longer than MAX_BEAT_DURATION_SECONDS if they're splittable types.
+    Split beats longer than MAX_BEAT_FRAMES_HARD if they're splittable types.
     Re-assigns frame boundaries using word timestamps.
     """
     word_map = build_word_index_map(word_timestamps, script)
@@ -413,6 +465,8 @@ def validate_beats(beats: list[dict], word_timestamps: list[dict], script: str) 
             errors.append(f"Beat {i}: durationInFrames {dur} != endFrame - startFrame ({end - start})")
         if dur <= 0:
             errors.append(f"Beat {i}: non-positive duration ({dur})")
+        if dur < MIN_BEAT_FRAMES:
+            errors.append(f"Beat {i}: duration {dur} frames below min {MIN_BEAT_FRAMES}")
         # Only warn if exceeds SOFT limit for splittable types
         if dur > MAX_BEAT_FRAMES_SOFT and beat_type in SPLITTABLE_TYPES:
             errors.append(f"Beat {i}: duration {dur} frames exceeds soft max {MAX_BEAT_FRAMES_SOFT} for splittable type")
@@ -482,11 +536,6 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
     ideal_duration = total_frames // num_beats
     ideal_duration = max(MIN_BEAT_FRAMES, min(ideal_duration, MAX_BEAT_FRAMES))
     
-    # If even distribution would leave too many frames for the last beat,
-    # increase the number of beats by splitting the longest ones conceptually
-    # (but since this is force-fix, we just cap each beat at MAX_BEAT_FRAMES
-    # and let the last beat take the remainder, then fix if remainder > MAX_BEAT_FRAMES)
-    
     fixed = []
     current_start = 0
     
@@ -548,11 +597,128 @@ def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict
 
 
 # ---------------------------------------------------------------------------
+# Story-arc planning (Horizon 3.1)
+# ---------------------------------------------------------------------------
+
+ARC_TYPES = {
+    "intro":   ["headline_card", "key_statement", "quote_attribution"],
+    "explain": ["icon_text", "progress_meter", "timeline", "process_flow", "chart_line", "stat_pill"],
+    "compare": ["versus", "before_after", "compare_split", "chart_comparison_3d"],
+    "climax":  ["quote_card", "map_3d", "location_pulse", "scrollytelling"],
+    "outro":   ["key_statement", "quote_attribution", "stat_pill", "ticker_tape"],
+}
+
+
+def plan_story_arc(script: str, story: dict, model_key: str = None) -> list[str]:
+    """Horizon 3.1 — second LLM pass. Returns an ordered list of arc labels,
+    one per beat in the pre-chunked list. Falls back to a default shape if
+    the LLM call fails.
+
+    The LLM is told the BEAT_TYPES dict and ARC_TYPES so it knows what types
+    map to each arc stage. Output is a JSON array of strings, e.g.
+    ["intro", "explain", "compare", "climax", "outro"].
+
+    Cost: ~$0.001/story on gpt-4o-mini (see ROADMAP §3 cost math).
+    """
+    try:
+        beats_estimate = max(3, len(script.split()) // 10)
+        prompt = f"""Plan a visual narrative arc for a short-form news video.
+
+Story title: {story.get('title', '')}
+Script (truncated): {script[:1500]}
+
+You will produce {beats_estimate} arc labels, one per upcoming beat, in order.
+Each label must be one of: intro, explain, compare, climax, outro.
+
+GUIDE:
+- intro: first 1 beat. Hook the viewer.
+- explain: middle beats. Build context.
+- compare: when there's a two-sided or temporal comparison.
+- climax: the most dramatic beat. Reserve 1 for the end of the middle.
+- outro: final 1 beat. Wrap up or call to action.
+
+Typical shape: ["intro", "explain", "explain", "climax", "outro"].
+For stories with comparisons, insert "compare" in the middle.
+
+OUTPUT (JSON array of strings only, exactly {beats_estimate} entries):
+["intro", "explain", "compare", "climax", "outro", ...]"""
+
+        messages = [
+            {"role": "system", "content": "You are a video narrative planner. Output only a valid JSON array of arc labels."},
+            {"role": "user", "content": prompt},
+        ]
+        response = llm_client.call_llm(
+            messages=messages,
+            model_key=model_key,
+            temperature=0.3,
+            max_tokens=200,
+        )
+
+        if isinstance(response, str):
+            if "```json" in response:
+                response = response.split("```json")[1].split("```")[0]
+            elif "```" in response:
+                response = response.split("```")[1].split("```")[0]
+            arc = json.loads(response.strip())
+        else:
+            arc = response
+
+        if not isinstance(arc, list):
+            raise ValueError("LLM did not return a list")
+
+        # Validate + repair
+        valid = {"intro", "explain", "compare", "climax", "outro"}
+        out = []
+        for label in arc:
+            if label in valid:
+                out.append(label)
+            else:
+                out.append("explain")
+        if not out:
+            out = ["intro"] + ["explain"] * (beats_estimate - 2) + ["outro"]
+        return out
+
+    except Exception as e:
+        # Fallback arc: simple 5-beat shape scaled to expected length.
+        print(f"  ⚠ plan_story_arc fallback (LLM failed: {e})")
+        n = max(3, len(script.split()) // 10)
+        if n == 3:
+            return ["intro", "explain", "outro"]
+        return ["intro"] + ["explain"] * (n - 2) + ["outro"]
+
+
+def arc_allowed_types(arc_label: str) -> list[str]:
+    """Return the list of allowed beat types for a given arc label."""
+    return ARC_TYPES.get(arc_label, list(ARC_TYPES["explain"]))
+
+
+def force_intro_to_headline_card(beats: list[dict]) -> list[dict]:
+    """Horizon 3.1: enforce that beat 0 is a headline_card. Rebuilds the beat
+    from scratch to avoid carrying fields that headline_card doesn't accept
+    (icon, left, right, points, etc.)."""
+    if not beats:
+        return beats
+    b = beats[0]
+    if b.get("type") == "headline_card":
+        return beats
+    rebuilt = {
+        "type": "headline_card",
+        "text": b.get("text", ""),
+        "startWord": b.get("startWord", 0),
+        "endWord": b.get("endWord", 0),
+        "emphasisWords": b.get("emphasisWords", []),
+    }
+    beats[0] = rebuilt
+    return beats
+
+
+# ---------------------------------------------------------------------------
 # Prompt Construction
 # ---------------------------------------------------------------------------
 
 def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline: str = "",
-                 pre_chunked_beats: list[dict] = None) -> str:
+                 pre_chunked_beats: list[dict] = None,
+                 story_arc: list[str] = None) -> str:
     """Build the LLM prompt with all necessary context, keeping it under token limits."""
     
     # Truncate script to keep prompt small (only used when NO pre-chunked beats)
@@ -606,6 +772,30 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
     
+    # Horizon 3.2 diversity budget
+    diversity_section = f"""
+DIVERSITY BUDGET (mandatory — your story MUST include at least one of each):
+- Visual variety: include at least one of: {", ".join(DIVERSITY_REQUIRED)}
+- Data-vis: include at least one of: {", ".join(DIVERSITY_DATA_VIS)}
+- No more than 3 consecutive beats of the same type
+"""
+
+    # Horizon 3.1 story-arc constraint
+    arc_section = ""
+    if story_arc:
+        arc_lines = []
+        for i, label in enumerate(story_arc):
+            allowed = arc_allowed_types(label)
+            arc_lines.append(f"  beat {i+1}: arc='{label}' → allowed types: {allowed}")
+        arc_section = f"""
+STORY ARC (mandatory — pick a type from the allowed list for each beat):
+{chr(10).join(arc_lines)}
+
+Note: beat 1 is the intro — prefer 'headline_card' (the new 2.1.1 component) for
+maximum hook impact. The orchestrator will force it to headline_card anyway, so
+emit it as headline_card here.
+"""
+
     if pre_chunked_beats:
         # ============================================================
         # MODE A: Pre-chunked beats provided — LLM ONLY assigns types + metadata
@@ -648,7 +838,7 @@ Entities: {json.dumps(entities)}
 
 BEAT TYPES + REQUIRED METADATA FIELDS:
 {json.dumps(beat_types_compact)}
-{pre_chunked_section}
+{arc_section}{diversity_section}{pre_chunked_section}
 
 OUTPUT (JSON only — array of objects, one per chunk, in order):
 [
@@ -684,6 +874,7 @@ Entities: {json.dumps(entities)}
 
 BEAT TYPES:
 {json.dumps(beat_types_compact)}
+{arc_section}{diversity_section}
 
 RULES:
 1. One beat per sentence/key idea. Target ~10 words per beat.
@@ -708,10 +899,15 @@ OUTPUT (JSON only):
 # ---------------------------------------------------------------------------
 
 def generate_beats(script: str, word_timestamps: list[dict], story: dict, headline: str = "",
-                   model_key: str = None, pre_chunked_beats: list[dict] = None) -> dict:
+                   model_key: str = None, pre_chunked_beats: list[dict] = None,
+                   story_arc: list[str] = None) -> dict:
     """Call LLM to generate beats, validate, and return structured data."""
     
-    prompt = build_prompt(script, word_timestamps, story, headline, pre_chunked_beats)
+    # Horizon 3.1: if we have pre-chunked beats but no arc yet, plan one now.
+    if pre_chunked_beats and not story_arc:
+        story_arc = plan_story_arc(script, story, model_key)
+    
+    prompt = build_prompt(script, word_timestamps, story, headline, pre_chunked_beats, story_arc)
     
     # Use llm_client to call the model
     messages = [
@@ -770,6 +966,14 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             if beat_type not in BEAT_TYPES:
                 beat_type = "key_statement"
             
+            # Horizon 3.1: if a story_arc was provided, clamp the LLM's pick to
+            # the allowed list for that beat's arc label. This is a hard rule
+            # — the orchestrator and the prompt both depend on arc compliance.
+            if story_arc and i < len(story_arc):
+                allowed = arc_allowed_types(story_arc[i])
+                if beat_type not in allowed:
+                    beat_type = allowed[0]
+            
             beat = {
                 "type": beat_type,
                 "text": chunk["text"],
@@ -802,11 +1006,25 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                         beat[field] = 100
                     elif field == "label":
                         beat[field] = ""
+                    elif field == "title":
+                        beat[field] = ""
+                    elif field == "body":
+                        beat[field] = ""
                     elif field == "events":
                         beat[field] = []
                     elif field == "steps":
                         beat[field] = []
+                    elif field == "stories":
+                        beat[field] = []
+                    elif field == "points":
+                        beat[field] = []
+                    elif field == "buildings":
+                        beat[field] = []
                     elif field in ("beforeLabel", "afterLabel"):
+                        beat[field] = ""
+                    elif field == "prefix":
+                        beat[field] = ""
+                    elif field == "suffix":
                         beat[field] = ""
             
             beats.append(beat)
@@ -816,6 +1034,16 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         beats = data.get("beats", [])
         if not beats:
             raise ValueError("No beats generated")
+    
+    # Horizon 3.1: force beat 0 to headline_card
+    beats = force_intro_to_headline_card(beats)
+    
+    # Horizon 3.4: compute per-beat pacing from text length and emit on each beat
+    for beat in beats:
+        if beat.get("text"):
+            beat["pacing"] = compute_pacing(beat["text"])
+        else:
+            beat["pacing"] = "normal"
     
     # DEBUG: Print raw LLM output before any processing
     print("\n=== RAW LLM BEATS ===")
@@ -839,7 +1067,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     
     beats = valid_beats
     
-    # Convert word indices to frames using Whisper timestamps
+    # Convert word indices to frames using Whisper timestamps (3.3 trimming happens here)
     beats = assign_frames_from_word_ranges(beats, word_timestamps, script)
     
     # Validate initial beats
@@ -852,7 +1080,8 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         if errors:
             print(f"  ⚠ After auto-fix: {len(errors)} issues remain")
     
-    # Split long beats (this is the main fix for over-duration beats)
+    # Split beats that exceed the hard ceiling (only after 3.3 trim).
+    # Most oversize beats are now handled by assign_frames_from_word_ranges.
     beats = split_long_beats(beats, word_timestamps, script)
     
     # Final validation and sequential alignment
@@ -889,6 +1118,7 @@ def main():
     parser.add_argument("--output", type=str, help="Output beats.json path")
     parser.add_argument("--project-dir", type=str, help="Project directory (auto-finds script/timestamps/story)")
     parser.add_argument("--model", type=str, default=None, help="LLM model key (default: from llm_client)")
+    parser.add_argument("--skip-arc", action="store_true", help="Skip the Horizon 3.1 story-arc planning pass")
     args = parser.parse_args()
 
     # Resolve paths
@@ -911,6 +1141,13 @@ def main():
         if pre_chunked_beats_path.exists():
             pre_chunked_beats = load_json(pre_chunked_beats_path)
             print(f"  Loaded {len(pre_chunked_beats)} pre-chunked beats")
+        
+        # Load pre-computed story arc (3.1) if available
+        story_arc_path = project_dir / "story_arc.json"
+        story_arc = None
+        if not args.skip_arc and story_arc_path.exists():
+            story_arc = load_json(story_arc_path)
+            print(f"  Loaded story arc with {len(story_arc)} labels")
     else:
         if not all([args.script, args.timestamps, args.story, args.output]):
             parser.error("Either --project-dir OR all of --script --timestamps --story --output required")
@@ -919,6 +1156,7 @@ def main():
         story_path = Path(args.story)
         output_path = Path(args.output)
         pre_chunked_beats = None
+        story_arc = None
 
     # Load inputs
     print(f"Loading script: {script_path}")
@@ -936,7 +1174,7 @@ def main():
     # Generate beats
     print("Generating beats via LLM...")
     try:
-        result = generate_beats(script, word_timestamps, story, args.headline, args.model, pre_chunked_beats)
+        result = generate_beats(script, word_timestamps, story, args.headline, args.model, pre_chunked_beats, story_arc)
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
@@ -952,7 +1190,8 @@ def main():
     # Print beat summary
     for i, beat in enumerate(result["beats"]):
         dur_s = frames_to_seconds(beat["durationInFrames"])
-        print(f"   {i+1:2d}. [{beat['type']:15s}] {beat['durationInFrames']:3d} frames ({dur_s:.1f}s) — {beat['text'][:60]}...")
+        pacing = beat.get("pacing", "normal")
+        print(f"   {i+1:2d}. [{beat['type']:18s}] {beat['durationInFrames']:3d}f ({dur_s:.1f}s, {pacing:6s}) — {beat['text'][:60]}...")
 
 
 if __name__ == "__main__":

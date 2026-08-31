@@ -36,24 +36,32 @@ def test_3_3_target_frames_for_word_count():
 
 
 def test_3_4_compute_pacing():
+    # Helper: keep the assertions and the actual count co-located so any
+    # future failure tells us both the test string and what compute_pacing
+    # actually returned, plus the word count Python's .split() saw.
+    def check(text, expected):
+        actual = bg.compute_pacing(text)
+        wc = len(text.split())
+        assert actual == expected, (
+            f"compute_pacing({text!r}) returned {actual!r}, expected {expected!r} "
+            f"(text has {wc} words: {text.split()!r})"
+        )
+
     # 1 word → fast
-    assert bg.compute_pacing("One.") == "fast", ("One.", bg.compute_pacing("One."))
+    check("One.", "fast")
     # 3 words → fast (at the boundary)
-    assert bg.compute_pacing("Three word beat.") == "fast", ("Three word beat.", bg.compute_pacing("Three word beat."))
+    check("Three word beat.", "fast")
     # 4 words → normal (just past the boundary)
-    assert bg.compute_pacing("Four word beat here.") == "normal", ("Four word beat here.", bg.compute_pacing("Four word beat here."))
+    check("Four word beat here.", "normal")
     # 8 words → normal (at the upper boundary of normal)
-    assert bg.compute_pacing("Eight words here please for the test.") == "normal", ("Eight words here please for the test.", bg.compute_pacing("Eight words here please for the test."))
+    check("Eight words here please for the test.", "normal")
     # 9 words → slow (just past the boundary)
-    assert bg.compute_pacing("Nine words in this beat will trigger slow.") == "slow", ("Nine words in this beat will trigger slow.", bg.compute_pacing("Nine words in this beat will trigger slow."))
+    check("Nine words in this beat should trigger slow pacing now.", "slow")
     # 10 words → slow
-    assert bg.compute_pacing("This is a much longer beat with eleven words total.") == "slow", (
-        "This is a much longer beat with eleven words total.",
-        bg.compute_pacing("This is a much longer beat with eleven words total."),
-    )
+    check("This is a much longer beat with eleven words total.", "slow")
     # Edge: empty / whitespace → 0 words → fast
-    assert bg.compute_pacing("") == "fast", ("", bg.compute_pacing(""))
-    assert bg.compute_pacing("   ") == "fast", ("   ", bg.compute_pacing("   "))
+    check("", "fast")
+    check("   ", "fast")
     print("3.4 OK: compute_pacing thresholds 1-3 fast, 4-8 normal, 9+ slow")
 
 

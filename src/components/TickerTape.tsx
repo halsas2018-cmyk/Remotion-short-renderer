@@ -7,6 +7,7 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "../lib/idleMotion";
 
@@ -19,6 +20,26 @@ interface TickerTapeProps {
   stories: string[];
   label?: string;
   durationInFrames?: number;
+  /**
+   * Per-word emphasis cycle (Horizon 2.4 §3.4.1). Each word in any
+   * `stories` entry that matches an entry here is rendered with the
+   * next entry in the `Highlight` → `Underline` → `Circle` cycle.
+   * Words are matched case-insensitively, with trailing punctuation
+   * (`.,!?;:""''`) stripped. The cycle index advances across headlines,
+   * so the first emphasized word gets `Highlight`, the second gets
+   * `Underline`, the third `Circle`, the fourth `Highlight`, etc.
+   *
+   * Default `[]` — the pre-2.5 visual is preserved exactly when no
+   * `emphasisWords` are passed (no per-word spans, no annotations).
+   */
+  emphasisWords?: string[];
+  // Per-word emphasis cycle timing (Horizon 2.4) — runs across the
+  // scroll window. Defaults follow the same shape as `BeforeAfter` /
+  // `VersusCard` so the cycle's stagger / duration / start-delay
+  // percentages are uniform across the 8 text-on-card components.
+  wordDurPct?: number;
+  wordStaggerPct?: number;
+  wordStartDelayPct?: number;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -31,10 +52,53 @@ const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
+// Rough-notation variety — cycle annotation style per emphasized word
+// (mirrors src/KeyStatement.tsx). The order is Highlight → Underline
+// → Circle, which matches the cycle used by the other 7 text-on-card
+// components (per §3.4.1).
+const ANNOTATION_CYCLE = [
+  { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
+  { Component: Underline, color: ACCENT_COLOR },
+  { Component: Circle, color: ACCENT_COLOR_LIGHT },
+];
+
+/**
+ * Strips trailing sentence-final punctuation from a word so the
+ * `emphasisWords` match works regardless of whether the source data
+ * ends the word with a `.` or `,`. Mirrors the helper in
+ * `KeyStatement` / `VersusCard` / `BeforeAfter`.
+ */
+const stripTrailingPunct = (s: string): string =>
+  s.toLowerCase().replace(/[.,!?;:"'’]$/, "");
+
+/**
+ * Walk all `stories` and return, in left-to-right visual order, the
+ * (wordIndexWithinStory, wordString) pair for every word in every
+ * story. The order is what the `RenderWord` loop will visit when
+ * rendering. We pre-compute it (rather than walking the stories
+ * twice) so the emphasis-cycle index can be assigned at the same
+ * pass.
+ */
+const flattenStories = (
+  stories: string[],
+): Array<{ storyIndex: number; wordIndex: number; word: string }> => {
+  const flat: Array<{ storyIndex: number; wordIndex: number; word: string }> = [];
+  stories.forEach((story, si) => {
+    story.split(/\s+/).filter(Boolean).forEach((w, wi) => {
+      flat.push({ storyIndex: si, wordIndex: wi, word: w });
+    });
+  });
+  return flat;
+};
+
 export const TickerTape: React.FC<TickerTapeProps> = ({
   stories,
   label = "BREAKING",
   durationInFrames: propsDurationInFrames,
+  emphasisWords = [],
+  wordDurPct = 0.10,
+  wordStaggerPct = 0.04,
+  wordStartDelayPct = 0.20,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
@@ -86,10 +150,54 @@ export const TickerTape: React.FC<TickerTapeProps> = ({
   const labelFontSize = Math.max(28, tapeHeight * 0.24);
   const storyFontSize = Math.max(24, tapeHeight * 0.20);
 
-  // Build scrolling content (duplicated for seamless loop)
+  // ============================================
+  // Per-word emphasis cycle (Horizon 2.4 / §3.4.1)
+  // ============================================
+  // We pre-compute the emphasis assignments for ALL words across all
+  // headlines before the JSX pass, so the cycle index crosses headline
+  // boundaries (matches the "one running index across both sides"
+  // pattern in `VersusCard` / `BeforeAfter`).
+  const flatWords = flattenStories(stories);
+  const totalFlatWords = flatWords.length;
+  const emphasisSet = new Set(emphasisWords.map(stripTrailingPunct));
+
+  const wordDuration = Math.round(durationInFrames * wordDurPct);
+  const wordStagger = Math.round(durationInFrames * wordStaggerPct);
+  const wordStartDelay = Math.round(durationInFrames * wordStartDelayPct);
+
+  // For each flat word: is it emphasized? If so, which cycle entry?
+  // null when not emphasized (the pre-2.5 visual path is byte-equivalent
+  // when emphasisWords is empty, so this is the no-op default).
+  let runIndex = 0;
+  const wordAnnotations: (typeof ANNOTATION_CYCLE[number] | null)[] = flatWords.map(
+    ({ word }) => {
+      if (!emphasisSet.has(stripTrailingPunct(word))) return null;
+      const entry = ANNOTATION_CYCLE[runIndex % ANNOTATION_CYCLE.length];
+      runIndex += 1;
+      return entry;
+    },
+  );
+
+  // Build scrolling content. When `emphasisWords` is non-empty, we
+  // need to render each word as its own <span> (or annotation-wrapped
+  // span) so the per-word fade-in + annotation can target individual
+  // words. When `emphasisWords` is empty, we fall back to the pre-2.5
+  // single-string render — which is byte-equivalent to the baseline
+  // `TickerTapeTest` PNG.
+  const hasEmphasis = emphasisSet.size > 0;
   const storyText = stories.map((s) => s.toUpperCase()).join("   •   ");
+  // The content text is duplicated for the seamless loop. When
+  // `hasEmphasis`, we duplicate the per-word list instead so the
+  // wrapping <span> structure is identical on both halves of the loop.
   const contentText = `${storyText}   •   ${storyText}   •   `;
-  // Heuristic width: ~0.55× fontSize per character in Space Grotesk
+  const flatWordsLooped = hasEmphasis
+    ? [...flatWords, ...flatWords]
+    : [];
+
+  // Heuristic width: ~0.55× fontSize per character in Space Grotesk.
+  // When `hasEmphasis`, the wrapped spans occupy roughly the same width
+  // (per-word whitespace is preserved), so the same heuristic works
+  // for both rendering paths.
   const estimatedContentWidth = contentText.length * storyFontSize * 0.55;
 
   // Linear scroll across the idle phase
@@ -109,6 +217,96 @@ export const TickerTape: React.FC<TickerTapeProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
   const getShimmerOpacity = (s: number) => (frame < s ? 0 : 1);
+
+  // Helper: render a single word with the optional emphasis fade-in
+  // and annotation. Used only when `hasEmphasis` is true; the
+  // `hasEmphasis === false` path renders `${contentText}` as one
+  // string (pre-2.5 visual).
+  const renderWord = (
+    w: string,
+    flatIndex: number,
+    isLastInLoop: boolean,
+  ): React.ReactNode => {
+    const annotation = wordAnnotations[flatIndex % totalFlatWords];
+    const isEmphasized = annotation != null;
+    const wordStartFrame = wordStartDelay + flatIndex * wordStagger;
+    const wordEndFrame = wordStartFrame + wordDuration;
+
+    const wordOpacity = interpolate(
+      frame,
+      [wordStartFrame, wordEndFrame],
+      [0, 1],
+      {
+        easing: easeOutExpo,
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      },
+    );
+    const wordTranslateY = interpolate(
+      frame,
+      [wordStartFrame, wordEndFrame],
+      [12, 0],
+      {
+        easing: easeOutExpo,
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      },
+    );
+
+    const wordStyle: React.CSSProperties = {
+      display: "inline-block",
+      fontSize: storyFontSize,
+      fontWeight: isEmphasized ? 700 : 500,
+      fontFamily,
+      color: DARK_TEXT,
+      letterSpacing: 0.5,
+      paddingRight: 40, // matches the inter-headline "   •   " gap
+      opacity: wordOpacity,
+      translate: `0px ${wordTranslateY}px`,
+      willChange: "transform, opacity",
+      ...(isEmphasized
+        ? {
+            backgroundImage: `linear-gradient(120deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }
+        : {}),
+    };
+
+    const wordContent = <span style={wordStyle}>{w}</span>;
+
+    if (isEmphasized && annotation) {
+      const AnnotationComponent = annotation.Component;
+      return (
+        <AnnotationComponent
+          key={flatIndex}
+          color={annotation.color}
+          strokeWidth={3}
+          padding={4}
+          progress={interpolate(
+            frame,
+            [wordStartFrame, wordEndFrame + 5],
+            [0, 1],
+            {
+              easing: easeOutExpo,
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            },
+          )}
+        >
+          {wordContent}
+        </AnnotationComponent>
+      );
+    }
+    // Wrap the un-emphasized word in a non-keyed span so React's
+    // reconciliation across the per-word list is stable.
+    return (
+      <span key={flatIndex} style={{ display: "inline-block" }}>
+        {wordContent}
+      </span>
+    );
+  };
 
   return (
     <AbsoluteFill style={{ width, height, backgroundColor: "transparent" }}>
@@ -292,18 +490,32 @@ export const TickerTape: React.FC<TickerTapeProps> = ({
                   transform: `translateX(${contentTranslateX}px)`,
                 }}
               >
-                <span
-                  style={{
-                    fontSize: storyFontSize,
-                    fontWeight: 500,
-                    fontFamily,
-                    color: DARK_TEXT,
-                    letterSpacing: 0.5,
-                    paddingRight: 40,
-                  }}
-                >
-                  {contentText}
-                </span>
+                {hasEmphasis ? (
+                  // Render each word as its own span. The list is
+                  // duplicated (flatWordsLooped) so the seamless-scroll
+                  // second half of the loop is structurally identical
+                  // to the first half.
+                  flatWordsLooped.map((entry, i) =>
+                    renderWord(entry.word, i, i === flatWordsLooped.length - 1),
+                  )
+                ) : (
+                  // Pre-2.5 visual: a single string with the original
+                  // `${contentText}` inter-headline gap. Byte-equivalent
+                  // to the pre-fix `TickerTapeTest` PNG when
+                  // `emphasisWords` is omitted.
+                  <span
+                    style={{
+                      fontSize: storyFontSize,
+                      fontWeight: 500,
+                      fontFamily,
+                      color: DARK_TEXT,
+                      letterSpacing: 0.5,
+                      paddingRight: 40,
+                    }}
+                  >
+                    {contentText}
+                  </span>
+                )}
               </div>
               {/* Left fade */}
               <div

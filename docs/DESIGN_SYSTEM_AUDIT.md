@@ -17,7 +17,7 @@
 - **Phase 1.5 (entrance timing rule simplification):** ✅ done (commit `6da63d3`)
 - **Phase 2 (Space Grotesk, batch 1 of 2):** ✅ done — 4 of 9 Space Grotesk ❌s fixed (`BeforeAfter`, `QuoteCard`, `VersusCard`, `PlainText`)
 - **Phase 2 (Space Grotesk, batch 2 of 2):** ✅ done — 5 of 9 Space Grotesk ❌s fixed (`IconText`, `ProgressMeter`, `Timeline`, `ChartLine`, `ChartComparison3D`). `ProcessFlow` (row 13) auto-resolves because it reuses `Timeline`.
-- **Phase 2 (`TickerTape` missing `emphasisWords`):** not started
+- **Phase 2 (`TickerTape` `emphasisWords`):** ✅ done (this commit)
 - Phase 3 (acceptance notes): not started
 - Phase 4 (verification): not started
 - Phase 5 (follow-ups): not started
@@ -79,7 +79,7 @@ From `src/beats/types.ts::BeatType` (20 members) and `src/beats/registry.ts::reg
 | 9d | No hook (entrance-only, one-shot) | `map_3d` | per §3.5 / §2.3.x Pass 3 |
 | 10 | Accent palette `#e86c00` / `#f97316` / `rgba(232,108,0,0.4)` | all 20 | no off-palette colors |
 | 11 | `rough-notation` emphasis cycle (`Highlight` → `Circle` → `Underline`) for text-on-card beats | 8 text-on-card types: `key_statement`, `headline_card`, `quote_attribution`, `scrollytelling`, `ticker_tape`, `versus`, `before_after`, `quote_card` | per §3.4.1; n/a for the other 12 |
-| 12 | `durationInFrames` forwarded as a prop | all 20 | composition-level timing is source of truth |
+| 12 | `durationInFrames` forwarded as a prop | all 20 | composition-level timing is the source of truth |
 | 13 | Slider border + decorative dots + shimmer (text beats) | 14 text types | per §3.3 wording |
 | 14 | `<SceneTransition>` wrapper (orchestrator-owned) | all 20 | mounted by `BeatContent` in orchestrator |
 
@@ -112,7 +112,7 @@ From `src/beats/types.ts::BeatType` (20 members) and `src/beats/registry.ts::reg
 | 17 | `CompareSplit` (`src/components/CompareSplit.tsx`) | ✅ | ✅ | ⚠️ (radius 28–32px, at §3.3 lower bound) | ⚠️ (accent replicated on each inner card) | ✅ | ✅ | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | n/a (not in 8 text-on-card types) | ✅ | ✅ (simpler per-card dots) | ✅ |
 | 18 | `LocationPulse` (`src/components/LocationPulse.tsx`) | ✅ | ✅ | ⚠️ (2D map wrapped in 16-px sub-card, below §3.3 baseline) | ✅ | ✅ | ✅ | ✅ (was ❌ under old ≤30% rule at 35%; 35% ≤ 50% so passes under the unified 50% cap) | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | n/a (not in 8 text-on-card types) | ✅ | ✅ | ✅ |
 | 19 | `Scrollytelling` (`src/components/Scrollytelling.tsx`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (title) | ✅ | ✅ | ✅ useIdleMotion (Pass 2) | ✅ | ✅ (progress=1, scroll-driven) | ✅ | ✅ | ✅ |
-| 20 | `TickerTape` (`src/components/TickerTape.tsx`) | ✅ | ✅ | ⚠️ (tape radius 20px, below §3.3 baseline 28–48px) | ✅ | ✅ | n/a (heuristic width) | ✅ | ✅ | ✅ useIdleMotion + local glow (Pass 2) | ✅ | **❌** (missing `emphasisWords` support — §2.4 missed this type) | ✅ | ✅ (diagonal-line pattern) | ✅ |
+| 20 | `TickerTape` (`src/components/TickerTape.tsx`) | ✅ | ✅ | ⚠️ (tape radius 20px, below §3.3 baseline 28–48px) | ✅ | ✅ | n/a (heuristic width) | ✅ | ✅ | ✅ useIdleMotion + local glow (Pass 2) | ✅ | **✅** (was ❌ — fixed in Phase 2; emphasis cycle Highlight→Underline→Circle now wired across `stories`; default `emphasisWords: []` keeps the `TickerTapeTest` PNG byte-equivalent to the pre-2.5 baseline) | ✅ | ✅ (diagonal-line pattern) | ✅ |
 | 21 | `Logo` (`src/Logo.tsx`) | ✅ | ✅ | ⚠️ (logo is a brand element, outside §3.3 scope) | n/a | **❌** (outside §3.3 scope) | n/a | ✅ (no entrance, just slow spin) | ✅ | ⚠️ (no motion hook, local spin + bob) | ⚠️ (off-palette brand orange) | n/a | n/a | n/a | n/a |
 | 22 | `PersistentBackground` (`src/PersistentBackground.tsx`) | ✅ | n/a (background, not overlay) | n/a (background, not card) | n/a (background, not card) | n/a (no text) | n/a (no text) | n/a (no entrance, just continuous motion) | n/a (no exit, just persistent) | ✅ (no hook, orchestrator-level) | ✅ (grayscale grid, on-palette) | n/a | n/a (persistent, not per-beat) | n/a | n/a (mounted outside `<Sequence>`) |
 
@@ -120,13 +120,14 @@ From `src/beats/types.ts::BeatType` (20 members) and `src/beats/registry.ts::reg
 
 **Phase 2 batch 1 reclassifications (commit `b1a9920`):** rows 3, 10, 11, 14 (PlainText, VersusCard, BeforeAfter, QuoteCard) col 5: ❌ → ✅. 4 Space Grotesk ❌s eliminated.
 
-**Phase 2 batch 2 reclassifications (this commit):** rows 4, 5, 7, 8, 9 col 5 (IconText, ChartLine, ChartComparison3D, ProgressMeter, Timeline) ❌ → ✅. Row 13 col 5 (ProcessFlow) auto-resolves. 5 Space Grotesk ❌s + 1 inherited ❌ eliminated.
+**Phase 2 batch 2 reclassifications (commit `6deea59`):** rows 4, 5, 7, 8, 9 col 5 (IconText, ChartLine, ChartComparison3D, ProgressMeter, Timeline) ❌ → ✅. Row 13 col 5 (ProcessFlow) auto-resolves. 5 Space Grotesk ❌s + 1 inherited ❌ eliminated.
 
-**❌ count after Phase 2 batch 2:** 2 (was 6 after batch 1, was 10 originally).
-- 1 row 20 col 11 `TickerTape` missing `emphasisWords` (Phase 2 separate commit).
+**Phase 2 TickerTape reclassification (this commit):** row 20 col 11 ❌ → ✅. 1 emphasis-cycle ❌ eliminated.
+
+**❌ count after all Phase 2 fixes:** 1 (was 10 originally).
 - 1 row 21 col 5 `Logo` ❌ (outside audit scope, brand element — Phase 5 follow-up).
 
-**Space Grotesk (col 5) is now green in the 20-component scope.** The only remaining ❌ in this column is the brand element (Logo), which is explicitly out of scope.
+**All 10 in-scope ❌s are now ✅.** The 20-component design-system audit is green. Only the explicitly-out-of-scope `Logo` (brand element) remains as a ❌ for tracking.
 
 ---
 
@@ -201,7 +202,7 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 
 ---
 
-## Per-primitive summary (filled in after Phase 1 + Phase 1.5 + Phase 2 batch 1 + Phase 2 batch 2 — COMPLETE)
+## Per-primitive summary (filled in after Phase 1 + Phase 1.5 + all Phase 2 fixes — COMPLETE)
 
 **This section is populated after Phase 1 by counting `✅` / `❌` / `⚠️` / `n/a` per column.**
 
@@ -217,12 +218,12 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 | 8. No exit animation | 22 | 20 | 0 | 2 (`KeyStatement`, `ChartLine` `exitDirection` dead code) | 0 |
 | 9. Motion hook | 22 | 21 | 0 | 1 (`Logo` no hook, intentional) | 0 |
 | 10. Accent palette | 22 | 19 | 0 | 3 (`BeforeAfter` red/green, `VersusCard` indigo, `Logo` brand orange) | 0 |
-| 11. `rough-notation` emphasis | 22 | 12 | **1 (`TickerTape` missing `emphasisWords`)** | 0 | 9 |
+| 11. `rough-notation` emphasis | 22 | 13 | 0 | 0 | 9 |
 | 12. `durationInFrames` prop | 22 | 21 | 0 | 0 | 1 |
 | 13. Slider border + dots + shimmer | 22 | 15 | 0 | 1 (`CompareSplit` simpler per-card dots) | 6 |
 | 14. `<SceneTransition>` wrapper | 22 | 21 | 0 | 0 | 1 |
 
-**Filled cells:** 308 (22 rows × 14 cols). Of those: 264 ✅ (up from 258 by the 6 net Phase 2 batch 2 reclassifications: 5 Space Grotesk ✅s + 1 ProcessFlow auto-resolve ✅, minus 0 n/a shifts), 2 ❌ (down from 7), 24 ⚠️, 22 n/a.
+**Filled cells:** 308 (22 rows × 14 cols). Of those: 265 ✅ (up from 264 by the 1 net `TickerTape` emphasis reclassification), 1 ❌ (down from 2), 24 ⚠️, 22 n/a.
 
 **`StatPill` col-13 n/a error:** `StatPill` is a number-on-card (a "stat_pill" beat type), which per the ROADMAP §2.1.4 description is "single-stat number-on-card" — this is **text** category (not data-vis), so col-13 (slider border + dots + shimmer for text) applies. The previous n/a was wrong. **Correction: `StatPill` col-13 should be ✅, not n/a.** This is a 1-cell correction.
 
@@ -244,7 +245,7 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 | `BeforeAfter` | `fontFamily: "system-ui, sans-serif"` | `fontFamily` from `loadFont(...)` | Same fix. `fitText` / `fillTextBox` / `measureText` now take the resolved `fontFamily`. |
 | `QuoteCard` | `fontFamily: "system-ui, sans-serif"` (body + attribution) | `fontFamily` from `loadFont(...)` | Same fix. Opening/closing quote marks (Georgia) left as-is (they're stylized as serif, not body text). |
 
-**Phase 2 batch 2 reclassifications (this commit, ✅ all 5 + 1 auto-resolve):**
+**Phase 2 batch 2 reclassifications (commit `6deea59`, ✅ all 5 + 1 auto-resolve):**
 
 | Component | Old ❌ (col 5 Space Grotesk) | New ✅ | Reason |
 |---|---|---|---|
@@ -255,13 +256,17 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 | `ChartComparison3D` | `fontFamily: "'Space Grotesk', 'Inter', system-ui, sans-serif"` (named-but-not-loaded) | `fontFamily` from `loadFont(...)` | The existing string reference was a hard-coded font stack that listed Space Grotesk first but never called `loadFont`, so the font fell through to `system-ui, sans-serif` at render time. Now the resolved `fontFamily` from `loadFont` is used directly (browser handles fallback if the font fails to load). |
 | `ProcessFlow` (row 13) | inherited `Timeline`'s ❌ | ✅ (auto-resolves) | `ProcessFlow` reuses `Timeline` (no dedicated component file). When `Timeline`'s col 5 is ✅, `ProcessFlow` is ✅. |
 
-**❌s remaining after Phase 2 batch 2 (2 total, 2 categories):**
+**Phase 2 TickerTape reclassification (this commit, ✅):**
 
-1. **`TickerTape` missing `emphasisWords` support (1 ❌):** the §2.4 typewriter-aware emphasis refactor was supposed to add `emphasisWords` to all 8 text-on-card types per §3.4.1, but `TickerTape` was missed. **Missing-feature bug, not a regression.** Different from the Space Grotesk issue. This is the only remaining ❌ in the 20-component scope.
+| Component | Old ❌ (col 11 emphasis) | New ✅ | Reason |
+|---|---|---|---|
+| `TickerTape` | missing `emphasisWords?: string[]` prop + missing `ANNOTATION_CYCLE` per-word render | `emphasisWords?: string[]` (default `[]`) + per-word `ANNOTATION_CYCLE` (Highlight → Underline → Circle) wired across `stories`, mirroring the "one running index across both sides" pattern from `VersusCard` / `BeforeAfter` | The §2.4 emphasis-cycle refactor was supposed to add `emphasisWords` to all 8 text-on-card types per §3.4.1, but `TickerTape` was missed. **Missing-feature bug, not a regression.** Three new per-word timing props (`wordDurPct`, `wordStaggerPct`, `wordStartDelayPct`) follow the same default-shape as the other 7 components so the cycle's stagger / duration / start-delay percentages are uniform across the 8 text-on-card components. **Default `emphasisWords: []` keeps the `TickerTapeTest` PNG byte-equivalent to the pre-2.5 baseline** (the no-emphasis path renders `${contentText}` as a single string, matching the pre-fix JSX). |
 
-2. **`Logo` Space Grotesk (1 ❌, out of scope):** `Logo` is a brand element, not a beat component. The §3.3 font rule applies to beat components. Listed for tracking only; **Phase 5 follow-up** (when the real voxel logo lands, the placeholder `Logo` should be audited against the brand style guide or refactored to use the design system).
+**❌s remaining after all Phase 2 fixes (1 total, 1 category):**
 
-**Space Grotesk (col 5) is now green in the 20-component scope.** All 9 originally-❌ files have been fixed across the 2 batches. The only remaining col 5 ❌ in the audit is `Logo`, which is explicitly out of scope.
+1. **`Logo` Space Grotesk (1 ❌, out of scope):** `Logo` is a brand element, not a beat component. The §3.3 font rule applies to beat components. Listed for tracking only; **Phase 5 follow-up** (when the real voxel logo lands, the placeholder `Logo` should be audited against the brand style guide or refactored to use the design system).
+
+**All 10 in-scope ❌s are now ✅.** Space Grotesk (col 5) and `rough-notation` emphasis (col 11) are both green in the 20-component scope. The 20-component design-system audit is complete.
 
 **Phase 5 follow-ups (out of scope for 2.5):**
 - Row 1 col 8: `KeyStatement`'s `exitDirection` prop is dead code (declared, defaulted, but never read in JSX). Remove in a future horizon.
@@ -271,7 +276,7 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 - Row 19 col 11: `Scrollytelling`'s emphasis `progress={1}` is hard-coded (no per-word progress animation). The cycle is correct, the lack of per-word progress is a sub-deviation accepted as the scroll-driven design.
 - Row 4 col 7 (related): `IconText`'s in-file comment "CLAUDE.md Rule 1: Text cards must complete entrance by 50%" is outdated (the new §3.3 rule is "all beats ≤ 50% with stagger/word-by-word exception", so the comment is now correct again). **No fix needed — the comment happens to match the new rule.** Delete this follow-up.
 - Row 19 test-data concern: `bodyLines` are split by `\n` (literal newlines), but the `*Test` composition's `body` prop is a single-line string with `\n` escape characters. Test-data concern, not a primitive violation.
-- Row 21 (Logo): `Logo` is a brand element outside the §3.3 audit scope. When the real voxel logo lands, the placeholder `Logo` component should be audited against the brand style guide (a separate document) or refactored to use the design system. Phase 5 follow-up: write the brand style guide and re-audit Logo. (Row 21 col 5 Space Grotesk also deferred — see "❌s remaining" §2 above.)
+- Row 21 (Logo): `Logo` is a brand element outside the §3.3 audit scope. When the real voxel logo lands, the placeholder `Logo` component should be audited against the brand style guide (a separate document) or refactored to use the design system. Phase 5 follow-up: write the brand style guide and re-audit Logo. (Row 21 col 5 Space Grotesk also deferred — see "❌s remaining" §1 above.)
 - Row 22 (PersistentBackground): the comment on line 116 says "Animated 3D orange S-NEWS voxel logo" but `<Logo size={1} />` mounts a 2D pill, not a 3D voxel logo. **Stale comment**, not a bug. When the real voxel logo lands, the comment needs to be updated.
 
 ---
@@ -281,10 +286,10 @@ Both should return zero consumer-imports. Consumer imports would be of the form 
 1. **Phase 0 (now):** read this file. Confirm the 20-component list, the 14-primitive list, and the pre-filled cells. Disagree with any pre-fill? Update the cell and add a one-line note. ✅ **DONE** (commit `1e621e9`)
 2. **Phase 1:** ask for the component files in batches (A: 4 §2.3 Pass 1 files, B: 6 §2.3 Pass 2 files, C: 7 §2.3 Pass 3 files, D: 3 §2.3.x scene-based files). Fill in the `·` cells. Add a new ⚠️ row to the "Pre-filled ⚠️ rationales" table for any new ⚠️. ✅ **DONE** (commits `90757f3`, `c89df58`, `8d440b2`, `135b51a`, `5232039`, plus this update)
 3. **Phase 1.5:** simplify the §3.3 entrance timing rule to a single 50% cap for all 20 beat types (was: 40% text / 30% data-vis two-tier). Reclassify the 4 entrance-timing ❌s to ✅. Update `CLAUDE.md` §3.3 + §11 to reflect the new rule. ✅ **DONE** (commit `6da63d3`)
-4. **Phase 2:** group the ❌s by primitive. Write one fix per primitive (or split into 2 commits if > 3 components are affected). After each commit, update this file's affected cells to ✅ and re-run `npm test` + `./scripts/render-smoke.sh`. ⏳ **IN PROGRESS**
+4. **Phase 2:** group the ❌s by primitive. Write one fix per primitive (or split into 2 commits if > 3 components are affected). After each commit, update this file's affected cells to ✅ and re-run `npm test` + `./scripts/render-smoke.sh`. ✅ **DONE** (commits `b1a9920` batch 1, `6deea59` batch 2, this commit for TickerTape)
    - **Batch 1 (commit `b1a9920`):** Space Grotesk for the 4 text-on-card / two-card components (`BeforeAfter`, `QuoteCard`, `VersusCard`, `PlainText`). ✅ **DONE**
-   - **Batch 2 (this commit):** Space Grotesk for the 4 data-vis / icon components (`IconText`, `ProgressMeter`, `Timeline`, `ChartLine`) + the 1 partial-load case (`ChartComparison3D`). When `Timeline` is fixed, `ProcessFlow` (row 13) auto-resolves. ✅ **DONE**
-   - **TickerTape `emphasisWords`:** separate commit (different primitive, different bug class). ⏳ **PENDING**
+   - **Batch 2 (commit `6deea59`):** Space Grotesk for the 4 data-vis / icon components (`IconText`, `ProgressMeter`, `Timeline`, `ChartLine`) + the 1 partial-load case (`ChartComparison3D`). When `Timeline` is fixed, `ProcessFlow` (row 13) auto-resolves. ✅ **DONE**
+   - **`TickerTape` `emphasisWords` (this commit):** added `emphasisWords?: string[]` + the per-word `ANNOTATION_CYCLE` (Highlight → Underline → Circle) wired across `stories`, mirroring the "one running index across both sides" pattern from `VersusCard` / `BeforeAfter`. Default `emphasisWords: []` keeps the `TickerTapeTest` PNG byte-equivalent to the pre-2.5 baseline. ✅ **DONE**
 5. **Phase 3:** confirm all ⚠️ cells have a rationale. If any ⚠️ is missing one, add it. ⏳ **PENDING**
 6. **Phase 4:** re-run the verification chain. Cross-check that the *Test PNG diffs (if any) are scoped to the fixed components only. ⏳ **PENDING**
 7. **Phase 5:** list any non-2.5 follow-ups the audit surfaced in a new "2.5 follow-ups" section at the bottom of this file. ⏳ **PENDING** (preliminary follow-ups listed above)

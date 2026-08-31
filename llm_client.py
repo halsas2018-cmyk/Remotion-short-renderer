@@ -55,12 +55,14 @@ if _env_path.exists():
 # ---------------------------------------------------------------------------
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 def _signup_url(provider: str) -> str:
     return {
         "groq": "https://console.groq.com",
         "nvidia": "https://build.nvidia.com",
+        "openrouter": "https://openrouter.ai",
     }.get(provider, "")
 
 
@@ -111,6 +113,19 @@ MODEL_REGISTRY = {
         "key_env": "NVIDIA_API_KEY",
         "notes": "NVIDIA Nemotron 3 Ultra 550B — biggest reasoning model",
     },
+    # --- OpenRouter (free tier; needs OPENROUTER_API_KEY from openrouter.ai) ---
+    "or-laguna-s-2-1-free": {
+        "provider": "openrouter",
+        "model": "poolside/laguna-s-2.1:free",
+        "key_env": "OPENROUTER_API_KEY",
+        "notes": "Poolside Laguna S 2.1 (free) on OpenRouter",
+    },
+    "or-minimax-m3-free": {
+        "provider": "openrouter",
+        "model": "minimax/minimax-m3:free",
+        "key_env": "OPENROUTER_API_KEY",
+        "notes": "MiniMax M3 (free) on OpenRouter",
+    },
 }
 
 DEFAULT_MODEL_KEY = "groq-gpt-oss-120b"
@@ -142,6 +157,8 @@ def _endpoint(provider: str) -> str:
         return GROQ_URL
     if provider == "nvidia":
         return NVIDIA_URL
+    if provider == "openrouter":
+        return OPENROUTER_URL
     raise ValueError(f"Unknown provider: {provider}")
 
 

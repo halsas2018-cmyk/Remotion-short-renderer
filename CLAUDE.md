@@ -155,6 +155,45 @@ Per-primitive toggle rules:
 
 **What's NOT in Pass 1 (the remaining 16 components):** the 6 in `src/components/` (`StatPill`, `QuoteAttribution`, `CompareSplit`, `LocationPulse`, `Scrollytelling`, `TickerTape`) and 10 more spread across the 13 pre-2.1 beat types. Pass 2 covers the 3 other wrapper-split files (the ones that own an existing transform on a parent element). Pass 3 covers the 4 other `useCurrentFrame`-owning files (the ones that own their own time math). Pass 4 covers the 2 special cases (`LocationPulse` and `Map3D`). See `ROADMAP.md` 2.3 for the full Pass 1/2/3/4 breakdown.
 
+### 3.4.1 The shared `rough-notation` emphasis cycle
+
+Every text-on-card component accepts an `emphasisWords?: string[]` prop and renders each match with the `Highlight` → `Circle` → `Underline` cycle from `@remotion/rough-notation`. The cycle is the single source of truth for emphasis on the 7 text-on-card beat types (`key_statement`, `headline_card`, `quote_attribution`, `scrollytelling`, `ticker_tape`, **`versus`, `before_after`, `quote_card`**).
+
+**The cycle constant** (in each component that uses it):
+```ts
+const ANNOTATION_CYCLE = [RoughAnnotation.Highlight, RoughAnnotation.Underline, RoughAnnotation.Circle];
+```
+
+Each emphasized word in the rendered text gets the `ANNOTATION_CYCLE[i % 3]` annotation, where `i` is a per-component running index (0 for the first emphasized word, 1 for the second, 2 for the third, then it loops). The annotations are colored with the accent palette (`#e86c00`), `strokeWidth=2`, `padding={4}`, and the standard `1s draw` animation.
+
+**Per-component acceptance (the 7 text-on-card beat types):**
+| Component | What gets emphasized | Default `emphasisWords` |
+|---|---|---|
+| `KeyStatement` | each token in the text | `[]` |
+| `HeadlineCard` | each token in the text | `[]` |
+| `QuoteAttribution` | each token in the quote | `[]` |
+| `Scrollytelling` | each token in the body | `[]` |
+| `TickerTape` | each token in each headline | `[]` |
+| `VersusCard` (2.4) | the `left.label` and `right.label` | `[]` |
+| `BeforeAfter` (2.4) | the `beforeLabel` and `afterLabel` | `[]` |
+| `QuoteCard` (2.4) | each token in the quote (respects the typewriter reveal — only the *current* word is annotated; partial-words render plain) | `[]` |
+
+**Why 3 of the 7 are listed as 2.4 additions** (commits `f17924a`, `b432f8f`): the 4 components from 2.1 (`KeyStatement`, `HeadlineCard`, `QuoteAttribution`, `Scrollytelling`) shipped the emphasis cycle as part of the 2.1.1–2.1.6 work. The remaining 3 (`VersusCard`, `BeforeAfter`, `QuoteCard`) accepted `emphasisWords` in their prop types but the prop was a no-op in the component — the prop flowed through Zod validation (via `.passthrough()`) and into the React tree, but the components didn't render annotations. Horizon 2.4 (commits `f17924a`, `b432f8f`) added the cycle to those 3. The `TickerTape` row above is for completeness; the component's emphasis cycle is a per-headline cycle (not a per-token cycle) and is documented separately in `src/components/TickerTape.tsx`.
+
+**One quirk for `QuoteCard`:** the quote body renders the typewriter-style reveal (one word at a time across the beat's idle phase), and the emphasis cycle respects the reveal — only the *current* word is annotated, partial-words (e.g. `"i"` mid-`"invent"`) are rendered plain until the word is complete. This is intentional: a partial-emphasis annotation would look broken (the annotation would be drawn over a half-typed word and the `1s draw` animation would be invisible). The cycle `Highlight` → `Circle` → `Underline` is re-applied to the current word as it appears.
+
+**Future consolidation (out of scope for 2.4):** the `ANNOTATION_CYCLE` constant is currently copied across 7 components. A future horizon (likely 2.6, deferred from 2.4) should extract it to `src/lib/emphasis/useEmphasisCycle.ts` (a small leaf hook that returns the cycle as a stable reference, plus the current annotation for index N). The 2.4 refactor explicitly does NOT do this — the goal of 2.4 is to ship the cycle in 3 more components, not to consolidate the cycle. Consolidation comes after the cycle is proven in 3 additional components.
+
+**How to verify in Studio:**
+```bash
+npx remotion studio --no-open
+# Open in browser:
+#   /VersusCardTest       (Broadcom vs Nvidia, both labels cycle Highlight → Underline → Circle)
+#   /BeforeAfterTest      (Manual vs Automated, both labels cycle)
+#   /QuoteCardTest        (predict/invent cycle as the typewriter reveals)
+#   /QuoteCardLongTest    (serious/software/hardware cycle — all 3 cycle entries in one beat)
+```
+
 ### 3.5 The scene-based motion hooks (`useSceneOrbit` / `useChartReveal` / `useCesiumCamera`)
 
 Three components (`src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`) carry motion math that doesn't fit the 3-line `useIdleMotion` shape. They have their own hooks in `src/lib/sceneMotion/` (sibling of `src/lib/idleMotion/`):
@@ -180,7 +219,7 @@ const rotX = entranceRotX + orbit.rotationX;
 **Per-file edit details (Pass 1 — `useSceneOrbit` + `ChartComparison3D`, commit `0ae8d9b`):**
 
 - **`src/lib/sceneMotion/useSceneOrbit.ts`** (new file) — the hook. Reads `frame` and `fps` internally via `useCurrentFrame()` / `useVideoConfig()`. Takes `SceneOrbitOptions` (`{ idleBlend?, swingYDeg?, swingXDeg?, swingZDeg?, speedRadPerSec? }`, all optional with sensible defaults) and returns `SceneOrbit` (`{ rotationX, rotationY, rotationZ }`). The math: `fPerFrame = (speedRadPerSec * 2 * Math.PI) / fps`; then `rotationY = Math.sin(frame * fPerFrame) * swingYDeg * idleBlend` and `rotationX = Math.cos(frame * fPerFrame) * swingXDeg * idleBlend` (Y/X are 90° out of phase for a closed Lissajous). `rotationZ` is `0` unless `swingZDeg > 0` (the current `ChartComparison3D` doesn't roll, so the default is `0`; reserved for future 3D scenes). Defaults: `swingYDeg: 8`, `swingXDeg: 2`, `swingZDeg: 0`, `speedRadPerSec: 0.5`, `idleBlend: 1`. These match the pre-2.3.x `IDLE_SWING_Y` / `IDLE_SWING_X` constants in `ChartComparison3D` (8 and 2 degrees); `0.5` cycles/sec at 30fps is `frame * 0.1047` in the inline `Math.sin(frame * f)` form, which is a 0.5 cycles/sec average of the pre-2.3.x `0.03` and `0.024` frequencies.
-- **`src/lib/sceneMotion/index.ts`** (new file) — barrel re-export of `useSceneOrbit` and its types (`SceneOrbit`, `SceneOrbitOptions`). **Leaf file** — does NOT re-export from any consumer. The same import-graph rule from §4.5 (the `registry` ↔ `renderBeat` circular-import rule) applies: this barrel must NOT re-export from `src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`, or any other consumer. Future passes (Pass 2 for `useChartReveal`, Pass 3 for `useCesiumCamera`) add their exports to this same barrel.
+- **`src/lib/sceneMotion/index.ts`** (new file) — barrel re-export of `useSceneOrbit` and its types (`SceneOrbit`, `SceneOrbitOptions`). **Leaf file** — does NOT re-export from any consumer. The same import-graph rule from CLAUDE.md §4.5 (the `registry` ↔ `renderBeat` circular-import rule) applies: this barrel must NOT re-export from `src/ChartComparison3D.tsx`, `src/ChartLine.tsx`, `src/Map3D.tsx`, or any other consumer. Future passes (Pass 2 for `useChartReveal`, Pass 3 for `useCesiumCamera`) add their exports to this same barrel.
 - **`src/ChartComparison3D.tsx`** (edited) — added `import { useSceneOrbit } from "./lib/sceneMotion";`, replaced the 3 inline lines:
   ```ts
   const rotY = ENTRANCE_ROT_Y + (REST_ROT_Y - ENTRANCE_ROT_Y) * settleT +
@@ -289,7 +328,7 @@ No cycles. `registry.ts` and `renderBeat.tsx` are siblings, not parent/child.
 
 ## 5. Audio observability (Horizon 1.4 — CANCELLED, do not re-litigate)
 
-The audio streams (narration, ambient, per-transition whoosh, per-word click) are observable through the React tree itself. Per-mount `console.log` lines from inside the audio components are not feasible during a `still` render because Remotion's `still` path never commits the React tree (it just reads `calculateMetadata` and renders a frame).
+The audio streams (narration, ambient, per-transition whoosh, per-word click) are still observable through the React tree itself. Per-mount `console.log` lines from inside the audio components are not feasible during a `still` render because Remotion's `still` path never commits the React tree (it just reads `calculateMetadata` and renders a frame).
 
 The file-based `out/audio-mounts.log` plan was implemented (commits cd656a1 and earlier) and then dropped. The `process.versions.node` guard was unreliable in the render context (Remotion shims `process` but `process.versions.node` is `undefined`), and webpack's static analysis reached dynamic `require()` calls even behind `(0, eval)("require")("fs")` idioms. The fix was to drop the entire 1.4 surface area.
 
@@ -399,6 +438,7 @@ See `ROADMAP.md` "Open Questions" section. The load-bearing ones:
 - **Components are templates:** every beat type is a copy-paste of `src/HeadlineCard.tsx` or `src/ChartCounter.tsx` on the design-system primitives. New layouts / fonts / palettes belong in a separate horizon, not in the per-type component.
 - **`useIdleMotion` is the shared idle-animation hook** (Horizon 2.3). It returns `{ transform, translateY, rotateX, scale }` with per-primitive toggles. Every card component uses it; the 4 components updated in 2.3 Pass 1 are `HeadlineCard`, `KeyStatement`, `BeforeAfter`, `ChartCounter`. The 16 remaining components (Passes 2-4) are still to be done.
 - **Scene-based motion hooks** (Horizon 2.3.x, 3 hooks total): `useSceneOrbit` for `src/ChartComparison3D.tsx` (Pass 1 ✅, commit `0ae8d9b`), `useChartReveal` for `src/ChartLine.tsx` (Pass 2, next), `useCesiumCamera` for `src/Map3D.tsx` (Pass 3, after Pass 2). They live in `src/lib/sceneMotion/` (sibling of `src/lib/idleMotion/`). The `useSceneOrbit` refactor of `ChartComparison3D` collapsed the pre-2.3.x `0.03` / `0.024` frequency asymmetry to a single shared `speedRadPerSec`, so the orbit shape changes from a slow Lissajous drift to a closed loop. Visual diff per-frame is < 1% but the `ChartComparison3D*Test` PNGs ARE different from the pre-2.3.x versions — this is the documented exception to the §8 "byte-identical Test PNGs" rule, scoped to 2.3.x Passes 1, 2, 3 only.
+- **Emphasis cycle is the shared `rough-notation` pattern** (Horizon 2.4, 3 components: `versus` / `before_after` / `quote_card`, commits `f17924a`, `b432f8f`). 7 text-on-card components now accept `emphasisWords` and render the `Highlight` → `Circle` → `Underline` cycle. The 4 components from 2.1 (`KeyStatement`, `HeadlineCard`, `QuoteAttribution`, `Scrollytelling`) shipped the cycle as part of their 2.1.x work; the 3 from 2.4 (`VersusCard`, `BeforeAfter`, `QuoteCard`) added the cycle in 2.4. The `ANNOTATION_CYCLE` constant is currently copied across 7 components; consolidation to a `useEmphasisCycle` hook is a future horizon (likely 2.6, deferred from 2.4). See §3.4.1.
 - **Hook barrels are leaf files** (`src/lib/idleMotion/index.ts`, `src/lib/sceneMotion/index.ts`). They re-export hooks + types, but they MUST NOT re-export from any consumer component. The same TDZ-under-React-Refresh failure mode documented in §4.5 would re-apply under a different name. The smoke test does NOT catch this class of bug — only `npx remotion studio --no-open` does.
 - **No cross-barrel re-exports between `registry.ts` and `renderBeat.tsx`** (see §4.5). Helpers shared by both layers live in their own leaf file. The smoke test does not catch this class of bug — only `npx remotion studio` does.
 - **Smoke test is the unit of truth:** `./scripts/render-smoke.sh` runs `npm test` (143 tests) + a 0.2×-scale `npx remotion still` + writes the `out/last-render.json` cache. Green smoke + identical `*Test` PNGs = correct refactor. (One documented exception for 2.3.x: < 1% per-frame diff is acceptable for the scene-based motion hooks.)

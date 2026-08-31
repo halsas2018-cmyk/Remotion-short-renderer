@@ -88,6 +88,7 @@ These are the things that were marked as ✅ DONE in `CLAUDE.md`. They're refere
 - **Horizon 2.3.x Pass 1 — `useSceneOrbit` hook for `ChartComparison3D`** (commit `0ae8d9b`; ✅ DONE; see 2.3.x Pass 1 below for the per-file edit details) — ✅ DONE
 - **Horizon 2.3.x Pass 2 — `useChartReveal` hook for `ChartLine`** (commit `ca3ee1c`; ✅ DONE; see 2.3.x Pass 2 below for the per-file edit details) — ✅ DONE
 - **Horizon 2.3.x Pass 3 — `Map3D` design reconciliation (no hook needed)** (the current `src/Map3D.tsx` is a pure-CSS 3D voxel map with no Cesium dependency and no `useEffect` RAF loop; the ROADMAP / CLAUDE.md description of `Map3D` as a "Cesium special case" was speculative about a future Cesium integration that was never actually built; the current component's entrance math is 4 one-shot `interpolate(...)` calls, not a continuous loop, so the 2.3.x single-source-of-truth rationale does not apply; `Map3D` is the fourth component with no scene-based motion hook, alongside the rationale of "the math is one-shot, not continuous"; see 2.3.x Pass 3 below) — ✅ DONE (docs-only change, no code change)
+- **Horizon 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card`** (3 components now consume `emphasisWords` and apply the `Highlight` → `Circle` → `Underline` cycle from `@remotion/rough-notation`, matching the 2.1 text-on-card behavior; `VersusCard` / `BeforeAfter` / `QuoteCard` `*Test` compositions wired with example emphasis words so the cycle is visible in Studio; see 2.4 below) — ✅ DONE (commits `f17924a`, `b432f8f`)
 
 ---
 
@@ -260,7 +261,7 @@ git checkout src/beats/registry.ts
 
 **Runtime cost:** zero. The tests run on every `npm test` invocation (~7s) and on every `./scripts/render-smoke.sh` invocation (~2 minutes total, of which ~7s is the test phase). The test step is also the fastest way to catch a schema regression before it makes it to a render.
 
-**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 17 card-based components share one source of truth), 2.3.x (the 3 scene-based hooks — `useSceneOrbit` for `ChartComparison3D`, `useChartReveal` for `ChartLine`, and `Map3D` which doesn't need a hook because its math is one-shot entrance-only, not a continuous loop), 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish pass on existing components).
+**Next up in Horizon 2:** 2.3 (idle motion library in `src/lib/idleMotion/` — extract the `sin(t) * 6px` + 3D-tilt + glow-pulse into a `useIdleMotion()` hook so the 17 card-based components share one source of truth), 2.3.x (the 3 scene-based hooks — `useSceneOrbit` for `ChartComparison3D`, `useChartReveal` for `ChartLine`, and `Map3D` which doesn't need a hook because its math is one-shot entrance-only, not a continuous loop), **2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it)**, and 2.5 (visual polish pass on existing components).
 
 ### 2.3 — `useIdleMotion` shared hook — 🟡 PARTIALLY DONE (17/20 card-based components moved)
 
@@ -316,7 +317,7 @@ npm test
 # (the refactor is pure code reorganization — the rendered output must NOT change)
 ```
 
-**Next up in Horizon 2:** **2.3.x** (the 3 scene-based hooks — `useSceneOrbit` for `ChartComparison3D` ✅, `useChartReveal` for `ChartLine` ✅, and `Map3D` which doesn't need a hook ✅), then 2.4 (emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), then 2.5 (visual polish pass on the 20 existing components).
+**Next up in Horizon 2:** **2.3.x** (the 3 scene-based hooks — `useSceneOrbit` for `ChartComparison3D` ✅, `useChartReveal` for `ChartLine` ✅, and `Map3D` which doesn't need a hook ✅), then **2.4 (emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it)**, then 2.5 (visual polish pass on the 20 existing components).
 
 ### 2.3.x — Scene-based motion hooks (`useSceneOrbit` / `useChartReveal`) — ✅ DONE (2 hooks done; `Map3D` is the 3rd "scene-based component" and doesn't need a hook)
 
@@ -375,7 +376,7 @@ npx remotion studio --no-open
 # is byte-identical to the pre-2.3.x version (Pass 3 is docs-only).
 ```
 
-**Next up after 2.3.x:** 2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it).
+**Next up after 2.3.x:** **2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it)**.
 
 ### 2.3.x Pass 1 — `useSceneOrbit` for `ChartComparison3D` — ✅ DONE (commit 0ae8d9b, 1/2)
 
@@ -542,40 +543,66 @@ npx remotion studio --no-open
 # is unchanged, so its rendered output is the visual baseline)
 ```
 
-**Next up after Pass 3 (and after 2.3.x is fully done):** **2.4** (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it).
+**Next up after Pass 3 (and after 2.3.x is fully done):** **2.4 (beat-emphasis words → component-level highlights for `versus` / `before_after` / `quote_card` — adds the `rough-notation` emphasis cycle that already exists in `KeyStatement` to the 3 components that need it)**.
 
-### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ⏳ NEXT (≈2–3 days, **$0**)
+### 2.4 — Component-level emphasis cycle for `versus` / `before_after` / `quote_card` — ✅ DONE (commits `f17924a`, `b432f8f`)
 
-**Why this is next:** the `KeyStatement` / `HeadlineCard` / `QuoteAttribution` / `Scrollytelling` components already have a working `emphasisWords` → `rough-notation` cycle (Highlight → Circle → Underline from `@remotion/rough-notation`). Three of the older beat types — `versus`, `before_after`, `quote_card` — accept `emphasisWords` from the Python pipeline but the prop is currently a no-op in the component (or only highlights a label without the cycle). This horizon adds the cycle to those three so the Python pipeline can drive emphasis on any of the 7 text-on-card beat types uniformly.
+**Why this was next:** the 4 text-on-card components from 2.1 (`HeadlineCard`, `KeyStatement`, `QuoteAttribution`, `Scrollytelling`) already had a working `emphasisWords` → `rough-notation` cycle (Highlight → Circle → Underline from `@remotion/rough-notation`). Three of the older beat types — `versus`, `before_after`, `quote_card` — accepted `emphasisWords` from the Python pipeline but the prop was a no-op in the component (or only highlighted a label without the cycle). This horizon adds the cycle to those three so the Python pipeline can drive emphasis on any of the 7 text-on-card beat types uniformly.
 
-**Scope (3 components, ~6 edits):**
-- `src/VersusCard.tsx` — add `Highlight` / `Circle` / `Underline` cycle around the `label` (and optionally `items[]` rows).
-- `src/BeforeAfter.tsx` — already has accent tags ("BEFORE" / "AFTER") but no emphasis cycle. Add it to the headline text on each card.
-- `src/QuoteCard.tsx` — older variant of `QuoteAttribution`; add the cycle around the quote words.
-- The `*Test` compositions in `src/Root.tsx` need `emphasisWords: [...]` added to their `defaultProps` so the new behavior is visible in Studio.
+**Scope shipped (3 components, 4 `*Test` compositions, ~6 edits per component):**
 
-**Design-system compliance:** the emphasis cycle is already standardized in `KeyStatement` (see 3.4 of `CLAUDE.md`). The pattern is: `ANNOTATION_CYCLE = [Highlight, Circle, Underline]`, each with the accent color, cycling per emphasized word via a running index. New code must copy this pattern; do not invent a new annotation cycle.
+- **`src/VersusCard.tsx`** — added an `emphasisWords?: string[]` prop. The cycle is applied to the **labels** of the two sides (e.g. `"Broadcom"` / `"Nvidia"`). The cycle uses the same `ANNOTATION_CYCLE = [Highlight, Circle, Underline]` from `KeyStatement` / `HeadlineCard` so the visual vocabulary is uniform across the 7 text-on-card beat types. Each label is highlighted with a `RoughAnnotation` per emphasized word, colored with the accent palette (`#e86c00`).
+- **`src/BeforeAfter.tsx`** — added an `emphasisWords?: string[]` prop. The cycle is applied to the `beforeLabel` / `afterLabel` text (e.g. `"Manual"` / `"Automated"`). The accent tags ("BEFORE" / "AFTER") stay decorative, as before. The cycle is the same `Highlight` → `Circle` → `Underline` pattern.
+- **`src/QuoteCard.tsx`** — added an `emphasisWords?: string[]` prop. The cycle is applied to the quote body (e.g. `"predict"` / `"invent"` in the Alan Kay quote). The `Georgia` quote marks and the `&mdash; {attribution}` line stay plain. **One detail:** the quote body renders the typewriter-style reveal (one word at a time across the beat's idle phase), and the emphasis cycle respects the reveal — only the *current* word is annotated, partial-words (e.g. `"i"` mid-`"invent"`) are rendered plain until the word is complete. The cycle `Highlight` → `Circle` → `Underline` is re-applied to the current word as it appears.
+- **`src/Root.tsx`** — added 4 `*TestComposition` wrappers (`VersusCardTest`, `BeforeAfterTest`, `QuoteCardTest`, `QuoteCardLongTest`) and 4 `<Composition>` registrations so the emphasis cycle can be QA'd in Studio. Each passes `emphasisWords` via the wrapped component's props (NOT via `defaultProps` on the `<Composition>`), so the prop is visible in Studio's props panel and editable live.
+  - `VersusCardTest` uses labels `"Broadcom"` / `"Nvidia"`.
+  - `BeforeAfterTest` uses labels `"Manual Chip Procurement"` / `"Automated Lease-Back Model"`.
+  - `QuoteCardTest` uses the Alan Kay quote with emphasis on `"predict"` / `"invent"`.
+  - `QuoteCardLongTest` uses a longer Alan Kay quote with emphasis on `"serious"` / `"software"` / `"hardware"`, at `durationInFrames=180` so the typewriter has time to reveal all 3 emphasis words in one cycle.
 
-**Reuse pattern:** the `useIdleMotion` hook from 2.3 (and the `useSceneOrbit` / `useChartReveal` hooks from 2.3.x) means the 3 components that get the emphasis cycle ALSO need their idle math moved to the relevant hook. The 2.4 work is a clean add-on top of the 2.3 + 2.3.x refactor.
+**Per-component acceptance of `emphasisWords`:**
+- `VersusCard` — optional. The default is `[]` (no emphasis, all labels render plain). When provided, the cycle is applied per-label; the `items[]` and `value[]` fields stay plain.
+- `BeforeAfter` — optional. The default is `[]`. When provided, the cycle is applied to `beforeLabel` / `afterLabel`; the accent tag rows ("Legacy" / "Modern" etc.) stay decorative.
+- `QuoteCard` — optional. The default is `[]`. When provided, the cycle is applied to the quote body; the attribution line stays plain.
+
+**Registry / dispatcher wiring (one-time, at the registry layer):**
+- `src/beats/types.ts` — **no change.** The 3 types (`versus`, `before_after`, `quote_card`) are already in the `BeatType` union, and `emphasisWords` is an optional field in the `beatBaseShape` (the shared base of `PerBeatSchema`).
+- `src/beats/registry.ts` — **no change.** The 3 per-type Zod schemas already use `.passthrough()` (per Horizon 0.2), so the `emphasisWords` field flows through Zod validation to the component as-is. No schema update needed.
+- `src/beats/renderBeat.tsx` — **no change.** The 3 types are correctly in the suppressed list for kinetic captions (text/card beats), so the on-screen `emphasisWords` annotations are the only emphasis shown.
+- `src/beats/registry.test.ts` — **no change.** The 143 tests still pass: the per-type schemas for `versus` / `before_after` / `quote_card` already accepted the `emphasisWords` field via the `.passthrough()` base, and the 3 *Test compositions don't change the registry.
+- `src/SceneTransition.tsx` — **no change.** The new emphasis cycle runs inside the existing `<SceneTransition>` wrapper; no orchestrator change.
+
+**Design-system compliance:** the emphasis cycle is already standardized in `KeyStatement` (see §3.4 of `CLAUDE.md`); the new components copy that pattern verbatim. The `ANNOTATION_CYCLE` constant lives in each component (3 copies, one per component) — see "Future refactor" below for the consolidation note. Each annotation is `RoughAnnotation` from `@remotion/rough-notation`, with `color="#e86c00"` (the accent palette), `strokeWidth=2`, `padding={4}`, and the standard animation (`1s draw`).
+
+**Visual diff vs. pre-2.4:** the `VersusCard*Test` / `BeforeAfterTest` / `QuoteCard*Test` / `QuoteCardLongTest` PNGs ARE different from the pre-2.4 versions (the emphasis cycle is visible in the rendered output). This is the **expected** change for 2.4; the §8 "byte-identical *Test PNGs" rule is NOT an exception here — the visual diff is the entire point. The other 9 `*Test` PNGs (the ones for `ChartCounter` / `StatPill` / `QuoteAttribution` / etc.) are unchanged.
+
+**Future refactor (out of scope for 2.4):** the `ANNOTATION_CYCLE = [Highlight, Circle, Underline]` constant is currently copied across 7 components (4 from 2.1 + 3 from 2.4). A future horizon (likely 2.6) should extract it to `src/lib/emphasis/useEmphasisCycle.ts` (a small leaf hook that returns the cycle as a stable reference, plus the current annotation for index N). 2.4 is a "ship the cycle in 3 components" pass, not a "consolidate the cycle" pass — the consolidation comes after the cycle is proven in 3 additional components.
 
 **How to verify:**
 ```bash
-# Tests still pass
+# Tests still pass (143 green)
 npm test
 
-# Smoke still green
+# Smoke still green (46314-byte smoke.png, hash bfbbf7cdef5c…)
 ./scripts/render-smoke.sh
 
-# *Test PNGs for VersusCard / BeforeAfter / QuoteCard are visually different
-# from the pre-2.4 versions (emphasis cycle is visible), but all 4 `*Test`
-# PNGs for the 2.3 components are UNCHANGED.
+# Studio — visual QA the 3 emphasis-cycle Test compositions
+npx remotion studio --no-open
+# Open in browser:
+#   /VersusCardTest       (Broadcom vs Nvidia, both labels cycle)
+#   /BeforeAfterTest      (Manual vs Automated, both labels cycle)
+#   /QuoteCardTest        (predict/invent cycle as the typewriter reveals)
+#   /QuoteCardLongTest    (serious/software/hardware cycle, long quote)
+
+# Each *Test PNG is visually different from the pre-2.4 version
+# (the emphasis cycle is visible). The other 9 *Test PNGs are unchanged.
 ```
 
 **Next up after 2.4:** 2.5 (visual polish + design-system audit on the 20 existing components). The audit is a single-file survey that uses the 3.3 checklist in `CLAUDE.md` as the rubric.
 
 ### 2.5 — Visual polish + design-system compliance audit — ⏳ FUTURE (≈3–4 days, **$0**)
 
-**Why this is last in Horizon 2:** after 2.3 (centralized idle math) and 2.4 (standardized emphasis cycle), the only remaining work is a per-component audit against the 3.3 checklist in `CLAUDE.md`. This is a sweep, not a feature: every component is checked against the 14 design-system primitives and any deviation is fixed or explicitly accepted.
+**Why this is last in Horizon 2:** after 2.3 (centralized idle math), 2.3.x (scene-based motion hooks), and 2.4 (standardized emphasis cycle), the only remaining work is a per-component audit against the 3.3 checklist in `CLAUDE.md`. This is a sweep, not a feature: every component is checked against the 14 design-system primitives and any deviation is fixed or explicitly accepted.
 
 **Scope (20 components, ~14 primitives each = ~280 checks):**
 - All 20 registered beat types are in scope. The 9 `*Test` compositions in `src/Root.tsx` give the visual baseline; the audit produces a `docs/DESIGN_SYSTEM_AUDIT.md` table with one row per component, one column per primitive, and a ✅ / ❌ / ⚠️ (deviation, accepted) status.
@@ -595,7 +622,7 @@ npm test
 # need fixes will have visible changes)
 ```
 
-**Next up after 2.5:** Horizon 3 (smart beat generation, **$0–$5/day LLM spend**). The 2.x arc is complete: 7 new beat types, 1 shared idle-motion library, 2 scene-based motion hooks, 1 standardized emphasis cycle, 1 design-system audit. That's the visual vocabulary the rest of the project needs.
+**Next up after 2.5:** Horizon 3 (smart beat generation, **$0–$5/day LLM spend**). The 2.x arc is complete: 7 new beat types, 1 shared idle-motion library, 2 scene-based motion hooks, 1 standardized emphasis cycle (3 components), 1 design-system audit. That's the visual vocabulary the rest of the project needs.
 
 ---
 
@@ -874,4 +901,4 @@ These were considered and removed because they don't pass the cost lens or the i
 
 **The critical path is Horizon 0 → 2 → 3 → 4 (without 4.1) → 5 → 8 (manual for now)** (in that order). Horizons 1, 6, 7 are needed only when you have a laptop and the local machine can't keep up with the daily queue.
 
-**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, 17/20 card-based components), 2.3.x (scene-based motion hooks for the 3 scene-based components — `useSceneOrbit` Pass 1 done for `ChartComparison3D`, `useChartReveal` Pass 2 done for `ChartLine`, `Map3D` Pass 3 docs-only — no hook needed), 2.4 (emphasis words → component-level highlights), and 2.5 (visual polish) are the last 5 tasks in Horizon 2.
+**Horizon 2 progress:** `headline_card` (2.1.1) is done. Next: `stat_pill` (reusing `ChartCounter`), then `quote_attribution` (multi-line quote with author avatar — designed to be the next copy-paste of `HeadlineCard.tsx`), then `compare_split` (reuse `BeforeAfter` with horizontal split), then `location_pulse` (cheaper than `Map3D` for 2D callouts), then `image_card` (deferred to 4.x), `scrollytelling`, and `ticker_tape`. 2.2 (Zod unit tests), 2.3 (idle motion library, 17/20 card-based components), 2.3.x (scene-based motion hooks for the 3 scene-based components — `useSceneOrbit` Pass 1 done for `ChartComparison3D`, `useChartReveal` Pass 2 done for `ChartLine`, `Map3D` Pass 3 docs-only — no hook needed), 2.4 (emphasis words → component-level highlights for `versus` / `before_after` / `quote_card`), and 2.5 (visual polish) are the last 5 tasks in Horizon 2.

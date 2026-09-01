@@ -212,8 +212,15 @@ def _chunk_script_into_beats(script: str) -> list[dict]:
 
 def generate_script(story: dict, content: dict,
                     retry_feedback: str = "",
+                    require_format: bool = False,
                     model_key: str = llm_client.DEFAULT_MODEL_KEY) -> dict:
-    """One LLM call → script + headlines. Validates + retries once."""
+    """One LLM call → script + headlines. Validates + retries once.
+
+    When require_format=True, the LLM is given one extra retry if it omits
+    the `format` field (URGENT_BREAK / DEBATE / EXPLAINER) — that field
+    drives the voice/pacing selection downstream, so silently defaulting to
+    URGENT_BREAK breaks the three-voice variety.
+    """
     source = _source_block(story, content)
     system = SCRIPT_SYSTEM_PROMPT.replace("{SOURCE}", source)
     user_prompt = "Write the script + 5 headlines + youtube metadata now."
@@ -232,12 +239,27 @@ def generate_script(story: dict, content: dict,
     if not parsed:
         raise RuntimeError(f"LLM script output was not valid JSON: {raw[:200]}")
 
+    # One-shot retry if the LLM dropped the format field. This is separate
+    # from the general _validate_script retry so the nudge can be tightly
+    # focused on the missing field rather than mixed with filler/length
+    # issues.
+    fmt_raw = (parsed.get("format") or "").strip().upper()
+    if require_format and fmt_raw not in {"URGENT_BREAK", "DEBATE", "EXPLAINER"} and not retry_feedback:
+        fb = ("Your previous JSON response was missing the `format` field, or it "
+              "had an invalid value. Re-emit the COMPLETE JSON object, this time "
+              "with `format` set to exactly one of: \"URGENT_BREAK\", \"DEBATE\", "
+              "or \"EXPLAINER\". Pick the one that best matches the story's tone:")
+        print(f"  [validator] retrying: missing/invalid format '{parsed.get('format')}'")
+        return generate_script(story, content, retry_feedback=fb,
+                               require_format=require_format, model_key=model_key)
+
     # Validate — one retry if banned filler slips in
     problems = _validate_script(parsed, story)
     if problems and not retry_feedback:
         fb = "Your previous output had these problems; fix them and return the full JSON again:\n- " + "\n- ".join(problems)
         print(f"  [validator] retrying: {len(problems)} issue(s): {problems[0]}")
-        return generate_script(story, content, retry_feedback=fb)
+        return generate_script(story, content, retry_feedback=fb,
+                               require_format=require_format, model_key=model_key)
 
     script = parsed["script"].strip()
     word_count = len(script.split())
@@ -375,7 +397,7 @@ def process_story(story: dict, content: dict | None = None,
         content = fetch_article_content(story)
 
     print(f"Writing script + headlines: {story['title'][:60]}...")
-    result = generate_script(story, content, model_key=model_key)
+    result = generate_script(story, content, model_key=model_key, require_format=True)
     script = result["script"]
     print(f"  ✓ script ({result['word_count']} words, headline: \"{result['headline']}\")")
     print(f"  ✓ pre-chunked beats: {len(result['pre_chunked_beats'])} chunks")

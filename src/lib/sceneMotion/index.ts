@@ -28,3 +28,5 @@
 
 export { useSceneOrbit } from "./useSceneOrbit";
 export type { SceneOrbit, SceneOrbitOptions } from "./useSceneOrbit";
+export { useChartReveal } from "./useChartReveal";
+export type { ChartReveal, ChartRevealOptions } from "./useChartReveal";

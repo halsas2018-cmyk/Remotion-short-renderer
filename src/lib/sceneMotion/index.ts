@@ -13,8 +13,6 @@
 // re-export, extract the shared helper to its own leaf file instead.
 //
 // **Hooks exported here (growing over time):**
-// - `useSceneOrbit` — additive idle-orbit math for 3D scene cameras
-//   (Pass 1, ships with `ChartComparison3D`).
 // - `useChartReveal` — linear draw-in + subtle idle pulse for chart
 //   components (Pass 2, ships with `ChartLine`).
 // - `useCesiumCamera` — per-frame camera state for the Cesium render
@@ -26,7 +24,5 @@
 // from this barrel.
 // ============================================================================
 
-export { useSceneOrbit } from "./useSceneOrbit";
-export type { SceneOrbit, SceneOrbitOptions } from "./useSceneOrbit";
 export { useChartReveal } from "./useChartReveal";
 export type { ChartReveal, ChartRevealOptions } from "./useChartReveal";

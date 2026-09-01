@@ -1340,6 +1340,20 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     # 3.5: strip the internal retry-tracking key before downstream validation
     for b in beats:
         b.pop("_empty_required_fields", None)
+    # 3.5.4: strip dead metadata fields that don't belong to the beat's
+    # final type. The retry path can change a beat's type (e.g. versus
+    # → stat_pill) but leaves the original empty left/right/quote strings
+    # in the dict. They pass validation (not required by the new type)
+    # but they bloat the saved JSON. Keep only fields listed in
+    # BEAT_TYPES[type] plus the always-present rendering fields.
+    RENDER_FIELDS = {"type", "text", "startFrame", "endFrame",
+                     "durationInFrames", "pacing"}
+    for b in beats:
+        btype = b.get("type", "")
+        allowed = set(BEAT_TYPES.get(btype, [])) | RENDER_FIELDS
+        for k in list(b.keys()):
+            if k not in allowed:
+                del b[k]
     
     # Validate initial beats. NOTE: gap/overlap issues here are EXPECTED
     # because word_timestamps has natural pauses between words. They are

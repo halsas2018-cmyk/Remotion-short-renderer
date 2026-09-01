@@ -126,6 +126,12 @@ MODEL_REGISTRY = {
         "key_env": "OPENROUTER_API_KEY",
         "notes": "MiniMax M3 (free) on OpenRouter",
     },
+    "or-nemotron-35-lightning-free": {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "key_env": "OPENROUTER_API_KEY",
+        "notes": "NVIDIA Nemotron 3.5 Lightning (free, reasoning) on OpenRouter",
+    },
 }
 
 DEFAULT_MODEL_KEY = "groq-gpt-oss-120b"

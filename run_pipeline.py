@@ -230,6 +230,7 @@ def save_project(
     (project_dir / "script.txt").write_text(script, encoding="utf-8")
     (project_dir / "pre_chunked_beats.json").write_text(json.dumps(pre_chunked_beats, indent=2), encoding="utf-8")
     (project_dir / "model.txt").write_text(f"{model_key}\n{rank_model_key}", encoding="utf-8")
+    (project_dir / "format.txt").write_text(format or "default", encoding="utf-8")
 
     narration_path = None
     word_timestamps = None

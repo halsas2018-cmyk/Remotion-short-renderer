@@ -137,8 +137,8 @@ BEAT_TYPE_FIELD_HINTS = {
 # One example per complex type, exposed in the prompt. Keeps the LLM
 # honest about field shapes without inflating prompt size.
 BEAT_TYPE_EXAMPLES = {
-    "versus":          {"type": "versus", "left": "Shein", "right": "Critics"},
-    "compare_split":   {"type": "compare_split", "left": "Before: 3 weeks", "right": "After: 1 day"},
+    "versus":          {"type": "versus", "text": "example contrast", "left": "Phone AI", "right": "Robot AI"},
+    "compare_split":   {"type": "compare_split", "text": "delivery time", "left": "Before: 3 weeks", "right": "After: 1 day"},
     "before_after":    {"type": "before_after", "beforeLabel": "Pre-IPO", "afterLabel": "Post-IPO"},
     "quote_card":      {"type": "quote_card", "quote": "The math doesn't work", "attribution": "Investors"},
     "quote_attribution": {"type": "quote_attribution", "quote": "We can't keep ignoring this", "attribution": "Labor groups"},
@@ -976,19 +976,26 @@ OUTPUT (JSON only — array of objects, one per chunk, in order):
   ...
 ]
 """
-        # 3.5: append a stronger nudge when retrying after empty-field detection
+        # 3.5.1: append a stronger nudge when retrying after empty-field detection
         if force_field_completion and empty_field_indices:
             prompt += f"""
 
-CRITICAL RETRY NOTE:
-Your previous attempt left these beats with empty required string fields:
-{json.dumps([{"chunk_index": i, "type": pre_chunked_beats[i].get("text", "")[:50] + "..."} for i in empty_field_indices], indent=2)}
+CRITICAL RETRY NOTE — your previous attempt left these beats with empty required string fields:
+{json.dumps([{"chunk_index": i, "chunk_text": pre_chunked_beats[i].get("text", "")[:80] + "..."} for i in empty_field_indices], indent=2)}
 
-For each of these chunks, the beat's `left`/`right`/`quote`/`attribution`/`label` fields
-MUST contain real text pulled from the script or the FACTS section. NEVER emit "".
-If the chunk text doesn't contain a usable value, PULL the value from a related
-chunk's text or from the FACTS section. If truly nothing fits, use a short
-paraphrase of the chunk's content (3-8 words) — never leave it blank.
+HARD RULES (no exceptions):
+1. NEVER emit "" for any required string field. Empty strings = failure.
+2. For `versus.left` / `versus.right`: extract or invent a clear two-sided contrast
+   from the chunk text. If the text only mentions ONE side, the OTHER side is the
+   obvious counterpoint (e.g. "phone AI" vs "robot AI", "supporters" vs "critics",
+   "old way" vs "new way", "before" vs "after"). Both fields MUST be 3-8 words.
+3. For `quote_card.quote` / `quote_attribution.quote`: if the chunk doesn't contain
+   a direct quote, paraphrase the chunk's main point in quote form (5-15 words) and
+   attribute to a logical speaker (e.g. "Analysts", "Critics", "The author", or a
+   named entity from FACTS).
+4. For `*_label` / `*_body` / `locationName`: use a short 1-5 word label from
+   the chunk text. If nothing fits, use a generic but true label like
+   "New development", "Industry shift", "Key stat", "Public reaction".
 """
         return prompt
 
@@ -1186,15 +1193,14 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     print(json.dumps(beats, indent=2, ensure_ascii=False))
     print("=== END RAW LLM BEATS ===\n")
     
-    # 3.5: detect LLM that produced empty required string fields (the
-    # versus/quote_card blank-text bug we saw in the Shein run). If
-    # more than 30% of beats are affected, retry once with a stronger
-    # prompt that calls out the issue explicitly.
+    # 3.5.1: detect LLM that produced empty required string fields. ANY
+    # empty required field (left/right/quote/attribution/label) breaks
+    # the render, so we always retry once with a stronger prompt.
     empty_beat_indices = [
         i for i, b in enumerate(beats)
         if b.get("_empty_required_fields")
     ]
-    if empty_beat_indices and len(empty_beat_indices) / max(1, len(beats)) > 0.30:
+    if empty_beat_indices:
         print(f"  ⚠ {len(empty_beat_indices)}/{len(beats)} beats have empty required fields — retrying LLM with stronger prompt")
         retry_prompt = build_prompt(
             script, word_timestamps, story, headline,
@@ -1211,8 +1217,8 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             retry_response = llm_client.call_llm(
                 messages=retry_messages,
                 model_key=model_key,
-                temperature=0.2,
-                max_tokens=6000,
+                temperature=0.1,  # 3.5.1: lower temp for retry — more deterministic on field completion
+                max_tokens=8000,  # raised to avoid truncating long answers
             )
             # Re-parse and re-merge
             if isinstance(retry_response, str):
@@ -1253,9 +1259,11 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
 
     # Final fallback: any beat that STILL has empty required string fields
     # gets demoted to key_statement (which only needs emphasisWords).
+    demoted = 0
     final_beats = []
     for i, beat in enumerate(beats):
         if beat.get("_empty_required_fields"):
+            demoted += 1
             beat = {
                 "type": "key_statement",
                 "text": beat["text"],
@@ -1264,6 +1272,8 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                 "emphasisWords": beat.get("emphasisWords", []),
             }
         final_beats.append(beat)
+    if demoted:
+        print(f"  ⚠ Demoted {demoted} beat(s) with empty required fields to key_statement")
     beats = final_beats
 
     # Filter out malformed beats (missing text or invalid type)
@@ -1294,6 +1304,8 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     errors = validate_beats(beats, word_timestamps, script)
     if errors:
         print(f"  ⚠ Initial validation warnings: {len(errors)} issues")
+        for e in errors[:20]:
+            print(f"     - {e}")
         # Try to auto-fix frame alignment
         beats = auto_fix_frames(beats, word_timestamps, script)
         errors = validate_beats(beats, word_timestamps, script)

@@ -48,12 +48,14 @@
  * horizon, not a current one.
  */
 
-export const TRANSITION_SFX_URL = "https://remotion.media/whoosh.wav";
+import { staticFile } from "remotion";
+
+export const TRANSITION_SFX_URL = staticFile("sfx/whoosh.wav");
 
 /** Volume of the transition SFX (0..1). 0.5 = comfortable default. */
 export const TRANSITION_SFX_VOLUME = 0.5;
 
-export const TYPING_SFX_URL = "https://remotion.media/mouse-click.wav";
+export const TYPING_SFX_URL = staticFile("sfx/mouse-click.wav");
 
 /** Volume of the typing-click SFX (0..1). 0.15 = quiet; doesn't fight the narration. */
 export const TYPING_SFX_VOLUME = 0.15;

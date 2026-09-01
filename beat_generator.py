@@ -1300,17 +1300,32 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     for b in beats:
         b.pop("_empty_required_fields", None)
     
-    # Validate initial beats
+    # Validate initial beats. NOTE: gap/overlap issues here are EXPECTED
+    # because word_timestamps has natural pauses between words. They are
+    # auto-fixed below by auto_fix_frames(). Only print non-gap issues
+    # to avoid noise — gaps will be re-checked after auto-fix.
     errors = validate_beats(beats, word_timestamps, script)
     if errors:
-        print(f"  ⚠ Initial validation warnings: {len(errors)} issues")
-        for e in errors[:20]:
-            print(f"     - {e}")
+        gap_errors = [e for e in errors if "gap/overlap" in e]
+        other_errors = [e for e in errors if "gap/overlap" not in e]
+        if other_errors:
+            print(f"  ⚠ Initial validation warnings: {len(other_errors)} non-gap issue(s)")
+            for e in other_errors[:20]:
+                print(f"     - {e}")
+        else:
+            print(f"  ⚠ Initial validation: {len(gap_errors)} gap(s) (auto-fixing)")
         # Try to auto-fix frame alignment
         beats = auto_fix_frames(beats, word_timestamps, script)
         errors = validate_beats(beats, word_timestamps, script)
         if errors:
-            print(f"  ⚠ After auto-fix: {len(errors)} issues remain")
+            remaining_gaps = [e for e in errors if "gap/overlap" in e]
+            remaining_other = [e for e in errors if "gap/overlap" not in e]
+            if remaining_gaps:
+                print(f"  ⚠ After auto-fix: {len(remaining_gaps)} gap(s) remain (will be force-fixed at end)")
+            if remaining_other:
+                print(f"  ⚠ After auto-fix: {len(remaining_other)} non-gap issue(s) remain")
+                for e in remaining_other[:20]:
+                    print(f"     - {e}")
     
     # Split beats that exceed the hard ceiling (only after 3.3 trim).
     # Most oversize beats are now handled by assign_frames_from_word_ranges.

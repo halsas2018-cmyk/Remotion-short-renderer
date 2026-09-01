@@ -153,6 +153,28 @@ def _strip_html(text: str) -> str:
 GOOGLE_NEWS_DELAY = 1.5  # seconds between category queries
 GOOGLE_NEWS_SOURCES = {"Google News AI", "Google News Business", "Google News Science"}
 
+def _apply_category_diversity(stories: list[dict], limit: int) -> list[dict]:
+    """Enforce category diversity in the candidate pool.
+
+    Without this, AI-only RSS sources (OpenAI, Google AI, TechCrunch AI, etc.)
+    crowd out business and science stories. We cap each category to 50% of the
+    pool limit, then fill the rest with the next-best from any category.
+    """
+    if limit <= 0 or not stories:
+        return []
+    cap = max(1, limit // 2)
+    selected = []
+    cat_counts = defaultdict(int)
+    for s in stories:
+        cat = s.get("category", "general")
+        if cat_counts[cat] < cap:
+            selected.append(s)
+            cat_counts[cat] += 1
+        if len(selected) >= limit:
+            break
+    return selected
+
+
 def _resolve_google_news_redirect(url: str) -> str:
     """Resolve Google News RSS redirect URL to final article URL.
 
@@ -497,7 +519,7 @@ def rank_top_stories(
         s["score"] = score_story(s, now)
 
     all_stories.sort(key=lambda s: s["score"], reverse=True)
-    candidates = all_stories[:candidate_pool]
+    candidates = _apply_category_diversity(all_stories, candidate_pool)
 
     # Resolve Google News redirects ONLY for top candidates (to save requests)
     print("Resolving Google News redirects for top candidates...")

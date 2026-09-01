@@ -1261,7 +1261,11 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                 retry_data = retry_response
             retry_assignments = retry_data if isinstance(retry_data, list) else retry_data.get("beats", [])
             if len(retry_assignments) == len(beats):
-                # Overwrite metadata on the beats that had empty fields
+                # Overwrite metadata on the beats that had empty fields.
+                # 3.5.3: if the LLM returned a valid type for this beat, accept
+                # the new type — otherwise we end up with a versus beat whose
+                # _empty_required_fields is [] (because key_statement has no
+                # required string fields) but left/right are still "".
                 for idx in empty_beat_indices:
                     assignment = retry_assignments[idx]
                     if not isinstance(assignment, dict):
@@ -1269,6 +1273,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                     beat_type = assignment.get("type", beats[idx].get("type", "key_statement"))
                     if beat_type not in BEAT_TYPES:
                         beat_type = beats[idx].get("type", "key_statement")
+                    beats[idx]["type"] = beat_type  # accept the new type
                     still_empty = []
                     for field in BEAT_TYPES[beat_type]:
                         raw_value = assignment.get(field)

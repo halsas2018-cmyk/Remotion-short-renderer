@@ -8,7 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
-import { useSceneOrbit } from "./lib/sceneMotion";
+import { useSceneOrbit } from "./lib/sceneMotion/useSceneOrbit";
 
 interface ChartComparison3DProps {
   items: Array<{ label: string; value: number }>;

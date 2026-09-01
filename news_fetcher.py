@@ -32,8 +32,6 @@ RSS_FEEDS = {
     "Google News AI": "https://news.google.com/rss/search?q=AI+artificial+intelligence&hl=en-US&gl=US&ceid=US:en",
     "Google News Business": "https://news.google.com/rss/search?q=business+startup+funding&hl=en-US&gl=US&ceid=US:en",
     "Google News Science": "https://news.google.com/rss/search?q=science+research+breakthrough&hl=en-US&gl=US&ceid=US:en",
-    # Reddit RSS feeds (only ones that work reliably)
-    "Reddit r/programming": "https://old.reddit.com/r/programming/top/.rss",
     # Business / Finance feeds (Part 2 of UPGRADE_PLAN.md)
     "CNBC Business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147",
     "TechCrunch Startups": "https://techcrunch.com/category/startups/feed/",
@@ -104,7 +102,6 @@ SOURCE_CATEGORIES = {
     "VentureBeat AI": "ai",
     "arXiv cs.AI": "ai",
     "Google News AI": "ai",
-    "Reddit r/programming": "ai",
     # Business sources
     "Google News Business": "business",
     "CNBC Business": "business",
@@ -120,11 +117,9 @@ SOURCE_CATEGORIES = {
     "Hacker News": "ai",  # primarily AI/tech discussions
 }
 
-# Sources that have native engagement data (HN points, Reddit upvotes/comments,
-# YouTube view counts)
+# Sources that have native engagement data (HN points, YouTube view counts)
 ENGAGEMENT_SOURCES = {
     "Hacker News",
-    "Reddit r/programming",
     "YouTube CNBC",
     "YouTube Bloomberg Tech",
     "YouTube Yahoo Finance",
@@ -132,13 +127,6 @@ ENGAGEMENT_SOURCES = {
 
 REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ShortsBot/1.0)"}
 REQUEST_TIMEOUT = 15
-
-# Reddit RSS feeds need a browser UA to avoid 429, and delay between requests
-REDDIT_RSS_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-}
-REDDIT_RSS_DELAY = 8.0  # seconds between Reddit RSS requests to avoid 429
-REDDIT_RSS_MAX_RETRIES = 3
 
 
 # ---------------------------------------------------------------------------
@@ -209,24 +197,13 @@ def _parse_date(raw: str):
 def fetch_rss(source_name: str, url: str) -> list[dict]:
     """Fetch and parse a single RSS/Atom feed. Returns a list of story dicts."""
     stories = []
-    # Reddit RSS feeds need browser UA to avoid 429, and retry
-    headers = REDDIT_RSS_HEADERS if "old.reddit.com" in url else REQUEST_HEADERS
-    max_retries = REDDIT_RSS_MAX_RETRIES if "old.reddit.com" in url else 0
-
-    for attempt in range(max_retries + 1):
-        try:
-            resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
-            resp.raise_for_status()
-            root = ET.fromstring(resp.content)
-            break
-        except Exception as e:
-            if attempt == max_retries:
-                print(f"  [skip] {source_name}: {e}")
-                return stories
-            # Retry after delay
-            wait = (attempt + 1) * 2
-            print(f"  [retry {attempt+1}/{max_retries}] {source_name}: waiting {wait}s... ({e})")
-            time.sleep(wait)
+    try:
+        resp = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+    except Exception as e:
+        print(f"  [skip] {source_name}: {e}")
+        return stories
 
     # RSS 2.0: <rss><channel><item>...
     items = root.findall(".//item")
@@ -381,22 +358,8 @@ def collect_all_stories() -> list[dict]:
     all_stories = []
     google_news_seen = 0
 
-    # Group sources by type for interleaved fetching
-    reddit_sources = [(name, url) for name, url in RSS_FEEDS.items() if "old.reddit.com" in url]
-    google_news_sources = [(name, url) for name, url in RSS_FEEDS.items() if name in GOOGLE_NEWS_SOURCES]
-    other_sources = [(name, url) for name, url in RSS_FEEDS.items()
-                     if "old.reddit.com" not in url and name not in GOOGLE_NEWS_SOURCES]
-
-    # Interleave: 1 Reddit → 2-3 other → 1 Reddit → 2-3 other → etc.
-    # This spaces out Reddit requests naturally without adding extra total time
-    reddit_idx = 0
-    other_idx = 0
-
-    # Process other sources first (some), then start interleaving
-    # First batch: 3 non-Reddit sources
-    for _ in range(min(3, len(other_sources))):
-        name, url = other_sources[other_idx]
-        other_idx += 1
+    # Iterate RSS sources, applying the per-source-type delay logic
+    for name, url in RSS_FEEDS.items():
         print(f"Fetching {name}...")
         stories = fetch_rss(name, url)
         all_stories.extend(stories)
@@ -405,31 +368,6 @@ def collect_all_stories() -> list[dict]:
             google_news_seen += 1
             if google_news_seen < 3:
                 time.sleep(GOOGLE_NEWS_DELAY)
-
-    # Now interleave: Reddit + 2-3 other sources
-    while reddit_idx < len(reddit_sources) or other_idx < len(other_sources):
-        # Fetch one Reddit source
-        if reddit_idx < len(reddit_sources):
-            name, url = reddit_sources[reddit_idx]
-            reddit_idx += 1
-            print(f"Fetching {name}...")
-            stories = fetch_rss(name, url)
-            all_stories.extend(stories)
-            # Reddit RSS already has 8s delay inside fetch_rss on retry
-
-        # Fetch 2-3 other sources
-        for _ in range(min(3, len(other_sources) - other_idx)):
-            if other_idx >= len(other_sources):
-                break
-            name, url = other_sources[other_idx]
-            other_idx += 1
-            print(f"Fetching {name}...")
-            stories = fetch_rss(name, url)
-            all_stories.extend(stories)
-            if name in GOOGLE_NEWS_SOURCES:
-                google_news_seen += 1
-                if google_news_seen < 3:
-                    time.sleep(GOOGLE_NEWS_DELAY)
 
     print("Fetching Hacker News signal...")
     all_stories.extend(fetch_hn_signal())
@@ -479,10 +417,6 @@ def score_story(story: dict, now: datetime) -> float:
         # correctly outranks an ignored one.
         elif "views" in story:
             score += min(story["views"] / 2000, 30)  # up to 30 pts
-        # Reddit RSS — engagement in summary field as "X points · Y comments"
-        # (Reddit RSS includes this in description; fallback to neutral if missing)
-        elif "Reddit" in story.get("source", ""):
-            score += 15  # neutral default for Reddit sources
     else:
         # No native engagement data (plain RSS blogs, Google News, etc.)
         # Give neutral default so they aren't structurally penalized

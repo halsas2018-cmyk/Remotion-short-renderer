@@ -533,9 +533,9 @@ def rank_top_stories(
     # Optional LLM editorial rerank
     if not no_llm_rank and candidates:
         try:
-            from llm_ranker import rerank_stories
+            import llm_ranker
             print(f"Running LLM editorial rerank with model: {rank_model_key or 'default'}...")
-            candidates = rerank_stories(candidates, model_key=rank_model_key)
+            candidates, _src = llm_ranker.rerank(candidates, model_key=rank_model_key)
         except Exception as e:
             print(f"  [warn] LLM rerank failed: {e}, falling back to heuristic order")
 

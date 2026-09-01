@@ -62,75 +62,75 @@ BEAT_TYPES = {
 # These tell the LLM exactly what each field should contain.
 BEAT_TYPE_FIELD_HINTS = {
     "versus": {
-        "left": "Short label or phrase for the LEFT side of the comparison (3-8 words)",
-        "right": "Short label or phrase for the RIGHT side of the comparison (3-8 words)",
+        "left": "Short label, LEFT side (3-8 words)",
+        "right": "Short label, RIGHT side (3-8 words)",
     },
     "compare_split": {
-        "left": "Short label or phrase for the LEFT side (3-8 words)",
-        "right": "Short label or phrase for the RIGHT side (3-8 words)",
+        "left": "Short label, LEFT side (3-8 words)",
+        "right": "Short label, RIGHT side (3-8 words)",
     },
     "before_after": {
-        "beforeLabel": "Label for the BEFORE state (3-8 words)",
-        "afterLabel": "Label for the AFTER state (3-8 words)",
+        "beforeLabel": "Label for BEFORE state (3-8 words)",
+        "afterLabel": "Label for AFTER state (3-8 words)",
     },
     "quote_card": {
-        "quote": "The actual quoted text, in quotes, 5-25 words. Pull from the script or story facts — never invent.",
-        "attribution": "Who said it (person name, 'Critics', 'Investors', etc.)",
+        "quote": "Actual quoted text, 5-25 words",
+        "attribution": "Who said it (name or role)",
     },
     "quote_attribution": {
-        "quote": "The actual quoted text, 5-25 words. Pull from the script or story facts — never invent.",
-        "attribution": "Who said it (person name or short role)",
+        "quote": "Actual quoted text, 5-25 words",
+        "attribution": "Who said it (name or role)",
     },
     "progress_meter": {
-        "value": "Numeric current value (integer or float)",
+        "value": "Numeric current value",
         "maxValue": "Numeric max value (default 100)",
-        "label": "Short label like 'Pollution reduction' or 'Adoption'",
+        "label": "Short label like 'Adoption'",
     },
     "stat_pill": {
-        "value": "Numeric or short string value (e.g. '10%', '$2B', '5x')",
-        "label": "Short label like 'stock drop' or 'growth'",
+        "value": "Numeric or short string (e.g. '10%', '$2B')",
+        "label": "Short label like 'stock drop'",
     },
     "icon_text": {
-        "icon": "A single emoji that matches the text content",
+        "icon": "Single emoji matching the text",
     },
     "chart_line": {
-        "points": "Array of {label, value} objects (3-7 points), values numeric",
+        "points": "Array of {label, value}, 3-7 points, numeric",
     },
     "timeline": {
-        "events": "Array of {date, label} objects. `date` is a date string (e.g. '2021', '2024-05-12', 'Today'). 3-6 events.",
+        "events": "Array of {date, label}, 3-6 events",
     },
     "process_flow": {
-        "steps": "Array of step strings (3-5 short steps)",
+        "steps": "Array of step strings, 3-5 short steps",
     },
     "map_location": {
-        "locationName": "Real named location from the script",
+        "locationName": "Real named location from script",
         "latitude": "Numeric latitude (e.g. 51.5074)",
         "longitude": "Numeric longitude (e.g. -0.1278)",
     },
     "map_3d": {
-        "locationName": "Real named location from the script",
+        "locationName": "Real named location from script",
         "latitude": "Numeric latitude",
         "longitude": "Numeric longitude",
-        "buildings": "Array of building names (0-3) for 3D scene",
+        "buildings": "Array of 0-3 building names",
     },
     "location_pulse": {
-        "locationName": "Real named location from the script",
+        "locationName": "Real named location from script",
         "latitude": "Numeric latitude",
         "longitude": "Numeric longitude",
     },
     "scrollytelling": {
-        "title": "Short title for the section (3-8 words)",
-        "body": "Body text 1-2 sentences explaining the point",
+        "title": "Short title (3-8 words)",
+        "body": "1-2 sentence body",
     },
     "ticker_tape": {
-        "stories": "Array of 3-6 short headline strings",
-        "label": "Short label like 'Markets' or 'Today'",
+        "stories": "Array of 3-6 short headlines",
+        "label": "Short label like 'Markets'",
     },
     "key_statement": {
-        "emphasisWords": "Array of 1-3 words/phrases from the text to emphasize",
+        "emphasisWords": "Array of 1-3 words/phrases",
     },
     "headline_card": {
-        "emphasisWords": "Array of 1-3 words/phrases to emphasize (1-2 words each)",
+        "emphasisWords": "Array of 1-3 words/phrases",
     },
 }
 
@@ -554,8 +554,9 @@ def validate_beats(beats: list[dict], word_timestamps: list[dict], script: str) 
             elif req_field in ("left", "right", "beforeLabel", "afterLabel",
                                "quote", "attribution", "label", "title", "body",
                                "locationName"):
-                if beat[req_field] == "":
-                    errors.append(f"Beat {i} ({beat_type}): empty required field '{req_field}'")
+                field_value = beat[req_field]
+                if isinstance(field_value, str) and field_value.strip() == "":
+                    errors.append(f"Beat {i} ({beat_type}): empty (or whitespace-only) required field '{req_field}'")
         
         # Frame validation
         start = beat.get("startFrame", 0)
@@ -898,6 +899,28 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
         if btype in BEAT_TYPE_EXAMPLES
     }
 
+    # 3.5.2: filter beat type catalog to only arc-eligible types (when a
+    # story_arc is provided). key_statement and headline_card are always
+    # included since they're fallback types used elsewhere in the pipeline.
+    if story_arc:
+        types_to_include = set()
+        for label in story_arc:
+            types_to_include.update(arc_allowed_types(label))
+    else:
+        types_to_include = set(BEAT_TYPES.keys())
+    types_to_include.update({"key_statement", "headline_card"})
+
+    beat_types_with_hints = {
+        btype: beat_types_with_hints[btype]
+        for btype in beat_types_with_hints
+        if btype in types_to_include
+    }
+    beat_type_examples_compact = {
+        btype: beat_type_examples_compact[btype]
+        for btype in beat_type_examples_compact
+        if btype in types_to_include
+    }
+
     # Horizon 3.2 diversity budget
     diversity_section = f"""
 DIVERSITY BUDGET (mandatory — your story MUST include at least one of each):
@@ -954,7 +977,6 @@ CRITICAL RULES:
 
 SOURCE:
 Title: {story.get("title", "")}
-Full script (for context): {truncated_script}
 
 FACTS (metadata only, don't invent):
 Numbers: {key_numbers}
@@ -976,6 +998,8 @@ OUTPUT (JSON only — array of objects, one per chunk, in order):
   ...
 ]
 """
+        # 3.5.2: print prompt size to confirm the truncation/filtering helped
+        print(f"  → build_prompt (MODE A): {len(prompt)} chars")
         # 3.5.1: append a stronger nudge when retrying after empty-field detection
         if force_field_completion and empty_field_indices:
             prompt += f"""
@@ -1133,8 +1157,14 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             # Add type-specific metadata from LLM assignment
             empty_required_fields = []  # 3.5: track empty required strings for retry
             for field in BEAT_TYPES[beat_type]:
-                if field in assignment and assignment[field] not in (None, "", [], 0, 0.0):
-                    beat[field] = assignment[field]
+                raw_value = assignment.get(field)
+                is_blank = (
+                    raw_value is None
+                    or raw_value in ([], 0, 0.0)
+                    or (isinstance(raw_value, str) and raw_value.strip() == "")
+                )
+                if field in assignment and not is_blank:
+                    beat[field] = raw_value
                 else:
                     # Provide sensible defaults for required fields
                     if field == "emphasisWords":
@@ -1241,8 +1271,14 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                         beat_type = beats[idx].get("type", "key_statement")
                     still_empty = []
                     for field in BEAT_TYPES[beat_type]:
-                        if field in assignment and assignment[field] not in (None, "", [], 0, 0.0):
-                            beats[idx][field] = assignment[field]
+                        raw_value = assignment.get(field)
+                        is_blank = (
+                            raw_value is None
+                            or raw_value in ([], 0, 0.0)
+                            or (isinstance(raw_value, str) and raw_value.strip() == "")
+                        )
+                        if field in assignment and not is_blank:
+                            beats[idx][field] = raw_value
                         elif field in ("left", "right", "beforeLabel", "afterLabel",
                                        "quote", "attribution", "label", "title", "body",
                                        "locationName"):

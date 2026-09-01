@@ -56,6 +56,7 @@ if _env_path.exists():
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def _signup_url(provider: str) -> str:
@@ -63,6 +64,7 @@ def _signup_url(provider: str) -> str:
         "groq": "https://console.groq.com",
         "nvidia": "https://build.nvidia.com",
         "openrouter": "https://openrouter.ai",
+        "gemini": "https://aistudio.google.com/apikey",
     }.get(provider, "")
 
 
@@ -132,6 +134,13 @@ MODEL_REGISTRY = {
         "key_env": "OPENROUTER_API_KEY",
         "notes": "NVIDIA Nemotron 3.5 Lightning (free, reasoning) on OpenRouter",
     },
+    # --- Google Gemini (Google AI Studio, free tier; needs GEMINI_API_KEY) ---
+    "gemini-31-flash-lite": {
+        "provider": "gemini",
+        "model": "gemini-3.1-flash-lite",
+        "key_env": "GEMINI_API_KEY",
+        "notes": "Google Gemini 3.1 Flash Lite (Google AI Studio)",
+    },
 }
 
 DEFAULT_MODEL_KEY = "groq-gpt-oss-120b"
@@ -165,6 +174,8 @@ def _endpoint(provider: str) -> str:
         return NVIDIA_URL
     if provider == "openrouter":
         return OPENROUTER_URL
+    if provider == "gemini":
+        return GEMINI_URL
     raise ValueError(f"Unknown provider: {provider}")
 
 
@@ -186,6 +197,80 @@ def _key_for(row: dict) -> str:
 # The call
 # ---------------------------------------------------------------------------
 
+def _call_gemini(messages: list[dict], model_id: str, api_key: str,
+                 temperature: float, max_tokens: int) -> str:
+    """Google Gemini uses a different request/response shape than the
+    OpenAI-compatible providers, so it gets its own thin transport.
+    Converts our {role, content}[] messages into Gemini's
+    {contents:[{parts:[{text:...}]}]} shape and returns the model's
+    text response. See https://ai.google.dev/api/generate-content."""
+    # System messages (role="system") → Gemini's systemInstruction field.
+    # User/assistant messages → contents[].role is "user" or "model".
+    system_parts = []
+    contents = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        text = msg.get("content", "") or ""
+        if role == "system":
+            system_parts.append({"text": text})
+        elif role == "assistant":
+            contents.append({"role": "model", "parts": [{"text": text}]})
+        else:
+            contents.append({"role": "user", "parts": [{"text": text}]})
+
+    generation_config = {
+        "temperature": temperature,
+        "maxOutputTokens": max_tokens,
+    }
+    payload = {
+        "contents": contents,
+        "generationConfig": generation_config,
+    }
+    if system_parts:
+        payload["systemInstruction"] = {"parts": system_parts}
+
+    url = f"{GEMINI_URL}/{model_id}:generateContent?key={api_key}"
+    result = subprocess.run(
+        [
+            "curl", "-s", "--connect-timeout", "60",
+            "--max-time", "120",
+            "-X", "POST", url,
+            "-H", "Content-Type: application/json",
+            "-d", json.dumps(payload),
+        ],
+        capture_output=True, text=True, timeout=180,
+    )
+    if result.returncode != 0:
+        raise ConnectionError(
+            f"gemini curl returned {result.returncode}: "
+            f"stderr={result.stderr[:500]} stdout={result.stdout[:500]}"
+        )
+    try:
+        resp = json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"gemini returned non-JSON response: {result.stdout[:500]}"
+        ) from e
+    if "error" in resp:
+        err = resp["error"]
+        msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+        raise RuntimeError(f"gemini API error for model '{model_id}': {msg}")
+    candidates = resp.get("candidates", [])
+    if not candidates:
+        raise RuntimeError(
+            f"gemini returned no candidates for model '{model_id}': "
+            f"{json.dumps(resp)[:500]}"
+        )
+    parts = candidates[0].get("content", {}).get("parts", [])
+    text = "".join(p.get("text", "") for p in parts)
+    if not text.strip():
+        raise RuntimeError(
+            f"gemini model '{model_id}' returned empty content "
+            f"(finishReason={candidates[0].get('finishReason')})"
+        )
+    return text.strip()
+
+
 def call_llm(messages: list[dict],
              model_key: str = DEFAULT_MODEL_KEY,
              temperature: float = 0.5,
@@ -193,13 +278,19 @@ def call_llm(messages: list[dict],
     """Send a chat-completions request to the chosen provider's model.
 
     OpenAI-shaped request/response for both Groq and NVIDIA NIM, so one curl
-    path serves both. Returns the assistant text content.
+    path serves both. Gemini uses a different shape — routed through
+    _call_gemini() above. Returns the assistant text content.
 
     curl --max-time scales with max_tokens (the combined script+headlines+shots
     call returns a sizeable JSON; under-tokened timing cut it off mid-JSON —
     see CLAUDE.md known issue #12). 3 retries with backoff.
     """
     row = resolve_model(model_key)
+    # Gemini has its own transport — bail out before the OpenAI curl path.
+    if row["provider"] == "gemini":
+        api_key = _key_for(row)
+        return _call_gemini(messages, row["model"], api_key,
+                            temperature, max_tokens)
     api_key = _key_for(row)
     endpoint = _endpoint(row["provider"])
     model_id = row["model"]

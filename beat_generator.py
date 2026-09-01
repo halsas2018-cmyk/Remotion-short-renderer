@@ -1071,7 +1071,7 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
             messages=messages,
             model_key=model_key,
             temperature=0.2,
-            max_tokens=6000,
+            max_tokens=15000,
         )
     except Exception as e:
         print(f"  ⚠ LLM call failed: {e}")

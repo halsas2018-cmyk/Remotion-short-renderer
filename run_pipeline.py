@@ -263,7 +263,7 @@ def save_project(
         story=story,
         headline=story.get("title", ""),
         pre_chunked_beats=pre_chunked_beats,
-        model_key=args.model,
+        model_key=model_key,
     )
     beats_path.write_text(json.dumps(beats, indent=2), encoding="utf-8")
 

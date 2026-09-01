@@ -34,6 +34,9 @@ MIN_BEAT_FRAMES = 45  # Minimum beat duration (1.5s)
 # Valid beat types that map to Remotion components.
 # Horizon 3.2: expanded to expose the 2.1.x components to the LLM so the
 # diversity-budget prompt rules can actually be satisfied.
+# 3.5: added per-type FIELD_HINTS — short descriptions of what each
+# metadata field holds, exposed to the LLM via the prompt so it knows
+# what to put there.
 BEAT_TYPES = {
     "key_statement": ["emphasisWords"],
     "headline_card": ["emphasisWords"],
@@ -53,6 +56,102 @@ BEAT_TYPES = {
     "location_pulse": ["locationName", "latitude", "longitude"],
     "scrollytelling": ["title", "body"],
     "ticker_tape": ["stories", "label"],
+}
+
+# Per-type descriptions of metadata fields, exposed verbatim in the prompt.
+# These tell the LLM exactly what each field should contain.
+BEAT_TYPE_FIELD_HINTS = {
+    "versus": {
+        "left": "Short label or phrase for the LEFT side of the comparison (3-8 words)",
+        "right": "Short label or phrase for the RIGHT side of the comparison (3-8 words)",
+    },
+    "compare_split": {
+        "left": "Short label or phrase for the LEFT side (3-8 words)",
+        "right": "Short label or phrase for the RIGHT side (3-8 words)",
+    },
+    "before_after": {
+        "beforeLabel": "Label for the BEFORE state (3-8 words)",
+        "afterLabel": "Label for the AFTER state (3-8 words)",
+    },
+    "quote_card": {
+        "quote": "The actual quoted text, in quotes, 5-25 words. Pull from the script or story facts — never invent.",
+        "attribution": "Who said it (person name, 'Critics', 'Investors', etc.)",
+    },
+    "quote_attribution": {
+        "quote": "The actual quoted text, 5-25 words. Pull from the script or story facts — never invent.",
+        "attribution": "Who said it (person name or short role)",
+    },
+    "progress_meter": {
+        "value": "Numeric current value (integer or float)",
+        "maxValue": "Numeric max value (default 100)",
+        "label": "Short label like 'Pollution reduction' or 'Adoption'",
+    },
+    "stat_pill": {
+        "value": "Numeric or short string value (e.g. '10%', '$2B', '5x')",
+        "label": "Short label like 'stock drop' or 'growth'",
+    },
+    "icon_text": {
+        "icon": "A single emoji that matches the text content",
+    },
+    "chart_line": {
+        "points": "Array of {label, value} objects (3-7 points), values numeric",
+    },
+    "timeline": {
+        "events": "Array of {date, label} objects. `date` is a date string (e.g. '2021', '2024-05-12', 'Today'). 3-6 events.",
+    },
+    "process_flow": {
+        "steps": "Array of step strings (3-5 short steps)",
+    },
+    "map_location": {
+        "locationName": "Real named location from the script",
+        "latitude": "Numeric latitude (e.g. 51.5074)",
+        "longitude": "Numeric longitude (e.g. -0.1278)",
+    },
+    "map_3d": {
+        "locationName": "Real named location from the script",
+        "latitude": "Numeric latitude",
+        "longitude": "Numeric longitude",
+        "buildings": "Array of building names (0-3) for 3D scene",
+    },
+    "location_pulse": {
+        "locationName": "Real named location from the script",
+        "latitude": "Numeric latitude",
+        "longitude": "Numeric longitude",
+    },
+    "scrollytelling": {
+        "title": "Short title for the section (3-8 words)",
+        "body": "Body text 1-2 sentences explaining the point",
+    },
+    "ticker_tape": {
+        "stories": "Array of 3-6 short headline strings",
+        "label": "Short label like 'Markets' or 'Today'",
+    },
+    "key_statement": {
+        "emphasisWords": "Array of 1-3 words/phrases from the text to emphasize",
+    },
+    "headline_card": {
+        "emphasisWords": "Array of 1-3 words/phrases to emphasize (1-2 words each)",
+    },
+}
+
+# One example per complex type, exposed in the prompt. Keeps the LLM
+# honest about field shapes without inflating prompt size.
+BEAT_TYPE_EXAMPLES = {
+    "versus":          {"type": "versus", "left": "Shein", "right": "Critics"},
+    "compare_split":   {"type": "compare_split", "left": "Before: 3 weeks", "right": "After: 1 day"},
+    "before_after":    {"type": "before_after", "beforeLabel": "Pre-IPO", "afterLabel": "Post-IPO"},
+    "quote_card":      {"type": "quote_card", "quote": "The math doesn't work", "attribution": "Investors"},
+    "quote_attribution": {"type": "quote_attribution", "quote": "We can't keep ignoring this", "attribution": "Labor groups"},
+    "progress_meter":  {"type": "progress_meter", "value": 73, "maxValue": 100, "label": "Customer concern"},
+    "stat_pill":       {"type": "stat_pill", "value": "10%", "label": "Share drop"},
+    "timeline":        {"type": "timeline", "events": [{"date": "2021", "label": "IPO filed"}, {"date": "2024", "label": "Approved"}, {"date": "Today", "label": "Shares drop 10%"}]},
+    "process_flow":    {"type": "process_flow", "steps": ["Design", "Manufacture", "Ship", "Sell"]},
+    "chart_line":      {"type": "chart_line", "points": [{"label": "Q1", "value": 10}, {"label": "Q2", "value": 25}, {"label": "Q3", "value": 18}]},
+    "map_location":    {"type": "map_location", "locationName": "London", "latitude": 51.5074, "longitude": -0.1278},
+    "location_pulse":  {"type": "location_pulse", "locationName": "Shenzhen HQ", "latitude": 22.5431, "longitude": 114.0579},
+    "scrollytelling":  {"type": "scrollytelling", "title": "Why It Matters", "body": "Fast fashion's supply chain is global, but accountability is local."},
+    "ticker_tape":     {"type": "ticker_tape", "stories": ["Shein IPO down 10%", "Critics warn of oversupply", "Venture capital exits"], "label": "Markets"},
+    "icon_text":       {"type": "icon_text", "icon": "📉"},
 }
 
 # Types that can be auto-split if too long.
@@ -451,6 +550,12 @@ def validate_beats(beats: list[dict], word_timestamps: list[dict], script: str) 
         for req_field in BEAT_TYPES[beat_type]:
             if req_field not in beat:
                 errors.append(f"Beat {i} ({beat_type}): missing required field '{req_field}'")
+            # 3.5: also flag empty string values for required string fields
+            elif req_field in ("left", "right", "beforeLabel", "afterLabel",
+                               "quote", "attribution", "label", "title", "body",
+                               "locationName"):
+                if beat[req_field] == "":
+                    errors.append(f"Beat {i} ({beat_type}): empty required field '{req_field}'")
         
         # Frame validation
         start = beat.get("startFrame", 0)
@@ -718,7 +823,9 @@ def force_intro_to_headline_card(beats: list[dict]) -> list[dict]:
 
 def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline: str = "",
                  pre_chunked_beats: list[dict] = None,
-                 story_arc: list[str] = None) -> str:
+                 story_arc: list[str] = None,
+                 force_field_completion: bool = False,
+                 empty_field_indices: list[int] = None) -> str:
     """Build the LLM prompt with all necessary context, keeping it under token limits."""
     
     # Truncate script to keep prompt small (only used when NO pre-chunked beats)
@@ -771,7 +878,26 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
     
     # Compact beat types for prompt
     beat_types_compact = {k: v for k, v in BEAT_TYPES.items()}
-    
+
+    # Per-type field hints (3.5) — tells the LLM what each metadata field
+    # should contain. Without this, the LLM emits empty strings for fields
+    # like versus.left / quote_card.quote because it doesn't know the
+    # shape of the data those fields need.
+    beat_types_with_hints = {}
+    for btype, fields in BEAT_TYPES.items():
+        hints = BEAT_TYPE_FIELD_HINTS.get(btype, {})
+        beat_types_with_hints[btype] = {
+            "fields": fields,
+            "what_each_field_means": {f: hints[f] for f in fields if f in hints},
+        }
+
+    # One short example per type for the LLM to mirror
+    beat_type_examples_compact = {
+        btype: BEAT_TYPE_EXAMPLES[btype]
+        for btype in BEAT_TYPES
+        if btype in BEAT_TYPE_EXAMPLES
+    }
+
     # Horizon 3.2 diversity budget
     diversity_section = f"""
 DIVERSITY BUDGET (mandatory — your story MUST include at least one of each):
@@ -836,8 +962,11 @@ Quotes: {json.dumps(key_quotes)}
 Locations: {json.dumps(locations)}
 Entities: {json.dumps(entities)}
 
-BEAT TYPES + REQUIRED METADATA FIELDS:
-{json.dumps(beat_types_compact)}
+BEAT TYPES (required metadata fields + what each field means):
+{json.dumps(beat_types_with_hints, indent=2)}
+
+EXAMPLES (mirror the shapes exactly — never invent facts not in the script or story):
+{json.dumps(beat_type_examples_compact, indent=2)}
 {arc_section}{diversity_section}{pre_chunked_section}
 
 OUTPUT (JSON only — array of objects, one per chunk, in order):
@@ -847,8 +976,22 @@ OUTPUT (JSON only — array of objects, one per chunk, in order):
   ...
 ]
 """
+        # 3.5: append a stronger nudge when retrying after empty-field detection
+        if force_field_completion and empty_field_indices:
+            prompt += f"""
+
+CRITICAL RETRY NOTE:
+Your previous attempt left these beats with empty required string fields:
+{json.dumps([{"chunk_index": i, "type": pre_chunked_beats[i].get("text", "")[:50] + "..."} for i in empty_field_indices], indent=2)}
+
+For each of these chunks, the beat's `left`/`right`/`quote`/`attribution`/`label` fields
+MUST contain real text pulled from the script or the FACTS section. NEVER emit "".
+If the chunk text doesn't contain a usable value, PULL the value from a related
+chunk's text or from the FACTS section. If truly nothing fits, use a short
+paraphrase of the chunk's content (3-8 words) — never leave it blank.
+"""
         return prompt
-    
+
     else:
         # ============================================================
         # MODE B: No pre-chunked beats — LLM does full chunking (legacy)
@@ -981,8 +1124,9 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                 "endWord": chunk["endWord"],
             }
             # Add type-specific metadata from LLM assignment
+            empty_required_fields = []  # 3.5: track empty required strings for retry
             for field in BEAT_TYPES[beat_type]:
-                if field in assignment:
+                if field in assignment and assignment[field] not in (None, "", [], 0, 0.0):
                     beat[field] = assignment[field]
                 else:
                     # Provide sensible defaults for required fields
@@ -990,26 +1134,19 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                         beat[field] = []
                     elif field == "icon":
                         beat[field] = "📊"
-                    elif field in ("left", "right"):
+                    elif field in ("left", "right", "beforeLabel", "afterLabel",
+                                   "quote", "attribution", "label", "title", "body",
+                                   "locationName"):
+                        # 3.5: empty string fallback hides missing data.
+                        # Track so caller can retry instead of producing blank beats.
                         beat[field] = ""
-                    elif field == "locationName":
-                        beat[field] = "Unknown"
+                        empty_required_fields.append(field)
                     elif field in ("latitude", "longitude"):
                         beat[field] = 0.0
-                    elif field == "quote":
-                        beat[field] = ""
-                    elif field == "attribution":
-                        beat[field] = ""
                     elif field == "value":
                         beat[field] = 0
                     elif field == "maxValue":
                         beat[field] = 100
-                    elif field == "label":
-                        beat[field] = ""
-                    elif field == "title":
-                        beat[field] = ""
-                    elif field == "body":
-                        beat[field] = ""
                     elif field == "events":
                         beat[field] = []
                     elif field == "steps":
@@ -1020,13 +1157,12 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
                         beat[field] = []
                     elif field == "buildings":
                         beat[field] = []
-                    elif field in ("beforeLabel", "afterLabel"):
-                        beat[field] = ""
                     elif field == "prefix":
                         beat[field] = ""
                     elif field == "suffix":
                         beat[field] = ""
-            
+            beat["_empty_required_fields"] = empty_required_fields  # 3.5: used for retry decision
+
             beats.append(beat)
     
     else:
@@ -1050,6 +1186,86 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
     print(json.dumps(beats, indent=2, ensure_ascii=False))
     print("=== END RAW LLM BEATS ===\n")
     
+    # 3.5: detect LLM that produced empty required string fields (the
+    # versus/quote_card blank-text bug we saw in the Shein run). If
+    # more than 30% of beats are affected, retry once with a stronger
+    # prompt that calls out the issue explicitly.
+    empty_beat_indices = [
+        i for i, b in enumerate(beats)
+        if b.get("_empty_required_fields")
+    ]
+    if empty_beat_indices and len(empty_beat_indices) / max(1, len(beats)) > 0.30:
+        print(f"  ⚠ {len(empty_beat_indices)}/{len(beats)} beats have empty required fields — retrying LLM with stronger prompt")
+        retry_prompt = build_prompt(
+            script, word_timestamps, story, headline,
+            pre_chunked_beats=pre_chunked_beats,
+            story_arc=story_arc,
+            force_field_completion=True,
+            empty_field_indices=empty_beat_indices,
+        )
+        retry_messages = [
+            {"role": "system", "content": "You are a precise video beat planner. CRITICAL: every required string field (left, right, quote, attribution, label, etc.) MUST be filled with real text from the script or story facts. NEVER emit empty strings. Output only valid JSON."},
+            {"role": "user", "content": retry_prompt}
+        ]
+        try:
+            retry_response = llm_client.call_llm(
+                messages=retry_messages,
+                model_key=model_key,
+                temperature=0.2,
+                max_tokens=6000,
+            )
+            # Re-parse and re-merge
+            if isinstance(retry_response, str):
+                if "```json" in retry_response:
+                    retry_response = retry_response.split("```json")[1].split("```")[0]
+                elif "```" in retry_response:
+                    retry_response = retry_response.split("```")[1].split("```")[0]
+                retry_data = json.loads(retry_response.strip())
+            else:
+                retry_data = retry_response
+            retry_assignments = retry_data if isinstance(retry_data, list) else retry_data.get("beats", [])
+            if len(retry_assignments) == len(beats):
+                # Overwrite metadata on the beats that had empty fields
+                for idx in empty_beat_indices:
+                    assignment = retry_assignments[idx]
+                    if not isinstance(assignment, dict):
+                        continue
+                    beat_type = assignment.get("type", beats[idx].get("type", "key_statement"))
+                    if beat_type not in BEAT_TYPES:
+                        beat_type = beats[idx].get("type", "key_statement")
+                    still_empty = []
+                    for field in BEAT_TYPES[beat_type]:
+                        if field in assignment and assignment[field] not in (None, "", [], 0, 0.0):
+                            beats[idx][field] = assignment[field]
+                        elif field in ("left", "right", "beforeLabel", "afterLabel",
+                                       "quote", "attribution", "label", "title", "body",
+                                       "locationName"):
+                            still_empty.append(field)
+                    beats[idx]["_empty_required_fields"] = still_empty
+                empty_beat_indices = [
+                    i for i, b in enumerate(beats)
+                    if b.get("_empty_required_fields")
+                ]
+                if empty_beat_indices:
+                    print(f"  ⚠ After retry: {len(empty_beat_indices)} beats still have empty fields — falling back to key_statement")
+        except Exception as e:
+            print(f"  ⚠ Retry LLM call failed: {e} — falling back")
+
+    # Final fallback: any beat that STILL has empty required string fields
+    # gets demoted to key_statement (which only needs emphasisWords).
+    final_beats = []
+    for i, beat in enumerate(beats):
+        if beat.get("_empty_required_fields"):
+            beat = {
+                "type": "key_statement",
+                "text": beat["text"],
+                "startWord": beat["startWord"],
+                "endWord": beat["endWord"],
+                "emphasisWords": beat.get("emphasisWords", []),
+            }
+        final_beats.append(beat)
+    beats = final_beats
+
     # Filter out malformed beats (missing text or invalid type)
     valid_beats = []
     for beat in beats:
@@ -1061,14 +1277,18 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         if "startWord" not in beat or "endWord" not in beat:
             continue
         valid_beats.append(beat)
-    
+
     if not valid_beats:
         raise ValueError("No valid beats after filtering")
-    
+
     beats = valid_beats
     
     # Convert word indices to frames using Whisper timestamps (3.3 trimming happens here)
     beats = assign_frames_from_word_ranges(beats, word_timestamps, script)
+
+    # 3.5: strip the internal retry-tracking key before downstream validation
+    for b in beats:
+        b.pop("_empty_required_fields", None)
     
     # Validate initial beats
     errors = validate_beats(beats, word_timestamps, script)

@@ -211,6 +211,7 @@ def save_project(
     model_key: str,
     rank_model_key: str,
     no_video: bool = False,
+    format: str | None = None,
 ) -> dict:
     """
     Run the pipeline for a single story up to beat generation.
@@ -237,9 +238,10 @@ def save_project(
     # 1. Voice generation (skip if --no-video)
     if not no_video:
         narration_path = project_dir / "narration.mp3"
-        story_format = story.get("format")  # may be None — voice_generator falls back
-        print(f"  Generating narration (format={story_format or 'default'})...")
-        generate_narration(script, output_path=str(narration_path), format=story_format)
+        # format comes from the script generator's output (URGENT_BREAK / DEBATE / EXPLAINER);
+        # voice_generator falls back to defaults if None.
+        print(f"  Generating narration (format={format or 'default'})...")
+        generate_narration(script, output_path=str(narration_path), format=format)
 
         # 2. Word timestamps via WhisperX
         print(f"  Extracting word timestamps...")
@@ -383,6 +385,7 @@ def main():
                 model_key=args.model,
                 rank_model_key=rank_model_key,
                 no_video=args.no_video,
+                format=script_result.get("format"),
             )
             _log_generated_story(base_outdir, story, args.model, project_slug)
         except Exception as e:

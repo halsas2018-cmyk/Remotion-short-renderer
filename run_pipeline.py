@@ -342,7 +342,7 @@ def main():
         print(f"\nTop {len(stories)} stories (showing all candidates):")
         for i, s in enumerate(stories, 1):
             score = s.get('score', 0)
-            reason = s.get('rank_reason', s.get('reason', 'heuristic rank'))
+            reason = s.get('llm_reason') or s.get('rank_reason') or s.get('reason') or 'heuristic rank'
             source = s.get('source', 'unknown')
             print(f"  {i:2d}. [{score:.2f}] ({source}) {s.get('title', 'Untitled')[:75]}")
             print(f"       → {reason[:120]}")

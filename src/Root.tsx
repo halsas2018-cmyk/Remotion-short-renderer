@@ -1,5 +1,5 @@
 import React from "react";
-import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
+import { AbsoluteFill, CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { MotionGraphicsVideo, MotionGraphicsVideoProps } from "./MotionGraphicsVideo";
 import { HeadlineCard } from "./HeadlineCard";
 import { KeyStatement } from "./KeyStatement";
@@ -15,6 +15,7 @@ import { Scrollytelling } from "./components/Scrollytelling";
 import { TickerTape } from "./components/TickerTape";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
+import { Logo } from "./Logo";
 
 const PUBLIC_BEATS_URL = staticFile("beats.json");
 const PUBLIC_TIMESTAMPS_URL = staticFile("timestamps.json");
@@ -311,6 +312,60 @@ const QuoteCardLongTestComposition: React.FC = () => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/*  The Signal Feed — logo preview compositions                        */
+/*                                                                     */
+/*  Two compositions so you can see the logo in the Studio sidebar:    */
+/*                                                                     */
+/*   1. SignalFeedLogoInContext — shows the logo at the exact size     */
+/*      and position PersistentBackground mounts it (top-left, 80px    */
+/*      tall) over a faint grid hint of the video background.         */
+/*                                                                     */
+/*   2. SignalFeedLogoAnimated — center-stage preview at 200px so      */
+/*      you can scrub through the breath animation.                   */
+/*                                                                     */
+/*  The actual video uses the live component via PersistentBackground  */
+/*  (no preview composition needed there — render MotionGraphicsVideo */
+/*  to see it in context).                                            */
+/* ------------------------------------------------------------------ */
+
+const SignalFeedLogoInContext: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "white" }}>
+      {/* Faint grid so the contrast against the actual video background
+          is visible during preview. */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="100%"
+        height="100%"
+        style={{ position: "absolute", top: 0, left: 0, opacity: 0.3 }}
+      >
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#000" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+      {/* Same size + position as PersistentBackground mounts it:
+          180px tall, 720px wide, centered (left=180), top=80. */}
+      <Logo top={80} left={180} height={180} opacity={1} />
+    </AbsoluteFill>
+  );
+};
+
+const SignalFeedLogoAnimated: React.FC = () => {
+  return (
+    <AbsoluteFill
+      style={{ backgroundColor: "white" }}
+    >
+      {/* 4:1 aspect, fit to width 1080 → height 270. Centered
+          vertically: top = (1920 - 270) / 2 = 825. */}
+      <Logo top={825} left={0} height={270} opacity={1} />
+    </AbsoluteFill>
+  );
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -448,6 +503,25 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="QuoteCardLongTest"
         component={QuoteCardLongTestComposition}
+        durationInFrames={180}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      {/* ---- The Signal Feed — logo preview compositions ---- */}
+      <Composition
+        id="SignalFeedLogoInContext"
+        component={SignalFeedLogoInContext}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+      />
+      <Composition
+        id="SignalFeedLogoAnimated"
+        component={SignalFeedLogoAnimated}
         durationInFrames={180}
         fps={30}
         width={1080}

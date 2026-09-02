@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Signal Feed — static export of the React logo (4:1 banner).
+
+  Visual: five small grey dots on the left (the noise) → a single
+  circle in the middle (the lens/scope that filters them) → a thin
+  connector line → one orange dot on the right (the one clean signal).
+
+  Wordmark "the signal feed" below, Space Grotesk 700, generous
+  letterspacing. Black + #e86c00 only.
+
+  Mirrors src/Logo.tsx geometry exactly so the React component and
+  this static SVG are visually identical.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The Signal Feed">
+  <title>The Signal Feed</title>
+
+  <!-- Noise dots (the input) — 5 dots, slightly varied sizes -->
+  <g fill="#1a1a1a" opacity="0.55">
+    <circle cx="60"  cy="40" r="4"   />
+    <circle cx="105" cy="28" r="3"   />
+    <circle cx="105" cy="52" r="3"   />
+    <circle cx="145" cy="36" r="3.5" />
+    <circle cx="145" cy="48" r="2.5" />
+  </g>
+
+  <!-- The lens / scope (bold outline circle) -->
+  <circle cx="200" cy="40" r="18" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+
+  <!-- Connector line — the "feed" out of the lens -->
+  <line x1="218" y1="40" x2="334" y2="40" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- The one clean signal dot (orange accent) -->
+  <circle cx="340" cy="40" r="6" fill="#e86c00"/>
+
+  <!-- Wordmark — Space Grotesk 700, centered -->
+  <text x="200" y="88"
+        text-anchor="middle"
+        font-family="'Space Grotesk', system-ui, sans-serif"
+        font-weight="700"
+        font-size="20"
+        letter-spacing="2"
+        fill="#1a1a1a">the signal feed</text>
+</svg>

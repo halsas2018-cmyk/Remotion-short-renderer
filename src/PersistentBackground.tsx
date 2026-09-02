@@ -169,8 +169,14 @@ export const PersistentBackground: React.FC = () => {
         periodFrames={120}
       />
 
-      {/* Animated 3D orange S-NEWS voxel logo */}
-      <Logo size={1} />
+      {/* The Signal Feed — prominent centered header logo.
+          Sized for 1080×1920: 180px tall (~9% of frame height, 4:1
+          aspect so 720px wide), centered horizontally (left = 180).
+          Pinned 80px from the top so it sits clearly above the first
+          beat's card without crowding the kinetic captions at the
+          bottom. Opacity 1 — this is the primary brand mark, not a
+          subtle watermark. */}
+      <Logo top={80} left={180} height={180} opacity={1} />
     </AbsoluteFill>
   );
 };

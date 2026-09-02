@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Signal Feed — square profile-pic variant (1:1, 256×256).
+
+  Same lens/scope concept as the banner, scaled to fit a 1:1 canvas.
+  No wordmark (would be unreadable when YouTube / Twitter / TikTok
+  crop the pic to a circle).
+
+  Mirrors src/Logo.tsx geometry — center the lens, draw the noise
+  dots on its left, the orange signal dot on its right.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The Signal Feed">
+  <title>The Signal Feed</title>
+
+  <!-- Center everything in the 256x256 canvas. Original viewBox is
+       400×100; we translate so the lens (cx=200, cy=40 in the
+       original) lands at (128, 128) here. The y-shift compensates
+       for the extra vertical space — the connector + signal dot
+       stay on the same axis. -->
+
+  <!-- Noise dots — 5 dots, scaled & translated -->
+  <g fill="#1a1a1a" opacity="0.55">
+    <circle cx="50"  cy="128" r="4"   />
+    <circle cx="78"  cy="110" r="3"   />
+    <circle cx="78"  cy="146" r="3"   />
+    <circle cx="102" cy="122" r="3.5" />
+    <circle cx="102" cy="138" r="2.5" />
+  </g>
+
+  <!-- The lens / scope (centered) -->
+  <circle cx="128" cy="128" r="22" fill="none" stroke="#1a1a1a" stroke-width="5"/>
+
+  <!-- Connector line -->
+  <line x1="150" y1="128" x2="216" y2="128" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- The signal dot (orange) -->
+  <circle cx="222" cy="128" r="8" fill="#e86c00"/>
+</svg>

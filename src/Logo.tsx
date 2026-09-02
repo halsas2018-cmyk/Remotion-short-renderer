@@ -1,91 +1,171 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  Easing,
-} from "remotion";
+import { staticFile } from "remotion";
 
-/**
- * Placeholder 2D S-NEWS logo.
- *
- * The previous 3D voxel version used by PersistentBackground.tsx is no
- * longer present (it was removed when the 3D cuboid grid was refactored
- * out in commit 1fe02ad). This file re-introduces a simple, GPU-cheap
- * 2D logo so PersistentBackground can keep mounting it without breaking
- * the build.
- *
- * Visual: orange "S-NEWS" text in a rounded card, with a slow Y-axis
- * spin and a gentle bob driven by useCurrentFrame(). Sized via the
- * `size` prop (1 = full default, < 1 = smaller, > 1 = bigger) so the
- * caller can scale it without touching the inner geometry.
- *
- * Replace with the real voxel logo when it's ready.
- *
- * The file is exported as BOTH a named export (`Logo`) and a default
- * export so it can be imported either way without surprising rspack's
- * module resolver.
- */
+/* ------------------------------------------------------------------ */
+/*  The Signal Feed — logo                                            */
+/*                                                                     */
+/*  Concept: a single circle (the "scope" or "lens") with a row of   */
+/*  dots on its left being funneled through the circle and emerging   */
+/*  as a single sharp dot on the right. Reads as "filtering noise    */
+/*  into one clean signal."                                           */
+/*                                                                     */
+/*  Why this is unique:                                                */
+/*    - Not a waveform (overused by podcast / voice / music apps)     */
+/*    - Not a brain / robot / chip (every AI logo)                     */
+/*    - One shape, one accent color, readable at 32px                  */
+/*    - The wordmark "the signal feed" is in Space Grotesk 700, the   */
+/*      same font the videos already use                              */
+/*                                                                     */
+/*  Variants:                                                          */
+/*    - Logo            → animated React component (mounted in video) */
+/*    - StaticLogo      → reads public/signal-feed-logo.svg            */
+/* ------------------------------------------------------------------ */
+
+const INK = "#1a1a1a";
+const ACCENT = "#e86c00";
+
 export type LogoProps = {
-  size?: number;
+  top?: number;
+  left?: number;
+  /** Pixel height of the rendered logo. Width is auto from 4:1. */
+  height?: number;
+  /** Opacity 0..1. Default 1. */
+  opacity?: number;
 };
 
-export const Logo: React.FC<LogoProps> = ({ size = 1 }) => {
-  const frame = useCurrentFrame();
-  const { width } = useVideoConfig();
+/* viewBox is 4:1 (matches the public/signal-feed-logo.svg export). */
+const VB_W = 400;
+const VB_H = 100;
 
-  // Scale relative to the composition width.
-  const baseSize = Math.min(width * 0.32, 420);
-  const boxSize = baseSize * size;
+/* Geometry — a single circle in the center, three noise dots left,
+   one signal dot right. All on the same horizontal axis. */
+const CIRCLE_CX = 200;
+const CIRCLE_CY = 40;
+const CIRCLE_R = 18;
 
-  // Slow rotation: full turn every 6 seconds at 30fps = 180 frames.
-  const rotateY = interpolate(frame, [0, 180], [0, 360], {
-    extrapolateRight: "clamp",
-    easing: Easing.linear,
-  });
+const NOISE_DOTS = [
+  { x: 60, y: 40, r: 4 },
+  { x: 105, y: 28, r: 3 },
+  { x: 105, y: 52, r: 3 },
+  { x: 145, y: 36, r: 3.5 },
+  { x: 145, y: 48, r: 2.5 },
+];
 
-  // Gentle vertical bob.
-  const bob = Math.sin(frame * 0.05) * 6;
+const SIGNAL_DOT = { x: 340, y: 40, r: 6 };
+
+/* Connector line from circle's right edge to signal dot — the "feed" */
+const LINE_X1 = CIRCLE_CX + CIRCLE_R;
+const LINE_X2 = SIGNAL_DOT.x - SIGNAL_DOT.r;
+const LINE_Y = CIRCLE_CY;
+
+export const Logo: React.FC<LogoProps> = ({
+  top = 56,
+  left = 56,
+  height = 80,
+  opacity = 1,
+}) => {
+  const width = height * 4; // 4:1 aspect
 
   return (
-    <AbsoluteFill
+    <div
+      role="img"
+      aria-label="The Signal Feed"
       style={{
-        alignItems: "center",
-        justifyContent: "flex-start",
-        paddingTop: 64,
+        position: "absolute",
+        top,
+        left,
+        width,
+        height,
+        opacity,
         pointerEvents: "none",
       }}
     >
-      <div
-        style={{
-          width: boxSize,
-          height: boxSize * 0.45,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 16,
-          backgroundColor: "#ff7a18",
-          boxShadow: "0 8px 24px rgba(255, 122, 24, 0.35)",
-          translate: `0 ${bob}px`,
-          // simulate Y-axis spin by scaling X between 1 and -1
-          scale: `${Math.cos((rotateY * Math.PI) / 180)} 1`,
-        }}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        width={width}
+        height={height}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ display: "block" }}
       >
-        <span
-          style={{
-            color: "white",
-            fontFamily: "system-ui, sans-serif",
-            fontWeight: 900,
-            fontSize: boxSize * 0.22,
-            letterSpacing: 2,
-            userSelect: "none",
-          }}
+        {/* Noise dots — smaller, lighter (the "input") */}
+        <g fill={INK} opacity="0.55">
+          {NOISE_DOTS.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r={d.r} />
+          ))}
+        </g>
+
+        {/* The circle (lens / scope) — bold outline only */}
+        <circle
+          cx={CIRCLE_CX}
+          cy={CIRCLE_CY}
+          r={CIRCLE_R}
+          fill="none"
+          stroke={INK}
+          strokeWidth={4}
+        />
+
+        {/* Connector line — the "feed" leaving the lens as one clean signal */}
+        <line
+          x1={LINE_X1}
+          y1={LINE_Y}
+          x2={LINE_X2}
+          y2={LINE_Y}
+          stroke={INK}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+
+        {/* The signal dot — orange accent, the "one clear thing" */}
+        <circle cx={SIGNAL_DOT.x} cy={SIGNAL_DOT.y} r={SIGNAL_DOT.r} fill={ACCENT} />
+
+        {/* Wordmark — same Space Grotesk 700 the videos use */}
+        <text
+          x={200}
+          y={88}
+          textAnchor="middle"
+          fontFamily="'Space Grotesk', system-ui, sans-serif"
+          fontWeight={700}
+          fontSize={20}
+          letterSpacing={2}
+          fill={INK}
         >
-          S-NEWS
-        </span>
-      </div>
-    </AbsoluteFill>
+          the signal feed
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+/**
+ * Static-fallback logo. Reads public/signal-feed-logo.svg via Remotion's
+ * staticFile resolver — used by tests / favicon-size renders.
+ */
+export const StaticLogo: React.FC<LogoProps> = ({
+  top = 56,
+  left = 56,
+  height = 80,
+  opacity = 1,
+}) => {
+  const width = height * 4;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top,
+        left,
+        width,
+        height,
+        opacity,
+        pointerEvents: "none",
+      }}
+    >
+      <img
+        src={staticFile("signal-feed-logo.svg")}
+        alt="The Signal Feed"
+        style={{ width, height, display: "block" }}
+      />
+    </div>
   );
 };
 

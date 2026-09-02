@@ -1,0 +1,50 @@
+name: smoke
+
+# Horizon 9.1 — Schema regression + smoke render on every PR.
+# Reuses the existing ./scripts/render-smoke.sh unit of truth.
+# The render step is optional; the schema tests are the load-bearing part.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: smoke
+  cancel-in-progress: true
+
+jobs:
+  schema-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Schema tests (143)
+        run: npm test
+
+      - name: Smoke render
+        # Smoke script writes out/last-render.json + out/smoke.png.
+        # We do NOT compare PNGs to a checked-in baseline here (that's
+        # 9.3 — visual regression). For now, the existence + non-zero
+        # size is the signal.
+        run: |
+          chmod +x ./scripts/render-smoke.sh
+          ./scripts/render-smoke.sh
+
+      - name: Upload smoke PNG
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-png
+          path: out/smoke.png
+          retention-days: 3

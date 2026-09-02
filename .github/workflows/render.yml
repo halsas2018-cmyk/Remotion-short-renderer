@@ -1,0 +1,92 @@
+name: render
+
+# Horizon 9.1 — Render a single Remotion composition on a GitHub-hosted Linux
+# runner and upload the MP4 as a workflow artifact.
+#
+# This is the manual path. You run the Python pipeline LOCALLY, commit the
+# resulting `public/beats.json` + `public/narration.mp3` + `public/timestamps.json`
+# to a branch, then trigger this workflow from the Actions tab. The runner
+# just renders — it does NOT run WhisperX / TTS / LLM (that would be a much
+# heavier job and out of scope for 9.1).
+#
+# Money lens: public repo on the free tier = 2,000 min/month Linux.
+# A 60-second 1080x1920 video at 30fps takes ~10-20 min on the runner
+# (SwiftShader software WebGL, same as `remotion.config.ts`). Plenty of
+# headroom under the free cap.
+
+on:
+  workflow_dispatch:
+    inputs:
+      compositionId:
+        description: "Composition ID to render (default: MotionGraphicsVideo)"
+        required: false
+        default: "MotionGraphicsVideo"
+        type: string
+      outputName:
+        description: "Output filename (without path)"
+        required: false
+        default: "movie.mp4"
+        type: string
+
+# Avoid concurrent renders on the same repo — they'd race for the same
+# Chromium caches and produce confusing logs.
+concurrency:
+  group: render
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Verify public/ assets are present
+        # Hard fail if the pipeline outputs aren't committed. Better to error
+        # here than to render a stale beats.json silently.
+        run: |
+          set -euo pipefail
+          for f in public/beats.json public/narration.mp3 public/timestamps.json; do
+            if [ ! -s "$f" ]; then
+              echo "::error::Missing or empty $f — run the pipeline locally and commit its outputs first."
+              exit 1
+            fi
+          done
+          echo "public/ assets present: $(ls -la public/ | wc -l) entries"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle composition
+        # `remotion bundle` is the build step the renderer depends on.
+        # Skip if you only need a still, but for full video we need it.
+        run: npx remotion bundle
+
+      - name: Render video
+        env:
+          # Match remotion.config.ts — ANGLE software WebGL, 2-min delayRender.
+          # The runner is a Linux VM with no GPU, so SwiftShader is the
+          # only option. Same trade-off as Mode A on a phone.
+          REMOTION_CHROMIUM_OPENGL_RENDERER: angle
+        run: |
+          npx remotion render \
+            "${{ inputs.compositionId }}" \
+            "out/${{ inputs.outputName }}" \
+            --concurrency=1 \
+            --log=info
+
+      - name: Upload MP4 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.outputName }}
+          path: out/${{ inputs.outputName }}
+          if-no-files-found: error
+          retention-days: 7

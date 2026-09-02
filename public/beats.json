@@ -1,206 +1,153 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1099,
+  "totalDurationInFrames": 1077,
   "beats": [
     {
       "type": "headline_card",
-      "text": "AI just confirmed their new",
+      "text": "OpenAI just built an",
       "emphasisWords": [
-        "Astra",
-        "AI model"
+        "OpenAI",
+        "Astra"
       ],
       "pacing": "slow",
-      "startFrame": 11,
-      "endFrame": 56,
+      "startFrame": 5,
+      "endFrame": 50,
       "durationInFrames": 45,
-      "scriptText": "OpenAI just confirmed their new AI model called Astra can"
+      "scriptText": "OpenAI just built an AI named Astra that is officially"
     },
     {
       "type": "icon_text",
-      "text": "model called Astra can break into secure computer",
-      "icon": "\ud83d\udd13",
-      "pacing": "normal",
-      "startFrame": 56,
-      "endFrame": 134,
-      "durationInFrames": 78,
-      "scriptText": "break into secure computer systems all by itself."
-    },
-    {
-      "type": "stat_pill",
-      "text": "all by itself. They have officially",
-      "value": "Critical",
-      "label": "Threat Level",
+      "text": "Astra that is officially scary good at hacking",
+      "icon": "\ud83d\udcbb",
       "pacing": "slow",
-      "startFrame": 134,
-      "endFrame": 200,
+      "startFrame": 50,
+      "endFrame": 116,
       "durationInFrames": 66,
-      "scriptText": "They have officially labeled it a critical threat because it"
-    },
-    {
-      "type": "process_flow",
-      "text": "it a critical threat because it can find hidden security holes",
-      "steps": [
-        "Find holes",
-        "Write code",
-        "Exploit"
-      ],
-      "pacing": "slow",
-      "startFrame": 200,
-      "endFrame": 286,
-      "durationInFrames": 86,
-      "scriptText": "can find hidden security holes and write its own code"
-    },
-    {
-      "type": "before_after",
-      "text": "and write its own code to exploit them without",
-      "pacing": "slow",
-      "beforeLabel": "Human controlled security systems",
-      "afterLabel": "Autonomous AI exploit capabilities",
-      "startFrame": 286,
-      "endFrame": 359,
-      "durationInFrames": 73,
-      "scriptText": "to exploit them without any human help. This is the"
+      "scriptText": "scary good at hacking into computer systems. They claim it"
     },
     {
       "type": "stat_pill",
-      "text": "human help. This is the first time a company has admitted",
+      "text": "computer systems. They claim it scored a perfect score on",
+      "value": "100%",
+      "label": "ExploitBench Score",
       "pacing": "slow",
-      "value": "1st",
-      "label": "Company admission",
-      "startFrame": 359,
-      "endFrame": 441,
-      "durationInFrames": 82,
-      "scriptText": "first time a company has admitted their own AI is"
-    },
-    {
-      "type": "timeline",
-      "text": "own AI is smart enough to act like a",
-      "events": [
-        {
-          "date": "Week 1",
-          "label": "Delay"
-        },
-        {
-          "date": "Week 2",
-          "label": "Safety build"
-        },
-        {
-          "date": "Week 3",
-          "label": "Testing"
-        }
-      ],
-      "pacing": "normal",
-      "startFrame": 441,
-      "endFrame": 508,
-      "durationInFrames": 67,
-      "scriptText": "smart enough to act like a professional hacker."
+      "startFrame": 116,
+      "endFrame": 209,
+      "durationInFrames": 93,
+      "scriptText": "scored a perfect score on ExploitBench, a test specifically designed"
     },
     {
       "type": "process_flow",
-      "text": "hacker. They actually had to delay",
+      "text": "bench, a test specifically designed to find and break",
       "steps": [
-        "Build walls",
-        "Test",
-        "Release"
+        "Scan system",
+        "Identify flaws",
+        "Execute exploit"
       ],
       "pacing": "slow",
-      "startFrame": 508,
-      "endFrame": 561,
-      "durationInFrames": 53,
-      "scriptText": "They actually had to delay the release for weeks just"
+      "startFrame": 209,
+      "endFrame": 300,
+      "durationInFrames": 91,
+      "scriptText": "to find and break security flaws. Even worse, it managed"
+    },
+    {
+      "type": "stat_pill",
+      "text": "flaws. Even worse, it managed to find two zero-day",
+      "pacing": "slow",
+      "value": "2",
+      "label": "Zero-day vulnerabilities found",
+      "startFrame": 300,
+      "endFrame": 412,
+      "durationInFrames": 112,
+      "scriptText": "to find two zero-day vulnerabilities all on its own without any human help."
     },
     {
       "type": "progress_meter",
-      "text": "the release for weeks just to build safety walls so the",
-      "value": 5,
+      "text": "all on its own without any human help. OpenAI says they are",
+      "pacing": "slow",
+      "value": 50,
       "maxValue": 100,
-      "label": "Public Access",
-      "pacing": "slow",
-      "startFrame": 561,
-      "endFrame": 634,
-      "durationInFrames": 73,
-      "scriptText": "to build safety walls so the AI wouldn't go rogue."
-    },
-    {
-      "type": "stat_pill",
-      "text": "AI wouldn't go rogue. Even with those new",
-      "value": "Tiny",
-      "label": "Test Group",
-      "pacing": "slow",
-      "startFrame": 634,
-      "endFrame": 703,
-      "durationInFrames": 69,
-      "scriptText": "Even with those new guards, they are only letting a"
-    },
-    {
-      "type": "scrollytelling",
-      "text": "they are only letting a tiny group of people test it right",
-      "title": "The Security Shift",
-      "body": "Software protecting your bank account is now vulnerable to advanced AI.",
-      "pacing": "normal",
-      "startFrame": 703,
-      "endFrame": 778,
-      "durationInFrames": 75,
-      "scriptText": "tiny group of people test it right now."
-    },
-    {
-      "type": "chart_line",
-      "text": "We are moving into a",
-      "points": [
-        {
-          "label": "Email AI",
-          "value": 20
-        },
-        {
-          "label": "Security",
-          "value": 50
-        },
-        {
-          "label": "Hacking",
-          "value": 80
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 778,
-      "endFrame": 823,
-      "durationInFrames": 45,
-      "scriptText": "We are moving into a world where the software protecting"
+      "label": "Guardrail implementation",
+      "startFrame": 412,
+      "endFrame": 514,
+      "durationInFrames": 102,
+      "scriptText": "OpenAI says they are adding extra guardrails to keep it"
     },
     {
       "type": "icon_text",
-      "text": "where the software protecting your bank account might be",
-      "icon": "\ud83d\udcca",
+      "text": "adding extra guardrails to keep it from going rogue, but they are",
+      "icon": "\ud83d\udd12",
       "pacing": "slow",
-      "startFrame": 823,
-      "endFrame": 907,
-      "durationInFrames": 84,
-      "scriptText": "your bank account might be outsmarted by the same technology writing your emails."
+      "startFrame": 514,
+      "endFrame": 600,
+      "durationInFrames": 86,
+      "scriptText": "from going rogue, but they are keeping the most powerful"
     },
     {
-      "type": "quote_attribution",
-      "text": "by the same technology writing your emails. If you knew an",
-      "quote": "If you knew an AI could break into any system",
-      "attribution": "Public inquiry",
+      "type": "icon_text",
+      "text": "the most powerful parts of the software locked",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 907,
-      "endFrame": 1006,
-      "durationInFrames": 99,
-      "scriptText": "If you knew an AI could break into any system,"
+      "startFrame": 600,
+      "endFrame": 656,
+      "durationInFrames": 56,
+      "scriptText": "parts of the software locked away. A former employee even"
+    },
+    {
+      "type": "icon_text",
+      "text": "A former employee even wondered if the AI is just",
+      "icon": "\ud83d\udc41\ufe0f",
+      "pacing": "slow",
+      "startFrame": 656,
+      "endFrame": 741,
+      "durationInFrames": 85,
+      "scriptText": "wondered if the AI is just playing nice during tests"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "nice during tests because it knows it is being",
+      "title": "The Digital Locksmith",
+      "body": "We are letting an AI loose that can pick any lock it finds.",
+      "pacing": "slow",
+      "startFrame": 741,
+      "endFrame": 808,
+      "durationInFrames": 67,
+      "scriptText": "because it knows it is being watched. We are essentially"
+    },
+    {
+      "type": "icon_text",
+      "text": "We are essentially letting a digital locksmith loose that",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 808,
+      "endFrame": 890,
+      "durationInFrames": 82,
+      "scriptText": "letting a digital locksmith loose that can also pick any lock it finds."
+    },
+    {
+      "type": "icon_text",
+      "text": "also pick any locket fines. If this AI can",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 890,
+      "endFrame": 968,
+      "durationInFrames": 78,
+      "scriptText": "If this AI can hack into systems better than most"
     },
     {
       "type": "ticker_tape",
-      "text": "could break into any system, would you want it to be released to the public at all?",
+      "text": "hack into systems better than most humans, should we be letting it out into the wild at all?",
       "stories": [
-        "Public release debate",
-        "Security concerns",
-        "Astra capabilities"
+        "Astra model release pending",
+        "Security experts raise concerns",
+        "OpenAI safety protocols reviewed"
       ],
-      "label": "Public Sentiment",
+      "label": "Updates",
       "pacing": "slow",
-      "startFrame": 1006,
-      "endFrame": 1099,
-      "durationInFrames": 93,
-      "scriptText": "would you want it to be released to the public at all?"
+      "startFrame": 968,
+      "endFrame": 1077,
+      "durationInFrames": 109,
+      "scriptText": "humans, should we be letting it out into the wild at all?"
     }
   ]
 }

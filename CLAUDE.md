@@ -213,4 +213,5 @@ See `ROADMAP.md`. Load-bearing: LLM cost ceiling, brand identity, YouTube API ap
 - **Caption gate expanded to 7 types** (added `process_flow`).
 - **Timeline events accept both `string[]` and `{date,label}[]`** — `timelineMetadata` uses `z.union([...])` to match what `BEAT_TYPE_FIELD_HINTS` in `beat_generator.py` already told the LLM to emit. `adaptMetadata` was already shape-tolerant.
 - **Pipeline model** is now `gemini-3.1-flash-lite` (Google AI Studio free tier). Confirmed end-to-end on the Astra story: 15 beats, 1099 frames, 15/15 audio-text matches, smoke test green.
-- **Don't run commands or edit files yourself.**
+- **Short-form social metadata** (Sept 2026) — `script_generator.py` now asks the LLM for `youtube_title` + `youtube_description` + `tiktok_title` + `tiktok_caption` in the same JSON response. `run_pipeline.py::save_project` writes 4 plain-text files (`.txt`) plus a combined `social_metadata.json` into the per-story output dir. The .txt files are the canonical "paste-into-the-upload-form" copy; the JSON bundle is for programmatic consumers (upload script, etc.). Length guards: yt_title ≤60, yt_desc ≤200, tt_title ≤80, tt_caption ≤300 — `_validate_script` enforces them and triggers a single retry.
+- **Don't run commands or edit files yourself.** (Removed in the Claude Code session — see §0.1 step 1.)

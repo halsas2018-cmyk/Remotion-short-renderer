@@ -138,6 +138,14 @@ ALSO generate:
   doesn't match the content.
 - youtube_description: 1-2 line short caption (≤200 chars) ending with relevant
   hashtags, suitable to paste into Shorts description box.
+- tiktok_title: short, punchy, ≤80 chars. TikTok captions tolerate hashtags
+  inline and a slightly more casual/second-person voice than YouTube. No
+  clickbait that doesn't match the content. Often the youtube_title with a
+  couple of extra hashtags or a stronger hook works.
+- tiktok_caption: 2-4 sentence caption (≤300 chars) optimized for TikTok's
+  FYP — can include 3-5 inline hashtags (#ai #news #tech etc.) and a
+  call-to-action ("follow for more AI news"). Should stand on its own as
+  a caption, not just copy the youtube_description.
 
 OUTPUT FORMAT (strict JSON, no markdown fences, no preamble):
 {{
@@ -146,7 +154,9 @@ OUTPUT FORMAT (strict JSON, no markdown fences, no preamble):
   "headline_options": ["...", "...", "...", "...", "..."],
   "chosen_headline": "...",
   "youtube_title": "...",
-  "youtube_description": "..."
+  "youtube_description": "...",
+  "tiktok_title": "...",
+  "tiktok_caption": "..."
 }}
 """
 
@@ -294,6 +304,8 @@ def generate_script(story: dict, content: dict,
         "headline": (parsed.get("chosen_headline") or "").strip(),
         "youtube_title": (parsed.get("youtube_title") or "").strip(),
         "youtube_description": (parsed.get("youtube_description") or "").strip(),
+        "tiktok_title": (parsed.get("tiktok_title") or "").strip(),
+        "tiktok_caption": (parsed.get("tiktok_caption") or "").strip(),
         "word_count": word_count,
         "quality_metrics": quality_metrics,
         "pre_chunked_beats": pre_chunked_beats,
@@ -385,6 +397,18 @@ def _validate_script(parsed: dict, story: dict = None) -> list[str]:
         problems.append("missing youtube_description")
     elif len(yt_desc) > 200:
         problems.append(f"youtube_description exceeds 200 chars ({len(yt_desc)})")
+
+    # tiktok metadata sanity (Horizon 9.x — short-form export metadata)
+    tt_title = (parsed.get("tiktok_title") or "").strip()
+    if not tt_title:
+        problems.append("missing tiktok_title")
+    elif len(tt_title) > 80:
+        problems.append(f"tiktok_title exceeds 80 chars ({len(tt_title)})")
+    tt_caption = (parsed.get("tiktok_caption") or "").strip()
+    if not tt_caption:
+        problems.append("missing tiktok_caption")
+    elif len(tt_caption) > 300:
+        problems.append(f"tiktok_caption exceeds 300 chars ({len(tt_caption)})")
     return problems
 
 

@@ -143,7 +143,11 @@ MODEL_REGISTRY = {
     },
 }
 
-DEFAULT_MODEL_KEY = "groq-gpt-oss-120b"
+# Default model: Google Gemini 3.1 Flash Lite (Google AI Studio free tier).
+# Verified end-to-end on the Astra story (Sept 2026): 15/15 audio-text matches,
+# smoke test green. Groq (groq-gpt-oss-120b) is still in the registry for
+# fallback / A-B comparison but is no longer the default — see CLAUDE.md §11.
+DEFAULT_MODEL_KEY = "gemini-31-flash-lite"
 
 
 def list_models() -> list[dict]:

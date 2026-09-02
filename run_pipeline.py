@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sys
 from collections import defaultdict
 from datetime import date, datetime
@@ -212,6 +213,10 @@ def save_project(
     rank_model_key: str,
     no_video: bool = False,
     format: str | None = None,
+    youtube_title: str = "",
+    youtube_description: str = "",
+    tiktok_title: str = "",
+    tiktok_caption: str = "",
 ) -> dict:
     """
     Run the pipeline for a single story up to beat generation.
@@ -231,6 +236,38 @@ def save_project(
     (project_dir / "pre_chunked_beats.json").write_text(json.dumps(pre_chunked_beats, indent=2), encoding="utf-8")
     (project_dir / "model.txt").write_text(f"{model_key}\n{rank_model_key}", encoding="utf-8")
     (project_dir / "format.txt").write_text(format or "default", encoding="utf-8")
+
+    # Short-form social metadata (Horizon 9.x — export metadata).
+    # Written to SEPARATE files (not bundled into story.json) so the user
+    # can `cat output/.../youtube_title.txt` and paste straight into the
+    # YouTube Shorts / TikTok upload form without parsing JSON. If the LLM
+    # returned empty strings, the file is still written (empty) so the
+    # pipeline output is predictable.
+    (project_dir / "youtube_title.txt").write_text((youtube_title or "").strip(), encoding="utf-8")
+    (project_dir / "youtube_description.txt").write_text((youtube_description or "").strip(), encoding="utf-8")
+    (project_dir / "tiktok_title.txt").write_text((tiktok_title or "").strip(), encoding="utf-8")
+    (project_dir / "tiktok_caption.txt").write_text((tiktok_caption or "").strip(), encoding="utf-8")
+
+    # Combined JSON bundle for programmatic consumers (e.g. an upload
+    # script that reads one file instead of four). The four .txt files
+    # above remain the canonical "paste-into-the-form" copy.
+    (project_dir / "social_metadata.json").write_text(
+        json.dumps(
+            {
+                "youtube": {
+                    "title": (youtube_title or "").strip(),
+                    "description": (youtube_description or "").strip(),
+                },
+                "tiktok": {
+                    "title": (tiktok_title or "").strip(),
+                    "caption": (tiktok_caption or "").strip(),
+                },
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
     narration_path = None
     word_timestamps = None
@@ -379,7 +416,7 @@ def main():
 
         # Save project (runs pipeline up to beats)
         try:
-            save_project(
+            artifacts = save_project(
                 project_dir=project_dir,
                 story=story,
                 script=script,
@@ -388,8 +425,41 @@ def main():
                 rank_model_key=rank_model_key,
                 no_video=args.no_video,
                 format=script_result.get("format"),
+                youtube_title=script_result.get("youtube_title", ""),
+                youtube_description=script_result.get("youtube_description", ""),
+                tiktok_title=script_result.get("tiktok_title", ""),
+                tiktok_caption=script_result.get("tiktok_caption", ""),
             )
             _log_generated_story(base_outdir, story, args.model, project_slug)
+
+            # Copy the three files Remotion's <Root> reads from `public/`
+            # so a fresh pipeline run is immediately renderable in Studio
+            # without a manual `cp` step. The orchestrator looks for:
+            #   public/beats.json          ← generated
+            #   public/narration.mp3       ← generated
+            #   public/timestamps.json     ← generated, RENAMED from
+            #                                word_timestamps.json
+            # (Remotion's orchestrator expects `timestamps.json` — the
+            # WhisperX-side file is `word_timestamps.json`; we rename
+            # during copy to keep the project's internal naming honest
+            # while satisfying the orchestrator's expected filename.)
+            public_dir = Path(__file__).resolve().parent / "public"
+            public_dir.mkdir(parents=True, exist_ok=True)
+            copy_map = {
+                artifacts.get("beats"): public_dir / "beats.json",
+                artifacts.get("narration"): public_dir / "narration.mp3",
+                artifacts.get("word_timestamps"): public_dir / "timestamps.json",
+            }
+            for src, dst in copy_map.items():
+                if not src:
+                    # --no-video run: skip narration + word_timestamps
+                    continue
+                src_path = Path(src)
+                if not src_path.exists():
+                    print(f"  WARN: expected artifact missing, skipping copy: {src_path}")
+                    continue
+                shutil.copyfile(src_path, dst)
+            print(f"  ✓ copied beats.json + narration.mp3 + timestamps.json to public/")
         except Exception as e:
             print(f"  ERROR: {e}")
             import traceback

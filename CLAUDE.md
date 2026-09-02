@@ -14,12 +14,13 @@ Read before suggesting any change. The "Money lens" rule and "Components are tem
 
 ## 0.1 Process rules
 
-1. **Don't run commands or edit files yourself.** I can only suggest changes as code blocks.
+1. **You may run commands and edit files directly in this environment** (Claude Code — full Read/Edit/Write/Bash tool surface). The earlier "suggest only, no edits" rule was written for an aider-style harness that lacked tools; it does not apply here.
 2. **If ambiguous, ask.** Don't guess or invent files.
 3. **If a file isn't in this conversation, ask to add it.**
-4. **Return entire files**, not diffs. No elision.
+4. **Return entire files**, not diffs. No elision. (When editing, prefer Edit for targeted changes; Write for new files. Don't paste whole-file replacements back into chat unless the user asks.)
 5. **Trust the latest `*added these files to the chat*` message** as the true contents.
 6. **Smoke test is the unit of truth.** `./scripts/render-smoke.sh` green + identical `*Test` PNGs = correct refactor. Don't add unit tests for smoke-covered behavior unless asked. **Exception:** 2.3.x scene-based motion hooks (Passes 1/2/3) may produce <1% per-frame diff.
+7. **Type-check after cross-layer changes.** `npx tsc --noEmit` is part of the unit of truth for files that import across `MotionGraphicsVideo.tsx` ↔ `audio/BeatKineticCaptions.tsx` ↔ `KineticCaptions.tsx` — the `npm test` (Vitest) pipeline does NOT enforce `tsconfig.json`'s `strict: true` and silently allows mismatched prop shapes and missing fields. **Lesson learned:** the blank-captions bug (Sept 2026) was a TS error in production code that 143/143 tests never caught.
 
 ## 1. Money lens
 
@@ -100,6 +101,31 @@ In `src/lib/sceneMotion/` (sibling of `idleMotion/`). For `ChartComparison3D`, `
 ### 3.6 Components that deviate
 
 `BeforeAfter` (two-card with red/green tags), `QuoteAttribution` (multi-line + Georgia quotes), `CompareSplit` (two equal cards, neutral), `LocationPulse` (2D callout). Don't add another similar layout — propose new beat type + horizon.
+
+## 3.7 Kinetic captions architecture (Sept 2026 fix)
+
+Three files cooperate to render the bottom-of-frame word-sync captions on data-vis beats:
+
+| File | Role |
+|---|---|
+| `src/MotionGraphicsVideo.tsx` | Orchestrator. Gates which beat types get captions via `shouldShowKineticCaptions()`. Mounts `<BeatKineticCaptions>` for those beats. Re-exports `useBeatContext` for back-compat. |
+| `src/audio/BeatKineticCaptions.tsx` | Per-beat wrapper. Slices global `words[]` to the current beat's window. Provides `<BeatContext.Provider>` with the beat's type, text, words, start frame, and duration. Renders the typing-click SFX per word. Renders `<KineticCaptions>` inside the provider. |
+| `src/KineticCaptions.tsx` | Pure visualizer. Reads `useBeatContext()` to get the active beat's words, rebases their global timestamps to local frames, and renders the highlight + past/future word cards. |
+
+**The shared `useBeatContext` lives in `src/beats/beatContext.ts` (a leaf file).** Both `MotionGraphicsVideo.tsx` and `audio/BeatKineticCaptions.tsx` import from it; `KineticCaptions.tsx` reads from it. **Do not re-define `BeatContext` in either of the three files** — it creates a second React context the visualizer will never subscribe to, and captions silently go blank.
+
+**Why a leaf file:** same reason as `adaptMetadata.ts` (§4.5). If the context were defined in `MotionGraphicsVideo.tsx`, the visualizer would import from the orchestrator; if defined in `BeatKineticCaptions.tsx`, the orchestrator would import from a `src/audio/` leaf. Either direction creates a TDZ-under-React-Refresh trap or a cycle. The leaf breaks both.
+
+**`KineticCaptionsProps` props are optional** (`captionEnabledTypes?`, `beats?`, `words?`). They are only consumed in `*Test` compositions where there is no `<BeatContext.Provider>` above the visualizer. In the real composition, the wrapper provides the context and the visualizer ignores the props.
+
+**Visible beat types** (caption gate, mirrored in both `renderBeat.tsx::CAPTION_VISIBLE_BEAT_TYPES` and `KineticCaptions.tsx::KINETIC_CAPTION_ENABLED_BEAT_TYPES` — keep in sync): `map_3d`, `chart_line`, `chart_comparison_3d`, `chart_counter`, `progress_meter`, `timeline`, `process_flow`. If you add a data-vis beat type, add it to BOTH sets.
+
+**Root-cause-of-blank-captions check (run this when captions stop rendering):**
+1. `npx tsc --noEmit | grep -E "beatContext|KineticCaption|BeatKinetic"` — must be empty.
+2. Confirm `<BeatContext.Provider value={{...}}>` wraps the visualizer in `BeatKineticCaptions.tsx`.
+3. Confirm the visualizer imports `useBeatContext` from `./beats/beatContext`, not from `./MotionGraphicsVideo`.
+4. Confirm the orchestrator's `shouldShowKineticCaptions(beat.type)` returns true for the beat type you're rendering.
+5. Confirm `words` (the full list) is non-empty in the orchestrator's props (check `public/timestamps.json`).
 
 ## 4. Type system source of truth
 

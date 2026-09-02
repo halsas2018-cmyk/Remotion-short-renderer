@@ -1,7 +1,6 @@
 import React from "react";
 import { Beat } from "./types";
 import { SceneTransition } from "../SceneTransition";
-import { BeatKineticCaptions } from "../audio/BeatKineticCaptions";
 import {
   getBeatComponent,
   validateBeatMetadata,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React from "react";
 import {
   AbsoluteFill,
   CalculateMetadataFunction,
@@ -32,23 +32,15 @@ import {
 /*  with the current beat's type and words so KineticCaptions can     */
 /*  filter captions to the active beat. Outside of a beat (e.g. in   */
 /*  *Test compositions), the hook returns null values.                */
+/*                                                                     */
+/*  The context is now defined in `src/beats/beatContext.ts` (a leaf  */
+/*  file) so the audio/ wrapper, the visualizer, and the orchestrator  */
+/*  can all import from one source without creating a cycle. This     */
+/*  module re-exports the hook + type for back-compat — see §3.7.    */
 /* ------------------------------------------------------------------ */
 
-export type BeatContextValue = {
-  currentBeatType: string | null;
-  currentBeatText: string | null;
-  currentWords: Word[];
-};
-
-const defaultBeatContext: BeatContextValue = {
-  currentBeatType: null,
-  currentBeatText: null,
-  currentWords: [],
-};
-
-const BeatContext = createContext<BeatContextValue>(defaultBeatContext);
-
-export const useBeatContext = (): BeatContextValue => useContext(BeatContext);
+export { useBeatContext } from "./beats/beatContext";
+export type { BeatContextValue } from "./beats/beatContext";
 
 /* ------------------------------------------------------------------ */
 /*  Props for the orchestrator                                         */

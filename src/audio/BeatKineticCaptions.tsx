@@ -1,13 +1,11 @@
 import React, {
-  createContext,
-  useContext,
   useMemo,
-  useState,
 } from "react";
 import { Sequence } from "remotion";
 import { Audio } from "@remotion/media";
 import { KineticCaptions } from "../KineticCaptions";
 import type { Word } from "../beats/words";
+import { BeatContext, BeatContextValue } from "../beats/beatContext";
 import {
   TYPING_CLICK_HOLD_FRAMES,
   TYPING_SFX_URL,
@@ -44,29 +42,7 @@ type BeatKineticCaptionsProps = {
   startFrame: number;
 };
 
-export type BeatContextValue = {
-  currentBeatType: string | null;
-  currentBeatText: string | null;
-  /** Word list sliced to this beat's window, in GLOBAL seconds. */
-  currentWords: Word[];
-  /** Absolute frame at which this beat begins. */
-  beatStartFrame: number | null;
-  /** Beat duration in frames. */
-  beatDurationInFrames: number | null;
-};
-
-const defaultBeatContext: BeatContextValue = {
-  currentBeatType: null,
-  currentBeatText: null,
-  currentWords: [],
-  beatStartFrame: null,
-  beatDurationInFrames: null,
-};
-
-const LocalBeatContext = createContext<BeatContextValue>(defaultBeatContext);
-
-export const useBeatContext = (): BeatContextValue =>
-  useContext(LocalBeatContext);
+export type { BeatContextValue };
 
 /* ------------------------------------------------------------------ */
 /*  useBeatWordSlice                                                  */
@@ -107,22 +83,11 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
     fps,
   );
 
-  // Capture beatIndex (relative to the per-beat <Sequence> mount) so
-  // the per-word audio log lines can be cross-referenced with the
-  // orchestrator's whoosh logs.
-  const [beatIndex] = useState(() =>
-    // eslint-disable-next-line no-console
-    Math.floor(Math.random() * 0), // placeholder — see note below
-  );
-  // NOTE: beatIndex is currently unknown here because
-  // BeatKineticCaptions is rendered without an index prop. The audio
-  // log line therefore omits the meta key. The orchestrator already
-  // logs the beat's whoosh with its own beatIndex, so per-word
-  // context is still recoverable from the order in the render log.
-  // (Avoiding a prop-drilling change just for log cosmetics.)
+  // (beatIndex logging is owned by the orchestrator; this wrapper is
+  // context-only and does not emit per-word audio log lines.)
 
   return (
-    <LocalBeatContext.Provider
+    <BeatContext.Provider
       value={{
         currentBeatType: beatType,
         currentBeatText: text,
@@ -175,6 +140,6 @@ export const BeatKineticCaptions: React.FC<BeatKineticCaptionsProps> = ({
           </Sequence>
         );
       })}
-    </LocalBeatContext.Provider>
+    </BeatContext.Provider>
   );
 };

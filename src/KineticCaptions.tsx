@@ -7,7 +7,7 @@ import {
   Easing,
   Interactive,
 } from "remotion";
-import { useBeatContext } from "./MotionGraphicsVideo";
+import { useBeatContext } from "./beats/beatContext";
 
 interface Word {
   word: string;
@@ -16,8 +16,22 @@ interface Word {
 }
 
 interface KineticCaptionsProps {
-  captionEnabledTypes: Set<string>;
-  beats: Array<{ type: string; startFrame: number; durationInFrames: number }>;
+  /**
+   * Optional. Only used when there is NO <BeatContext.Provider> above
+   * this component (i.e. *Test compositions with no wrapper). In the
+   * real composition, the per-beat wrapper provides the context and
+   * the visualizer ignores this prop.
+   *
+   * Defaults to KINETIC_CAPTION_ENABLED_BEAT_TYPES (the production
+   * caption gate — the same set the orchestrator mounts for).
+   */
+  captionEnabledTypes?: Set<string>;
+  /**
+   * Optional. Only used in *Test compositions with no provider.
+   * Ignored when the context is present.
+   */
+  beats?: Array<{ type: string; startFrame: number; durationInFrames: number }>;
+  /** Optional. Only used when no context. */
   words?: Word[];
 }
 
@@ -107,7 +121,7 @@ export const KineticCaptions: React.FC<KineticCaptionsProps> = ({
   // `captionEnabledTypes` set so test compositions can still preview.
   const effectiveEnabledTypes = currentBeatType
     ? KINETIC_CAPTION_ENABLED_BEAT_TYPES
-    : captionEnabledTypes;
+    : (captionEnabledTypes ?? KINETIC_CAPTION_ENABLED_BEAT_TYPES);
 
   const shouldShowCaptions = currentBeatType
     ? effectiveEnabledTypes.has(currentBeatType)

@@ -1,0 +1,144 @@
+{
+  "fps": 30,
+  "totalDurationInFrames": 1143,
+  "beats": [
+    {
+      "type": "key_statement",
+      "text": "Bank of America just warned that most investors are still",
+      "emphasisWords": [
+        "Bank of America",
+        "warned"
+      ],
+      "startFrame": 4,
+      "endFrame": 81,
+      "durationInFrames": 77
+    },
+    {
+      "type": "icon_text",
+      "text": "ignoring value stocks even as interest rates keep climbing.",
+      "icon": "warning",
+      "startFrame": 81,
+      "endFrame": 162,
+      "durationInFrames": 81
+    },
+    {
+      "type": "key_statement",
+      "text": "That means the cheap\u2011priced companies that pay steady dividends are",
+      "emphasisWords": [
+        "cheap\u2011priced",
+        "steady dividends"
+      ],
+      "startFrame": 162,
+      "endFrame": 257,
+      "durationInFrames": 95
+    },
+    {
+      "type": "versus",
+      "text": "sitting on the sidelines while everyone chases flashy tech.",
+      "left": "value stocks sitting on sidelines",
+      "right": "everyone chasing flashy tech",
+      "startFrame": 257,
+      "endFrame": 337,
+      "durationInFrames": 80
+    },
+    {
+      "type": "icon_text",
+      "text": "BofA\u2019s research shows these \u201cvalue\u201d picks actually shine",
+      "icon": "insight",
+      "startFrame": 337,
+      "endFrame": 436,
+      "durationInFrames": 99
+    },
+    {
+      "type": "icon_text",
+      "text": "when borrowing",
+      "icon": "insight",
+      "startFrame": 436,
+      "endFrame": 466,
+      "durationInFrames": 30
+    },
+    {
+      "type": "timeline",
+      "text": "costs rise and inflation stays high. Picture a grocery\u2011store chain",
+      "events": [
+        "costs rise",
+        "inflation stays high",
+        "grocery\u2011store chain example"
+      ],
+      "startFrame": 466,
+      "endFrame": 565,
+      "durationInFrames": 99
+    },
+    {
+      "type": "before_after",
+      "text": "or a utility firm quietly pulling ahead while the market\u2019s",
+      "beforeLabel": "utility firm quiet",
+      "afterLabel": "utility firm pulling ahead",
+      "startFrame": 565,
+      "endFrame": 647,
+      "durationInFrames": 82
+    },
+    {
+      "type": "versus",
+      "text": "loudest voices shout about AI hype. Because the big\u2011name analysts",
+      "left": "loudest voices shout about AI hype",
+      "right": "big\u2011name analysts silent",
+      "startFrame": 647,
+      "endFrame": 755,
+      "durationInFrames": 108
+    },
+    {
+      "type": "key_statement",
+      "text": "haven\u2019t shouted about them yet, the prices stay low and the",
+      "emphasisWords": [
+        "prices stay low",
+        "upside stays hidden"
+      ],
+      "startFrame": 755,
+      "endFrame": 848,
+      "durationInFrames": 93
+    },
+    {
+      "type": "key_statement",
+      "text": "upside stays hidden.",
+      "emphasisWords": [
+        "prices stay low",
+        "upside stays hidden"
+      ],
+      "startFrame": 848,
+      "endFrame": 878,
+      "durationInFrames": 30
+    },
+    {
+      "type": "process_flow",
+      "text": "If you bought a handful of these under\u2011the\u2011radar stocks last",
+      "steps": [
+        "identify under\u2011the\u2011radar stocks",
+        "buy a handful"
+      ],
+      "startFrame": 878,
+      "endFrame": 944,
+      "durationInFrames": 66
+    },
+    {
+      "type": "timeline",
+      "text": "year, you might already be seeing a modest boost in your portfolio.",
+      "events": [
+        "bought last year",
+        "seeing modest boost now"
+      ],
+      "startFrame": 944,
+      "endFrame": 1023,
+      "durationInFrames": 79
+    },
+    {
+      "type": "before_after",
+      "text": "Would you start looking at boring\u2011looking companies instead of the next big tech buzz?",
+      "beforeLabel": "boring\u2011looking companies",
+      "afterLabel": "next big tech buzz",
+      "startFrame": 1023,
+      "endFrame": 1143,
+      "durationInFrames": 120
+    }
+  ]
+}

@@ -57,6 +57,18 @@ type SceneTransitionProps = {
   entranceFrames?: number;
   /** Override the exit phase budget (frames). If set, EXIT_FRACTION is ignored. */
   exitFrames?: number;
+  /**
+   * If set, the exit fade runs across the LAST `crossFadeFrames` frames of the
+   * beat instead of the last EXIT_FRACTION (18%). The orchestrator passes the
+   * `transitionFrames` value from `computeTransitionFrames()` so the exit
+   * fade aligns exactly with the next beat's entrance window — the two beats
+   * cross-fade in lockstep instead of double-showing for the first ~18% of
+   * the overlap and then snapping.
+   *
+   * When unset, the 18% default is used (preserves existing `*Test`
+   * composition behaviour, keeps the smoke test green).
+   */
+  crossFadeFrames?: number;
 };
 
 /**
@@ -71,12 +83,22 @@ export const SceneTransition: React.FC<SceneTransitionProps> = ({
   children,
   entranceFrames,
   exitFrames,
+  crossFadeFrames,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
   const entranceDuration = entranceFrames ?? Math.round(durationInFrames * ENTRANCE_FRACTION);
-  const exitDuration = exitFrames ?? Math.round(durationInFrames * EXIT_FRACTION);
+  // Exit budget: when a cross-fade window is provided by the orchestrator,
+  // the exit fade runs across the LAST `crossFadeFrames` frames of the
+  // beat (so it lines up with the next beat's entrance). When no
+  // cross-fade is provided, fall back to the 18% default so the last
+  // beat (and any *Test composition) still gets a graceful end fade.
+  const exitDuration =
+    exitFrames ??
+    (crossFadeFrames !== undefined && crossFadeFrames > 0
+      ? Math.min(crossFadeFrames, durationInFrames)
+      : Math.round(durationInFrames * EXIT_FRACTION));
   const exitStart = Math.max(0, durationInFrames - exitDuration);
 
   const value = useMemo<SceneTransitionContextValue>(() => {

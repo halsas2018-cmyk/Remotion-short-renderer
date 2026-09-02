@@ -1,647 +1,707 @@
 [
   {
-    "word": "Dick's",
-    "start": 0.111,
-    "end": 0.311
+    "word": "David",
+    "start": 0.211,
+    "end": 0.491
   },
   {
-    "word": "sporting",
-    "start": 0.331,
-    "end": 0.651
+    "word": "Booth",
+    "start": 0.531,
+    "end": 0.772
   },
   {
-    "word": "goods",
-    "start": 0.691,
-    "end": 0.911
+    "word": "manages",
+    "start": 0.812,
+    "end": 1.232
   },
   {
-    "word": "share",
-    "start": 1.111,
-    "end": 1.372
+    "word": "over",
+    "start": 1.312,
+    "end": 1.472
   },
   {
-    "word": "slid",
-    "start": 1.412,
-    "end": 1.652
+    "word": "$1",
+    "start": 1.492,
+    "end": 1.732
   },
   {
-    "word": "15%",
-    "start": 1.912,
-    "end": 2.492
+    "word": "trillion,",
+    "start": 1.772,
+    "end": 2.493
   },
   {
-    "word": "after",
-    "start": 2.612,
-    "end": 2.792
+    "word": "but",
+    "start": 2.833,
+    "end": 2.933
   },
   {
-    "word": "it",
-    "start": 2.852,
-    "end": 2.912
+    "word": "he",
+    "start": 2.973,
+    "end": 3.053
   },
   {
-    "word": "missed",
-    "start": 2.972,
-    "end": 3.172
+    "word": "says",
+    "start": 3.093,
+    "end": 3.293
   },
   {
-    "word": "the",
-    "start": 3.192,
-    "end": 3.272
+    "word": "his",
+    "start": 3.333,
+    "end": 3.454
   },
   {
-    "word": "earnings",
-    "start": 3.312,
-    "end": 3.553
+    "word": "favorite",
+    "start": 3.494,
+    "end": 3.794
   },
   {
-    "word": "forecast.",
-    "start": 3.593,
-    "end": 4.053
-  },
-  {
-    "word": "The",
-    "start": 4.453,
-    "end": 4.533
-  },
-  {
-    "word": "company",
-    "start": 4.573,
-    "end": 4.873
-  },
-  {
-    "word": "said",
-    "start": 4.913,
-    "end": 5.053
-  },
-  {
-    "word": "its",
-    "start": 5.093,
-    "end": 5.173
-  },
-  {
-    "word": "own",
-    "start": 5.253,
-    "end": 5.373
-  },
-  {
-    "word": "stores",
-    "start": 5.433,
-    "end": 5.693
-  },
-  {
-    "word": "grew",
-    "start": 5.713,
-    "end": 5.914
-  },
-  {
-    "word": "sales",
-    "start": 5.954,
-    "end": 6.274
-  },
-  {
-    "word": "by",
-    "start": 6.314,
-    "end": 6.454
-  },
-  {
-    "word": "4.9%,",
-    "start": 6.474,
-    "end": 7.534
-  },
-  {
-    "word": "thanks",
-    "start": 7.914,
-    "end": 8.114
-  },
-  {
-    "word": "to",
-    "start": 8.154,
-    "end": 8.255
-  },
-  {
-    "word": "a",
-    "start": 8.295,
-    "end": 8.315
-  },
-  {
-    "word": "World",
-    "start": 8.375,
-    "end": 8.595
-  },
-  {
-    "word": "Cup",
-    "start": 8.635,
-    "end": 8.815
-  },
-  {
-    "word": "boost.",
-    "start": 8.855,
-    "end": 9.135
-  },
-  {
-    "word": "But",
-    "start": 9.515,
-    "end": 9.615
-  },
-  {
-    "word": "its",
-    "start": 9.635,
-    "end": 9.735
-  },
-  {
-    "word": "foot",
-    "start": 9.775,
-    "end": 9.975
-  },
-  {
-    "word": "locker",
-    "start": 10.015,
-    "end": 10.295
-  },
-  {
-    "word": "division",
-    "start": 10.315,
-    "end": 10.656
-  },
-  {
-    "word": "fell",
-    "start": 10.716,
-    "end": 10.916
-  },
-  {
-    "word": "3.6%",
-    "start": 10.996,
-    "end": 11.476
-  },
-  {
-    "word": "in",
-    "start": 11.616,
-    "end": 12.116
-  },
-  {
-    "word": "comparable",
-    "start": 12.356,
-    "end": 12.776
-  },
-  {
-    "word": "sales,",
-    "start": 12.816,
-    "end": 13.097
-  },
-  {
-    "word": "forcing",
-    "start": 13.457,
-    "end": 13.757
-  },
-  {
-    "word": "a",
-    "start": 13.797,
-    "end": 13.837
-  },
-  {
-    "word": "downgrade",
-    "start": 13.877,
-    "end": 14.357
-  },
-  {
-    "word": "to",
-    "start": 14.397,
-    "end": 14.497
-  },
-  {
-    "word": "flat",
-    "start": 14.537,
-    "end": 14.757
-  },
-  {
-    "word": "to",
-    "start": 14.777,
-    "end": 14.857
-  },
-  {
-    "word": "down",
-    "start": 14.897,
-    "end": 15.177
-  },
-  {
-    "word": "2%.",
-    "start": 15.217,
-    "end": 15.558
-  },
-  {
-    "word": "Because",
-    "start": 15.958,
-    "end": 16.218
-  },
-  {
-    "word": "of",
-    "start": 16.258,
-    "end": 16.298
-  },
-  {
-    "word": "that,",
-    "start": 16.338,
-    "end": 16.518
-  },
-  {
-    "word": "Dick's",
-    "start": 16.818,
-    "end": 17.018
-  },
-  {
-    "word": "cut",
-    "start": 17.058,
-    "end": 17.198
-  },
-  {
-    "word": "its",
-    "start": 17.238,
-    "end": 17.338
-  },
-  {
-    "word": "full-year",
-    "start": 17.398,
-    "end": 17.859
-  },
-  {
-    "word": "revenue",
-    "start": 17.879,
-    "end": 18.179
-  },
-  {
-    "word": "target",
-    "start": 18.219,
-    "end": 18.499
-  },
-  {
-    "word": "to",
-    "start": 18.519,
-    "end": 18.579
-  },
-  {
-    "word": "between",
-    "start": 18.619,
-    "end": 18.879
-  },
-  {
-    "word": "$21.9",
-    "start": 18.899,
-    "end": 19.059
-  },
-  {
-    "word": "billion",
-    "start": 19.079,
-    "end": 19.399
-  },
-  {
-    "word": "and",
-    "start": 19.539,
-    "end": 19.679
-  },
-  {
-    "word": "$22.2",
-    "start": 19.739,
-    "end": 19.96
-  },
-  {
-    "word": "billion,",
-    "start": 20.0,
-    "end": 20.3
-  },
-  {
-    "word": "down",
-    "start": 20.32,
-    "end": 20.58
-  },
-  {
-    "word": "from",
-    "start": 20.6,
-    "end": 21.0
-  },
-  {
-    "word": "$22.1",
-    "start": 21.02,
-    "end": 21.16
-  },
-  {
-    "word": "to",
-    "start": 21.2,
-    "end": 21.26
-  },
-  {
-    "word": "$22.4",
-    "start": 21.28,
-    "end": 21.44
-  },
-  {
-    "word": "billion.",
-    "start": 21.46,
-    "end": 21.66
-  },
-  {
-    "word": "Operating",
-    "start": 25.902,
-    "end": 26.243
-  },
-  {
-    "word": "income",
-    "start": 26.283,
-    "end": 26.523
-  },
-  {
-    "word": "expectations",
-    "start": 26.563,
-    "end": 27.204
-  },
-  {
-    "word": "also",
-    "start": 27.324,
-    "end": 27.584
-  },
-  {
-    "word": "slipped",
-    "start": 27.624,
-    "end": 28.305
-  },
-  {
-    "word": "to",
-    "start": 28.746,
-    "end": 29.106
-  },
-  {
-    "word": "$1.45",
-    "start": 29.166,
-    "end": 30.007
-  },
-  {
-    "word": "$1.55",
-    "start": 30.147,
-    "end": 30.548
-  },
-  {
-    "word": "billion,",
-    "start": 30.588,
-    "end": 30.888
-  },
-  {
-    "word": "lower",
-    "start": 31.249,
-    "end": 31.409
-  },
-  {
-    "word": "than",
-    "start": 31.429,
-    "end": 31.529
-  },
-  {
-    "word": "the",
-    "start": 31.549,
-    "end": 31.629
-  },
-  {
-    "word": "previous",
-    "start": 31.669,
-    "end": 32.03
-  },
-  {
-    "word": "$1.69",
-    "start": 32.11,
-    "end": 32.851
-  },
-  {
-    "word": "$1.81",
-    "start": 32.871,
-    "end": 33.952
-  },
-  {
-    "word": "billion",
-    "start": 34.493,
-    "end": 34.793
-  },
-  {
-    "word": "range.",
-    "start": 34.853,
-    "end": 35.094
-  },
-  {
-    "word": "CEO",
-    "start": 35.554,
-    "end": 35.955
-  },
-  {
-    "word": "Lauren",
-    "start": 35.975,
-    "end": 36.215
-  },
-  {
-    "word": "Hobart",
-    "start": 36.235,
-    "end": 36.535
-  },
-  {
-    "word": "stayed",
-    "start": 36.555,
-    "end": 36.756
-  },
-  {
-    "word": "upbeat,",
-    "start": 36.796,
-    "end": 37.096
-  },
-  {
-    "word": "saying",
-    "start": 37.396,
-    "end": 37.597
-  },
-  {
-    "word": "the",
-    "start": 37.617,
-    "end": 37.697
-  },
-  {
-    "word": "core",
-    "start": 37.737,
-    "end": 37.957
-  },
-  {
-    "word": "Dicks",
-    "start": 37.977,
-    "end": 38.177
-  },
-  {
-    "word": "business",
-    "start": 38.217,
-    "end": 38.558
+    "word": "AI",
+    "start": 3.854,
+    "end": 4.234
   },
   {
     "word": "is",
-    "start": 38.698,
-    "end": 38.758
+    "start": 4.334,
+    "end": 4.414
   },
   {
-    "word": "still",
-    "start": 38.818,
-    "end": 39.038
-  },
-  {
-    "word": "strong,",
-    "start": 39.099,
-    "end": 39.499
-  },
-  {
-    "word": "and",
-    "start": 39.759,
-    "end": 39.819
+    "word": "just",
+    "start": 4.454,
+    "end": 4.654
   },
   {
     "word": "the",
-    "start": 39.859,
-    "end": 39.94
-  },
-  {
-    "word": "long-term",
-    "start": 39.98,
-    "end": 40.38
-  },
-  {
-    "word": "outlook",
-    "start": 40.44,
-    "end": 40.721
-  },
-  {
-    "word": "for",
-    "start": 40.741,
-    "end": 40.861
-  },
-  {
-    "word": "Foot",
-    "start": 40.941,
-    "end": 41.121
-  },
-  {
-    "word": "Locker",
-    "start": 41.161,
-    "end": 41.461
-  },
-  {
-    "word": "remains",
-    "start": 41.502,
-    "end": 41.782
-  },
-  {
-    "word": "bright.",
-    "start": 41.842,
-    "end": 42.102
-  },
-  {
-    "word": "If",
-    "start": 42.463,
-    "end": 42.523
-  },
-  {
-    "word": "you",
-    "start": 42.543,
-    "end": 42.623
-  },
-  {
-    "word": "were",
-    "start": 42.643,
-    "end": 42.743
-  },
-  {
-    "word": "shopping",
-    "start": 42.783,
-    "end": 43.063
-  },
-  {
-    "word": "for",
-    "start": 43.104,
-    "end": 43.184
-  },
-  {
-    "word": "sneakers,",
-    "start": 43.224,
-    "end": 43.584
-  },
-  {
-    "word": "would",
-    "start": 43.844,
-    "end": 43.965
-  },
-  {
-    "word": "a",
-    "start": 43.985,
-    "end": 44.405
-  },
-  {
-    "word": "15%",
-    "start": 44.445,
-    "end": 44.726
+    "start": 4.694,
+    "end": 4.775
   },
   {
     "word": "stock",
-    "start": 44.746,
-    "end": 45.006
+    "start": 4.815,
+    "end": 5.075
   },
   {
-    "word": "drop",
-    "start": 45.026,
-    "end": 45.286
+    "word": "market.",
+    "start": 5.115,
+    "end": 5.455
   },
   {
-    "word": "make",
-    "start": 45.466,
-    "end": 45.607
+    "word": "While",
+    "start": 6.356,
+    "end": 6.536
   },
   {
-    "word": "you",
-    "start": 45.627,
-    "end": 45.727
+    "word": "everyone",
+    "start": 6.616,
+    "end": 6.916
+  },
+  {
+    "word": "else",
+    "start": 6.956,
+    "end": 7.136
+  },
+  {
+    "word": "is",
+    "start": 7.216,
+    "end": 7.296
+  },
+  {
+    "word": "obsessed",
+    "start": 7.356,
+    "end": 7.737
+  },
+  {
+    "word": "with",
+    "start": 7.777,
+    "end": 7.897
+  },
+  {
+    "word": "new",
+    "start": 7.977,
+    "end": 8.117
+  },
+  {
+    "word": "tech",
+    "start": 8.177,
+    "end": 8.377
+  },
+  {
+    "word": "tools,",
+    "start": 8.417,
+    "end": 8.737
+  },
+  {
+    "word": "Booth",
+    "start": 9.078,
+    "end": 9.318
+  },
+  {
+    "word": "argues",
+    "start": 9.378,
+    "end": 9.678
+  },
+  {
+    "word": "that",
+    "start": 9.718,
+    "end": 9.838
+  },
+  {
+    "word": "trying",
+    "start": 9.878,
+    "end": 10.098
+  },
+  {
+    "word": "to",
+    "start": 10.118,
+    "end": 10.179
+  },
+  {
+    "word": "pick",
+    "start": 10.239,
+    "end": 10.399
+  },
+  {
+    "word": "winning",
+    "start": 10.439,
+    "end": 10.699
+  },
+  {
+    "word": "stocks",
+    "start": 10.739,
+    "end": 11.059
+  },
+  {
+    "word": "is",
+    "start": 11.139,
+    "end": 11.219
+  },
+  {
+    "word": "a",
+    "start": 11.259,
+    "end": 11.299
+  },
+  {
+    "word": "total",
+    "start": 11.359,
+    "end": 11.62
+  },
+  {
+    "word": "waste",
+    "start": 11.66,
+    "end": 11.88
+  },
+  {
+    "word": "of",
+    "start": 11.92,
+    "end": 11.98
+  },
+  {
+    "word": "time.",
+    "start": 12.04,
+    "end": 12.32
+  },
+  {
+    "word": "He",
+    "start": 13.261,
+    "end": 13.361
+  },
+  {
+    "word": "points",
+    "start": 13.401,
+    "end": 13.661
+  },
+  {
+    "word": "out",
+    "start": 13.741,
+    "end": 13.841
+  },
+  {
+    "word": "that",
+    "start": 13.881,
+    "end": 14.001
+  },
+  {
+    "word": "the",
+    "start": 14.021,
+    "end": 14.101
+  },
+  {
+    "word": "market",
+    "start": 14.141,
+    "end": 14.462
+  },
+  {
+    "word": "has",
+    "start": 14.502,
+    "end": 14.622
+  },
+  {
+    "word": "historically",
+    "start": 14.682,
+    "end": 15.222
+  },
+  {
+    "word": "returned",
+    "start": 15.282,
+    "end": 15.603
+  },
+  {
+    "word": "9%",
+    "start": 16.003,
+    "end": 16.203
+  },
+  {
+    "word": "a",
+    "start": 16.243,
+    "end": 16.263
+  },
+  {
+    "word": "year,",
+    "start": 16.303,
+    "end": 16.543
+  },
+  {
+    "word": "which",
+    "start": 16.843,
+    "end": 17.004
+  },
+  {
+    "word": "doubles",
+    "start": 17.064,
+    "end": 17.344
+  },
+  {
+    "word": "your",
+    "start": 17.384,
+    "end": 17.504
+  },
+  {
+    "word": "money",
+    "start": 17.544,
+    "end": 17.764
+  },
+  {
+    "word": "every",
+    "start": 17.864,
+    "end": 18.064
+  },
+  {
+    "word": "8",
+    "start": 18.225,
+    "end": 18.285
+  },
+  {
+    "word": "years.",
+    "start": 18.305,
+    "end": 18.625
+  },
+  {
+    "word": "He",
+    "start": 19.626,
+    "end": 19.726
+  },
+  {
+    "word": "says",
+    "start": 19.786,
+    "end": 19.986
+  },
+  {
+    "word": "the",
+    "start": 20.026,
+    "end": 20.126
+  },
+  {
+    "word": "real",
+    "start": 20.166,
+    "end": 20.366
+  },
+  {
+    "word": "problem",
+    "start": 20.406,
+    "end": 20.766
+  },
+  {
+    "word": "is",
+    "start": 20.826,
+    "end": 20.886
+  },
+  {
+    "word": "that",
+    "start": 20.927,
+    "end": 21.047
+  },
+  {
+    "word": "many",
+    "start": 21.087,
+    "end": 21.267
+  },
+  {
+    "word": "people",
+    "start": 21.327,
+    "end": 21.567
+  },
+  {
+    "word": "are",
+    "start": 21.627,
+    "end": 21.727
+  },
+  {
+    "word": "too",
+    "start": 21.747,
+    "end": 21.907
+  },
+  {
+    "word": "scared",
+    "start": 21.967,
+    "end": 22.247
+  },
+  {
+    "word": "to",
+    "start": 22.268,
+    "end": 22.348
+  },
+  {
+    "word": "invest",
+    "start": 22.388,
+    "end": 22.748
+  },
+  {
+    "word": "at",
+    "start": 22.808,
+    "end": 22.848
+  },
+  {
+    "word": "all",
+    "start": 22.948,
+    "end": 23.088
+  },
+  {
+    "word": "because",
+    "start": 23.148,
+    "end": 23.388
+  },
+  {
+    "word": "they",
+    "start": 23.408,
+    "end": 23.528
   },
   {
     "word": "think",
-    "start": 45.747,
-    "end": 45.887
+    "start": 23.568,
+    "end": 23.749
   },
   {
-    "word": "twice",
-    "start": 45.947,
-    "end": 46.227
+    "word": "the",
+    "start": 23.769,
+    "end": 23.869
   },
   {
-    "word": "about",
-    "start": 46.267,
-    "end": 46.448
+    "word": "system",
+    "start": 23.909,
+    "end": 24.209
   },
   {
-    "word": "buying",
-    "start": 46.508,
-    "end": 46.748
+    "word": "is",
+    "start": 24.269,
+    "end": 24.349
   },
   {
-    "word": "from",
-    "start": 46.788,
-    "end": 46.908
+    "word": "rigged",
+    "start": 24.429,
+    "end": 24.629
   },
   {
-    "word": "Dicks",
-    "start": 46.968,
-    "end": 47.189
+    "word": "against",
+    "start": 24.669,
+    "end": 24.929
+  },
+  {
+    "word": "them.",
+    "start": 24.97,
+    "end": 25.09
+  },
+  {
+    "word": "Instead",
+    "start": 26.065,
+    "end": 26.365
+  },
+  {
+    "word": "of",
+    "start": 26.385,
+    "end": 26.445
+  },
+  {
+    "word": "chasing",
+    "start": 26.506,
+    "end": 26.846
+  },
+  {
+    "word": "the",
+    "start": 26.866,
+    "end": 26.946
+  },
+  {
+    "word": "next",
+    "start": 26.986,
+    "end": 27.166
+  },
+  {
+    "word": "big",
+    "start": 27.226,
+    "end": 27.386
+  },
+  {
+    "word": "thing,",
+    "start": 27.426,
+    "end": 27.667
+  },
+  {
+    "word": "he",
+    "start": 27.987,
+    "end": 28.087
+  },
+  {
+    "word": "suggests",
+    "start": 28.147,
+    "end": 28.568
+  },
+  {
+    "word": "you",
+    "start": 28.608,
+    "end": 28.728
+  },
+  {
+    "word": "just",
+    "start": 28.768,
+    "end": 28.928
+  },
+  {
+    "word": "buy",
+    "start": 28.968,
+    "end": 29.068
+  },
+  {
+    "word": "the",
+    "start": 29.108,
+    "end": 29.188
+  },
+  {
+    "word": "market",
+    "start": 29.228,
+    "end": 29.529
+  },
+  {
+    "word": "and",
+    "start": 29.569,
+    "end": 29.669
+  },
+  {
+    "word": "stay",
+    "start": 29.709,
+    "end": 29.909
+  },
+  {
+    "word": "calm.",
+    "start": 29.949,
+    "end": 30.229
+  },
+  {
+    "word": "It",
+    "start": 31.17,
+    "end": 31.23
+  },
+  {
+    "word": "is",
+    "start": 31.29,
+    "end": 31.371
+  },
+  {
+    "word": "a",
+    "start": 31.411,
+    "end": 31.451
+  },
+  {
+    "word": "simple",
+    "start": 31.511,
+    "end": 31.791
+  },
+  {
+    "word": "strategy",
+    "start": 31.831,
+    "end": 32.271
+  },
+  {
+    "word": "that",
+    "start": 32.332,
+    "end": 32.432
+  },
+  {
+    "word": "can",
+    "start": 32.472,
+    "end": 32.592
+  },
+  {
+    "word": "make",
+    "start": 32.632,
+    "end": 32.792
+  },
+  {
+    "word": "you",
+    "start": 32.812,
+    "end": 32.912
+  },
+  {
+    "word": "wealthy,",
+    "start": 32.952,
+    "end": 33.313
+  },
+  {
+    "word": "even",
+    "start": 33.653,
+    "end": 33.793
+  },
+  {
+    "word": "if",
+    "start": 33.833,
+    "end": 33.893
+  },
+  {
+    "word": "it",
+    "start": 33.953,
+    "end": 34.013
+  },
+  {
+    "word": "sounds",
+    "start": 34.053,
+    "end": 34.334
+  },
+  {
+    "word": "boring",
+    "start": 34.374,
+    "end": 34.654
+  },
+  {
+    "word": "compared",
+    "start": 34.694,
+    "end": 35.054
+  },
+  {
+    "word": "to",
+    "start": 35.094,
+    "end": 35.174
+  },
+  {
+    "word": "the",
+    "start": 35.194,
+    "end": 35.275
+  },
+  {
+    "word": "latest",
+    "start": 35.315,
+    "end": 35.595
+  },
+  {
+    "word": "hype.",
+    "start": 35.635,
+    "end": 35.875
+  },
+  {
+    "word": "If",
+    "start": 36.856,
+    "end": 36.916
+  },
+  {
+    "word": "you",
+    "start": 36.956,
+    "end": 37.076
+  },
+  {
+    "word": "had",
+    "start": 37.096,
+    "end": 37.217
+  },
+  {
+    "word": "$10,000",
+    "start": 37.357,
+    "end": 38.218
+  },
+  {
+    "word": "to",
+    "start": 38.258,
+    "end": 38.358
+  },
+  {
+    "word": "invest",
+    "start": 38.398,
+    "end": 38.698
+  },
+  {
+    "word": "today,",
+    "start": 38.738,
+    "end": 39.038
+  },
+  {
+    "word": "would",
+    "start": 39.359,
+    "end": 39.479
+  },
+  {
+    "word": "you",
+    "start": 39.519,
+    "end": 39.619
+  },
+  {
+    "word": "trust",
+    "start": 39.659,
+    "end": 39.879
+  },
+  {
+    "word": "a",
+    "start": 39.919,
+    "end": 39.959
+  },
+  {
+    "word": "computer",
+    "start": 39.999,
+    "end": 40.38
+  },
+  {
+    "word": "algorithm",
+    "start": 40.48,
+    "end": 40.92
   },
   {
     "word": "or",
-    "start": 47.389,
-    "end": 47.469
+    "start": 40.98,
+    "end": 41.06
   },
   {
-    "word": "Foot",
-    "start": 47.509,
-    "end": 47.669
+    "word": "the",
+    "start": 41.101,
+    "end": 41.181
   },
   {
-    "word": "Locker?",
-    "start": 47.689,
-    "end": 47.95
+    "word": "entire",
+    "start": 41.221,
+    "end": 41.601
+  },
+  {
+    "word": "market",
+    "start": 41.641,
+    "end": 41.901
+  },
+  {
+    "word": "to",
+    "start": 41.941,
+    "end": 42.021
+  },
+  {
+    "word": "grow",
+    "start": 42.042,
+    "end": 42.242
+  },
+  {
+    "word": "it?",
+    "start": 42.302,
+    "end": 42.382
   }
 ]

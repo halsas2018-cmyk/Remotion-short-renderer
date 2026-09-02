@@ -1,6 +1,7 @@
-node_modules/
-output/
-out/
-.env
-.aider*
+node_modules/ 
+output/ 
+out/ 
 coverage/
+.aider*
+.env
+__pycache__/

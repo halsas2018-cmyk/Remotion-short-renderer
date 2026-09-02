@@ -18,9 +18,14 @@ import type { Word } from "./words";
 /*  on-screen, so adding captions would be redundant.                */
 /*                                                                     */
 /*  Show:  map_3d, chart_line, chart_comparison_3d, chart_counter,    */
-/*         progress_meter, timeline                                    */
+/*         progress_meter, timeline, process_flow                     */
 /*  Hide:  key_statement, plain_text, icon_text, versus, before_after, */
-/*         process_flow, quote_card                                   */
+/*         quote_card                                                 */
+/*                                                                     */
+/*  process_flow is included: it reuses the Timeline component        */
+/*  (see registry.ts comment) and is functionally a data-vis beat —   */
+/*  the on-screen steps[] are short labels, not the spoken text, so   */
+/*  the spoken text would otherwise be invisible.                     */
 /* ------------------------------------------------------------------ */
 
 export const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
@@ -30,6 +35,7 @@ export const CAPTION_VISIBLE_BEAT_TYPES = new Set<string>([
   "chart_counter",
   "progress_meter",
   "timeline",
+  "process_flow",
 ]);
 
 export const shouldShowKineticCaptions = (beatType: string): boolean =>
@@ -63,12 +69,23 @@ type BeatContentProps = {
   allWords: Word[];
   beatIndex: number;
   fps: number;
+  /**
+   * Cross-fade window (in frames) shared with the next beat. When set, the
+   * SceneTransition's exit fade runs across the LAST `crossFadeFrames`
+   * frames of the beat instead of the 18% default, so the outgoing beat
+   * fades in lockstep with the incoming beat's entrance.
+   *
+   * Pass 0 for the last beat (no next beat to cross-fade into) — the
+   * SceneTransition falls back to the 18% default end fade in that case.
+   */
+  crossFadeFrames?: number;
 };
 
 export const BeatContent: React.FC<BeatContentProps> = ({
   beat,
   allWords,
   fps,
+  crossFadeFrames,
 }) => {
   // 1) Validate metadata
   let validatedBeat: Record<string, unknown>;
@@ -79,7 +96,7 @@ export const BeatContent: React.FC<BeatContentProps> = ({
     >;
   } catch (err) {
     return (
-      <SceneTransition>
+      <SceneTransition crossFadeFrames={crossFadeFrames}>
         <InvalidBeatMessage
           beatType={beat.type}
           text={beat.text}
@@ -97,14 +114,14 @@ export const BeatContent: React.FC<BeatContentProps> = ({
 
   if (!BeatComponent || !isBeatTypeSupported(beat.type)) {
     return (
-      <SceneTransition>
+      <SceneTransition crossFadeFrames={crossFadeFrames}>
         <UnsupportedBeatMessage beatType={beat.type} text={beat.text} />
       </SceneTransition>
     );
   }
 
   return (
-    <SceneTransition>
+    <SceneTransition crossFadeFrames={crossFadeFrames}>
       <BeatComponent
         {...adaptedProps}
         durationInFrames={beat.durationInFrames}

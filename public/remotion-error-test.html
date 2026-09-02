@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<body>
+<h1>Loading Remotion...</h1>
+<pre id="errors"></pre>
+
+<script>
+window.onerror = function(message, source, line, column, error) {
+  document.getElementById("errors").textContent +=
+    "\nERROR: " + message +
+    "\nSOURCE: " + source +
+    "\nLINE: " + line +
+    "\nCOLUMN: " + column +
+    "\nSTACK: " + (error && error.stack) + "\n";
+};
+
+window.addEventListener("unhandledrejection", function(event) {
+  document.getElementById("errors").textContent +=
+    "\nPROMISE ERROR: " + event.reason + "\n";
+});
+</script>
+
+<script src="/bundle.js"></script>
+
+<script>
+setTimeout(function() {
+  document.body.innerHTML += "<h2>Bundle finished loading</h2>";
+}, 3000);
+</script>
+</body>
+</html>

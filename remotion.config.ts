@@ -56,7 +56,7 @@ Config.overrideWebpackConfig((current) => {
   return {
     ...current,
     resolve: {
-      ...current.resolve,
+      ...(current.resolve ?? {}),
       fallback: {
         ...(current.resolve?.fallback ?? {}),
         fs: false,
@@ -72,3 +72,5 @@ Config.overrideWebpackConfig((current) => {
     },
   };
 });
+Config.setPublicLicenseKey('free-license');
+Config.setLogLevel('verbose');

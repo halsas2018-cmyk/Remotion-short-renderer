@@ -76,6 +76,7 @@ const KINETIC_CAPTION_ENABLED_BEAT_TYPES = new Set<string>([
   "chart_counter",
   "progress_meter",
   "timeline",
+  "process_flow",
 ]);
 
 export const KineticCaptions: React.FC<KineticCaptionsProps> = ({

@@ -248,6 +248,7 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
               allWords={words}
               beatIndex={index}
               fps={fps}
+              crossFadeFrames={transitionFrames}
             />
 
             {shouldShowKineticCaptions(beat.type) ? (

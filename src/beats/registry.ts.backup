@@ -130,16 +130,7 @@ const timelineMetadata = z
     ...beatBase,
     type: z.literal("timeline"),
     text: z.string().optional(),
-    // events can be either an array of strings ("Step 1") or an array
-    // of {date, label} objects — both shapes are emitted by the LLM
-    // (string shape was the original, {date,label} is what the prompt
-    // now tells the LLM to emit per BEAT_TYPE_FIELD_HINTS in
-    // beat_generator.py). adaptMetadata handles both at render time
-    // (timeline case passes objects through unchanged; converts strings
-    // to {marker, label}).
-    events: z.array(
-      z.union([z.string(), z.object({ date: z.string(), label: z.string() }).passthrough()]),
-    ),
+    events: z.array(z.string()),
   })
   .passthrough();
 
@@ -150,7 +141,6 @@ const versusMetadata = z
     text: z.string().optional(),
     left: z.union([z.string(), z.object({ label: z.string() })]),
     right: z.union([z.string(), z.object({ label: z.string() })]),
-    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 
@@ -161,7 +151,6 @@ const beforeAfterMetadata = z
     text: z.string().optional(),
     beforeLabel: z.string(),
     afterLabel: z.string(),
-    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 
@@ -194,7 +183,6 @@ const quoteCardMetadata = z
     quote: z.string(),
     attribution: z.string().optional(),
     author: z.string().optional(),
-    emphasisWords: z.array(z.string()).optional(),
   })
   .passthrough();
 
@@ -333,18 +321,7 @@ export const validateBeatMetadata = (type: string, beat: unknown): any => {
 
 export const isBeatTypeSupported = (type: string): boolean => type in registry;
 
-/* ------------------------------------------------------------------ */
-/*  Barrel re-export of `adaptMetadata` from `./adaptMetadata`.       */
-/*                                                                     */
-/*  `adaptMetadata` is defined in its own leaf file (no imports from  */
-/*  the registry or the orchestrator) so this re-export doesn't      */
-/*  create a circular import with `renderBeat.tsx` (which itself     */
-/*  imports from the registry). The previous `from "./renderBeat"`   */
-/*  re-export hit a TDZ error under Remotion's React Refresh path.  */
-/*                                                                     */
-/*  The test file imports from `./registry` to keep its import       */
-/*  surface narrow; the orchestrator imports directly from           */
-/*  `./adaptMetadata`. Both go through the same function.            */
-/* ------------------------------------------------------------------ */
-
-export { adaptMetadata } from "./adaptMetadata";
+// Re-export the metadata adapter from renderBeat.tsx so tests can
+// import it from the registry barrel without breaking the orchestrator's
+// existing import path. Phase 2.2: see src/beats/registry.test.ts.
+export { adaptMetadata } from "./renderBeat";

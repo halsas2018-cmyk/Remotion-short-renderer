@@ -374,11 +374,11 @@ def assign_frames_from_word_ranges(
         beat_copy["startFrame"] = start_frame
         beat_copy["endFrame"] = end_frame
         beat_copy["durationInFrames"] = end_frame - start_frame
-        
+
         # Remove word indices from output (they were only for LLM→Python handoff)
         beat_copy.pop("startWord", None)
         beat_copy.pop("endWord", None)
-        
+
         result.append(beat_copy)
     
     return result
@@ -593,11 +593,11 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
     """
     if not beats:
         return beats
-    
+
     fixed = []
     for i, beat in enumerate(beats):
         beat_copy = beat.copy()
-        
+
         if i == 0:
             # First beat keeps its calculated start frame
             fixed.append(beat_copy)
@@ -610,7 +610,7 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
                 beat_copy["endFrame"] = prev_end + MIN_BEAT_FRAMES
             beat_copy["durationInFrames"] = beat_copy["endFrame"] - beat_copy["startFrame"]
             fixed.append(beat_copy)
-    
+
     # Ensure last beat ends at total duration
     total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1) if word_timestamps else 0
     if fixed:
@@ -622,8 +622,57 @@ def auto_fix_frames(beats: list[dict], word_timestamps: list[dict], script: str)
             fixed[-2]["durationInFrames"] = fixed[-2]["endFrame"] - fixed[-2]["startFrame"]
             fixed[-1]["startFrame"] = total_frames - MIN_BEAT_FRAMES
             fixed[-1]["durationInFrames"] = MIN_BEAT_FRAMES
-    
+
     return fixed
+
+
+def align_text_to_audio_window(beats: list[dict], word_timestamps: list[dict]) -> list[dict]:
+    """Horizon 3.6: re-derive each beat's `text` from the AUDIO words that
+    actually fall in [startFrame, endFrame] (not from the original script
+    chunk assigned by the chunker in script_generator.py).
+
+    The chunker in script_generator.py splits the SCRIPT into ~10-word
+    slices and emits a `text` field per slice. The frame timing in
+    `assign_frames_from_word_ranges` is derived from the AUDIO word
+    indices (via LCS alignment in build_word_index_map), so the
+    audio window for a given chunk drifts from the script slice:
+      - TTS may render "one trillion dollars" (4 script words) as
+        "$1 trillion" (2 audio words with a 1.4s gap), so the audio
+        window for the first chunk of a David-Booth-style script
+        contains only the first 4-5 script words.
+      - Numbers get rewritten ("nine percent" -> "9%", "ten thousand
+        dollars" -> "$10,000"), so the on-screen text needs to match
+        what was actually said.
+    Without this, every beat's `text` is one beat ahead of the audio
+    (e.g. beat 0 text says "David Booth manages over one trillion
+    dollars, but he says" but the audio during beat 0 only says
+    "David Booth manages over").
+
+    The original script chunk is preserved under `scriptText` so the
+    LLM's emphasis-word metadata (which keys off the script words)
+    still resolves — see `extract_emphasis_words` callers.
+
+    This MUST be called after the final `auto_fix_frames` so the
+    audio text matches the snapped frame windows, not the natural
+    ones.
+    """
+    if not word_timestamps:
+        return beats
+
+    for beat in beats:
+        start_frame = beat.get("startFrame", 0)
+        end_frame = beat.get("endFrame", start_frame)
+        s_sec = start_frame / FPS
+        e_sec = end_frame / FPS
+        audio_words_in_window = [
+            w["word"] for w in word_timestamps
+            if w["start"] >= s_sec - 0.001 and w["end"] <= e_sec + 0.001
+        ]
+        if audio_words_in_window:
+            if "text" in beat and "scriptText" not in beat:
+                beat["scriptText"] = beat["text"]
+            beat["text"] = " ".join(audio_words_in_window)
+    return beats
 
 
 def force_fix_beats(beats: list[dict], word_timestamps: list[dict]) -> list[dict]:
@@ -1397,9 +1446,17 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
         errors = validate_beats(beats, word_timestamps, script)
         if errors:
             raise ValueError(f"Beat validation failed after all fixes: {errors}")
-    
+
+    # Horizon 3.6: re-derive each beat's `text` from the AUDIO words in
+    # its final frame window. MUST run after the final auto_fix_frames /
+    # force_fix_beats, since those snap each beat's startFrame to the
+    # previous beat's endFrame — the audio-text derivation has to match
+    # the snapped window, not the natural one. See
+    # `align_text_to_audio_window` for the full rationale.
+    beats = align_text_to_audio_window(beats, word_timestamps)
+
     total_frames = beats[-1]["endFrame"] if beats else 0
-    
+
     return {
         "fps": FPS,
         "totalDurationInFrames": total_frames,

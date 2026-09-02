@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   Composition,
@@ -9,8 +9,32 @@ import {
 } from "remotion";
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
-import { fitText } from "@remotion/layout-utils";
+import { fitText, measureText } from "@remotion/layout-utils";
 import { useIdleMotion } from "../lib/idleMotion";
+import { DropCap, TimelineRail, Masthead } from "../lib/textCards";
+
+/* ------------------------------------------------------------------ */
+/*  Scrollytelling — multi-line article style (Horizon 2.6 follow-up) */
+/*                                                                     */
+/*  Renders like a magazine article card:                              */
+/*    ┌────────────────────────────────────────┐                       */
+/*    │  • THE SIGNAL FEED  (masthead)         │                       */
+/*    │  ─────                                 │  (accent rule)         */
+/*    │  Why AI Chips Matter  (title)          │                       */
+/*    │  ─────                                 │  (separator)           */
+/*    │  [drop-cap]  Chip supply is now a      │                       */
+/*    │             strategic asset, not a     │                       */
+/*    │             commodity.                 │                       */
+/*    │  ┃ dot   ← timeline rail on left,      │                       */
+/*    │  ┃ dot     one dot per body word       │                       */
+/*    │  ┃ dot                                │                       */
+/*    └────────────────────────────────────────┘                       */
+/*                                                                     */
+/*  Body uses Georgia (serif) at 32–42px, left-aligned, with a drop     */
+/*  cap on the first letter. A vertical orange rail runs down the     */
+/*  left side of the body with one dot per body word; dots light up    */
+/*  as the words enter. The masthead sits at the top in small caps.   */
+/* ------------------------------------------------------------------ */
 
 const { fontFamily } = loadFont("normal", {
   weights: ["500", "700"],
@@ -22,6 +46,8 @@ interface ScrollytellingProps {
   body: string;
   emphasisWords?: string[];
   durationInFrames?: number;
+  /** Override the masthead label. Defaults to "The Signal Feed". */
+  mastheadLabel?: string;
 }
 
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
@@ -34,6 +60,7 @@ const MEDIUM_TEXT = "#525252";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
+const SERIF = "Georgia, serif";
 
 const ANNOTATION_CYCLE = [
   { Component: Highlight, color: "rgba(232, 108, 0, 0.25)" },
@@ -46,86 +73,134 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
   body,
   emphasisWords = [],
   durationInFrames: propsDurationInFrames,
+  mastheadLabel = "The Signal Feed",
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames: videoDurationInFrames } = useVideoConfig();
   const durationInFrames = propsDurationInFrames ?? videoDurationInFrames;
 
-  // 30-40% entrance rule
+  // -------------------------------------------------------------- //
+  //  Timeline                                                       //
+  //  masthead:  0 .. 12%   (fade in)                                //
+  //  title:     8% .. 22%  (stagger in, then underline draws)       //
+  //  body:      22% .. 50% (per-word fade + slide-up + dot fill)    //
+  //  rail+dots: per body word                                      //
+  //  idle:      50% .. end                                        //
+  // -------------------------------------------------------------- //
+  const mastheadStart = Math.round(durationInFrames * 0.02);
+  const mastheadDuration = Math.round(durationInFrames * 0.10);
+  const titleStart = Math.round(durationInFrames * 0.08);
   const titleDuration = Math.round(durationInFrames * 0.10);
-  const bodyStart = Math.round(durationInFrames * 0.12);
-  const bodyEnd = bodyStart + Math.round(durationInFrames * 0.22);
-  const entranceEndFrame = bodyEnd;
-  const sliderStart = entranceEndFrame;
+  const bodyStart = Math.round(durationInFrames * 0.22);
+  const bodyEnd = Math.round(durationInFrames * 0.50);
+  const sliderStart = bodyEnd;
   const sliderDuration = Math.round(durationInFrames * 0.40);
 
-  const titleProgress = interpolate(frame, [0, titleDuration], [0, 1], {
-    easing: easeOutExpo,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const bodyProgress = interpolate(frame, [bodyStart, bodyEnd], [0, 1], {
-    easing: easeOutExpo,
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const sliderProgress = interpolate(
+  const mastheadProgress = interpolate(
     frame,
-    [sliderStart, sliderStart + sliderDuration],
+    [mastheadStart, mastheadStart + mastheadDuration],
     [0, 1],
-    { easing: easeOut, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    { easing: easeOutExpo, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const titleProgress = interpolate(
+    frame,
+    [titleStart, titleStart + titleDuration],
+    [0, 1],
+    { easing: easeOutExpo, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Card entrance + idle
   const cardEntranceDuration = Math.max(12, Math.round(durationInFrames * 0.07));
-  const isIdle = frame > entranceEndFrame;
-  // Card idle bounce + 3D tilt (shared useIdleMotion hook).
-  // We pass `glow: false` because the card transform doesn't use scale,
-  // and the radial-blur glow sibling has its own scale: glowPulse local.
-  const idle = useIdleMotion({
-    bounce: isIdle,
-    tilt: isIdle,
-    glow: false,
-  });
+  const isIdle = frame > bodyEnd;
+  const idle = useIdleMotion({ bounce: isIdle, tilt: isIdle, glow: false });
   const glowPulse = isIdle ? 1 + 0.15 * Math.sin(frame * 0.03) : 1;
   const glowOpacity = isIdle ? 0.6 + 0.2 * Math.sin(frame * 0.05) : 0.5;
 
-  // Body content sizing
-  const bodyFontSize = Math.max(32, width * 0.030);
-  const bodyLineHeight = bodyFontSize * 1.5;
-  const bodyContainerHeight = Math.min(800, height * 0.5);
-  const bodyLines = body.split("\n").filter((l) => l.trim().length > 0);
-  const totalBodyHeight = bodyLines.length * bodyLineHeight;
-  const scrollDistance = Math.max(0, totalBodyHeight - bodyContainerHeight);
-  // Scroll linearly across the idle phase. Hold the final position for the
-  // last 30 frames of the beat so the bottom of the body is visible.
-  const scrollEnd = Math.max(sliderStart + 1, durationInFrames - 30);
-  const scrollProgress = interpolate(
-    frame,
-    [sliderStart, scrollEnd],
-    [0, 1],
-    { easing: Easing.linear, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const bodyTranslateY = -scrollDistance * scrollProgress;
-
-  const padding = Math.max(80, width * 0.11);
+  // Sizing
+  const padding = Math.max(64, width * 0.09);
   const availableWidth = width - 2 * padding;
-  const cardPadding = Math.max(48, width * 0.044);
-  const cardBorderRadius = Math.max(32, width * 0.03);
-  const cardHeight = bodyContainerHeight + bodyFontSize * 3 + cardPadding * 2 + 60;
+  const cardPadding = Math.max(56, width * 0.05);
+  const cardBorderRadius = Math.max(28, width * 0.03);
 
+  // Article gutter on the left reserves space for the timeline rail.
+  const gutter = 64;
+  const textAreaWidth = availableWidth - 2 * cardPadding - gutter;
+  const textMaxWidth = textAreaWidth - 24; // small inner padding
+
+  // Title font size — fit to width, max ~96px, min 56px.
+  const titleMaxFontSize = Math.max(96, width * 0.085);
+  const titleMinFontSize = 56;
+  const titleSize = useMemo(() => {
+    const fitted = fitText({
+      text: title,
+      withinWidth: textMaxWidth,
+      fontFamily,
+      fontWeight: "700",
+      maxFontSize: titleMaxFontSize,
+      minFontSize: titleMinFontSize,
+    });
+    let size = Math.max(titleMinFontSize, Math.min(titleMaxFontSize, fitted.fontSize));
+    while (size > titleMinFontSize) {
+      const { width: w } = measureText({
+        text: title,
+        fontFamily,
+        fontSize: size,
+        fontWeight: "700",
+      });
+      if (w <= textMaxWidth) break;
+      size = Math.max(titleMinFontSize, size - 2);
+    }
+    return size;
+  }, [title, textMaxWidth, titleMaxFontSize, titleMinFontSize]);
+
+  // Body font size — Georgia, 28..42px, smaller than title.
+  const bodyMaxFontSize = Math.max(42, width * 0.039);
+  const bodyMinFontSize = 28;
+
+  // Word list (we render the body word-by-word for the timeline rail
+  // and the drop cap to work).
+  const bodyWords = useMemo(
+    () => body.split(/\s+/).filter(Boolean),
+    [body],
+  );
+  const totalBodyWords = bodyWords.length;
+
+  // For the drop cap, isolate the first letter of the first word.
+  const firstLetter = bodyWords[0]?.charAt(0) ?? "";
+  const restOfFirstWord = bodyWords[0]?.slice(1) ?? "";
+
+  // Emphasis set
+  const emphasisSet = new Set(
+    emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
+  );
+
+  // Body entrance: each word gets a per-word fade + slide-up window.
+  // Compress into the [bodyStart, bodyEnd] interval.
+  const bodyWordDuration = Math.max(
+    6,
+    Math.round((bodyEnd - bodyStart) / Math.max(totalBodyWords, 1) * 0.7),
+  );
+  const bodyWordStagger = Math.max(
+    2,
+    Math.round((bodyEnd - bodyStart) / Math.max(totalBodyWords, 1)),
+  );
+
+  // Card content height — auto-derived from the number of body words.
+  // Assume ~6 words per line at the body font size.
+  const estimatedLines = Math.max(
+    3,
+    Math.ceil(totalBodyWords / Math.max(1, Math.floor(textMaxWidth / (bodyMaxFontSize * 0.55)))),
+  );
+  const cardMinHeight = Math.max(560, height * 0.5);
+  const bodyBlockHeight = bodyMaxFontSize * 1.5 * estimatedLines + 40;
+
+  // Slider
   const sliderPadding = 24;
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  const titleFit = fitText({
-    text: title,
-    withinWidth: availableWidth - 2 * cardPadding,
-    fontFamily,
-    fontWeight: "700",
-  });
-  const titleFontSize = Math.min(Math.max(48, width * 0.045), titleFit.fontSize);
-
-  const shimmerStart = entranceEndFrame;
+  // Shimmer
+  const shimmerStart = bodyEnd;
   const shimmerSpeed = 25;
   const getShimmerTop = (s: number) => {
     if (frame < s) return "-100%";
@@ -133,6 +208,30 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
     return `${(elapsedSeconds * shimmerSpeed) % 100}%`;
   };
   const getShimmerOpacity = (s: number) => (frame < s ? 0 : 1);
+
+  // Per-word emphasis annotation assignment (cycle Highlight → Circle → Underline)
+  let runIndex = 0;
+  const wordAnnotations = bodyWords.map((word) => {
+    const clean = word.toLowerCase().replace(/[.,!?;:]$/, "");
+    if (!emphasisSet.has(clean)) return null;
+    const entry = ANNOTATION_CYCLE[runIndex % ANNOTATION_CYCLE.length];
+    runIndex += 1;
+    return entry;
+  });
+
+  // Compute per-word entrance window and whether the word is "filled" (timeline dot).
+  const getWordStartFrame = (idx: number) =>
+    bodyStart + idx * bodyWordStagger;
+  const getWordEndFrame = (idx: number) =>
+    getWordStartFrame(idx) + bodyWordDuration;
+
+  // Count words that are at least 60% revealed — that's how many
+  // timeline dots should be solid.
+  const filledDotCount = bodyWords.reduce((acc, _w, i) => {
+    const endFrame = getWordEndFrame(i);
+    if (frame >= endFrame) return acc + 1;
+    return acc;
+  }, 0);
 
   const AccentDot = ({ size = 8, baseDelay = 0 }: { size?: number; baseDelay?: number }) => {
     const pulse = isIdle ? 1 + 0.3 * Math.sin(frame * 0.2 + baseDelay) : 1;
@@ -153,44 +252,6 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
         }}
       />
     );
-  };
-
-  // Emphasis words
-  const emphasisSet = new Set(
-    emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]$/, "")),
-  );
-  let runIndex = 0;
-  const renderBodyWord = (word: string, key: number) => {
-    const clean = word.toLowerCase().replace(/[.,!?;:]$/, "");
-    const isEmphasized = emphasisSet.has(clean);
-    const annotation = isEmphasized
-      ? ANNOTATION_CYCLE[runIndex++ % ANNOTATION_CYCLE.length]
-      : null;
-    const wordContent = (
-      <span
-        style={{
-          color: isEmphasized ? ACCENT_COLOR : DARK_TEXT,
-          fontWeight: isEmphasized ? 700 : 500,
-        }}
-      >
-        {word}
-      </span>
-    );
-    if (annotation) {
-      const C = annotation.Component;
-      return (
-        <C
-          key={key}
-          color={annotation.color}
-          strokeWidth={3}
-          padding={6}
-          progress={1}
-        >
-          {wordContent}
-        </C>
-      );
-    }
-    return <span key={key}>{wordContent}</span>;
   };
 
   return (
@@ -248,7 +309,7 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
           <div
             style={{
               position: "relative",
-              minHeight: cardHeight,
+              minHeight: cardMinHeight,
               backgroundColor: "white",
               borderRadius: cardBorderRadius,
               padding: cardPadding,
@@ -257,7 +318,9 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
+              alignItems: "stretch",
+              justifyContent: "flex-start",
+              gap: 28,
               opacity: interpolate(frame, [0, cardEntranceDuration], [0, 1], {
                 easing: easeOut,
                 extrapolateLeft: "clamp",
@@ -285,6 +348,8 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
                 borderRadius: `${cardBorderRadius}px ${cardBorderRadius}px 0 0`,
               }}
             />
+
+            {/* Diagonal pattern overlay */}
             <div
               style={{
                 position: "absolute",
@@ -298,6 +363,8 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
                 pointerEvents: "none",
               }}
             />
+
+            {/* Glow behind card */}
             <div
               style={{
                 position: "absolute",
@@ -324,141 +391,196 @@ export const Scrollytelling: React.FC<ScrollytellingProps> = ({
                 }}
               />
             </div>
-            <div
-              style={{
-                position: "absolute",
-                top: cardPadding - 10,
-                left: "50%",
-                translate: "-50% 0px",
-                display: "flex",
-                gap: 8,
-                pointerEvents: "none",
-              }}
-            >
-              <AccentDot size={6} baseDelay={0} />
-              <AccentDot size={8} baseDelay={0.5} />
-              <AccentDot size={6} baseDelay={1} />
-            </div>
 
-            {/* Content */}
+            {/* Masthead row — small caps label + accent dots */}
             <div
               style={{
                 position: "relative",
                 zIndex: 1,
-                width: "100%",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                gap: 24,
+                gap: 14,
+                opacity: mastheadProgress,
+                transform: `translateY(${interpolate(mastheadProgress, [0, 1], [-8, 0])}px)`,
               }}
             >
-              {/* Title (fixed) */}
-              <div
-                style={{
-                  fontSize: titleFontSize,
-                  fontWeight: 700,
-                  fontFamily,
-                  color: DARK_TEXT,
-                  lineHeight: 1.2,
-                  letterSpacing: -1.5,
-                  textAlign: "center",
-                  wordBreak: "break-word",
-                  maxWidth: "100%",
-                  opacity: titleProgress,
-                  translate: `0px ${interpolate(titleProgress, [0, 1], [20, 0])}px`,
-                }}
-              >
-                {title}
+              <Masthead label={mastheadLabel} color={ACCENT_COLOR} />
+              <div style={{ flex: 1, height: 2, background: `linear-gradient(90deg, ${ACCENT_COLOR}60, transparent)`, borderRadius: 1 }} />
+              <div style={{ display: "flex", gap: 6 }}>
+                <AccentDot size={4} baseDelay={0} />
+                <AccentDot size={6} baseDelay={0.5} />
+                <AccentDot size={4} baseDelay={1} />
               </div>
+            </div>
 
-              {/* Separator */}
+            {/* Title (single line, fitText-resolved) */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                fontSize: titleSize,
+                fontWeight: 700,
+                fontFamily,
+                color: DARK_TEXT,
+                lineHeight: 1.1,
+                letterSpacing: -2,
+                opacity: titleProgress,
+                transform: `translateY(${interpolate(titleProgress, [0, 1], [20, 0])}px)`,
+                textAlign: "left",
+              }}
+            >
+              {title}
+            </div>
+
+            {/* Separator rule below title */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                opacity: titleProgress,
+              }}
+            >
               <div
                 style={{
-                  width: 80,
-                  height: 2,
-                  background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
-                  borderRadius: 1,
-                  opacity: titleProgress,
-                  scaleX: titleProgress,
+                  width: 48,
+                  height: 3,
+                  background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+                  borderRadius: 2,
+                  transform: `scaleX(${titleProgress})`,
+                  transformOrigin: "left center",
                 }}
               />
-
-              {/* Body (scrolling) */}
               <div
                 style={{
-                  width: "100%",
-                  height: bodyContainerHeight,
-                  position: "relative",
-                  overflow: "hidden",
-                  opacity: bodyProgress,
+                  flex: 1,
+                  height: 1,
+                  background: DARK_TEXT,
+                  opacity: 0.12,
                 }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    transform: `translateY(${bodyTranslateY}px)`,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: bodyLineHeight * 0.5,
-                  }}
-                >
-                  {bodyLines.map((line, i) => {
-                    const words = line.split(" ");
-                    return (
-                      <p
-                        key={i}
-                        style={{
-                          margin: 0,
-                          fontSize: bodyFontSize,
-                          fontWeight: 500,
-                          fontFamily,
-                          color: DARK_TEXT,
-                          lineHeight: 1.5,
-                          letterSpacing: -0.5,
-                          textAlign: "left",
-                        }}
-                      >
-                        {words.map((w, wi) => renderBodyWord(w, i * 1000 + wi))}
-                      </p>
-                    );
-                  })}
-                </div>
-                {/* Top fade */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 40,
-                    background: "linear-gradient(180deg, white 0%, transparent 100%)",
-                    pointerEvents: "none",
-                    zIndex: 2,
-                  }}
-                />
-                {/* Bottom fade */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 40,
-                    background: "linear-gradient(0deg, white 0%, transparent 100%)",
-                    pointerEvents: "none",
-                    zIndex: 2,
-                  }}
-                />
-              </div>
+              />
+            </div>
 
-              <div style={{ display: "flex", gap: 10, pointerEvents: "none" }}>
-                <AccentDot size={5} baseDelay={0.2} />
-                <AccentDot size={7} baseDelay={0.7} />
-                <AccentDot size={5} baseDelay={1.2} />
-              </div>
+            {/* Body block — multi-line article with drop cap + timeline rail */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                paddingLeft: gutter,
+                minHeight: bodyBlockHeight,
+              }}
+            >
+              {/* Timeline rail (vertical orange line + dots) */}
+              <TimelineRail
+                height={bodyBlockHeight}
+                dotCount={totalBodyWords}
+                filledCount={filledDotCount}
+                color={ACCENT_COLOR}
+                x={28}
+              />
+
+              {/* Drop cap on the first letter of the first word */}
+              {firstLetter ? (
+                <DropCap
+                  letter={firstLetter}
+                  size={Math.round(bodyMaxFontSize * 2.4)}
+                  color={ACCENT_COLOR}
+                  colorEnd={ACCENT_COLOR_LIGHT}
+                  bodyFontSize={bodyMaxFontSize}
+                  lineSpan={3}
+                  lineHeight={1.55}
+                  marginRight={14}
+                  topOffset={4}
+                  fontFamily={SERIF}
+                />
+              ) : null}
+
+              {/* Word-by-word body rendering. The first word's first
+                  letter is consumed by the drop cap; we render the
+                  rest of the first word inline, then continue. */}
+              {bodyWords.map((word, i) => {
+                const isFirstWord = i === 0;
+                const clean = word.toLowerCase().replace(/[.,!?;:]$/, "");
+                const isEmphasized = emphasisSet.has(clean);
+                const annotation = wordAnnotations[i];
+                const startFrame = getWordStartFrame(i);
+                const endFrame = getWordEndFrame(i);
+                const wordProgress = interpolate(
+                  frame,
+                  [startFrame, endFrame],
+                  [0, 1],
+                  { easing: easeOutExpo, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+                );
+
+                // Idle float for emphasized words
+                const idleFloat = isIdle && isEmphasized ? 3 * Math.sin(frame * 0.08 + i) : 0;
+
+                // For the first word, render only the REST of the word
+                // (the first letter is the drop cap). If the first word
+                // is a single letter, render nothing for it here.
+                const text = isFirstWord ? restOfFirstWord : word;
+                if (isFirstWord && !text) return null;
+
+                const wordContent = (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      fontSize: bodyMaxFontSize,
+                      fontWeight: isEmphasized ? 700 : 500,
+                      fontFamily: SERIF,
+                      color: isEmphasized ? ACCENT_COLOR : DARK_TEXT,
+                      lineHeight: 1.55,
+                      letterSpacing: -0.3,
+                      margin: "0 0.18em 0 0",
+                      opacity: wordProgress,
+                      translate: `0px ${interpolate(wordProgress, [0, 1], [16, 0]) + idleFloat}px`,
+                      willChange: "transform, opacity",
+                    }}
+                  >
+                    {text}
+                  </span>
+                );
+
+                if (annotation) {
+                  const C = annotation.Component;
+                  return (
+                    <C
+                      key={i}
+                      color={annotation.color}
+                      strokeWidth={2}
+                      padding={4}
+                      progress={interpolate(
+                        frame,
+                        [startFrame, endFrame + 5],
+                        [0, 1],
+                        { easing: easeOutExpo, extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+                      )}
+                    >
+                      {wordContent}
+                    </C>
+                  );
+                }
+                return <span key={i}>{wordContent}</span>;
+              })}
+            </div>
+
+            {/* Bottom accent dots */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                display: "flex",
+                gap: 10,
+                alignSelf: "center",
+                opacity: titleProgress,
+                pointerEvents: "none",
+              }}
+            >
+              <AccentDot size={5} baseDelay={0.2} />
+              <AccentDot size={7} baseDelay={0.7} />
+              <AccentDot size={5} baseDelay={1.2} />
             </div>
 
             {/* Shimmer */}
@@ -486,14 +608,17 @@ export const ScrollytellingTestComposition: React.FC = () => (
   <Composition
     id="ScrollytellingTest"
     component={Scrollytelling}
-    durationInFrames={180}
+    durationInFrames={240}
     fps={30}
     width={1080}
     height={1920}
     defaultProps={{
       title: "Why AI Chips Matter",
-      body: "The semiconductor shortage reshaped the entire tech industry.\nFoundries raced to add capacity.\nDesigners had to optimize for older nodes.\nCloud providers locked in multi-year supply contracts.\n\nThe result: a new normal where chip supply is a strategic asset.\n\nCompanies that secured early access pulled ahead.\nThose that waited paid premiums and shipped late.\nThe gap between the haves and have-nots widened.",
-      emphasisWords: ["shortage", "strategic", "premiums"],
+      body:
+        "Chip supply is now a strategic asset, not a commodity. " +
+        "Capital is following capacity, and capacity follows capital. " +
+        "The chip itself is the new oil pipeline — and the producers hold the leverage.",
+      emphasisWords: ["strategic", "capital", "chip", "leverage"],
     }}
   />
 );

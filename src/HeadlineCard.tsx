@@ -11,6 +11,7 @@ import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { fitText } from "@remotion/layout-utils";
 import { useIdleMotion } from "./lib/idleMotion";
+import { DottedUnderline } from "./lib/textCards";
 
 /* ------------------------------------------------------------------ */
 /*  Google Font — type-safe, blocks rendering until the font is      */
@@ -583,6 +584,33 @@ export const HeadlineCard: React.FC<HeadlineCardProps> = ({
                 opacity={isIdle ? 0.7 : 0.4}
                 animate={true}
               />
+
+              {/* Dotted underline — signature decoration. Draws in over
+                  ~0.5s starting at the sliderStart frame, then holds. */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                  marginTop: 8,
+                }}
+              >
+                <DottedUnderline
+                  width={Math.min(textAreaWidth * 0.7, 480)}
+                  color={ACCENT_COLOR}
+                  progress={interpolate(
+                    frame,
+                    [sliderStart, sliderStart + Math.round(durationInFrames * 0.12)],
+                    [0, 1],
+                    {
+                      easing: easeOutExpo,
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    },
+                  )}
+                  opacity={isIdle ? 0.9 : 0.6}
+                />
+              </div>
 
               {/* Accent dots below text. */}
               <div

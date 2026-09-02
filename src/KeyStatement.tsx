@@ -321,6 +321,63 @@ export const KeyStatement: React.FC<KeyStatementProps> = ({
               }}
             />
 
+            {/* Left vertical accent stripe — signature decoration.
+                Narrow gradient bar that hugs the left edge of the card,
+                rounded at the ends to match the slider border. */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 20,
+                bottom: 20,
+                width: 6,
+                background: `linear-gradient(180deg, ${ACCENT_COLOR}, ${ACCENT_COLOR_LIGHT})`,
+                borderRadius: 3,
+                boxShadow: `0 0 12px ${ACCENT_GLOW}`,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Giant decorative opening quote — top-left corner. */}
+            <div
+              style={{
+                position: "absolute",
+                top: 12,
+                left: 24,
+                fontSize: 140,
+                fontFamily: "Georgia, serif",
+                fontWeight: 800,
+                lineHeight: 0.8,
+                color: ACCENT_COLOR,
+                opacity: 0.12,
+                pointerEvents: "none",
+                userSelect: "none",
+                zIndex: 0,
+              }}
+            >
+              &ldquo;
+            </div>
+
+            {/* Giant decorative closing quote — bottom-right corner. */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: -10,
+                right: 24,
+                fontSize: 140,
+                fontFamily: "Georgia, serif",
+                fontWeight: 800,
+                lineHeight: 0.8,
+                color: ACCENT_COLOR,
+                opacity: 0.12,
+                pointerEvents: "none",
+                userSelect: "none",
+                zIndex: 0,
+              }}
+            >
+              &rdquo;
+            </div>
+
             {/* Subtle background pattern - diagonal lines */}
             <div
               style={{

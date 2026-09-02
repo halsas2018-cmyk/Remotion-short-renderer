@@ -10,6 +10,7 @@ import {
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
+import { DropCap } from "./lib/textCards";
 
 interface PlainTextProps {
   text: string;
@@ -33,12 +34,8 @@ const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 const easeOutExpo = Easing.bezier(0.19, 1, 0.22, 1);
 const ACCENT_COLOR = "#e86c00";
 const ACCENT_LIGHT = "#f97316";
-const ACCENT_GLOW = "rgba(232, 108, 0, 0.4)";
 const DARK_TEXT = "#1a1a1a";
-const MEDIUM_TEXT = "#525252";
-const LIGHT_TEXT = "#a3a3a3";
 const CARD_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06)";
-const CARD_SHADOW_HOVER = "0 20px 50px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08)";
 const CARD_BORDER = "#e8e8e8";
 const SLIDER_COLOR = "#1a1a1a";
 
@@ -91,8 +88,6 @@ export const PlainText: React.FC<PlainTextProps> = ({
 
   // Idle pulse — time-based
   const isIdle = frame > textEndFrame;
-  const idleTimeSeconds = isIdle ? (frame - textEndFrame) / fps : 0;
-  const idlePulse = isIdle ? 1 + 0.015 * Math.sin(idleTimeSeconds * 2 * Math.PI * 0.4) : 1;
 
   // Shimmer timing
   const shimmerSpeed = 25;
@@ -119,8 +114,9 @@ export const PlainText: React.FC<PlainTextProps> = ({
   const sliderBorderRadius = cardBorderRadius + sliderPadding;
   const sliderStrokeWidth = Math.max(5, width * 0.0045);
 
-  // Responsive font sizes (following video-layout.md minimums)
-  const baseFontSize = Math.max(56, width * 0.052); // Main headline: 84px minimum
+  // Responsive font sizes — Georgia reads smaller than Space Grotesk at
+  // the same px size, so we use a slightly larger base size.
+  const baseFontSize = Math.max(48, width * 0.052); // Editorial body: ~56px baseline
 
   // Shimmer position calculation - relative to card (0-100% of card height)
   const getShimmerTop = (shimmerStartFrame: number) => {
@@ -162,43 +158,6 @@ export const PlainText: React.FC<PlainTextProps> = ({
     emphasisRunIndex += 1;
     return entry;
   });
-
-  // Star SVG component with animated rotation
-  const Star = ({ 
-    size = 20, 
-    color = ACCENT_COLOR, 
-    baseRotation = 0, 
-    opacity = 1,
-    animate = false 
-  }) => {
-    const rotation = animate && isIdle 
-      ? frame * 30 + baseRotation 
-      : baseRotation;
-    const pulse = animate && isIdle 
-      ? 1 + 0.15 * Math.sin(frame * 0.15 + baseRotation * 0.01) 
-      : 1;
-    
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        style={{
-          transform: `rotate(${rotation}deg) scale(${pulse})`,
-          opacity,
-          flexShrink: 0,
-          marginRight: 16,
-          filter: animate && isIdle ? `drop-shadow(0 0 8px ${ACCENT_GLOW})` : "none",
-        }}
-      >
-        <path
-          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-          fill={color}
-        />
-      </svg>
-    );
-  };
 
   return (
     <AbsoluteFill
@@ -372,21 +331,21 @@ export const PlainText: React.FC<PlainTextProps> = ({
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                gap: 16,
+                alignItems: "stretch",
+                gap: 12,
               }}
             >
               {lines.map((line, i) => {
                 // Line entrance animation
                 const lineStartFrame = textStartDelay + i * lineStagger;
                 const lineEndFrame = lineStartFrame + lineDuration;
-                
+
                 const lineProgress = interpolate(frame, [lineStartFrame, lineEndFrame], [0, 1], {
                   easing: easeOutExpo,
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
-                
+
                 const lineOpacity = lineProgress;
                 const lineY = interpolate(lineProgress, [0, 1], [40, 0], {
                   extrapolateLeft: "clamp",
@@ -400,19 +359,20 @@ export const PlainText: React.FC<PlainTextProps> = ({
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
-                
+
                 // Idle animation for lines: subtle vertical drift
                 const lineIdleDrift = isIdle ? 3 * Math.sin(frame * 0.05 + i * 0.7) : 0;
                 const lineIdleScale = isIdle ? 1 + 0.01 * Math.sin(frame * 0.07 + i) : 1;
 
-                // Star animation
-                const starRotation = isIdle ? frame * 20 + i * 45 : i * 45;
-                const starPulse = isIdle ? 1 + 0.2 * Math.sin(frame * 0.12 + i) : 1;
-                const starGlow = isIdle ? `drop-shadow(0 0 ${6 + 4 * Math.sin(frame * 0.1 + i)}px ${ACCENT_GLOW})` : "none";
-
                 // Check if this line has emphasis
                 const annotation = lineAnnotations[i];
                 const lineHasEmphasis = !!annotation;
+
+                // First line gets the drop cap; the rest of the first
+                // word is rendered inline so the body flows around it.
+                const isFirstLine = i === 0;
+                const firstChar = isFirstLine && line.length > 0 ? line.charAt(0) : "";
+                const restOfLine = isFirstLine ? line.slice(1) : line;
 
                 // Line content with optional rough-notation wrapper
                 const lineContent = (
@@ -421,10 +381,10 @@ export const PlainText: React.FC<PlainTextProps> = ({
                       fontSize: baseFontSize,
                       fontWeight: lineHasEmphasis ? 700 : 500,
                       color: DARK_TEXT,
-                      fontFamily,
-                      lineHeight: 1.4,
-                      letterSpacing: -1,
-                      textAlign: "center",
+                      fontFamily: lineHasEmphasis ? fontFamily : "Georgia, serif",
+                      lineHeight: 1.5,
+                      letterSpacing: 0,
+                      textAlign: "left",
                       textShadow: isIdle ? `0 0 ${2 + Math.sin(frame * 0.08 + i) * 2}px rgba(232, 108, 0, 0.15)` : "none",
                       // Gradient text for emphasized lines (optional visual cue)
                       ...(lineHasEmphasis
@@ -437,7 +397,24 @@ export const PlainText: React.FC<PlainTextProps> = ({
                         : {}),
                     }}
                   >
-                    {line}
+                    {isFirstLine && firstChar ? (
+                      <>
+                        <DropCap
+                          letter={firstChar}
+                          size={Math.round(baseFontSize * 2.6)}
+                          color={ACCENT_COLOR}
+                          colorEnd={ACCENT_LIGHT}
+                          bodyFontSize={baseFontSize}
+                          lineSpan={3}
+                          lineHeight={1.5}
+                          marginRight={14}
+                          topOffset={4}
+                        />
+                        {restOfLine}
+                      </>
+                    ) : (
+                      line
+                    )}
                   </span>
                 );
 
@@ -469,30 +446,16 @@ export const PlainText: React.FC<PlainTextProps> = ({
                   <div
                     key={i}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      display: "block",
+                      textAlign: "left",
+                      width: "100%",
                       opacity: lineOpacity,
                       transform: `translateY(${lineY + lineIdleDrift}px) scale(${lineScale * lineIdleScale}) rotate(${lineRotation}deg)`,
-                      transformOrigin: "center",
+                      transformOrigin: "left center",
                       willChange: "transform, opacity",
                     }}
                   >
-                    <Star
-                      size={22}
-                      color={ACCENT_COLOR}
-                      baseRotation={i * 45}
-                      opacity={lineOpacity * starPulse}
-                      animate={true}
-                    />
                     {renderedLine}
-                    <Star
-                      size={22}
-                      color={ACCENT_COLOR}
-                      baseRotation={180 + i * 45}
-                      opacity={lineOpacity * starPulse}
-                      animate={true}
-                    />
                   </div>
                 );
               })}
@@ -539,14 +502,20 @@ export const PlainTextTestComposition: React.FC = () => (
   <Composition
     id="PlainTextTest"
     component={PlainText}
-    durationInFrames={120}
+    durationInFrames={150}
     fps={30}
     width={1080}
     height={1920}
     defaultProps={{
-      text: "The gamble works while AI chips are scarce",
-      emphasisWords: ["scarce"], // NEW: test emphasis
-      durationInFrames: 120,
+      // Article-style body text — long enough to exercise the drop cap
+      // and the multi-line editorial layout.
+      text:
+        "The gamble works while AI chips are scarce, and the " +
+        "bets are getting bigger. Every major cloud provider " +
+        "now treats compute capacity as a strategic asset, and " +
+        "the supply curve is no longer friendly.",
+      emphasisWords: ["scarce", "strategic"],
+      durationInFrames: 150,
     }}
   />
 );

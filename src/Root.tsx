@@ -13,6 +13,7 @@ import { CompareSplit } from "./components/CompareSplit";
 import { LocationPulse } from "./components/LocationPulse";
 import { Scrollytelling } from "./components/Scrollytelling";
 import { TickerTape } from "./components/TickerTape";
+import { PlainText } from "./PlainText";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
 import { Logo } from "./Logo";
@@ -229,11 +230,30 @@ const ScrollytellingTestComposition: React.FC = () => {
   return (
     <Scrollytelling
       title="Why AI Chips Matter"
-      body={"The semiconductor shortage reshaped the entire tech industry.\nFoundries raced to add capacity.\nDesigners had to optimize for older nodes.\nCloud providers locked in multi-year supply contracts.\n\nThe result: a new normal where chip supply is a strategic asset."}
-      emphasisWords={["shortage", "strategic"]}
+      body={
+        "Chip supply is now a strategic asset, not a commodity. " +
+        "Capital is following capacity, and capacity follows capital. " +
+        "The chip itself is the new oil pipeline — and the producers hold the leverage."
+      }
+      emphasisWords={["strategic", "capital", "chip", "leverage"]}
     />
   );
 };
+
+const PlainTextTestComposition: React.FC<{ durationInFrames?: number }> = ({
+  durationInFrames = 150,
+}) => (
+  <PlainText
+    text={
+      "The gamble works while AI chips are scarce, and the " +
+      "bets are getting bigger. Every major cloud provider " +
+      "now treats compute capacity as a strategic asset, and " +
+      "the supply curve is no longer friendly."
+    }
+    emphasisWords={["scarce", "strategic"]}
+    durationInFrames={durationInFrames}
+  />
+);
 
 const TickerTapeTestComposition: React.FC = () => {
   return (
@@ -471,6 +491,15 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={{}}
+      />
+      <Composition
+        id="PlainTextTest"
+        component={PlainTextTestComposition}
+        durationInFrames={150}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{ durationInFrames: 150 }}
       />
       {/* ---- Horizon 2.4 — emphasis cycle Test compositions ---- */}
       <Composition

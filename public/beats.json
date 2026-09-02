@@ -1,180 +1,163 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1330,
+  "totalDurationInFrames": 991,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Nvidia CEO Jensen",
+      "text": "Airlines is officially",
       "emphasisWords": [
-        "AI",
-        "discovery of electricity"
+        "American Airlines",
+        "redesigned planes"
       ],
       "pacing": "slow",
-      "startFrame": 8,
-      "endFrame": 53,
+      "startFrame": 5,
+      "endFrame": 50,
       "durationInFrames": 45,
-      "scriptText": "Nvidia CEO Jensen Huang just compared AI to the discovery"
+      "scriptText": "American Airlines is officially ripping out their old seats to"
     },
     {
       "type": "stat_pill",
-      "text": "just compared AI to the discovery of electricity, and he says",
-      "value": "token",
-      "label": "Intelligence cost",
+      "text": "out their old seats to install private suites that",
+      "value": "$10,000",
+      "label": "Ticket cost",
       "pacing": "slow",
-      "startFrame": 53,
-      "endFrame": 167,
-      "durationInFrames": 114,
-      "scriptText": "of electricity, and he says we are now paying for intelligence by the token."
-    },
-    {
-      "type": "icon_text",
-      "text": "are now paying for intelligence by the token. He",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 167,
-      "endFrame": 265,
-      "durationInFrames": 98,
-      "scriptText": "He told a G20 meeting that we are no longer"
-    },
-    {
-      "type": "versus",
-      "text": "a G20 meeting that we are no longer just buying gadgets like",
-      "left": "Buying gadgets like phones",
-      "right": "Building massive economic infrastructure",
-      "pacing": "slow",
-      "startFrame": 265,
-      "endFrame": 361,
-      "durationInFrames": 96,
-      "scriptText": "just buying gadgets like phones or computers. Instead, we are"
+      "startFrame": 50,
+      "endFrame": 130,
+      "durationInFrames": 80,
+      "scriptText": "install private suites that cost nearly ten thousand dollars per ticket."
     },
     {
       "type": "process_flow",
-      "text": "phones or computers. Instead, we are building massive economic",
-      "pacing": "slow",
+      "text": "nearly $10,000 per ticket. These new",
       "steps": [
-        "Infrastructure investment",
-        "Trillions in spending",
-        "Economic foundation"
-      ],
-      "startFrame": 361,
-      "endFrame": 500,
-      "durationInFrames": 139,
-      "scriptText": "building massive economic infrastructure that will cost tens of trillions of dollars."
-    },
-    {
-      "type": "process_flow",
-      "text": "that will cost tens of trillions of dollars.",
-      "steps": [
-        "Power plant",
-        "Compute",
-        "Math",
-        "Output"
+        "Remove old seats",
+        "Install private suites",
+        "Launch Boeing 777"
       ],
       "pacing": "slow",
-      "startFrame": 500,
-      "endFrame": 599,
-      "durationInFrames": 99,
-      "scriptText": "Think of it like a power plant, but instead of"
+      "startFrame": 130,
+      "endFrame": 220,
+      "durationInFrames": 90,
+      "scriptText": "These new Boeing 777 planes will feature sliding doors for"
     },
     {
-      "type": "icon_text",
-      "text": "of it like a power plant, but instead of pumping out electricity, it pumps",
-      "icon": "\u26a1",
+      "type": "map_3d",
+      "text": "777 planes will feature sliding doors for total privacy on long",
       "pacing": "slow",
-      "startFrame": 599,
-      "endFrame": 719,
-      "durationInFrames": 120,
-      "scriptText": "pumping out electricity, it pumps out math that writes paragraphs and solves complex problems."
-    },
-    {
-      "type": "timeline",
-      "text": "math that writes paragraphs and solves complex problems.",
-      "events": [
-        {
-          "date": "Past",
-          "label": "Tech gadgets"
-        },
-        {
-          "date": "Present",
-          "label": "AI infrastructure"
-        },
-        {
-          "date": "Future",
-          "label": "Productive resource"
-        }
+      "locationName": "London and Tokyo",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "buildings": [
+        "London Heathrow",
+        "Tokyo Haneda"
       ],
-      "pacing": "slow",
-      "startFrame": 719,
-      "endFrame": 836,
-      "durationInFrames": 117,
-      "scriptText": "He says we have officially turned a corner where AI"
+      "startFrame": 220,
+      "endFrame": 331,
+      "durationInFrames": 111,
+      "scriptText": "total privacy on long flights to places like London and Tokyo."
     },
     {
       "type": "progress_meter",
-      "text": "says we have officially turned a corner where AI is now a productive",
-      "value": 100,
+      "text": "to places like London and Tokyo. The airline is",
+      "pacing": "slow",
+      "value": 85,
       "maxValue": 100,
-      "label": "National adoption",
-      "pacing": "slow",
-      "startFrame": 836,
-      "endFrame": 941,
-      "durationInFrames": 105,
-      "scriptText": "is now a productive resource for the entire country."
-    },
-    {
-      "type": "chart_line",
-      "text": "for the entire country. It",
-      "points": [
-        {
-          "label": "2024",
-          "value": 20
-        },
-        {
-          "label": "2025",
-          "value": 50
-        },
-        {
-          "label": "2026",
-          "value": 90
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 941,
-      "endFrame": 1016,
-      "durationInFrames": 75,
-      "scriptText": "It is a wild shift from how we used to"
+      "label": "High-spending traveler retention",
+      "startFrame": 331,
+      "endFrame": 415,
+      "durationInFrames": 84,
+      "scriptText": "The airline is desperate to stop losing high-spending travelers to"
     },
     {
       "type": "icon_text",
-      "text": "a wild shift from how we used to think about tech, but it is",
-      "icon": "\ud83c\udf0d",
+      "text": "to stop losing high-spending travelers to rivals like Delta and",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 1016,
-      "endFrame": 1111,
-      "durationInFrames": 95,
-      "scriptText": "think about tech, but it is happening right under our feet."
+      "startFrame": 415,
+      "endFrame": 516,
+      "durationInFrames": 101,
+      "scriptText": "rivals like Delta and United. They are betting big that"
     },
     {
-      "type": "scrollytelling",
-      "text": "right under our feet. If",
-      "title": "The New Electricity",
-      "body": "AI is shifting from a novelty to a fundamental utility powering the economy.",
+      "type": "icon_text",
+      "text": "They are betting big that people will pay a massive",
+      "icon": "\ud83d\udeaa",
       "pacing": "slow",
-      "startFrame": 1111,
-      "endFrame": 1183,
-      "durationInFrames": 72,
-      "scriptText": "If AI is the new electricity, are you ready to"
+      "startFrame": 516,
+      "endFrame": 597,
+      "durationInFrames": 81,
+      "scriptText": "people will pay a massive premium for a door that"
     },
     {
-      "type": "compare_split",
-      "text": "is the new electricity, are you ready to pay for intelligence just like you pay your monthly power",
-      "left": "Monthly power bill",
-      "right": "Monthly intelligence bill",
+      "type": "progress_meter",
+      "text": "for a door that shuts them away from the rest of the",
+      "value": 85,
+      "maxValue": 100,
+      "label": "Premium focus",
       "pacing": "slow",
-      "startFrame": 1183,
-      "endFrame": 1330,
-      "durationInFrames": 147,
-      "scriptText": "pay for intelligence just like you pay your monthly power bill?"
+      "startFrame": 597,
+      "endFrame": 662,
+      "durationInFrames": 65,
+      "scriptText": "shuts them away from the rest of the cabin."
+    },
+    {
+      "type": "quote_attribution",
+      "text": "It is a total shift",
+      "quote": "The airline is shifting away from the old first-class model toward luxury suites.",
+      "attribution": "Industry Analysts",
+      "pacing": "slow",
+      "startFrame": 662,
+      "endFrame": 707,
+      "durationInFrames": 45,
+      "scriptText": "It is a total shift away from the old first-class"
+    },
+    {
+      "type": "timeline",
+      "text": "from the old first-class model toward this",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Standard seating"
+        },
+        {
+          "date": "Present",
+          "label": "Suite transition"
+        },
+        {
+          "date": "Future",
+          "label": "Full rollout"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 707,
+      "endFrame": 772,
+      "durationInFrames": 65,
+      "scriptText": "model toward this new luxury suite layout. Whether you are"
+    },
+    {
+      "type": "icon_text",
+      "text": "luxury suite layout. Whether you are flying for work or",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 772,
+      "endFrame": 869,
+      "durationInFrames": 97,
+      "scriptText": "flying for work or a vacation, would you actually pay"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "would you actually pay $10,000 just to have a sliding door on your airplane",
+      "stories": [
+        "American Airlines premium push",
+        "New Boeing 777 suites",
+        "Luxury travel trends"
+      ],
+      "label": "Aviation",
+      "pacing": "slow",
+      "startFrame": 869,
+      "endFrame": 991,
+      "durationInFrames": 122,
+      "scriptText": "ten thousand dollars just to have a sliding door on your airplane seat?"
     }
   ]
 }

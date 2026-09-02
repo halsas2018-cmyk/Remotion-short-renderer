@@ -10,6 +10,7 @@ import {
 import { Highlight, Circle, Underline } from "@remotion/rough-notation";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { useIdleMotion } from "./lib/idleMotion";
+import { DottedUnderline, RotatedStamp } from "./lib/textCards";
 
 interface QuoteCardProps {
   quote: string;
@@ -432,6 +433,16 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
               }}
             />
 
+            {/* "FEATURED" rotated stamp — signature decoration in the
+                top-right corner. Fades in after the quote finishes. */}
+            <RotatedStamp
+              label="Featured"
+              color={ACCENT_COLOR}
+              rotation={-8}
+              fontSize={14}
+              opacity={quoteProgress * 0.55}
+            />
+
             {/* Content */}
             <div
               style={{
@@ -546,25 +557,31 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({
                   opacity: attrProgress,
                   transform: [{ translateY: interpolate(attrProgress, [0, 1], [20, 0]) }],
                   position: "relative",
-                  paddingTop: 20,
+                  paddingTop: 24,
                   width: "100%",
                   textAlign: "center",
                 }}
               >
-                {/* Separator line above attribution */}
+                {/* Dotted accent rule above the attribution — signature
+                    decoration. Replaces the old solid line. Draws in
+                    with the attribution. */}
                 <div
                   style={{
                     position: "absolute",
                     top: 0,
                     left: "50%",
                     transform: "translateX(-50%)",
-                    width: 60,
-                    height: 2,
-                    background: `linear-gradient(90deg, transparent, ${ACCENT_COLOR}, transparent)`,
-                    borderRadius: 1,
                     opacity: attrProgress,
                   }}
-                />
+                >
+                  <DottedUnderline
+                    width={120}
+                    color={ACCENT_COLOR}
+                    progress={attrProgress}
+                    strokeWidth={2}
+                    opacity={0.9}
+                  />
+                </div>
                 &mdash; {attribution}
               </div>
             </div>

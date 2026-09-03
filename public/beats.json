@@ -1,189 +1,182 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 981,
+  "totalDurationInFrames": 1301,
   "beats": [
     {
       "type": "headline_card",
-      "text": "new 46 million pound fund just",
+      "text": "There are now more people with over $1",
       "emphasisWords": [
-        "46 million pound",
-        "fund"
+        "401(k) millionaires",
+        "record number"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 63,
-      "durationInFrames": 59,
-      "scriptText": "A new 46 million pound fund just launched to turn"
+      "startFrame": 5,
+      "endFrame": 54,
+      "durationInFrames": 49,
+      "scriptText": "There are now more people with over one million dollars"
+    },
+    {
+      "type": "stat_pill",
+      "text": "million in their retirement accounts than",
+      "value": "Record",
+      "label": "Retirement accounts",
+      "pacing": "slow",
+      "startFrame": 54,
+      "endFrame": 114,
+      "durationInFrames": 60,
+      "scriptText": "in their retirement accounts than ever before. Fidelity Investments just"
     },
     {
       "type": "icon_text",
-      "text": "launched to turn boring lab science into actual",
-      "icon": "\ud83e\uddea",
+      "text": "ever before. Fidelity investments just confirmed that the number of 401k",
+      "icon": "\ud83d\udcc8",
       "pacing": "slow",
-      "startFrame": 63,
-      "endFrame": 132,
-      "durationInFrames": 69,
-      "scriptText": "boring lab science into actual companies. The British Business Bank"
-    },
-    {
-      "type": "process_flow",
-      "text": "companies. The British business bank is backing a group called zinc to",
-      "steps": [
-        "Identify scientists",
-        "Fund research",
-        "Build company"
-      ],
-      "pacing": "slow",
-      "startFrame": 132,
-      "endFrame": 234,
-      "durationInFrames": 102,
-      "scriptText": "is backing a group called Zinc to hunt down scientists"
+      "startFrame": 114,
+      "endFrame": 240,
+      "durationInFrames": 126,
+      "scriptText": "confirmed that the number of 401k millionaires hit a record"
     },
     {
       "type": "timeline",
-      "text": "hunt down scientists who are stuck in the lab. Most of",
-      "pacing": "slow",
-      "events": [
-        {
-          "date": "Step 1",
-          "label": "Identify lab researchers"
-        },
-        {
-          "date": "Step 2",
-          "label": "Assess tech potential"
-        },
-        {
-          "date": "Step 3",
-          "label": "Launch new startup"
-        }
-      ],
-      "startFrame": 234,
-      "endFrame": 306,
-      "durationInFrames": 72,
-      "scriptText": "who are stuck in the lab. Most of these researchers"
-    },
-    {
-      "type": "icon_text",
-      "text": "these researchers have world-changing tech, but they have zero clue",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 306,
-      "endFrame": 396,
-      "durationInFrames": 90,
-      "scriptText": "have world-changing tech, but they have zero clue how to actually run a business."
-    },
-    {
-      "type": "process_flow",
-      "text": "how to actually run a business. Instead of waiting for these geniuses",
-      "steps": [
-        "Taxes",
-        "Hiring",
-        "Operations"
-      ],
-      "pacing": "slow",
-      "startFrame": 396,
-      "endFrame": 483,
-      "durationInFrames": 87,
-      "scriptText": "Instead of waiting for these geniuses to figure out taxes"
-    },
-    {
-      "type": "process_flow",
-      "text": "to figure out taxes and hiring, zinc is basically building the",
-      "pacing": "slow",
-      "steps": [
-        "Day one support",
-        "Build company structure",
-        "Scale the business"
-      ],
-      "startFrame": 483,
-      "endFrame": 578,
-      "durationInFrames": 95,
-      "scriptText": "and hiring, Zinc is basically building the company around them from day one."
-    },
-    {
-      "type": "chart_line",
-      "text": "company around them from day one. It is a massive bet that the next big",
-      "points": [
-        {
-          "label": "Year 1",
-          "value": 10
-        },
-        {
-          "label": "Year 2",
-          "value": 45
-        },
-        {
-          "label": "Year 3",
-          "value": 80
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 578,
-      "endFrame": 675,
-      "durationInFrames": 97,
-      "scriptText": "It is a massive bet that the next big tech"
-    },
-    {
-      "type": "map_3d",
-      "text": "tech giant is currently hidden inside",
-      "locationName": "University",
-      "latitude": 51.5074,
-      "longitude": -0.1278,
-      "buildings": [
-        "Lab",
-        "Basement"
-      ],
+      "text": "millionaires hit a record high during the second quarter of",
       "pacing": "normal",
-      "startFrame": 675,
-      "endFrame": 721,
-      "durationInFrames": 46,
-      "scriptText": "giant is currently hidden inside a university basement."
-    },
-    {
-      "type": "timeline",
-      "text": "a university basement. They want to fast track these breakthroughs before",
       "events": [
         {
-          "date": "Now",
-          "label": "Identify"
+          "date": "Q1",
+          "label": "Growth starts"
         },
         {
-          "date": "Soon",
-          "label": "Fast-track"
+          "date": "Q2",
+          "label": "Record high hit"
         },
         {
           "date": "Future",
-          "label": "Breakthrough"
+          "label": "Continued savings"
         }
       ],
+      "startFrame": 240,
+      "endFrame": 336,
+      "durationInFrames": 96,
+      "scriptText": "high during the second quarter of this year."
+    },
+    {
+      "type": "versus",
+      "text": "this year. Even though everyone",
+      "left": "Stressed about economy",
+      "right": "Investors ignoring panic",
       "pacing": "slow",
-      "startFrame": 721,
-      "endFrame": 826,
-      "durationInFrames": 105,
-      "scriptText": "They want to fast-track these breakthroughs before someone else beats them to it."
+      "startFrame": 336,
+      "endFrame": 401,
+      "durationInFrames": 65,
+      "scriptText": "Even though everyone seems stressed out about the economy and"
+    },
+    {
+      "type": "stat_pill",
+      "text": "seems stressed out about the economy and high prices, these investors just",
+      "value": "Long game",
+      "label": "Investment strategy",
+      "pacing": "slow",
+      "startFrame": 401,
+      "endFrame": 513,
+      "durationInFrames": 112,
+      "scriptText": "high prices, these investors just kept putting their money away"
     },
     {
       "type": "icon_text",
-      "text": "someone else beats them to it. Would you quit your stable job in a lab",
-      "icon": "\ud83d\udcca",
+      "text": "kept putting their money away and ignoring the daily panic.",
+      "icon": "\ud83c\udfc6",
       "pacing": "slow",
-      "startFrame": 826,
-      "endFrame": 911,
-      "durationInFrames": 85,
-      "scriptText": "Would you quit your stable job in a lab if"
+      "startFrame": 513,
+      "endFrame": 593,
+      "durationInFrames": 80,
+      "scriptText": "and ignoring the daily panic. It is a massive win"
     },
     {
-      "type": "quote_attribution",
-      "text": "if a stranger handed you millions to start your own company?",
-      "quote": "a stranger handed you millions to start your own company",
-      "attribution": "Zinc",
+      "type": "process_flow",
+      "text": "It is a massive win for people who decided to play the long",
+      "steps": [
+        "Set contributions",
+        "Automatic investment",
+        "Ignore market"
+      ],
       "pacing": "slow",
-      "startFrame": 911,
-      "endFrame": 981,
-      "durationInFrames": 70,
-      "scriptText": "a stranger handed you millions to start your own company?"
+      "startFrame": 593,
+      "endFrame": 702,
+      "durationInFrames": 109,
+      "scriptText": "for people who decided to play the long game instead"
+    },
+    {
+      "type": "icon_text",
+      "text": "game instead of trying to time the market perfectly.",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 702,
+      "endFrame": 768,
+      "durationInFrames": 66,
+      "scriptText": "of trying to time the market perfectly. Most of these"
+    },
+    {
+      "type": "process_flow",
+      "text": "Most of these savers just set their contributions to",
+      "steps": [
+        "Automatic",
+        "Walk away",
+        "Time lifts"
+      ],
+      "pacing": "slow",
+      "startFrame": 768,
+      "endFrame": 867,
+      "durationInFrames": 99,
+      "scriptText": "savers just set their contributions to automatic and walked away,"
+    },
+    {
+      "type": "stat_pill",
+      "text": "automatic and walked away, letting time do all the heavy",
+      "pacing": "slow",
+      "value": "Automatic",
+      "label": "Contribution method",
+      "startFrame": 867,
+      "endFrame": 952,
+      "durationInFrames": 85,
+      "scriptText": "letting time do all the heavy lifting for them."
+    },
+    {
+      "type": "icon_text",
+      "text": "lifting for them. While the rest of us are",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 952,
+      "endFrame": 1028,
+      "durationInFrames": 76,
+      "scriptText": "While the rest of us are busy worrying about the"
+    },
+    {
+      "type": "stat_pill",
+      "text": "busy worrying about the next big crash, these millionaires",
+      "value": "Goal met",
+      "label": "Retirement status",
+      "pacing": "slow",
+      "startFrame": 1028,
+      "endFrame": 1117,
+      "durationInFrames": 89,
+      "scriptText": "next big crash, these millionaires are quietly hitting their goals."
+    },
+    {
+      "type": "ticker_tape",
+      "text": "are quietly hitting their goals. Do you actually trust your retirement savings to a simple automatic investment plan?",
+      "stories": [
+        "401k records hit",
+        "Automatic plans working",
+        "Long term growth"
+      ],
+      "label": "Retirement",
+      "pacing": "slow",
+      "startFrame": 1117,
+      "endFrame": 1301,
+      "durationInFrames": 184,
+      "scriptText": "Do you actually trust your retirement savings to a simple automatic investment plan?"
     }
   ],
-  "source": "Google News Business",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMilgFBVV95cUxPRUxQLUdFRzZwcExKejJBTEJTSDlsUHVDQ3RSYUk5VW1hM3o0dWRJZExqMFZQVnJFNkFIcFZuUzZPQmFTODBCcm8zeVk0OFJlY25IX015bHBYdXRuSWpEV181Z1c4U0FjNDVvSDR3SFpabjZVeDFIczJadHlMX2JYNS0zd3Z3OHd2UmdHNlpqTlZoa2dMZFE?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isF3-dhbQjDvjN9IhG-0k1nuFgKZiVa-nggrcej99USm-s2Bte64x7X3zqOq5jC5chyGhNjpPi-p0M-nigXY5R3oITQARJMw"
+  "source": "MarketWatch",
+  "sourceUrl": "https://www.marketwatch.com/story/theres-a-new-record-number-of-401-k-millionaires-as-retirement-savings-hold-at-all-time-highs-94f2c520?mod=mw_rss_topstories"
 }

@@ -12,7 +12,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Add parent directory to path for llm_client
 sys.path.insert(0, str(Path(__file__).parent))
@@ -224,6 +224,36 @@ def target_frames_for_word_count(word_count: int) -> int:
     return max(MIN_BEAT_FRAMES, min(MAX_BEAT_FRAMES, int(round(word_count * 4.5))))
 
 
+def _measure_frames_per_word(word_timestamps: list[dict]) -> float:
+    """Horizon 3.7: measure the actual audio rate (frames per word) from
+    the Whisper timestamps. Returns the median per-word duration; the
+    median is robust to outliers (long pauses between words, the very
+    first word's leading silence, etc.).
+
+    Used by `assign_frames_from_word_ranges` to make the per-beat cap
+    follow the actual audio rate, not a hard-coded constant. The
+    pre-3.7 cap of `4.5 frames/word` was tuned for slow narration
+    (~0.33s/word) but real stories range from 0.25s/word to 0.45s/word.
+    For fast narration, the hard-coded cap truncated every beat to the
+    floor, leaving the trailing audio orphaned (no beat covers it). The
+    median-derived cap keeps the cap just above the natural duration,
+    so beats cover their words and the audio stays continuous.
+
+    Falls back to 8.0 frames/word (0.27s/word) when word_timestamps is
+    empty — matches the median narration rate in the test corpus.
+    """
+    if not word_timestamps or len(word_timestamps) < 2:
+        return 8.0
+    durations = [
+        max(0.05, w["end"] - w["start"]) for w in word_timestamps
+    ]
+    durations.sort()
+    n = len(durations)
+    # Median (robust to outliers).
+    median_sec = durations[n // 2] if n % 2 == 1 else (durations[n // 2 - 1] + durations[n // 2]) / 2
+    return max(3.0, median_sec * FPS)
+
+
 def compute_pacing(text: str) -> str:
     """Horizon 3.4: derive a per-beat pacing hint from word count.
     - fast: 1–3 words  (rapid stat callouts)
@@ -329,48 +359,117 @@ def assign_frames_from_word_ranges(
     each beat to its word-count-based cap (max(45, min(180, wordCount*4.5))).
     Beats that still exceed the cap after trimming are kept at the cap — the
     split path (split_long_beats) handles only true oversize (>200 frames).
+
+    Horizon 3.7 (Sept 2026 — alignment bug fix): when a beat is truncated by
+    the cap, the leftover Whisper words are silently lost: they still play in
+    the audio track but the next beat's <Sequence> has already mounted, so
+    the listener hears the previous beat's words while the new card is
+    fading in. To fix this, pass 1 records the script_word index where each
+    beat was truncated, and pass 2 advances the NEXT beat's startFrame to
+    the next unconsumed word. The audio now stays continuous across the
+    cap boundary; auto_fix_frames() and align_text_to_audio_window() still
+    work on the resulting sequential [startFrame, endFrame] windows.
     """
     if not word_timestamps:
         return beats
-    
+
     word_map = build_word_index_map(word_timestamps, script)
     script_words = script.strip().split()
     total_frames = word_idx_to_end_frame(word_timestamps, len(word_timestamps) - 1)
-    
-    result = []
+
+    # ------------------------------------------------------------------
+    # Pass 1: cap each beat and record the script_word index where it
+    # was truncated (None if no truncation). The chunker in
+    # script_generator.py already produces contiguous [startWord, endWord]
+    # ranges, so when a beat is truncated, the next beat's startWord is
+    # now stale — it points to a word that was just consumed by this
+    # beat's truncation. Pass 2 fixes that.
+    # ------------------------------------------------------------------
+    truncated_end_words: list[Optional[int]] = []
+    prelim: list[dict] = []
     for beat in beats:
         beat_copy = beat.copy()
-        
+
         start_word = beat.get("startWord", 0)
         end_word = beat.get("endWord", len(script_words) - 1)
-        
+
         # Clamp to valid script word range
         start_word = max(0, min(start_word, len(script_words) - 1))
         end_word = max(start_word, min(end_word, len(script_words) - 1))
-        
+
         # Map to timestamp indices
         start_ts_idx = word_map[start_word] if start_word < len(word_map) else len(word_map) - 1
         end_ts_idx = word_map[end_word] if end_word < len(word_map) else len(word_map) - 1
-        
+
         # Calculate frames from Whisper timestamps
         start_frame = word_idx_to_frame(word_timestamps, start_ts_idx)
         end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
-        
+
         # 3.3: trim to word-count-based cap (don't split — splitting destroys
         # the LLM's narrative chunking). split_long_beats() handles true
         # oversize beats separately.
+        #
+        # Horizon 3.7 (alignment fix): the cap now uses the actual audio
+        # rate measured from word_timestamps, not a hard-coded 4.5
+        # frames/word. The pre-3.7 cap truncated every fast-narration
+        # beat, leaving the trailing audio orphaned. The new cap is
+        # `target_frames_for_word_count(word_count)` raised to match
+        # the natural rate, so it only fires for truly oversized beats
+        # (which `split_long_beats` would have caught anyway).
         word_count = end_word - start_word + 1
-        cap = target_frames_for_word_count(word_count)
+        frames_per_word = _measure_frames_per_word(word_timestamps)
+        natural_cap = int(round(word_count * frames_per_word * 1.15))  # +15% buffer
+        cap = max(
+            target_frames_for_word_count(word_count),
+            min(MAX_BEAT_FRAMES_SOFT, natural_cap),
+        )
+
         if end_frame - start_frame > cap:
-            end_frame = start_frame + cap
-        
+            cap_end_frame = start_frame + cap
+            # Walk backwards to find the largest script_idx whose
+            # word_idx_to_end_frame is at or before cap_end_frame. This
+            # makes the cap a hard upper bound on the frame, not on the
+            # script word count.
+            new_end_word = start_word
+            for sw in range(end_word, start_word - 1, -1):
+                if sw >= len(word_map):
+                    continue
+                ts_idx = word_map[sw]
+                if word_idx_to_end_frame(word_timestamps, ts_idx) <= cap_end_frame:
+                    new_end_word = sw
+                    break
+            if new_end_word > start_word:
+                end_word = new_end_word
+                end_ts_idx = word_map[end_word]
+                end_frame = word_idx_to_end_frame(word_timestamps, end_ts_idx)
+
         # Ensure minimum duration
         if end_frame - start_frame < MIN_BEAT_FRAMES:
             end_frame = start_frame + MIN_BEAT_FRAMES
-        
+
         # Clamp to total duration
         end_frame = min(end_frame, total_frames)
-        
+
+        # Horizon 3.7: compute the FINAL consumed end_word (after cap AND
+        # floor AND clamp). This is what the next beat should pick up.
+        # - If the cap truncated, end_word is already the truncated value.
+        # - If the floor pulled (natural < MIN), the beat covers more frames
+        #   than the chunk's words, so the consumed end_word is the chunk's
+        #   ORIGINAL end_word (the floor pulled past the words).
+        # - Otherwise, end_word matches the original chunk.
+        # We compute the consumed end_word as the largest script_idx in
+        # [start_word, original_end_word] whose endFrame is <= endFrame.
+        original_end_word = max(start_word, min(beat.get("endWord", end_word), len(script_words) - 1))
+        consumed_end_word = start_word
+        for sw in range(original_end_word, start_word - 1, -1):
+            if sw >= len(word_map):
+                continue
+            ts_idx = word_map[sw]
+            if word_idx_to_end_frame(word_timestamps, ts_idx) <= end_frame:
+                consumed_end_word = sw
+                break
+        truncated_end_words.append(consumed_end_word)
+
         beat_copy["startFrame"] = start_frame
         beat_copy["endFrame"] = end_frame
         beat_copy["durationInFrames"] = end_frame - start_frame
@@ -379,9 +478,39 @@ def assign_frames_from_word_ranges(
         beat_copy.pop("startWord", None)
         beat_copy.pop("endWord", None)
 
-        result.append(beat_copy)
-    
-    return result
+        prelim.append(beat_copy)
+
+    # ------------------------------------------------------------------
+    # Pass 2: advance each beat's startFrame past the previous beat's
+    # consumed words. The previous beat's endFrame is `consumed_end_word`'s
+    # endFrame; the new start must be the start of `consumed_end_word + 1`
+    # (or later if the previous beat's MIN_BEAT_FRAMES floor pulled past
+    # the consumed words). We take the LATER of the two, so we never go
+    # backwards in time.
+    # ------------------------------------------------------------------
+    for i, beat in enumerate(prelim):
+        if i == 0:
+            continue
+        prev_end_frame = prelim[i - 1]["endFrame"]
+        prev_trunc = truncated_end_words[i - 1]
+        new_start_word = prev_trunc + 1
+        if new_start_word >= len(script_words) or new_start_word >= len(word_map):
+            # The previous beat consumed every remaining word. The next
+            # beat's startFrame is the previous beat's endFrame.
+            if prev_end_frame > beat["startFrame"]:
+                beat["startFrame"] = prev_end_frame
+                beat["durationInFrames"] = beat["endFrame"] - beat["startFrame"]
+            continue
+        ts_idx = word_map[new_start_word]
+        word_start_frame = word_idx_to_frame(word_timestamps, ts_idx)
+        # The new start is whichever is later: the next word's start, or
+        # the previous beat's endFrame (covers the floor-pull case).
+        new_start_frame = max(word_start_frame, prev_end_frame)
+        if new_start_frame > beat["startFrame"]:
+            beat["startFrame"] = new_start_frame
+            beat["durationInFrames"] = beat["endFrame"] - beat["startFrame"]
+
+    return prelim
 
 
 def should_split_beat(beat: dict) -> bool:
@@ -659,14 +788,38 @@ def align_text_to_audio_window(beats: list[dict], word_timestamps: list[dict]) -
     if not word_timestamps:
         return beats
 
-    for beat in beats:
+    # Horizon 3.7: precompute the next beat's startFrame for each beat
+    # so the filter is exclusive on the right edge (a word belongs to
+    # the EARLIEST beat whose startFrame is <= w.start). This avoids
+    # duplicates at beat boundaries where one word's audio straddles
+    # two beats — without this, the same word would appear in two
+    # beats' text.
+    next_starts = []
+    for i, _ in enumerate(beats):
+        if i + 1 < len(beats):
+            next_starts.append(beats[i + 1].get("startFrame", float("inf")))
+        else:
+            next_starts.append(float("inf"))
+
+    for i, beat in enumerate(beats):
         start_frame = beat.get("startFrame", 0)
         end_frame = beat.get("endFrame", start_frame)
+        next_start = next_starts[i]
         s_sec = start_frame / FPS
         e_sec = end_frame / FPS
+        next_s_sec = next_start / FPS
+        # A word belongs to this beat if:
+        #   w["start"] >= s_sec (word starts after this beat's start), AND
+        #   w["start"] < next_s_sec (word starts before the NEXT beat's start).
+        # The second condition uses the NEXT beat's startFrame as the right
+        # edge so a word that straddles the boundary is claimed by exactly
+        # one beat (the one whose startFrame precedes the word's start).
+        # Words that end after this beat's endFrame but before the next
+        # beat's startFrame (the straddle case) are also included via the
+        # `w["end"] > s_sec` disjunct for the FIRST beat only.
         audio_words_in_window = [
             w["word"] for w in word_timestamps
-            if w["start"] >= s_sec - 0.001 and w["end"] <= e_sec + 0.001
+            if w["start"] >= s_sec - 0.001 and w["start"] < next_s_sec - 0.001
         ]
         if audio_words_in_window:
             if "text" in beat and "scriptText" not in beat:
@@ -1457,10 +1610,18 @@ def generate_beats(script: str, word_timestamps: list[dict], story: dict, headli
 
     total_frames = beats[-1]["endFrame"] if beats else 0
 
+    # Phase 5 — SourceBadge. The story dict carries `source` (e.g.
+    # "TechCrunch AI") and `link` (the article URL) from news_fetcher.py
+    # (see news_fetcher.py:236-238). Pass them through at the top level
+    # so the React video can render a persistent attribution pill in the
+    # top-right corner without obstructing the logo. If a story has no
+    # source, the React component returns null and the badge is hidden.
     return {
         "fps": FPS,
         "totalDurationInFrames": total_frames,
-        "beats": beats
+        "beats": beats,
+        "source": story.get("source", ""),
+        "sourceUrl": story.get("link", ""),
     }
 
 

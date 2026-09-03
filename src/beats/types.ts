@@ -80,6 +80,14 @@ export const TimedBeatsSchema = z.object({
   fps: z.number().positive(),
   totalDurationInFrames: z.number().positive(),
   beats: z.array(PerBeatSchema).min(1),
+  // Top-level story attribution (Phase 5 — SourceBadge).
+  // Optional so the 143 schema tests that pass minimal beats fixtures
+  // without these fields still pass. sourceUrl is allowed to be an empty
+  // string because not every story has a clean link (some are paywalled
+  // or only available in print), and an empty string is friendlier than
+  // a hard error.
+  source: z.string().optional(),
+  sourceUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export type TimedBeats = z.infer<typeof TimedBeatsSchema>;

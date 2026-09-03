@@ -17,6 +17,7 @@ import { PlainText } from "./PlainText";
 import { TimedBeatsSchema, WordListSchema } from "./beats/types";
 import { dedupeOverlappingWords, type Word } from "./beats/words";
 import { Logo } from "./Logo";
+import { SourceBadge } from "./components/SourceBadge";
 
 const PUBLIC_BEATS_URL = staticFile("beats.json");
 const PUBLIC_TIMESTAMPS_URL = staticFile("timestamps.json");
@@ -386,6 +387,30 @@ const SignalFeedLogoAnimated: React.FC = () => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/*  Phase 5 — SourceBadge test composition                            */
+/*                                                                     */
+/*  Renders the persistent top-right attribution pill on a white      */
+/*  background, with the logo at 15% opacity as a ghost. This lets    */
+/*  you visually verify the "doesn't obstruct the logo" requirement   */
+/*  in Studio or via `npx remotion still SourceBadgeTest`.            */
+/* ------------------------------------------------------------------ */
+
+const SourceBadgeTestComposition: React.FC<{
+  source?: string;
+  sourceUrl?: string;
+}> = ({
+  source = "TechCrunch AI",
+  sourceUrl = "https://techcrunch.com/2026/09/01/example-article/",
+}) => (
+  <AbsoluteFill style={{ backgroundColor: "white" }}>
+    {/* Ghosted logo at 15% opacity so the badge's clearance to the
+        logo is visually obvious without the actual wordmark competing. */}
+    <Logo top={80} left={180} height={180} opacity={0.15} />
+    <SourceBadge source={source} sourceUrl={sourceUrl} />
+  </AbsoluteFill>
+);
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -556,6 +581,19 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={{}}
+      />
+      {/* ---- Phase 5 — SourceBadge preview composition ---- */}
+      <Composition
+        id="SourceBadgeTest"
+        component={SourceBadgeTestComposition}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          source: "TechCrunch AI",
+          sourceUrl: "https://techcrunch.com/",
+        }}
       />
     </>
   );

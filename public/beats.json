@@ -1,163 +1,189 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 991,
+  "totalDurationInFrames": 981,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Airlines is officially",
+      "text": "new 46 million pound fund just",
       "emphasisWords": [
-        "American Airlines",
-        "redesigned planes"
+        "46 million pound",
+        "fund"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 50,
-      "durationInFrames": 45,
-      "scriptText": "American Airlines is officially ripping out their old seats to"
+      "startFrame": 4,
+      "endFrame": 63,
+      "durationInFrames": 59,
+      "scriptText": "A new 46 million pound fund just launched to turn"
     },
     {
-      "type": "stat_pill",
-      "text": "out their old seats to install private suites that",
-      "value": "$10,000",
-      "label": "Ticket cost",
+      "type": "icon_text",
+      "text": "launched to turn boring lab science into actual",
+      "icon": "\ud83e\uddea",
       "pacing": "slow",
-      "startFrame": 50,
-      "endFrame": 130,
-      "durationInFrames": 80,
-      "scriptText": "install private suites that cost nearly ten thousand dollars per ticket."
+      "startFrame": 63,
+      "endFrame": 132,
+      "durationInFrames": 69,
+      "scriptText": "boring lab science into actual companies. The British Business Bank"
     },
     {
       "type": "process_flow",
-      "text": "nearly $10,000 per ticket. These new",
+      "text": "companies. The British business bank is backing a group called zinc to",
       "steps": [
-        "Remove old seats",
-        "Install private suites",
-        "Launch Boeing 777"
+        "Identify scientists",
+        "Fund research",
+        "Build company"
       ],
       "pacing": "slow",
-      "startFrame": 130,
-      "endFrame": 220,
-      "durationInFrames": 90,
-      "scriptText": "These new Boeing 777 planes will feature sliding doors for"
-    },
-    {
-      "type": "map_3d",
-      "text": "777 planes will feature sliding doors for total privacy on long",
-      "pacing": "slow",
-      "locationName": "London and Tokyo",
-      "latitude": 51.5074,
-      "longitude": -0.1278,
-      "buildings": [
-        "London Heathrow",
-        "Tokyo Haneda"
-      ],
-      "startFrame": 220,
-      "endFrame": 331,
-      "durationInFrames": 111,
-      "scriptText": "total privacy on long flights to places like London and Tokyo."
-    },
-    {
-      "type": "progress_meter",
-      "text": "to places like London and Tokyo. The airline is",
-      "pacing": "slow",
-      "value": 85,
-      "maxValue": 100,
-      "label": "High-spending traveler retention",
-      "startFrame": 331,
-      "endFrame": 415,
-      "durationInFrames": 84,
-      "scriptText": "The airline is desperate to stop losing high-spending travelers to"
-    },
-    {
-      "type": "icon_text",
-      "text": "to stop losing high-spending travelers to rivals like Delta and",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 415,
-      "endFrame": 516,
-      "durationInFrames": 101,
-      "scriptText": "rivals like Delta and United. They are betting big that"
-    },
-    {
-      "type": "icon_text",
-      "text": "They are betting big that people will pay a massive",
-      "icon": "\ud83d\udeaa",
-      "pacing": "slow",
-      "startFrame": 516,
-      "endFrame": 597,
-      "durationInFrames": 81,
-      "scriptText": "people will pay a massive premium for a door that"
-    },
-    {
-      "type": "progress_meter",
-      "text": "for a door that shuts them away from the rest of the",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Premium focus",
-      "pacing": "slow",
-      "startFrame": 597,
-      "endFrame": 662,
-      "durationInFrames": 65,
-      "scriptText": "shuts them away from the rest of the cabin."
-    },
-    {
-      "type": "quote_attribution",
-      "text": "It is a total shift",
-      "quote": "The airline is shifting away from the old first-class model toward luxury suites.",
-      "attribution": "Industry Analysts",
-      "pacing": "slow",
-      "startFrame": 662,
-      "endFrame": 707,
-      "durationInFrames": 45,
-      "scriptText": "It is a total shift away from the old first-class"
+      "startFrame": 132,
+      "endFrame": 234,
+      "durationInFrames": 102,
+      "scriptText": "is backing a group called Zinc to hunt down scientists"
     },
     {
       "type": "timeline",
-      "text": "from the old first-class model toward this",
+      "text": "hunt down scientists who are stuck in the lab. Most of",
+      "pacing": "slow",
       "events": [
         {
-          "date": "Past",
-          "label": "Standard seating"
+          "date": "Step 1",
+          "label": "Identify lab researchers"
         },
         {
-          "date": "Present",
-          "label": "Suite transition"
+          "date": "Step 2",
+          "label": "Assess tech potential"
         },
         {
-          "date": "Future",
-          "label": "Full rollout"
+          "date": "Step 3",
+          "label": "Launch new startup"
         }
       ],
-      "pacing": "slow",
-      "startFrame": 707,
-      "endFrame": 772,
-      "durationInFrames": 65,
-      "scriptText": "model toward this new luxury suite layout. Whether you are"
+      "startFrame": 234,
+      "endFrame": 306,
+      "durationInFrames": 72,
+      "scriptText": "who are stuck in the lab. Most of these researchers"
     },
     {
       "type": "icon_text",
-      "text": "luxury suite layout. Whether you are flying for work or",
+      "text": "these researchers have world-changing tech, but they have zero clue",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 772,
-      "endFrame": 869,
-      "durationInFrames": 97,
-      "scriptText": "flying for work or a vacation, would you actually pay"
+      "startFrame": 306,
+      "endFrame": 396,
+      "durationInFrames": 90,
+      "scriptText": "have world-changing tech, but they have zero clue how to actually run a business."
     },
     {
-      "type": "ticker_tape",
-      "text": "would you actually pay $10,000 just to have a sliding door on your airplane",
-      "stories": [
-        "American Airlines premium push",
-        "New Boeing 777 suites",
-        "Luxury travel trends"
+      "type": "process_flow",
+      "text": "how to actually run a business. Instead of waiting for these geniuses",
+      "steps": [
+        "Taxes",
+        "Hiring",
+        "Operations"
       ],
-      "label": "Aviation",
       "pacing": "slow",
-      "startFrame": 869,
-      "endFrame": 991,
-      "durationInFrames": 122,
-      "scriptText": "ten thousand dollars just to have a sliding door on your airplane seat?"
+      "startFrame": 396,
+      "endFrame": 483,
+      "durationInFrames": 87,
+      "scriptText": "Instead of waiting for these geniuses to figure out taxes"
+    },
+    {
+      "type": "process_flow",
+      "text": "to figure out taxes and hiring, zinc is basically building the",
+      "pacing": "slow",
+      "steps": [
+        "Day one support",
+        "Build company structure",
+        "Scale the business"
+      ],
+      "startFrame": 483,
+      "endFrame": 578,
+      "durationInFrames": 95,
+      "scriptText": "and hiring, Zinc is basically building the company around them from day one."
+    },
+    {
+      "type": "chart_line",
+      "text": "company around them from day one. It is a massive bet that the next big",
+      "points": [
+        {
+          "label": "Year 1",
+          "value": 10
+        },
+        {
+          "label": "Year 2",
+          "value": 45
+        },
+        {
+          "label": "Year 3",
+          "value": 80
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 578,
+      "endFrame": 675,
+      "durationInFrames": 97,
+      "scriptText": "It is a massive bet that the next big tech"
+    },
+    {
+      "type": "map_3d",
+      "text": "tech giant is currently hidden inside",
+      "locationName": "University",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "buildings": [
+        "Lab",
+        "Basement"
+      ],
+      "pacing": "normal",
+      "startFrame": 675,
+      "endFrame": 721,
+      "durationInFrames": 46,
+      "scriptText": "giant is currently hidden inside a university basement."
+    },
+    {
+      "type": "timeline",
+      "text": "a university basement. They want to fast track these breakthroughs before",
+      "events": [
+        {
+          "date": "Now",
+          "label": "Identify"
+        },
+        {
+          "date": "Soon",
+          "label": "Fast-track"
+        },
+        {
+          "date": "Future",
+          "label": "Breakthrough"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 721,
+      "endFrame": 826,
+      "durationInFrames": 105,
+      "scriptText": "They want to fast-track these breakthroughs before someone else beats them to it."
+    },
+    {
+      "type": "icon_text",
+      "text": "someone else beats them to it. Would you quit your stable job in a lab",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 826,
+      "endFrame": 911,
+      "durationInFrames": 85,
+      "scriptText": "Would you quit your stable job in a lab if"
+    },
+    {
+      "type": "quote_attribution",
+      "text": "if a stranger handed you millions to start your own company?",
+      "quote": "a stranger handed you millions to start your own company",
+      "attribution": "Zinc",
+      "pacing": "slow",
+      "startFrame": 911,
+      "endFrame": 981,
+      "durationInFrames": 70,
+      "scriptText": "a stranger handed you millions to start your own company?"
     }
-  ]
+  ],
+  "source": "Google News Business",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMilgFBVV95cUxPRUxQLUdFRzZwcExKejJBTEJTSDlsUHVDQ3RSYUk5VW1hM3o0dWRJZExqMFZQVnJFNkFIcFZuUzZPQmFTODBCcm8zeVk0OFJlY25IX015bHBYdXRuSWpEV181Z1c4U0FjNDVvSDR3SFpabjZVeDFIczJadHlMX2JYNS0zd3Z3OHd2UmdHNlpqTlZoa2dMZFE?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isF3-dhbQjDvjN9IhG-0k1nuFgKZiVa-nggrcej99USm-s2Bte64x7X3zqOq5jC5chyGhNjpPi-p0M-nigXY5R3oITQARJMw"
 }

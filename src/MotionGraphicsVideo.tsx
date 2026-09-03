@@ -14,6 +14,7 @@ import {
   shouldShowKineticCaptions,
 } from "./beats/renderBeat";
 import { PersistentBackground } from "./PersistentBackground";
+import { SourceBadge } from "./components/SourceBadge";
 import { BeatKineticCaptions } from "./audio/BeatKineticCaptions";
 import type { Word } from "./beats/words";
 import { computeTransitionFrames } from "./lib/transitionDuration";
@@ -129,6 +130,15 @@ export const MotionGraphicsVideo: React.FC<MotionGraphicsVideoProps> = ({
         instead of restarting at 0 every time a new beat starts.
       */}
       <PersistentBackground />
+
+      {/*
+        SourceBadge — persistent top-right attribution pill. Mounted at
+        the root (outside any <Sequence>) so it persists for the whole
+        composition. Returns null when beats.source is empty.
+      */}
+      {beats.source ? (
+        <SourceBadge source={beats.source} sourceUrl={beats.sourceUrl} />
+      ) : null}
 
       {/*
         Narration plays once for the whole composition. Mounted at the

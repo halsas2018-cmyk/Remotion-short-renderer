@@ -134,6 +134,37 @@ BEAT_TYPE_FIELD_HINTS = {
     },
 }
 
+# Horizon 3.8: when-to-use rules for boundary cases where
+# BEAT_TYPE_FIELD_HINTS and BEAT_TYPE_EXAMPLES don't disambiguate. Grouped
+# by visual family so the LLM can contrast the options within a family.
+# Injected into the MODE A prompt between EXAMPLES and the arc/diversity
+# sections. Addresses 4 boundary cases observed in real outputs:
+#   1. Comparison family (versus vs before_after vs compare_split)
+#   2. Data-vis family (progress_meter vs chart_line vs timeline vs process_flow)
+#   3. Text-on-card family (key_statement vs headline_card vs icon_text vs quote_attribution vs scrollytelling)
+#   4. Number family (stat_pill vs chart_counter vs progress_meter) — deferred;
+#      the LLM is mostly right here and the visual difference is subtle.
+BEAT_TYPE_DECISION_RULES = {
+    "comparison_family": {
+        "versus":        "Two items presented as OPPONENTS or CONTRASTS IN KIND (e.g. 'Phone AI vs Robot AI'). Often adversarial. The two sides are peers being compared.",
+        "before_after":  "A TEMPORAL or STATE TRANSITION — one value is unambiguously earlier or worse than the other (e.g. '2020: $X / 2026: $3X'). Implies judgment: the after is better/worse than the before.",
+        "compare_split": "NEUTRAL side-by-side. No value judgment, just 'here are two things.' Use when the contrast is informational, not rhetorical.",
+    },
+    "data_vis_family": {
+        "progress_meter": "A SINGLE snapshot of a ratio — 'X% of Y is happening NOW'. Needs a value and a maxValue. Story is the percentage.",
+        "chart_line":      "3+ data points across a dimension (time, category, dose). The SHAPE OF THE TREND is the story.",
+        "timeline":        "DISCRETE DATED EVENTS the viewer needs to place chronologically. Story is 'things that happened in order.'",
+        "process_flow":    "A SEQUENCE OF STEPS that produces an outcome. Story is 'do A, then B, then C.'",
+    },
+    "text_on_card_family": {
+        "headline_card":     "A single-sentence declarative STATEMENT, often the hook or thesis. The whole beat is the headline.",
+        "key_statement":     "A CLAIM with 1-3 emphasis words. Use when the visual emphasis (underline/circle/highlight) IS the takeaway.",
+        "icon_text":         "Text PAIRED with a single emoji that signals the topic. Use only when the emoji carries semantic weight (📉, 🚀, ⚠️). Default to key_statement if no icon is intrinsic to the meaning.",
+        "quote_attribution": "Someone SAID this, with attribution. Use only when there is a speaker. If it is 'analysts say X' with no name, prefer key_statement.",
+        "scrollytelling":    "A TITLE + BODY explanation. Use when the beat is an explanation, not a claim. Longer than 1 sentence.",
+    },
+}
+
 # One example per complex type, exposed in the prompt. Keeps the LLM
 # honest about field shapes without inflating prompt size.
 BEAT_TYPE_EXAMPLES = {
@@ -1101,6 +1132,35 @@ def build_prompt(script: str, word_timestamps: list[dict], story: dict, headline
         if btype in BEAT_TYPE_EXAMPLES
     }
 
+    # Horizon 3.8: when-to-use rules for boundary cases. Built once, gated
+    # behind a non-empty BEAT_TYPE_DECISION_RULES so an empty constant
+    # collapses to zero-cost (one-character rollback).
+    decision_rules_section = ""
+    if BEAT_TYPE_DECISION_RULES:
+        decision_rules_section = f"""
+
+DECISION RULES (use these to pick the right type when multiple types could fit):
+
+Comparison family (when the chunk shows two things side by side):
+- versus: {BEAT_TYPE_DECISION_RULES['comparison_family']['versus']}
+- before_after: {BEAT_TYPE_DECISION_RULES['comparison_family']['before_after']}
+- compare_split: {BEAT_TYPE_DECISION_RULES['comparison_family']['compare_split']}
+
+Data-vis family (when the chunk contains a number, ratio, or sequence):
+- progress_meter: {BEAT_TYPE_DECISION_RULES['data_vis_family']['progress_meter']}
+- chart_line: {BEAT_TYPE_DECISION_RULES['data_vis_family']['chart_line']}
+- timeline: {BEAT_TYPE_DECISION_RULES['data_vis_family']['timeline']}
+- process_flow: {BEAT_TYPE_DECISION_RULES['data_vis_family']['process_flow']}
+
+Text-on-card family (when the chunk is just text):
+- headline_card: {BEAT_TYPE_DECISION_RULES['text_on_card_family']['headline_card']}
+- key_statement: {BEAT_TYPE_DECISION_RULES['text_on_card_family']['key_statement']}
+- icon_text: {BEAT_TYPE_DECISION_RULES['text_on_card_family']['icon_text']}
+- quote_attribution: {BEAT_TYPE_DECISION_RULES['text_on_card_family']['quote_attribution']}
+- scrollytelling: {BEAT_TYPE_DECISION_RULES['text_on_card_family']['scrollytelling']}
+
+If a chunk fits multiple types, use these rules to pick the most specific one."""
+
     # 3.5.2: filter beat type catalog to only arc-eligible types (when a
     # story_arc is provided). key_statement and headline_card are always
     # included since they're fallback types used elsewhere in the pipeline.
@@ -1191,6 +1251,7 @@ BEAT TYPES (required metadata fields + what each field means):
 
 EXAMPLES (mirror the shapes exactly — never invent facts not in the script or story):
 {json.dumps(beat_type_examples_compact, indent=2)}
+{decision_rules_section}
 {arc_section}{diversity_section}{pre_chunked_section}
 
 OUTPUT (JSON only — array of objects, one per chunk, in order):

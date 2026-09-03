@@ -384,16 +384,52 @@ def main():
             print(f"  {i:2d}. [{score:.2f}] ({source}) {s.get('title', 'Untitled')[:75]}")
             print(f"       → {reason[:120]}")
         print()
-        choice = input(f"Select stories (1-{len(stories)}, comma-separated, or 'all'): ").strip()
-        if choice.lower() == "all":
-            selected = stories[:args.count]
-        else:
-            try:
-                indices = [int(x.strip()) - 1 for x in choice.split(",")]
-                selected = [stories[i] for i in indices if 0 <= i < len(stories)]
-            except Exception:
-                print("Invalid selection.")
-                return
+        # Retry loop: keep prompting until the user enters a valid selection
+        # (or Ctrl-C to abort). One accidental Enter or typo no longer
+        # kills the whole pipeline. Error messages are specific to the
+        # failure mode so the user knows what to fix.
+        max_idx = len(stories)
+        while True:
+            choice = input(
+                f"Select stories (1-{max_idx}, comma-separated, or 'all'): "
+            ).strip()
+            if not choice:
+                print("  → You pressed Enter without selecting. Try again.\n")
+                continue
+            if choice.lower() == "all":
+                selected = stories[:args.count]
+                break
+            # Parse comma-separated 1-based indices. Validate each token
+            # individually so a single bad token (e.g. "1,abc,3") gets a
+            # specific error pointing at position 2.
+            tokens = [t.strip() for t in choice.split(",")]
+            indices = []
+            bad_token = None
+            bad_pos = 0
+            for pos, tok in enumerate(tokens, 1):
+                if not tok.isdigit():
+                    bad_token = tok
+                    bad_pos = pos
+                    break
+                idx = int(tok) - 1
+                if not (0 <= idx < max_idx):
+                    print(
+                        f"  → Position {pos} ({tok}) is out of range "
+                        f"(valid: 1-{max_idx}). Try again.\n"
+                    )
+                    indices = None
+                    break
+                indices.append(idx)
+            if indices is None:
+                continue
+            if bad_token is not None:
+                print(
+                    f"  → Position {bad_pos} ({bad_token!r}) is not a number. "
+                    f"Try again.\n"
+                )
+                continue
+            selected = [stories[i] for i in indices]
+            break
 
     if not selected:
         print("No stories selected.")

@@ -1,182 +1,124 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1301,
+  "totalDurationInFrames": 843,
   "beats": [
     {
       "type": "headline_card",
-      "text": "There are now more people with over $1",
+      "text": "just dropped $70 million",
       "emphasisWords": [
-        "401(k) millionaires",
-        "record number"
+        "Qualcomm",
+        "$70 million"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 54,
-      "durationInFrames": 49,
-      "scriptText": "There are now more people with over one million dollars"
+      "startFrame": 4,
+      "endFrame": 49,
+      "durationInFrames": 45,
+      "scriptText": "Qualcomm just dropped 70 million dollars to turn a simple"
     },
     {
       "type": "stat_pill",
-      "text": "million in their retirement accounts than",
-      "value": "Record",
-      "label": "Retirement accounts",
+      "text": "to turn a simple finger ring into a full-blown",
+      "value": "$70M",
+      "label": "Investment",
       "pacing": "slow",
-      "startFrame": 54,
-      "endFrame": 114,
-      "durationInFrames": 60,
-      "scriptText": "in their retirement accounts than ever before. Fidelity Investments just"
+      "startFrame": 49,
+      "endFrame": 127,
+      "durationInFrames": 78,
+      "scriptText": "finger ring into a full-blown computer. Ultrahuman is the company"
+    },
+    {
+      "type": "process_flow",
+      "text": "computer. Ultrahuman is the company behind this, and they want their next",
+      "steps": [
+        "Track sleep",
+        "Play games",
+        "Unlock car",
+        "Talk to AI"
+      ],
+      "pacing": "slow",
+      "startFrame": 127,
+      "endFrame": 230,
+      "durationInFrames": 103,
+      "scriptText": "behind this, and they want their next ring to do"
     },
     {
       "type": "icon_text",
-      "text": "ever before. Fidelity investments just confirmed that the number of 401k",
-      "icon": "\ud83d\udcc8",
+      "text": "ring to do way more than just track your sleep.",
+      "icon": "\ud83c\udfae",
       "pacing": "slow",
-      "startFrame": 114,
-      "endFrame": 240,
-      "durationInFrames": 126,
-      "scriptText": "confirmed that the number of 401k millionaires hit a record"
+      "startFrame": 230,
+      "endFrame": 290,
+      "durationInFrames": 60,
+      "scriptText": "way more than just track your sleep. We are talking"
     },
     {
-      "type": "timeline",
-      "text": "millionaires hit a record high during the second quarter of",
-      "pacing": "normal",
-      "events": [
-        {
-          "date": "Q1",
-          "label": "Growth starts"
-        },
-        {
-          "date": "Q2",
-          "label": "Record high hit"
-        },
-        {
-          "date": "Future",
-          "label": "Continued savings"
-        }
-      ],
-      "startFrame": 240,
-      "endFrame": 336,
-      "durationInFrames": 96,
-      "scriptText": "high during the second quarter of this year."
+      "type": "compare_split",
+      "text": "We are talking about using your jewelry to play video",
+      "left": "Traditional jewelry",
+      "right": "Smart computer ring",
+      "pacing": "slow",
+      "startFrame": 290,
+      "endFrame": 360,
+      "durationInFrames": 70,
+      "scriptText": "about using your jewelry to play video games, unlock your"
     },
     {
       "type": "versus",
-      "text": "this year. Even though everyone",
-      "left": "Stressed about economy",
-      "right": "Investors ignoring panic",
+      "text": "games, unlock your car, or even talk to artificial",
+      "left": "Traditional passive jewelry",
+      "right": "Active smart controller",
       "pacing": "slow",
-      "startFrame": 336,
-      "endFrame": 401,
-      "durationInFrames": 65,
-      "scriptText": "Even though everyone seems stressed out about the economy and"
-    },
-    {
-      "type": "stat_pill",
-      "text": "seems stressed out about the economy and high prices, these investors just",
-      "value": "Long game",
-      "label": "Investment strategy",
-      "pacing": "slow",
-      "startFrame": 401,
-      "endFrame": 513,
-      "durationInFrames": 112,
-      "scriptText": "high prices, these investors just kept putting their money away"
-    },
-    {
-      "type": "icon_text",
-      "text": "kept putting their money away and ignoring the daily panic.",
-      "icon": "\ud83c\udfc6",
-      "pacing": "slow",
-      "startFrame": 513,
-      "endFrame": 593,
-      "durationInFrames": 80,
-      "scriptText": "and ignoring the daily panic. It is a massive win"
-    },
-    {
-      "type": "process_flow",
-      "text": "It is a massive win for people who decided to play the long",
-      "steps": [
-        "Set contributions",
-        "Automatic investment",
-        "Ignore market"
-      ],
-      "pacing": "slow",
-      "startFrame": 593,
-      "endFrame": 702,
-      "durationInFrames": 109,
-      "scriptText": "for people who decided to play the long game instead"
-    },
-    {
-      "type": "icon_text",
-      "text": "game instead of trying to time the market perfectly.",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 702,
-      "endFrame": 768,
-      "durationInFrames": 66,
-      "scriptText": "of trying to time the market perfectly. Most of these"
-    },
-    {
-      "type": "process_flow",
-      "text": "Most of these savers just set their contributions to",
-      "steps": [
-        "Automatic",
-        "Walk away",
-        "Time lifts"
-      ],
-      "pacing": "slow",
-      "startFrame": 768,
-      "endFrame": 867,
-      "durationInFrames": 99,
-      "scriptText": "savers just set their contributions to automatic and walked away,"
-    },
-    {
-      "type": "stat_pill",
-      "text": "automatic and walked away, letting time do all the heavy",
-      "pacing": "slow",
-      "value": "Automatic",
-      "label": "Contribution method",
-      "startFrame": 867,
-      "endFrame": 952,
-      "durationInFrames": 85,
-      "scriptText": "letting time do all the heavy lifting for them."
-    },
-    {
-      "type": "icon_text",
-      "text": "lifting for them. While the rest of us are",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 952,
-      "endFrame": 1028,
+      "startFrame": 360,
+      "endFrame": 436,
       "durationInFrames": 76,
-      "scriptText": "While the rest of us are busy worrying about the"
+      "scriptText": "car, or even talk to artificial intelligence. They are even"
     },
     {
-      "type": "stat_pill",
-      "text": "busy worrying about the next big crash, these millionaires",
-      "value": "Goal met",
-      "label": "Retirement status",
+      "type": "progress_meter",
+      "text": "intelligence. They are even pushing a software update this month that turns their",
+      "value": 80,
+      "maxValue": 100,
+      "label": "Hardware readiness",
       "pacing": "slow",
-      "startFrame": 1028,
-      "endFrame": 1117,
-      "durationInFrames": 89,
-      "scriptText": "next big crash, these millionaires are quietly hitting their goals."
+      "startFrame": 436,
+      "endFrame": 543,
+      "durationInFrames": 107,
+      "scriptText": "pushing a software update this month that turns their existing rings into game controllers."
     },
     {
-      "type": "ticker_tape",
-      "text": "are quietly hitting their goals. Do you actually trust your retirement savings to a simple automatic investment plan?",
-      "stories": [
-        "401k records hit",
-        "Automatic plans working",
-        "Long term growth"
+      "type": "scrollytelling",
+      "text": "existing rings into game controllers. It sounds like science fiction, but the",
+      "title": "The Future of Wearables",
+      "body": "Ultrahuman is transforming simple rings into functional computers through new hardware integration.",
+      "pacing": "slow",
+      "startFrame": 543,
+      "endFrame": 652,
+      "durationInFrames": 109,
+      "scriptText": "It sounds like science fiction, but the hardware is literally being built right now."
+    },
+    {
+      "type": "icon_text",
+      "text": "hardware is literally being built right now. If your ring could unlock your front",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 652,
+      "endFrame": 756,
+      "durationInFrames": 104,
+      "scriptText": "If your ring could unlock your front door and control"
+    },
+    {
+      "type": "key_statement",
+      "text": "door and control your smart home, would you finally ditch your smartwatch?",
+      "emphasisWords": [
+        "ditch your smartwatch"
       ],
-      "label": "Retirement",
       "pacing": "slow",
-      "startFrame": 1117,
-      "endFrame": 1301,
-      "durationInFrames": 184,
-      "scriptText": "Do you actually trust your retirement savings to a simple automatic investment plan?"
+      "startFrame": 756,
+      "endFrame": 843,
+      "durationInFrames": 87,
+      "scriptText": "your smart home, would you finally ditch your smartwatch?"
     }
   ],
-  "source": "MarketWatch",
-  "sourceUrl": "https://www.marketwatch.com/story/theres-a-new-record-number-of-401-k-millionaires-as-retirement-savings-hold-at-all-time-highs-94f2c520?mod=mw_rss_topstories"
+  "source": "TechCrunch Startups",
+  "sourceUrl": "https://techcrunch.com/2026/09/03/qualcomm-backs-ultrahuman-in-70m-round-on-bet-to-turn-smart-rings-into-computers/"
 }

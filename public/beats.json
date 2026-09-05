@@ -1,124 +1,172 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 843,
+  "totalDurationInFrames": 1152,
   "beats": [
     {
       "type": "headline_card",
-      "text": "just dropped $70 million",
+      "text": "job seeker just broke an AI",
       "emphasisWords": [
-        "Qualcomm",
-        "$70 million"
+        "broke",
+        "AI hiring bot"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 49,
-      "durationInFrames": 45,
-      "scriptText": "Qualcomm just dropped 70 million dollars to turn a simple"
+      "startFrame": 7,
+      "endFrame": 61,
+      "durationInFrames": 54,
+      "scriptText": "A job seeker just broke an AI hiring bot by"
     },
     {
-      "type": "stat_pill",
-      "text": "to turn a simple finger ring into a full-blown",
-      "value": "$70M",
-      "label": "Investment",
+      "type": "icon_text",
+      "text": "hiring bot by pretending to have a mental breakdown",
+      "icon": "\ud83e\udd2f",
       "pacing": "slow",
-      "startFrame": 49,
-      "endFrame": 127,
-      "durationInFrames": 78,
-      "scriptText": "finger ring into a full-blown computer. Ultrahuman is the company"
+      "startFrame": 61,
+      "endFrame": 130,
+      "durationInFrames": 69,
+      "scriptText": "pretending to have a mental breakdown during his interview."
     },
     {
       "type": "process_flow",
-      "text": "computer. Ultrahuman is the company behind this, and they want their next",
+      "text": "during his interview. Instead of",
       "steps": [
-        "Track sleep",
-        "Play games",
-        "Unlock car",
-        "Talk to AI"
+        "Standard questions",
+        "Hallucination simulation",
+        "AI glitch"
       ],
       "pacing": "slow",
-      "startFrame": 127,
-      "endFrame": 230,
-      "durationInFrames": 103,
-      "scriptText": "behind this, and they want their next ring to do"
+      "startFrame": 130,
+      "endFrame": 197,
+      "durationInFrames": 67,
+      "scriptText": "Instead of answering standard questions, he started acting like he"
+    },
+    {
+      "type": "chart_line",
+      "text": "answering standard questions, he started acting like he was hallucinating and talking to",
+      "points": [
+        {
+          "label": "Start",
+          "value": 10
+        },
+        {
+          "label": "Chaos",
+          "value": 50
+        },
+        {
+          "label": "Glitch",
+          "value": 100
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 197,
+      "endFrame": 320,
+      "durationInFrames": 123,
+      "scriptText": "was hallucinating and talking to imaginary people. The AI recruiter"
+    },
+    {
+      "type": "chart_line",
+      "text": "imaginary people. The AI recruiter did not know how to handle the chaos",
+      "pacing": "slow",
+      "points": [
+        {
+          "label": "Normal",
+          "value": 10
+        },
+        {
+          "label": "Chaos",
+          "value": 50
+        },
+        {
+          "label": "Glitch",
+          "value": 100
+        }
+      ],
+      "startFrame": 320,
+      "endFrame": 457,
+      "durationInFrames": 137,
+      "scriptText": "did not know how to handle the chaos and completely glitched out."
+    },
+    {
+      "type": "stat_pill",
+      "text": "and completely glitched out. It started repeating",
+      "pacing": "slow",
+      "value": "100%",
+      "label": "Process failure",
+      "startFrame": 457,
+      "endFrame": 549,
+      "durationInFrames": 92,
+      "scriptText": "It started repeating nonsense and eventually gave up on the entire process."
+    },
+    {
+      "type": "before_after",
+      "text": "nonsense and eventually gave up on the entire process. This",
+      "beforeLabel": "AI as judge",
+      "afterLabel": "Fragile system",
+      "pacing": "slow",
+      "startFrame": 549,
+      "endFrame": 665,
+      "durationInFrames": 116,
+      "scriptText": "This guy proved that current AI tools are still way"
     },
     {
       "type": "icon_text",
-      "text": "ring to do way more than just track your sleep.",
-      "icon": "\ud83c\udfae",
+      "text": "guy proved that current AI tools are still way too fragile to be the final judge of",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 230,
-      "endFrame": 290,
-      "durationInFrames": 60,
-      "scriptText": "way more than just track your sleep. We are talking"
+      "startFrame": 665,
+      "endFrame": 792,
+      "durationInFrames": 127,
+      "scriptText": "too fragile to be the final judge of who gets hired."
     },
     {
-      "type": "compare_split",
-      "text": "We are talking about using your jewelry to play video",
-      "left": "Traditional jewelry",
-      "right": "Smart computer ring",
+      "type": "icon_text",
+      "text": "who gets hired. It is a",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 290,
-      "endFrame": 360,
-      "durationInFrames": 70,
-      "scriptText": "about using your jewelry to play video games, unlock your"
-    },
-    {
-      "type": "versus",
-      "text": "games, unlock your car, or even talk to artificial",
-      "left": "Traditional passive jewelry",
-      "right": "Active smart controller",
-      "pacing": "slow",
-      "startFrame": 360,
-      "endFrame": 436,
-      "durationInFrames": 76,
-      "scriptText": "car, or even talk to artificial intelligence. They are even"
-    },
-    {
-      "type": "progress_meter",
-      "text": "intelligence. They are even pushing a software update this month that turns their",
-      "value": 80,
-      "maxValue": 100,
-      "label": "Hardware readiness",
-      "pacing": "slow",
-      "startFrame": 436,
-      "endFrame": 543,
-      "durationInFrames": 107,
-      "scriptText": "pushing a software update this month that turns their existing rings into game controllers."
+      "startFrame": 792,
+      "endFrame": 849,
+      "durationInFrames": 57,
+      "scriptText": "It is a hilarious reminder that these robots are basically"
     },
     {
       "type": "scrollytelling",
-      "text": "existing rings into game controllers. It sounds like science fiction, but the",
-      "title": "The Future of Wearables",
-      "body": "Ultrahuman is transforming simple rings into functional computers through new hardware integration.",
+      "text": "hilarious reminder that these robots are basically just guessing what to say",
+      "title": "The Hiring Dilemma",
+      "body": "AI recruiters are currently vulnerable to simple social engineering and pranks.",
       "pacing": "slow",
-      "startFrame": 543,
-      "endFrame": 652,
-      "durationInFrames": 109,
-      "scriptText": "It sounds like science fiction, but the hardware is literally being built right now."
-    },
-    {
-      "type": "icon_text",
-      "text": "hardware is literally being built right now. If your ring could unlock your front",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 652,
-      "endFrame": 756,
-      "durationInFrames": 104,
-      "scriptText": "If your ring could unlock your front door and control"
+      "startFrame": 849,
+      "endFrame": 956,
+      "durationInFrames": 107,
+      "scriptText": "just guessing what to say next. If you were looking"
     },
     {
       "type": "key_statement",
-      "text": "door and control your smart home, would you finally ditch your smartwatch?",
+      "text": "next. If you were looking for a job, would you rather be",
       "emphasisWords": [
-        "ditch your smartwatch"
+        "human",
+        "computer"
       ],
       "pacing": "slow",
-      "startFrame": 756,
-      "endFrame": 843,
-      "durationInFrames": 87,
-      "scriptText": "your smart home, would you finally ditch your smartwatch?"
+      "startFrame": 956,
+      "endFrame": 1062,
+      "durationInFrames": 106,
+      "scriptText": "for a job, would you rather be interviewed by a"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "interviewed by a human or a computer that can be tricked by a prank?",
+      "stories": [
+        "AI hiring risks",
+        "Bot fragility",
+        "Prank vulnerability"
+      ],
+      "label": "Tech News",
+      "pacing": "slow",
+      "startFrame": 1062,
+      "endFrame": 1152,
+      "durationInFrames": 90,
+      "scriptText": "human or a computer that can be tricked by a prank?"
     }
   ],
-  "source": "TechCrunch Startups",
-  "sourceUrl": "https://techcrunch.com/2026/09/03/qualcomm-backs-ultrahuman-in-70m-round-on-bet-to-turn-smart-rings-into-computers/"
+  "source": "Google News AI",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMikgFBVV95cUxPQ3Y4ekEtbkg3c3lrM2tIODVfTTJLUkpzOFo0ZjE4SFYxY2U4ZS1vRnNFMGlCLXVaci00ZFY5UVJ3VVQzN1F2OVpYWTBEbXJ3QVREVzd3OGFNdDFhRER4ekMtdHZfU2oyLXQyM05tRUZ2a0E3ZkIxbVh2eWZJTjJSSnR2QnNDTzBuMDN5bUVrNTMxdw?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isElydred0kJiA8ycXC-uuECR-rHkJyqBpKRTz_39UB2u6prfkMYAFj2sL9wiOYmzwUTo-1Ti1H1mKJVPKR4s3qu_g_54xP_"
 }

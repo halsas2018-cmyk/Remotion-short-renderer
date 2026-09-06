@@ -1,172 +1,174 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1152,
+  "totalDurationInFrames": 996,
   "beats": [
     {
       "type": "headline_card",
-      "text": "job seeker just broke an AI",
+      "text": "Sam Altman just apologized for a massive mess with the",
       "emphasisWords": [
-        "broke",
-        "AI hiring bot"
+        "Sam Altman",
+        "apologizes",
+        "GPT-6 Astra"
       ],
       "pacing": "slow",
-      "startFrame": 7,
-      "endFrame": 61,
-      "durationInFrames": 54,
-      "scriptText": "A job seeker just broke an AI hiring bot by"
-    },
-    {
-      "type": "icon_text",
-      "text": "hiring bot by pretending to have a mental breakdown",
-      "icon": "\ud83e\udd2f",
-      "pacing": "slow",
-      "startFrame": 61,
-      "endFrame": 130,
-      "durationInFrames": 69,
-      "scriptText": "pretending to have a mental breakdown during his interview."
-    },
-    {
-      "type": "process_flow",
-      "text": "during his interview. Instead of",
-      "steps": [
-        "Standard questions",
-        "Hallucination simulation",
-        "AI glitch"
-      ],
-      "pacing": "slow",
-      "startFrame": 130,
-      "endFrame": 197,
-      "durationInFrames": 67,
-      "scriptText": "Instead of answering standard questions, he started acting like he"
-    },
-    {
-      "type": "chart_line",
-      "text": "answering standard questions, he started acting like he was hallucinating and talking to",
-      "points": [
-        {
-          "label": "Start",
-          "value": 10
-        },
-        {
-          "label": "Chaos",
-          "value": 50
-        },
-        {
-          "label": "Glitch",
-          "value": 100
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 197,
-      "endFrame": 320,
-      "durationInFrames": 123,
-      "scriptText": "was hallucinating and talking to imaginary people. The AI recruiter"
-    },
-    {
-      "type": "chart_line",
-      "text": "imaginary people. The AI recruiter did not know how to handle the chaos",
-      "pacing": "slow",
-      "points": [
-        {
-          "label": "Normal",
-          "value": 10
-        },
-        {
-          "label": "Chaos",
-          "value": 50
-        },
-        {
-          "label": "Glitch",
-          "value": 100
-        }
-      ],
-      "startFrame": 320,
-      "endFrame": 457,
-      "durationInFrames": 137,
-      "scriptText": "did not know how to handle the chaos and completely glitched out."
+      "startFrame": 5,
+      "endFrame": 78,
+      "durationInFrames": 73,
+      "scriptText": "Sam Altman just apologized for a massive mess with the new GPT-6 Astra rollout."
     },
     {
       "type": "stat_pill",
-      "text": "and completely glitched out. It started repeating",
-      "pacing": "slow",
+      "text": "new GPT-6 Astro rollout. OpenAI promised this",
       "value": "100%",
-      "label": "Process failure",
-      "startFrame": 457,
-      "endFrame": 549,
-      "durationInFrames": 92,
-      "scriptText": "It started repeating nonsense and eventually gave up on the entire process."
-    },
-    {
-      "type": "before_after",
-      "text": "nonsense and eventually gave up on the entire process. This",
-      "beforeLabel": "AI as judge",
-      "afterLabel": "Fragile system",
+      "label": "Promised Access",
       "pacing": "slow",
-      "startFrame": 549,
-      "endFrame": 665,
-      "durationInFrames": 116,
-      "scriptText": "This guy proved that current AI tools are still way"
+      "startFrame": 78,
+      "endFrame": 182,
+      "durationInFrames": 104,
+      "scriptText": "OpenAI promised this was a huge leap forward, but as"
     },
     {
       "type": "icon_text",
-      "text": "guy proved that current AI tools are still way too fragile to be the final judge of",
-      "icon": "\ud83d\udcca",
+      "text": "was a huge leap forward, but as soon as they flipped the switch, paying customers",
+      "icon": "\ud83d\udd12",
       "pacing": "slow",
-      "startFrame": 665,
-      "endFrame": 792,
-      "durationInFrames": 127,
-      "scriptText": "too fragile to be the final judge of who gets hired."
+      "startFrame": 182,
+      "endFrame": 291,
+      "durationInFrames": 109,
+      "scriptText": "soon as they flipped the switch, paying customers found themselves locked out."
     },
     {
-      "type": "icon_text",
-      "text": "who gets hired. It is a",
-      "icon": "\ud83d\udcca",
+      "type": "progress_meter",
+      "text": "found themselves locked out. People paying for the pro plan are",
       "pacing": "slow",
-      "startFrame": 792,
-      "endFrame": 849,
-      "durationInFrames": 57,
-      "scriptText": "It is a hilarious reminder that these robots are basically"
+      "value": 40,
+      "maxValue": 100,
+      "label": "Pro plan access",
+      "startFrame": 291,
+      "endFrame": 370,
+      "durationInFrames": 79,
+      "scriptText": "People paying for the Pro plan are furious because they"
+    },
+    {
+      "type": "versus",
+      "text": "furious because they expected priority access, but instead,",
+      "left": "Paying Pro Subscribers",
+      "right": "Big Business Clients",
+      "pacing": "slow",
+      "startFrame": 370,
+      "endFrame": 460,
+      "durationInFrames": 90,
+      "scriptText": "expected priority access, but instead, the company gave it to big business clients first."
+    },
+    {
+      "type": "chart_line",
+      "text": "the company gave it to big business clients first. The whole launch is being called a",
+      "points": [
+        {
+          "label": "Launch",
+          "value": 10
+        },
+        {
+          "label": "Day 1",
+          "value": 5
+        },
+        {
+          "label": "Day 2",
+          "value": 2
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 460,
+      "endFrame": 577,
+      "durationInFrames": 117,
+      "scriptText": "The whole launch is being called a disaster after they"
+    },
+    {
+      "type": "timeline",
+      "text": "disaster after they failed to give anyone a clear",
+      "events": [
+        {
+          "date": "Day 0",
+          "label": "Launch"
+        },
+        {
+          "date": "Day 1",
+          "label": "Lockout"
+        },
+        {
+          "date": "TBD",
+          "label": "Restoration"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 577,
+      "endFrame": 643,
+      "durationInFrames": 66,
+      "scriptText": "failed to give anyone a clear timeline for when the"
+    },
+    {
+      "type": "process_flow",
+      "text": "timeline for when the rest of the paying users will actually get the",
+      "steps": [
+        "Rollout",
+        "Lockout",
+        "Apology",
+        "Wait"
+      ],
+      "pacing": "slow",
+      "startFrame": 643,
+      "endFrame": 718,
+      "durationInFrames": 75,
+      "scriptText": "rest of the paying users will actually get the tool."
     },
     {
       "type": "scrollytelling",
-      "text": "hilarious reminder that these robots are basically just guessing what to say",
-      "title": "The Hiring Dilemma",
-      "body": "AI recruiters are currently vulnerable to simple social engineering and pranks.",
+      "text": "tool. It feels like the company is",
+      "title": "Corporate vs Community",
+      "body": "The company is prioritizing corporate revenue streams over the loyal individual users who supported their early growth.",
       "pacing": "slow",
-      "startFrame": 849,
-      "endFrame": 956,
-      "durationInFrames": 107,
-      "scriptText": "just guessing what to say next. If you were looking"
+      "startFrame": 718,
+      "endFrame": 766,
+      "durationInFrames": 48,
+      "scriptText": "It feels like the company is prioritizing corporate money over"
     },
     {
-      "type": "key_statement",
-      "text": "next. If you were looking for a job, would you rather be",
-      "emphasisWords": [
-        "human",
-        "computer"
-      ],
+      "type": "stat_pill",
+      "text": "prioritizing corporate money over the loyal fans who helped build them.",
+      "value": "Loyal",
+      "label": "User Base",
       "pacing": "slow",
-      "startFrame": 956,
-      "endFrame": 1062,
-      "durationInFrames": 106,
-      "scriptText": "for a job, would you rather be interviewed by a"
+      "startFrame": 766,
+      "endFrame": 858,
+      "durationInFrames": 92,
+      "scriptText": "the loyal fans who helped build them. If you were"
+    },
+    {
+      "type": "icon_text",
+      "text": "If you were paying for a premium subscription and got",
+      "icon": "\ud83d\udcc9",
+      "pacing": "slow",
+      "startFrame": 858,
+      "endFrame": 925,
+      "durationInFrames": 67,
+      "scriptText": "paying for a premium subscription and got bumped for a"
     },
     {
       "type": "ticker_tape",
-      "text": "interviewed by a human or a computer that can be tricked by a prank?",
+      "text": "bumped for a big company, would you cancel your account today?",
       "stories": [
-        "AI hiring risks",
-        "Bot fragility",
-        "Prank vulnerability"
+        "GPT-6 rollout messy",
+        "Pro users locked out",
+        "Altman apologizes"
       ],
-      "label": "Tech News",
-      "pacing": "slow",
-      "startFrame": 1062,
-      "endFrame": 1152,
-      "durationInFrames": 90,
-      "scriptText": "human or a computer that can be tricked by a prank?"
+      "label": "Update",
+      "pacing": "normal",
+      "startFrame": 925,
+      "endFrame": 996,
+      "durationInFrames": 71,
+      "scriptText": "big company, would you cancel your account today?"
     }
   ],
-  "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMikgFBVV95cUxPQ3Y4ekEtbkg3c3lrM2tIODVfTTJLUkpzOFo0ZjE4SFYxY2U4ZS1vRnNFMGlCLXVaci00ZFY5UVJ3VVQzN1F2OVpYWTBEbXJ3QVREVzd3OGFNdDFhRER4ekMtdHZfU2oyLXQyM05tRUZ2a0E3ZkIxbVh2eWZJTjJSSnR2QnNDTzBuMDN5bUVrNTMxdw?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isElydred0kJiA8ycXC-uuECR-rHkJyqBpKRTz_39UB2u6prfkMYAFj2sL9wiOYmzwUTo-1Ti1H1mKJVPKR4s3qu_g_54xP_"
+  "source": "The Verge AI",
+  "sourceUrl": "https://www.theverge.com/ai-artificial-intelligence/990060/altman-apologizes-messy-astra-rollout"
 }

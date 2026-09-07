@@ -1,174 +1,157 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1163,
+  "totalDurationInFrames": 961,
   "beats": [
     {
       "type": "headline_card",
-      "text": "are now using artificial",
+      "text": "AI just dropped their new Astro model and",
       "emphasisWords": [
-        "artificial intelligence",
-        "food menus"
+        "OpenAI",
+        "Astra",
+        "stock market"
       ],
       "pacing": "slow",
-      "startFrame": 8,
-      "endFrame": 57,
-      "durationInFrames": 49,
-      "scriptText": "Restaurants are now using artificial intelligence to generate photos of"
-    },
-    {
-      "type": "icon_text",
-      "text": "intelligence to generate photos of their food, and the results are",
-      "icon": "\ud83e\udd22",
-      "pacing": "slow",
-      "startFrame": 57,
-      "endFrame": 152,
-      "durationInFrames": 95,
-      "scriptText": "their food, and the results are honestly pretty gross."
-    },
-    {
-      "type": "process_flow",
-      "text": "honestly pretty gross. People are posting",
-      "steps": [
-        "Burgers with extra fingers",
-        "Pizza melting into goo"
-      ],
-      "pacing": "slow",
-      "startFrame": 152,
-      "endFrame": 236,
-      "durationInFrames": 84,
-      "scriptText": "People are posting menus online featuring burgers with extra fingers"
-    },
-    {
-      "type": "chart_line",
-      "text": "menus online featuring burgers with extra fingers and pizza that looks like it is melting into a puddle of",
-      "pacing": "slow",
-      "points": [
-        {
-          "label": "Burger",
-          "value": 5
-        },
-        {
-          "label": "Pizza",
-          "value": 8
-        },
-        {
-          "label": "Mush",
-          "value": 10
-        }
-      ],
-      "startFrame": 236,
-      "endFrame": 383,
-      "durationInFrames": 147,
-      "scriptText": "and pizza that looks like it is melting into a puddle of goo."
-    },
-    {
-      "type": "compare_split",
-      "text": "goo. One diner even",
-      "left": "Real food photography",
-      "right": "AI generated images",
-      "pacing": "slow",
-      "startFrame": 383,
-      "endFrame": 445,
+      "startFrame": 11,
+      "endFrame": 73,
       "durationInFrames": 62,
-      "scriptText": "One diner even shared a photo of a menu where"
+      "scriptText": "OpenAI just dropped their new Astra model and the stock"
     },
     {
-      "type": "icon_text",
-      "text": "shared a photo of a menu where the food looked like a pile of",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 445,
-      "endFrame": 530,
-      "durationInFrames": 85,
-      "scriptText": "the food looked like a pile of unrecognizable grey mush."
-    },
-    {
-      "type": "chart_line",
-      "text": "unrecognizable gray mush. It is happening",
-      "points": [
+      "type": "timeline",
+      "text": "the stock market is officially losing its mind.",
+      "events": [
         {
-          "label": "Cost",
-          "value": 10
+          "date": "July 29",
+          "label": "Slump begins"
         },
         {
-          "label": "Quality",
-          "value": 2
+          "date": "Post-Astra",
+          "label": "Investors return"
+        },
+        {
+          "date": "Today",
+          "label": "Market rally"
         }
       ],
       "pacing": "slow",
-      "startFrame": 530,
-      "endFrame": 622,
-      "durationInFrames": 92,
-      "scriptText": "It is happening because AI images are cheaper than hiring"
+      "startFrame": 73,
+      "endFrame": 135,
+      "durationInFrames": 62,
+      "scriptText": "market is officially losing its mind. Since July 29, the"
     },
     {
-      "type": "stat_pill",
-      "text": "because AI images are cheaper than hiring a real photographer, but customers are losing their",
-      "value": "100%",
-      "label": "Appetite loss",
+      "type": "icon_text",
+      "text": "Since July 29, the companies that build computer chips have been in a",
+      "icon": "\ud83d\udcc9",
       "pacing": "slow",
-      "startFrame": 622,
-      "endFrame": 760,
-      "durationInFrames": 138,
-      "scriptText": "a real photographer, but customers are losing their appetite the second they sit down."
+      "startFrame": 135,
+      "endFrame": 240,
+      "durationInFrames": 105,
+      "scriptText": "companies that build computer chips have been in a total slump."
     },
     {
       "type": "versus",
-      "text": "appetite the second they sit down. When your dinner looks",
+      "text": "total slump. But the second Astro was announced,",
+      "left": "Investors ignoring chip stocks",
+      "right": "Investors rushing back in",
       "pacing": "slow",
-      "left": "Real appetizing food photography",
-      "right": "Glitchy AI generated images",
-      "startFrame": 760,
-      "endFrame": 860,
-      "durationInFrames": 100,
-      "scriptText": "When your dinner looks like a computer glitch, it is"
+      "startFrame": 240,
+      "endFrame": 308,
+      "durationInFrames": 68,
+      "scriptText": "But the second Astra was announced, investors rushed back in"
+    },
+    {
+      "type": "before_after",
+      "text": "investors rushed back in like they were buying gold. It turns out that",
+      "pacing": "slow",
+      "beforeLabel": "Low demand for hardware",
+      "afterLabel": "High demand for hardware",
+      "startFrame": 308,
+      "endFrame": 404,
+      "durationInFrames": 96,
+      "scriptText": "like they were buying gold. It turns out that building"
+    },
+    {
+      "type": "process_flow",
+      "text": "building smarter AI requires a massive amount of specialized",
+      "steps": [
+        "AI Model",
+        "Specialized Hardware",
+        "Run Math"
+      ],
+      "pacing": "slow",
+      "startFrame": 404,
+      "endFrame": 488,
+      "durationInFrames": 84,
+      "scriptText": "smarter AI requires a massive amount of specialized hardware to actually run the math."
     },
     {
       "type": "icon_text",
-      "text": "like a computer glitch, it is hard to get excited about placing",
+      "text": "hardware to actually run the math. These chip makers are suddenly the most important",
       "icon": "\ud83d\udcca",
-      "pacing": "normal",
-      "startFrame": 860,
-      "endFrame": 951,
-      "durationInFrames": 91,
-      "scriptText": "hard to get excited about placing an order."
+      "pacing": "slow",
+      "startFrame": 488,
+      "endFrame": 603,
+      "durationInFrames": 115,
+      "scriptText": "These chip makers are suddenly the most important players in the tech game again."
     },
     {
       "type": "icon_text",
-      "text": "an order. If you walked into a",
-      "icon": "\ud83d\udcca",
+      "text": "players in a tech game again. It is a wild reminder that every",
+      "icon": "\ud83d\udca1",
       "pacing": "slow",
-      "startFrame": 951,
-      "endFrame": 1014,
-      "durationInFrames": 63,
-      "scriptText": "If you walked into a restaurant and saw these bizarre"
+      "startFrame": 603,
+      "endFrame": 691,
+      "durationInFrames": 88,
+      "scriptText": "It is a wild reminder that every time a big"
     },
     {
-      "type": "key_statement",
-      "text": "restaurant and saw these bizarre AI images on the menu, would",
-      "emphasisWords": [],
+      "type": "quote_attribution",
+      "text": "time a big AI model gets released, someone",
+      "quote": "Every time a big AI model gets released, someone else is making a fortune",
+      "attribution": "Market Analyst",
       "pacing": "slow",
-      "startFrame": 1014,
-      "endFrame": 1109,
-      "durationInFrames": 95,
-      "scriptText": "AI images on the menu, would you stay to eat"
+      "startFrame": 691,
+      "endFrame": 764,
+      "durationInFrames": 73,
+      "scriptText": "AI model gets released, someone else is making a fortune"
+    },
+    {
+      "type": "icon_text",
+      "text": "else is making a fortune on the parts that power it. Are you",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 764,
+      "endFrame": 839,
+      "durationInFrames": 75,
+      "scriptText": "on the parts that power it. Are you currently investing"
+    },
+    {
+      "type": "icon_text",
+      "text": "currently investing in the company's building the hardware for",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 839,
+      "endFrame": 906,
+      "durationInFrames": 67,
+      "scriptText": "in the companies building the hardware for AI, or are"
     },
     {
       "type": "ticker_tape",
-      "text": "you stay to eat or walk right back out?",
+      "text": "AI? Or are you staying away from the hype?",
       "stories": [
-        "AI images in menus",
-        "Customers losing appetite",
-        "Quality concerns rising"
+        "OpenAI Astra launch",
+        "Chip stocks surge",
+        "Market volatility"
       ],
-      "label": "Industry Trend",
+      "label": "Tech News",
       "pacing": "normal",
-      "startFrame": 1109,
-      "endFrame": 1163,
-      "durationInFrames": 54,
-      "scriptText": "or walk right back out?"
+      "startFrame": 906,
+      "endFrame": 961,
+      "durationInFrames": 55,
+      "scriptText": "you staying away from the hype?"
     }
   ],
-  "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMiekFVX3lxTE5EbTVnQWJES2tJaEpBZzZvMTJpam01anlsWm1tWmF0OTBfc3JIRG41Q3lXVXd4SzJQamwtZFRXcGx6eVVCR3lGcGpYNU9PR0xWRVQ3STA2ZUpLMDdDTWpWaHB0WmgyQ1Y3QXlsOHhpWkpuTkM1Z19JNktB?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isEVRydnTk2hEtBkMzwkhJT5POiaCr_q-tkfGn5t8lfbXNhJE2LvLIsq91JRzgKcaEl1jnPpNgT9MV5KdrZaUe_M_8_gKhwA"
+  "source": "MarketWatch",
+  "sourceUrl": "https://www.marketwatch.com/story/why-the-launch-of-openais-latest-astra-model-reignited-the-memory-chip-trade-809e2edb?mod=mw_rss_topstories"
 }

@@ -1,157 +1,159 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 961,
+  "totalDurationInFrames": 1083,
   "beats": [
     {
       "type": "headline_card",
-      "text": "AI just dropped their new Astro model and",
+      "text": "AI just brought back a strict 5-hour usage limit for",
       "emphasisWords": [
-        "OpenAI",
-        "Astra",
-        "stock market"
+        "five-hour usage limit"
       ],
       "pacing": "slow",
-      "startFrame": 11,
-      "endFrame": 73,
-      "durationInFrames": 62,
-      "scriptText": "OpenAI just dropped their new Astra model and the stock"
+      "startFrame": 14,
+      "endFrame": 95,
+      "durationInFrames": 81,
+      "scriptText": "OpenAI just brought back a strict five-hour usage limit for their paying subscribers."
     },
     {
-      "type": "timeline",
-      "text": "the stock market is officially losing its mind.",
-      "events": [
-        {
-          "date": "July 29",
-          "label": "Slump begins"
-        },
-        {
-          "date": "Post-Astra",
-          "label": "Investors return"
-        },
-        {
-          "date": "Today",
-          "label": "Market rally"
-        }
-      ],
+      "type": "stat_pill",
+      "text": "their paying subscribers. If you pay",
+      "value": "$20",
+      "label": "Monthly subscription",
       "pacing": "slow",
-      "startFrame": 73,
-      "endFrame": 135,
-      "durationInFrames": 62,
-      "scriptText": "market is officially losing its mind. Since July 29, the"
+      "startFrame": 95,
+      "endFrame": 169,
+      "durationInFrames": 74,
+      "scriptText": "If you pay twenty dollars a month for their plus"
+    },
+    {
+      "type": "progress_meter",
+      "text": "$20 a month for their plus or business plans, you now have a",
+      "value": 5,
+      "maxValue": 5,
+      "label": "Hours allowed",
+      "pacing": "slow",
+      "startFrame": 169,
+      "endFrame": 267,
+      "durationInFrames": 98,
+      "scriptText": "or business plans, you now have a hard cap on"
     },
     {
       "type": "icon_text",
-      "text": "Since July 29, the companies that build computer chips have been in a",
-      "icon": "\ud83d\udcc9",
-      "pacing": "slow",
-      "startFrame": 135,
-      "endFrame": 240,
-      "durationInFrames": 105,
-      "scriptText": "companies that build computer chips have been in a total slump."
+      "text": "hard cap on how much you can use their smartest tools.",
+      "icon": "\ud83e\udde0",
+      "pacing": "normal",
+      "startFrame": 267,
+      "endFrame": 329,
+      "durationInFrames": 62,
+      "scriptText": "how much you can use their smartest tools."
     },
     {
       "type": "versus",
-      "text": "total slump. But the second Astro was announced,",
-      "left": "Investors ignoring chip stocks",
-      "right": "Investors rushing back in",
+      "text": "Some users are",
+      "left": "Furious users promised more",
+      "right": "Users enjoying subsidized tech",
       "pacing": "slow",
-      "startFrame": 240,
-      "endFrame": 308,
-      "durationInFrames": 68,
-      "scriptText": "But the second Astra was announced, investors rushed back in"
+      "startFrame": 329,
+      "endFrame": 388,
+      "durationInFrames": 59,
+      "scriptText": "Some users are furious, claiming they were promised more, while"
     },
     {
-      "type": "before_after",
-      "text": "investors rushed back in like they were buying gold. It turns out that",
+      "type": "compare_split",
+      "text": "furious, claiming they were promised more, while others say we were all just enjoying a free ride on cheap,",
+      "left": "Early ride-sharing growth",
+      "right": "Current AI usage limits",
       "pacing": "slow",
-      "beforeLabel": "Low demand for hardware",
-      "afterLabel": "High demand for hardware",
-      "startFrame": 308,
-      "endFrame": 404,
-      "durationInFrames": 96,
-      "scriptText": "like they were buying gold. It turns out that building"
-    },
-    {
-      "type": "process_flow",
-      "text": "building smarter AI requires a massive amount of specialized",
-      "steps": [
-        "AI Model",
-        "Specialized Hardware",
-        "Run Math"
-      ],
-      "pacing": "slow",
-      "startFrame": 404,
-      "endFrame": 488,
-      "durationInFrames": 84,
-      "scriptText": "smarter AI requires a massive amount of specialized hardware to actually run the math."
-    },
-    {
-      "type": "icon_text",
-      "text": "hardware to actually run the math. These chip makers are suddenly the most important",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 488,
-      "endFrame": 603,
-      "durationInFrames": 115,
-      "scriptText": "These chip makers are suddenly the most important players in the tech game again."
-    },
-    {
-      "type": "icon_text",
-      "text": "players in a tech game again. It is a wild reminder that every",
-      "icon": "\ud83d\udca1",
-      "pacing": "slow",
-      "startFrame": 603,
-      "endFrame": 691,
-      "durationInFrames": 88,
-      "scriptText": "It is a wild reminder that every time a big"
+      "startFrame": 388,
+      "endFrame": 541,
+      "durationInFrames": 153,
+      "scriptText": "others say we were all just enjoying a free ride on cheap, subsidized tech."
     },
     {
       "type": "quote_attribution",
-      "text": "time a big AI model gets released, someone",
-      "quote": "Every time a big AI model gets released, someone else is making a fortune",
-      "attribution": "Market Analyst",
+      "text": "subsidized tech. One person on",
       "pacing": "slow",
-      "startFrame": 691,
-      "endFrame": 764,
-      "durationInFrames": 73,
-      "scriptText": "AI model gets released, someone else is making a fortune"
+      "quote": "It is like the early days of ride-sharing apps where companies burned cash",
+      "attribution": "Reddit user",
+      "startFrame": 541,
+      "endFrame": 621,
+      "durationInFrames": 80,
+      "scriptText": "One person on Reddit even compared it to the early"
+    },
+    {
+      "type": "timeline",
+      "text": "Reddit even compared it to the early days of ride sharing apps, where",
+      "pacing": "slow",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Unlimited AI access"
+        },
+        {
+          "date": "Present",
+          "label": "Five hour usage cap"
+        },
+        {
+          "date": "Future",
+          "label": "Higher pricing models"
+        }
+      ],
+      "startFrame": 621,
+      "endFrame": 717,
+      "durationInFrames": 96,
+      "scriptText": "days of ride-sharing apps, where companies burned cash to hook"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "companies burned cash to hook you before jacking up the prices.",
+      "title": "The Honeymoon is Over",
+      "body": "The era of unlimited AI access is officially ending as companies move toward sustainable pricing models.",
+      "pacing": "slow",
+      "startFrame": 717,
+      "endFrame": 800,
+      "durationInFrames": 83,
+      "scriptText": "you before jacking up the prices. It seems the honeymoon"
+    },
+    {
+      "type": "process_flow",
+      "text": "It seems the honeymoon phase of unlimited AI is",
+      "steps": [
+        "Evaluate usage",
+        "Upgrade tier",
+        "Switch providers"
+      ],
+      "pacing": "slow",
+      "startFrame": 800,
+      "endFrame": 902,
+      "durationInFrames": 102,
+      "scriptText": "phase of unlimited AI is officially over. Is it time"
     },
     {
       "type": "icon_text",
-      "text": "else is making a fortune on the parts that power it. Are you",
+      "text": "officially over. Is it time to start paying for a better tier? Or",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 764,
-      "endFrame": 839,
-      "durationInFrames": 75,
-      "scriptText": "on the parts that power it. Are you currently investing"
-    },
-    {
-      "type": "icon_text",
-      "text": "currently investing in the company's building the hardware for",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 839,
-      "endFrame": 906,
-      "durationInFrames": 67,
-      "scriptText": "in the companies building the hardware for AI, or are"
+      "startFrame": 902,
+      "endFrame": 1019,
+      "durationInFrames": 117,
+      "scriptText": "to start paying for a better tier, or are you"
     },
     {
       "type": "ticker_tape",
-      "text": "AI? Or are you staying away from the hype?",
+      "text": "are you ready to jump ship to a cheaper competitor?",
       "stories": [
-        "OpenAI Astra launch",
-        "Chip stocks surge",
-        "Market volatility"
+        "OpenAI limits usage",
+        "Users seek alternatives",
+        "Market competition rising"
       ],
-      "label": "Tech News",
+      "label": "Updates",
       "pacing": "normal",
-      "startFrame": 906,
-      "endFrame": 961,
-      "durationInFrames": 55,
-      "scriptText": "you staying away from the hype?"
+      "startFrame": 1019,
+      "endFrame": 1083,
+      "durationInFrames": 64,
+      "scriptText": "ready to jump ship to a cheaper competitor?"
     }
   ],
-  "source": "MarketWatch",
-  "sourceUrl": "https://www.marketwatch.com/story/why-the-launch-of-openais-latest-astra-model-reignited-the-memory-chip-trade-809e2edb?mod=mw_rss_topstories"
+  "source": "Hacker News",
+  "sourceUrl": "https://news.ycombinator.com/item?id=49600233"
 }

@@ -1,159 +1,170 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1083,
+  "totalDurationInFrames": 965,
   "beats": [
     {
       "type": "headline_card",
-      "text": "AI just brought back a strict 5-hour usage limit for",
+      "text": "stock just dropped 20%, but",
       "emphasisWords": [
-        "five-hour usage limit"
+        "Micron",
+        "20% drop"
       ],
       "pacing": "slow",
-      "startFrame": 14,
-      "endFrame": 95,
-      "durationInFrames": 81,
-      "scriptText": "OpenAI just brought back a strict five-hour usage limit for their paying subscribers."
+      "startFrame": 5,
+      "endFrame": 65,
+      "durationInFrames": 60,
+      "scriptText": "Micron stock just dropped twenty percent, but some experts say"
     },
     {
       "type": "stat_pill",
-      "text": "their paying subscribers. If you pay",
-      "value": "$20",
-      "label": "Monthly subscription",
+      "text": "some experts say it is actually the best deal on the market right",
+      "value": "Best Deal",
+      "label": "Market Status",
       "pacing": "slow",
-      "startFrame": 95,
-      "endFrame": 169,
-      "durationInFrames": 74,
-      "scriptText": "If you pay twenty dollars a month for their plus"
-    },
-    {
-      "type": "progress_meter",
-      "text": "$20 a month for their plus or business plans, you now have a",
-      "value": 5,
-      "maxValue": 5,
-      "label": "Hours allowed",
-      "pacing": "slow",
-      "startFrame": 169,
-      "endFrame": 267,
-      "durationInFrames": 98,
-      "scriptText": "or business plans, you now have a hard cap on"
+      "startFrame": 65,
+      "endFrame": 145,
+      "durationInFrames": 80,
+      "scriptText": "it is actually the best deal on the market right now."
     },
     {
       "type": "icon_text",
-      "text": "hard cap on how much you can use their smartest tools.",
-      "icon": "\ud83e\udde0",
-      "pacing": "normal",
-      "startFrame": 267,
-      "endFrame": 329,
-      "durationInFrames": 62,
-      "scriptText": "how much you can use their smartest tools."
-    },
-    {
-      "type": "versus",
-      "text": "Some users are",
-      "left": "Furious users promised more",
-      "right": "Users enjoying subsidized tech",
+      "text": "now. While everyone is panicking about the price",
+      "icon": "\ud83d\udcc9",
       "pacing": "slow",
-      "startFrame": 329,
-      "endFrame": 388,
-      "durationInFrames": 59,
-      "scriptText": "Some users are furious, claiming they were promised more, while"
-    },
-    {
-      "type": "compare_split",
-      "text": "furious, claiming they were promised more, while others say we were all just enjoying a free ride on cheap,",
-      "left": "Early ride-sharing growth",
-      "right": "Current AI usage limits",
-      "pacing": "slow",
-      "startFrame": 388,
-      "endFrame": 541,
-      "durationInFrames": 153,
-      "scriptText": "others say we were all just enjoying a free ride on cheap, subsidized tech."
-    },
-    {
-      "type": "quote_attribution",
-      "text": "subsidized tech. One person on",
-      "pacing": "slow",
-      "quote": "It is like the early days of ride-sharing apps where companies burned cash",
-      "attribution": "Reddit user",
-      "startFrame": 541,
-      "endFrame": 621,
-      "durationInFrames": 80,
-      "scriptText": "One person on Reddit even compared it to the early"
-    },
-    {
-      "type": "timeline",
-      "text": "Reddit even compared it to the early days of ride sharing apps, where",
-      "pacing": "slow",
-      "events": [
-        {
-          "date": "Past",
-          "label": "Unlimited AI access"
-        },
-        {
-          "date": "Present",
-          "label": "Five hour usage cap"
-        },
-        {
-          "date": "Future",
-          "label": "Higher pricing models"
-        }
-      ],
-      "startFrame": 621,
-      "endFrame": 717,
-      "durationInFrames": 96,
-      "scriptText": "days of ride-sharing apps, where companies burned cash to hook"
-    },
-    {
-      "type": "scrollytelling",
-      "text": "companies burned cash to hook you before jacking up the prices.",
-      "title": "The Honeymoon is Over",
-      "body": "The era of unlimited AI access is officially ending as companies move toward sustainable pricing models.",
-      "pacing": "slow",
-      "startFrame": 717,
-      "endFrame": 800,
-      "durationInFrames": 83,
-      "scriptText": "you before jacking up the prices. It seems the honeymoon"
+      "startFrame": 145,
+      "endFrame": 206,
+      "durationInFrames": 61,
+      "scriptText": "While everyone is panicking about the price dip, the company"
     },
     {
       "type": "process_flow",
-      "text": "It seems the honeymoon phase of unlimited AI is",
+      "text": "dip, the company is quietly building the massive memory chips that power",
       "steps": [
-        "Evaluate usage",
-        "Upgrade tier",
-        "Switch providers"
+        "Design Memory",
+        "Build Chips",
+        "Power AI"
       ],
       "pacing": "slow",
-      "startFrame": 800,
-      "endFrame": 902,
-      "durationInFrames": 102,
-      "scriptText": "phase of unlimited AI is officially over. Is it time"
+      "startFrame": 206,
+      "endFrame": 305,
+      "durationInFrames": 99,
+      "scriptText": "is quietly building the massive memory chips that power every AI model you use."
+    },
+    {
+      "type": "versus",
+      "text": "every AI model you use. It is currently beating out competitors",
+      "left": "Micron Hardware Control",
+      "right": "Sandisk Market Position",
+      "pacing": "slow",
+      "startFrame": 305,
+      "endFrame": 403,
+      "durationInFrames": 98,
+      "scriptText": "It is currently beating out competitors like Sandisk because it"
+    },
+    {
+      "type": "key_statement",
+      "text": "like Sandisk because it controls the actual hardware needed to keep",
+      "pacing": "slow",
+      "emphasisWords": [
+        "actual hardware",
+        "systems running"
+      ],
+      "startFrame": 403,
+      "endFrame": 493,
+      "durationInFrames": 90,
+      "scriptText": "controls the actual hardware needed to keep these systems running."
+    },
+    {
+      "type": "chart_line",
+      "text": "these systems running. It feels like a classic case of the",
+      "pacing": "slow",
+      "points": [
+        {
+          "label": "Market Sentiment",
+          "value": 20
+        },
+        {
+          "label": "Tech Foundation",
+          "value": 80
+        },
+        {
+          "label": "Future Potential",
+          "value": 90
+        }
+      ],
+      "startFrame": 493,
+      "endFrame": 566,
+      "durationInFrames": 73,
+      "scriptText": "It feels like a classic case of the market ignoring"
+    },
+    {
+      "type": "progress_meter",
+      "text": "market ignoring the tech foundation to focus on",
+      "value": 85,
+      "maxValue": 100,
+      "label": "Short-term Fear",
+      "pacing": "slow",
+      "startFrame": 566,
+      "endFrame": 632,
+      "durationInFrames": 66,
+      "scriptText": "the tech foundation to focus on short term fears."
+    },
+    {
+      "type": "timeline",
+      "text": "short-term fears. Investors are running away, but the people",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Investors Running"
+        },
+        {
+          "date": "Present",
+          "label": "AI Builders Doubling Down"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 632,
+      "endFrame": 724,
+      "durationInFrames": 92,
+      "scriptText": "Investors are running away, but the people building the AI are doubling down."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "building the AI are doubling down. If you had a thousand dollars to invest",
+      "title": "The AI Investment Choice",
+      "body": "Deciding between a crashing stock and an all-time high requires looking at the long-term foundation.",
+      "pacing": "slow",
+      "startFrame": 724,
+      "endFrame": 827,
+      "durationInFrames": 103,
+      "scriptText": "If you had a thousand dollars to invest in the"
     },
     {
       "type": "icon_text",
-      "text": "officially over. Is it time to start paying for a better tier? Or",
+      "text": "in the AI boom, would you buy the stock that is",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 902,
-      "endFrame": 1019,
-      "durationInFrames": 117,
-      "scriptText": "to start paying for a better tier, or are you"
+      "startFrame": 827,
+      "endFrame": 885,
+      "durationInFrames": 58,
+      "scriptText": "AI boom, would you buy the stock that is crashing"
     },
     {
       "type": "ticker_tape",
-      "text": "are you ready to jump ship to a cheaper competitor?",
+      "text": "crashing or the one that is already at an all-time high?",
       "stories": [
-        "OpenAI limits usage",
-        "Users seek alternatives",
-        "Market competition rising"
+        "Micron volatility",
+        "AI chip demand",
+        "Market correction"
       ],
-      "label": "Updates",
-      "pacing": "normal",
-      "startFrame": 1019,
-      "endFrame": 1083,
-      "durationInFrames": 64,
-      "scriptText": "ready to jump ship to a cheaper competitor?"
+      "label": "Tech Stocks",
+      "pacing": "slow",
+      "startFrame": 885,
+      "endFrame": 965,
+      "durationInFrames": 80,
+      "scriptText": "or the one that is already at an all time high?"
     }
   ],
-  "source": "Hacker News",
-  "sourceUrl": "https://news.ycombinator.com/item?id=49600233"
+  "source": "Google News AI",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMimwJBVV95cUxNeXFGcmJUeWh0N0hhRTlOa2VfV1hwTFFGX1N2MEpzRFQtSnZ3eHBTdEloX3I1blNJVWRDZUR3NmcwWHRBUDVuaW16Mkc4aldZcldDOVM0ellPTVRBc1FHbHRmLWN6UktiNWU3a3YzaW93SkRpTUhyaVA1T2dibjRXWUwzRmtsa040YWxDVk9KVENtMUh1cGpIdlM3LWFuVnc3ZXZwOE50cjBTeTl2TTNPdkZFTGRHRFRwbTdhY18wZk02NWpQcFh6bTkwRmhsdkVWOUdWOEVPR2dZZjZsTS1ieWVvUXVrakpaeUhkQUhuTUtyblpIVjZhQVRkY0xwOV9mdjBSbFNWaUtCUFVKaktpSGxKczFGNFpJRS13?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isGi4ctkhCeepcFfkXqebHpn5GJj3GUkWXZTevxu2XBhYy32gmhxkDkHZ5TRkm7uig91bgycUA9ODU69e8Q7BtrnAooTzMcL"
 }

@@ -34,8 +34,8 @@ VOLUME = "+0%"      # default
 # conversational); EXPLAINER -> Eric (calm, authoritative, slower).
 FORMAT_PACING = {
     "URGENT_BREAK": {"voice": "en-US-AndrewNeural", "rate": "+25%"},
-    "DEBATE":       {"voice": "en-US-AriaNeural",    "rate": "+15%"},
-    "EXPLAINER":    {"voice": "en-US-EricNeural",    "rate": "+10%"},
+    "DEBATE":       {"voice": "en-US-AriaNeural",    "rate": "+25%"},
+    "EXPLAINER":    {"voice": "en-US-EricNeural",    "rate": "+25%"},
 }
 VALID_FORMATS = set(FORMAT_PACING.keys())
 

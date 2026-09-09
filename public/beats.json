@@ -1,170 +1,166 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 965,
+  "totalDurationInFrames": 913,
   "beats": [
     {
       "type": "headline_card",
-      "text": "stock just dropped 20%, but",
+      "text": "new AI just cracked a math problem",
       "emphasisWords": [
-        "Micron",
-        "20% drop"
+        "AI",
+        "math problem"
       ],
       "pacing": "slow",
       "startFrame": 5,
-      "endFrame": 65,
-      "durationInFrames": 60,
-      "scriptText": "Micron stock just dropped twenty percent, but some experts say"
-    },
-    {
-      "type": "stat_pill",
-      "text": "some experts say it is actually the best deal on the market right",
-      "value": "Best Deal",
-      "label": "Market Status",
-      "pacing": "slow",
-      "startFrame": 65,
-      "endFrame": 145,
-      "durationInFrames": 80,
-      "scriptText": "it is actually the best deal on the market right now."
-    },
-    {
-      "type": "icon_text",
-      "text": "now. While everyone is panicking about the price",
-      "icon": "\ud83d\udcc9",
-      "pacing": "slow",
-      "startFrame": 145,
-      "endFrame": 206,
-      "durationInFrames": 61,
-      "scriptText": "While everyone is panicking about the price dip, the company"
-    },
-    {
-      "type": "process_flow",
-      "text": "dip, the company is quietly building the massive memory chips that power",
-      "steps": [
-        "Design Memory",
-        "Build Chips",
-        "Power AI"
-      ],
-      "pacing": "slow",
-      "startFrame": 206,
-      "endFrame": 305,
-      "durationInFrames": 99,
-      "scriptText": "is quietly building the massive memory chips that power every AI model you use."
-    },
-    {
-      "type": "versus",
-      "text": "every AI model you use. It is currently beating out competitors",
-      "left": "Micron Hardware Control",
-      "right": "Sandisk Market Position",
-      "pacing": "slow",
-      "startFrame": 305,
-      "endFrame": 403,
-      "durationInFrames": 98,
-      "scriptText": "It is currently beating out competitors like Sandisk because it"
-    },
-    {
-      "type": "key_statement",
-      "text": "like Sandisk because it controls the actual hardware needed to keep",
-      "pacing": "slow",
-      "emphasisWords": [
-        "actual hardware",
-        "systems running"
-      ],
-      "startFrame": 403,
-      "endFrame": 493,
-      "durationInFrames": 90,
-      "scriptText": "controls the actual hardware needed to keep these systems running."
-    },
-    {
-      "type": "chart_line",
-      "text": "these systems running. It feels like a classic case of the",
-      "pacing": "slow",
-      "points": [
-        {
-          "label": "Market Sentiment",
-          "value": 20
-        },
-        {
-          "label": "Tech Foundation",
-          "value": 80
-        },
-        {
-          "label": "Future Potential",
-          "value": 90
-        }
-      ],
-      "startFrame": 493,
-      "endFrame": 566,
-      "durationInFrames": 73,
-      "scriptText": "It feels like a classic case of the market ignoring"
-    },
-    {
-      "type": "progress_meter",
-      "text": "market ignoring the tech foundation to focus on",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Short-term Fear",
-      "pacing": "slow",
-      "startFrame": 566,
-      "endFrame": 632,
-      "durationInFrames": 66,
-      "scriptText": "the tech foundation to focus on short term fears."
+      "endFrame": 59,
+      "durationInFrames": 54,
+      "scriptText": "A new AI just cracked a math problem that has"
     },
     {
       "type": "timeline",
-      "text": "short-term fears. Investors are running away, but the people",
+      "text": "that has stumped human geniuses for 90",
       "events": [
         {
-          "date": "Past",
-          "label": "Investors Running"
+          "date": "1934",
+          "label": "Problem posed"
         },
         {
-          "date": "Present",
-          "label": "AI Builders Doubling Down"
+          "date": "2024",
+          "label": "AI solves it"
+        },
+        {
+          "date": "Total",
+          "label": "90 years"
         }
       ],
       "pacing": "slow",
-      "startFrame": 632,
-      "endFrame": 724,
-      "durationInFrames": 92,
-      "scriptText": "Investors are running away, but the people building the AI are doubling down."
+      "startFrame": 59,
+      "endFrame": 116,
+      "durationInFrames": 57,
+      "scriptText": "stumped human geniuses for 90 years. It took the machine"
     },
     {
-      "type": "scrollytelling",
-      "text": "building the AI are doubling down. If you had a thousand dollars to invest",
-      "title": "The AI Investment Choice",
-      "body": "Deciding between a crashing stock and an all-time high requires looking at the long-term foundation.",
+      "type": "stat_pill",
+      "text": "years. It took the machine exactly 88 hours to solve a",
+      "value": "88 Hours",
+      "label": "Solve time",
       "pacing": "slow",
-      "startFrame": 724,
-      "endFrame": 827,
-      "durationInFrames": 103,
-      "scriptText": "If you had a thousand dollars to invest in the"
+      "startFrame": 116,
+      "endFrame": 211,
+      "durationInFrames": 95,
+      "scriptText": "exactly 88 hours to solve a puzzle that was supposed to be impossible."
+    },
+    {
+      "type": "compare_split",
+      "text": "puzzle that was supposed to be impossible. This breakthrough was being",
+      "left": "Human effort: 90 years",
+      "right": "AI effort: 88 hours",
+      "pacing": "slow",
+      "startFrame": 211,
+      "endFrame": 297,
+      "durationInFrames": 86,
+      "scriptText": "This breakthrough is being called a major step toward a"
+    },
+    {
+      "type": "before_after",
+      "text": "called a major step toward a millennium prize, a massive reward for",
+      "beforeLabel": "Unsolved math challenges",
+      "afterLabel": "Millennium Prize breakthrough",
+      "pacing": "slow",
+      "startFrame": 297,
+      "endFrame": 397,
+      "durationInFrames": 100,
+      "scriptText": "Millennium Prize, a massive reward for solving the world's toughest math challenges."
+    },
+    {
+      "type": "process_flow",
+      "text": "solving the world's toughest math challenges. For decades,",
+      "steps": [
+        "Analyze equations",
+        "Compute patterns",
+        "Solve complexity"
+      ],
+      "pacing": "slow",
+      "startFrame": 397,
+      "endFrame": 485,
+      "durationInFrames": 88,
+      "scriptText": "For decades, mathematicians have stared at these equations until their"
+    },
+    {
+      "type": "chart_line",
+      "text": "mathematicians have stared at these equations until their eyes glazed over, but this",
+      "points": [
+        {
+          "label": "Day 1",
+          "value": 20
+        },
+        {
+          "label": "Day 2",
+          "value": 50
+        },
+        {
+          "label": "Day 3",
+          "value": 80
+        },
+        {
+          "label": "Day 4",
+          "value": 100
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 485,
+      "endFrame": 596,
+      "durationInFrames": 111,
+      "scriptText": "eyes glazed over, but this software did it in less"
     },
     {
       "type": "icon_text",
-      "text": "in the AI boom, would you buy the stock that is",
-      "icon": "\ud83d\udcca",
+      "text": "software did it in less time than a long weekend. It",
+      "icon": "\u26a1",
       "pacing": "slow",
-      "startFrame": 827,
-      "endFrame": 885,
-      "durationInFrames": 58,
-      "scriptText": "AI boom, would you buy the stock that is crashing"
+      "startFrame": 596,
+      "endFrame": 675,
+      "durationInFrames": 79,
+      "scriptText": "time than a long weekend. It feels like we just"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "feels like we just handed the keys to the kingdom over",
+      "title": "The Calculator Shift",
+      "body": "The speed of this AI suggests a fundamental shift in how we approach complex human knowledge.",
+      "pacing": "slow",
+      "startFrame": 675,
+      "endFrame": 745,
+      "durationInFrames": 70,
+      "scriptText": "handed the keys to the kingdom over to a calculator."
+    },
+    {
+      "type": "key_statement",
+      "text": "to a calculator. If a computer can",
+      "emphasisWords": [
+        "human history"
+      ],
+      "pacing": "slow",
+      "startFrame": 745,
+      "endFrame": 799,
+      "durationInFrames": 54,
+      "scriptText": "If a computer can solve the problems that defined human"
     },
     {
       "type": "ticker_tape",
-      "text": "crashing or the one that is already at an all-time high?",
+      "text": "solve the problems that define human history, what is left for us to figure out on our own?",
       "stories": [
-        "Micron volatility",
-        "AI chip demand",
-        "Market correction"
+        "AI solves math",
+        "Millennium Prize progress",
+        "Human vs Machine"
       ],
-      "label": "Tech Stocks",
+      "label": "Tech News",
       "pacing": "slow",
-      "startFrame": 885,
-      "endFrame": 965,
-      "durationInFrames": 80,
-      "scriptText": "or the one that is already at an all time high?"
+      "startFrame": 799,
+      "endFrame": 913,
+      "durationInFrames": 114,
+      "scriptText": "history, what is left for us to figure out on our own?"
     }
   ],
   "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMimwJBVV95cUxNeXFGcmJUeWh0N0hhRTlOa2VfV1hwTFFGX1N2MEpzRFQtSnZ3eHBTdEloX3I1blNJVWRDZUR3NmcwWHRBUDVuaW16Mkc4aldZcldDOVM0ellPTVRBc1FHbHRmLWN6UktiNWU3a3YzaW93SkRpTUhyaVA1T2dibjRXWUwzRmtsa040YWxDVk9KVENtMUh1cGpIdlM3LWFuVnc3ZXZwOE50cjBTeTl2TTNPdkZFTGRHRFRwbTdhY18wZk02NWpQcFh6bTkwRmhsdkVWOUdWOEVPR2dZZjZsTS1ieWVvUXVrakpaeUhkQUhuTUtyblpIVjZhQVRkY0xwOV9mdjBSbFNWaUtCUFVKaktpSGxKczFGNFpJRS13?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isGi4ctkhCeepcFfkXqebHpn5GJj3GUkWXZTevxu2XBhYy32gmhxkDkHZ5TRkm7uig91bgycUA9ODU69e8Q7BtrnAooTzMcL"
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMijwJBVV95cUxOMXdCZ2lxSzdhcVIxSGNjYW8xYV9vS0RweGpOVjFtVmdmYjFWWUoxVmNacGVaWFBfenJvTThpWWJrd08xZUY1b1hQU0kwUkwzdnhENV84Z09GaTFpUUxKeGRJTjRsV3RYQkt0ZDFFeFo1ZG1Wd1IwYXNEX2FNT0xpMkpqcFhJMGYxeTd1azBGVG9EYmNveW0wNkk5b0J4WmpjQUUzUkFpMVdYTGJmelB3U3VSODRLdjRnNVV3UDJzYndWVWRCaGsxQjUtQWI2UElLWlNoSVZ6ZjJ1ZnFKdk03US1ybGk5NWJFaG5JcTl0RzhQQ2RHUTF1MFduYTZIS3A3QkxtaGJYSzBaMDNobnI40gGXAkFVX3lxTFBRdUVOZTFqVjNtLVU2Zno0R1VFN3NwTUtoSEpnVGdjblpmQzNTRkxySEdWeHRXSkN1V0dUMGxrUklxY0h1NHhDaWoyOUpNWkY0UC1HQnVEQk13VlpjZ0wxekxpcmVqSGdVdW9na1JoZVhCczVFMGpWSjhDUklpckJDbDQ3aGNNMFVpbHdyU001UGJWUDZodnlZbzNUSi1Oam9ob2Izem12bng1Ql9kZ2R4T2lDdWN2U0RnMTc1YVlTd2VoMGV3ZVhKbUtXVlVrV0MyVDVpV01sQXNSaVllTnRDR0hZTTNMVTh2SUVpcHhVamdzNUhXYTB1QXBrWTFIYlBhWDFYaWRxLVFpRzhib1ktLUE1X3ZlRQ?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isHyTnCq5zI1xwVdGBPPb_ehxMSua0NSqy_Cz-WbvjTOuYETtS0qy7vBnxq7-RHYY_25of_jvtJe87YdIMtEuuyys-bMWKuN"
 }

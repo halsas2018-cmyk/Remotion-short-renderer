@@ -1,166 +1,157 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 913,
+  "totalDurationInFrames": 1108,
   "beats": [
     {
       "type": "headline_card",
-      "text": "new AI just cracked a math problem",
+      "text": "AI assistant instinct is now",
       "emphasisWords": [
-        "AI",
-        "math problem"
+        "Instinct",
+        "email address"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 59,
-      "durationInFrames": 54,
-      "scriptText": "A new AI just cracked a math problem that has"
-    },
-    {
-      "type": "timeline",
-      "text": "that has stumped human geniuses for 90",
-      "events": [
-        {
-          "date": "1934",
-          "label": "Problem posed"
-        },
-        {
-          "date": "2024",
-          "label": "AI solves it"
-        },
-        {
-          "date": "Total",
-          "label": "90 years"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 59,
-      "endFrame": 116,
-      "durationInFrames": 57,
-      "scriptText": "stumped human geniuses for 90 years. It took the machine"
+      "startFrame": 6,
+      "endFrame": 53,
+      "durationInFrames": 47,
+      "scriptText": "The AI assistant Instinct is now worth two point five"
     },
     {
       "type": "stat_pill",
-      "text": "years. It took the machine exactly 88 hours to solve a",
-      "value": "88 Hours",
-      "label": "Solve time",
+      "text": "worth $2.5 billion, and it",
+      "value": "$2.5B",
+      "label": "Valuation",
       "pacing": "slow",
-      "startFrame": 116,
-      "endFrame": 211,
-      "durationInFrames": 95,
-      "scriptText": "exactly 88 hours to solve a puzzle that was supposed to be impossible."
-    },
-    {
-      "type": "compare_split",
-      "text": "puzzle that was supposed to be impossible. This breakthrough was being",
-      "left": "Human effort: 90 years",
-      "right": "AI effort: 88 hours",
-      "pacing": "slow",
-      "startFrame": 211,
-      "endFrame": 297,
-      "durationInFrames": 86,
-      "scriptText": "This breakthrough is being called a major step toward a"
-    },
-    {
-      "type": "before_after",
-      "text": "called a major step toward a millennium prize, a massive reward for",
-      "beforeLabel": "Unsolved math challenges",
-      "afterLabel": "Millennium Prize breakthrough",
-      "pacing": "slow",
-      "startFrame": 297,
-      "endFrame": 397,
-      "durationInFrames": 100,
-      "scriptText": "Millennium Prize, a massive reward for solving the world's toughest math challenges."
-    },
-    {
-      "type": "process_flow",
-      "text": "solving the world's toughest math challenges. For decades,",
-      "steps": [
-        "Analyze equations",
-        "Compute patterns",
-        "Solve complexity"
-      ],
-      "pacing": "slow",
-      "startFrame": 397,
-      "endFrame": 485,
-      "durationInFrames": 88,
-      "scriptText": "For decades, mathematicians have stared at these equations until their"
-    },
-    {
-      "type": "chart_line",
-      "text": "mathematicians have stared at these equations until their eyes glazed over, but this",
-      "points": [
-        {
-          "label": "Day 1",
-          "value": 20
-        },
-        {
-          "label": "Day 2",
-          "value": 50
-        },
-        {
-          "label": "Day 3",
-          "value": 80
-        },
-        {
-          "label": "Day 4",
-          "value": 100
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 485,
-      "endFrame": 596,
-      "durationInFrames": 111,
-      "scriptText": "eyes glazed over, but this software did it in less"
+      "startFrame": 53,
+      "endFrame": 110,
+      "durationInFrames": 57,
+      "scriptText": "billion dollars and it just gave itself an email address."
     },
     {
       "type": "icon_text",
-      "text": "software did it in less time than a long weekend. It",
-      "icon": "\u26a1",
+      "text": "just gave itself an email address. Its founder",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 596,
-      "endFrame": 675,
-      "durationInFrames": 79,
-      "scriptText": "time than a long weekend. It feels like we just"
+      "startFrame": 110,
+      "endFrame": 193,
+      "durationInFrames": 83,
+      "scriptText": "Its founder Noah Shinn says your AI can now sign"
     },
     {
-      "type": "scrollytelling",
-      "text": "feels like we just handed the keys to the kingdom over",
-      "title": "The Calculator Shift",
-      "body": "The speed of this AI suggests a fundamental shift in how we approach complex human knowledge.",
+      "type": "process_flow",
+      "text": "Noah Shin says your AI can now sign up for its own accounts and handle your business",
+      "steps": [
+        "Forward email",
+        "AI receives",
+        "AI handles",
+        "Task complete"
+      ],
       "pacing": "slow",
-      "startFrame": 675,
-      "endFrame": 745,
-      "durationInFrames": 70,
-      "scriptText": "handed the keys to the kingdom over to a calculator."
+      "startFrame": 193,
+      "endFrame": 304,
+      "durationInFrames": 111,
+      "scriptText": "up for its own accounts and handle your business without cluttering your personal inbox."
+    },
+    {
+      "type": "icon_text",
+      "text": "without cluttering your personal inbox. need to",
+      "icon": "\ud83d\udce6",
+      "pacing": "slow",
+      "startFrame": 304,
+      "endFrame": 385,
+      "durationInFrames": 81,
+      "scriptText": "Need to return a package or ask a store a question."
     },
     {
       "type": "key_statement",
-      "text": "to a calculator. If a computer can",
-      "emphasisWords": [
-        "human history"
-      ],
-      "pacing": "slow",
-      "startFrame": 745,
-      "endFrame": 799,
-      "durationInFrames": 54,
-      "scriptText": "If a computer can solve the problems that defined human"
+      "text": "return a package or ask a store a question. You just forward the",
+      "emphasisWords": [],
+      "startFrame": 385,
+      "endFrame": 491,
+      "durationInFrames": 106,
+      "scriptText": "You just forward the email to your AI and it takes over the conversation."
     },
     {
-      "type": "ticker_tape",
-      "text": "solve the problems that define human history, what is left for us to figure out on our own?",
-      "stories": [
-        "AI solves math",
-        "Millennium Prize progress",
-        "Human vs Machine"
-      ],
-      "label": "Tech News",
+      "type": "key_statement",
+      "text": "email to your AI and it takes over the conversation. This",
+      "emphasisWords": [],
+      "startFrame": 491,
+      "endFrame": 592,
+      "durationInFrames": 101,
+      "scriptText": "This sounds like a dream for people who hate admin"
+    },
+    {
+      "type": "key_statement",
+      "text": "sounds like a dream for people who hate admin work, but it creates a massive",
+      "emphasisWords": [],
+      "startFrame": 592,
+      "endFrame": 684,
+      "durationInFrames": 92,
+      "scriptText": "work but it creates a massive problem. Businesses will no"
+    },
+    {
+      "type": "icon_text",
+      "text": "problem. Businesses will no longer know if they are talking to a human",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 799,
-      "endFrame": 913,
-      "durationInFrames": 114,
-      "scriptText": "history, what is left for us to figure out on our own?"
+      "startFrame": 684,
+      "endFrame": 782,
+      "durationInFrames": 98,
+      "scriptText": "longer know if they are talking to a human or"
+    },
+    {
+      "type": "timeline",
+      "text": "or a bot with its own private account.",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Manual tasks"
+        },
+        {
+          "date": "Present",
+          "label": "AI assistance"
+        },
+        {
+          "date": "Future",
+          "label": "Autonomous chores"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 782,
+      "endFrame": 837,
+      "durationInFrames": 55,
+      "scriptText": "a bot with its own private account. We are moving"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "We are moving toward a world where your digital assistant does your",
+      "title": "The New Reality",
+      "body": "Digital assistants are now performing chores behind your back.",
+      "pacing": "slow",
+      "startFrame": 837,
+      "endFrame": 932,
+      "durationInFrames": 95,
+      "scriptText": "toward a world where your digital assistant does your chores behind your back."
+    },
+    {
+      "type": "key_statement",
+      "text": "chores behind your back. If you were a",
+      "emphasisWords": [],
+      "startFrame": 932,
+      "endFrame": 999,
+      "durationInFrames": 67,
+      "scriptText": "If you were a business owner would you block emails"
+    },
+    {
+      "type": "icon_text",
+      "text": "business owner, would you block emails coming from an AI assistant instead of a real person?",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 999,
+      "endFrame": 1108,
+      "durationInFrames": 109,
+      "scriptText": "coming from an AI assistant instead of a real person?"
     }
   ],
-  "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMijwJBVV95cUxOMXdCZ2lxSzdhcVIxSGNjYW8xYV9vS0RweGpOVjFtVmdmYjFWWUoxVmNacGVaWFBfenJvTThpWWJrd08xZUY1b1hQU0kwUkwzdnhENV84Z09GaTFpUUxKeGRJTjRsV3RYQkt0ZDFFeFo1ZG1Wd1IwYXNEX2FNT0xpMkpqcFhJMGYxeTd1azBGVG9EYmNveW0wNkk5b0J4WmpjQUUzUkFpMVdYTGJmelB3U3VSODRLdjRnNVV3UDJzYndWVWRCaGsxQjUtQWI2UElLWlNoSVZ6ZjJ1ZnFKdk03US1ybGk5NWJFaG5JcTl0RzhQQ2RHUTF1MFduYTZIS3A3QkxtaGJYSzBaMDNobnI40gGXAkFVX3lxTFBRdUVOZTFqVjNtLVU2Zno0R1VFN3NwTUtoSEpnVGdjblpmQzNTRkxySEdWeHRXSkN1V0dUMGxrUklxY0h1NHhDaWoyOUpNWkY0UC1HQnVEQk13VlpjZ0wxekxpcmVqSGdVdW9na1JoZVhCczVFMGpWSjhDUklpckJDbDQ3aGNNMFVpbHdyU001UGJWUDZodnlZbzNUSi1Oam9ob2Izem12bng1Ql9kZ2R4T2lDdWN2U0RnMTc1YVlTd2VoMGV3ZVhKbUtXVlVrV0MyVDVpV01sQXNSaVllTnRDR0hZTTNMVTh2SUVpcHhVamdzNUhXYTB1QXBrWTFIYlBhWDFYaWRxLVFpRzhib1ktLUE1X3ZlRQ?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isHyTnCq5zI1xwVdGBPPb_ehxMSua0NSqy_Cz-WbvjTOuYETtS0qy7vBnxq7-RHYY_25of_jvtJe87YdIMtEuuyys-bMWKuN"
+  "source": "TechCrunch AI",
+  "sourceUrl": "https://techcrunch.com/2026/09/09/viral-ai-assistant-instinct-now-has-its-own-email-address/"
 }

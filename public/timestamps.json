@@ -1,697 +1,627 @@
 [
   {
-    "word": "The",
-    "start": 0.191,
-    "end": 0.291
+    "word": "Elon",
+    "start": 0.131,
+    "end": 0.351
   },
   {
-    "word": "AI",
-    "start": 0.371,
-    "end": 0.611
+    "word": "Musk",
+    "start": 0.391,
+    "end": 0.631
   },
   {
-    "word": "assistant",
-    "start": 0.652,
-    "end": 1.012
+    "word": "just",
+    "start": 0.771,
+    "end": 0.971
   },
   {
-    "word": "instinct",
-    "start": 1.092,
-    "end": 1.432
+    "word": "raised",
+    "start": 1.051,
+    "end": 1.271
+  },
+  {
+    "word": "$3",
+    "start": 1.292,
+    "end": 1.632
+  },
+  {
+    "word": "billion",
+    "start": 1.692,
+    "end": 2.272
+  },
+  {
+    "word": "for",
+    "start": 2.312,
+    "end": 2.392
+  },
+  {
+    "word": "his",
+    "start": 2.432,
+    "end": 2.532
+  },
+  {
+    "word": "boring",
+    "start": 2.572,
+    "end": 2.812
+  },
+  {
+    "word": "company,",
+    "start": 2.852,
+    "end": 3.152
+  },
+  {
+    "word": "and",
+    "start": 3.432,
+    "end": 3.512
+  },
+  {
+    "word": "it",
+    "start": 3.532,
+    "end": 3.592
   },
   {
     "word": "is",
-    "start": 1.512,
-    "end": 1.572
+    "start": 3.632,
+    "end": 3.692
   },
   {
-    "word": "now",
-    "start": 1.632,
-    "end": 1.772
-  },
-  {
-    "word": "worth",
-    "start": 1.792,
-    "end": 2.013
-  },
-  {
-    "word": "$2.5",
-    "start": 2.073,
-    "end": 2.693
-  },
-  {
-    "word": "billion,",
-    "start": 2.733,
-    "end": 3.334
-  },
-  {
-    "word": "and",
-    "start": 3.494,
-    "end": 3.594
-  },
-  {
-    "word": "it",
-    "start": 3.614,
-    "end": 3.654
-  },
-  {
-    "word": "just",
-    "start": 3.714,
-    "end": 3.874
-  },
-  {
-    "word": "gave",
-    "start": 3.914,
-    "end": 4.094
-  },
-  {
-    "word": "itself",
-    "start": 4.134,
-    "end": 4.435
-  },
-  {
-    "word": "an",
-    "start": 4.475,
-    "end": 4.535
-  },
-  {
-    "word": "email",
-    "start": 4.595,
-    "end": 4.835
-  },
-  {
-    "word": "address.",
-    "start": 4.855,
-    "end": 5.155
-  },
-  {
-    "word": "Its",
-    "start": 6.016,
-    "end": 6.116
-  },
-  {
-    "word": "founder",
-    "start": 6.176,
-    "end": 6.436
-  },
-  {
-    "word": "Noah",
-    "start": 6.476,
-    "end": 6.676
-  },
-  {
-    "word": "Shin",
-    "start": 6.717,
-    "end": 6.937
-  },
-  {
-    "word": "says",
-    "start": 6.977,
-    "end": 7.137
-  },
-  {
-    "word": "your",
-    "start": 7.177,
-    "end": 7.317
-  },
-  {
-    "word": "AI",
-    "start": 7.417,
-    "end": 7.697
-  },
-  {
-    "word": "can",
-    "start": 7.757,
-    "end": 7.877
-  },
-  {
-    "word": "now",
-    "start": 7.917,
-    "end": 8.038
-  },
-  {
-    "word": "sign",
-    "start": 8.098,
-    "end": 8.278
-  },
-  {
-    "word": "up",
-    "start": 8.338,
-    "end": 8.398
-  },
-  {
-    "word": "for",
-    "start": 8.438,
-    "end": 8.538
-  },
-  {
-    "word": "its",
-    "start": 8.578,
-    "end": 8.678
-  },
-  {
-    "word": "own",
-    "start": 8.758,
-    "end": 8.838
-  },
-  {
-    "word": "accounts",
-    "start": 8.878,
-    "end": 9.179
-  },
-  {
-    "word": "and",
-    "start": 9.299,
-    "end": 9.399
-  },
-  {
-    "word": "handle",
-    "start": 9.439,
-    "end": 9.659
-  },
-  {
-    "word": "your",
-    "start": 9.679,
-    "end": 9.779
-  },
-  {
-    "word": "business",
-    "start": 9.799,
-    "end": 10.119
-  },
-  {
-    "word": "without",
-    "start": 10.179,
-    "end": 10.42
-  },
-  {
-    "word": "cluttering",
-    "start": 10.46,
-    "end": 10.8
-  },
-  {
-    "word": "your",
-    "start": 10.82,
-    "end": 10.92
-  },
-  {
-    "word": "personal",
-    "start": 10.96,
-    "end": 11.26
-  },
-  {
-    "word": "inbox.",
-    "start": 11.3,
-    "end": 11.681
-  },
-  {
-    "word": "need",
-    "start": 12.585,
-    "end": 12.745
-  },
-  {
-    "word": "to",
-    "start": 12.765,
-    "end": 12.825
-  },
-  {
-    "word": "return",
-    "start": 12.865,
-    "end": 13.125
-  },
-  {
-    "word": "a",
-    "start": 13.165,
-    "end": 13.185
-  },
-  {
-    "word": "package",
-    "start": 13.226,
-    "end": 13.586
-  },
-  {
-    "word": "or",
-    "start": 13.666,
-    "end": 13.746
-  },
-  {
-    "word": "ask",
-    "start": 13.846,
-    "end": 13.986
-  },
-  {
-    "word": "a",
-    "start": 14.046,
-    "end": 14.086
-  },
-  {
-    "word": "store",
-    "start": 14.106,
-    "end": 14.326
-  },
-  {
-    "word": "a",
-    "start": 14.346,
-    "end": 14.366
-  },
-  {
-    "word": "question.",
-    "start": 14.406,
-    "end": 14.787
-  },
-  {
-    "word": "You",
-    "start": 15.607,
-    "end": 15.747
-  },
-  {
-    "word": "just",
-    "start": 15.767,
-    "end": 15.947
-  },
-  {
-    "word": "forward",
-    "start": 15.987,
-    "end": 16.268
+    "word": "officially",
+    "start": 3.732,
+    "end": 4.153
   },
   {
     "word": "the",
-    "start": 16.288,
-    "end": 16.368
+    "start": 4.193,
+    "end": 4.253
   },
   {
-    "word": "email",
-    "start": 16.428,
-    "end": 16.688
+    "word": "biggest",
+    "start": 4.333,
+    "end": 4.633
   },
   {
-    "word": "to",
-    "start": 16.728,
-    "end": 16.808
+    "word": "funding",
+    "start": 4.733,
+    "end": 4.993
   },
   {
-    "word": "your",
-    "start": 16.828,
-    "end": 16.948
-  },
-  {
-    "word": "AI",
-    "start": 17.028,
-    "end": 17.308
-  },
-  {
-    "word": "and",
-    "start": 17.448,
-    "end": 17.548
-  },
-  {
-    "word": "it",
-    "start": 17.569,
-    "end": 17.609
-  },
-  {
-    "word": "takes",
-    "start": 17.649,
-    "end": 17.849
-  },
-  {
-    "word": "over",
-    "start": 17.909,
-    "end": 18.049
-  },
-  {
-    "word": "the",
-    "start": 18.069,
-    "end": 18.129
-  },
-  {
-    "word": "conversation.",
-    "start": 18.169,
-    "end": 18.749
-  },
-  {
-    "word": "This",
-    "start": 19.59,
-    "end": 19.73
-  },
-  {
-    "word": "sounds",
-    "start": 19.77,
-    "end": 19.99
-  },
-  {
-    "word": "like",
-    "start": 20.03,
-    "end": 20.15
-  },
-  {
-    "word": "a",
-    "start": 20.19,
-    "end": 20.21
-  },
-  {
-    "word": "dream",
-    "start": 20.25,
-    "end": 20.45
+    "word": "round",
+    "start": 5.033,
+    "end": 5.253
   },
   {
     "word": "for",
-    "start": 20.491,
-    "end": 20.591
+    "start": 5.273,
+    "end": 5.393
   },
   {
-    "word": "people",
-    "start": 20.631,
-    "end": 20.851
+    "word": "any",
+    "start": 5.533,
+    "end": 5.673
   },
   {
-    "word": "who",
-    "start": 20.891,
-    "end": 20.991
+    "word": "startup",
+    "start": 5.713,
+    "end": 6.053
   },
   {
-    "word": "hate",
-    "start": 21.031,
-    "end": 21.191
+    "word": "in",
+    "start": 6.193,
+    "end": 6.274
   },
   {
-    "word": "admin",
-    "start": 21.311,
-    "end": 21.551
+    "word": "Austin",
+    "start": 6.334,
+    "end": 6.594
   },
   {
-    "word": "work,",
-    "start": 21.571,
-    "end": 21.751
+    "word": "history.",
+    "start": 6.614,
+    "end": 6.934
+  },
+  {
+    "word": "Most",
+    "start": 7.294,
+    "end": 7.454
+  },
+  {
+    "word": "companies",
+    "start": 7.514,
+    "end": 7.854
+  },
+  {
+    "word": "struggle",
+    "start": 7.874,
+    "end": 8.194
+  },
+  {
+    "word": "to",
+    "start": 8.214,
+    "end": 8.294
+  },
+  {
+    "word": "raise",
+    "start": 8.334,
+    "end": 8.494
+  },
+  {
+    "word": "a",
+    "start": 8.534,
+    "end": 8.554
+  },
+  {
+    "word": "few",
+    "start": 8.594,
+    "end": 8.755
+  },
+  {
+    "word": "million,",
+    "start": 8.815,
+    "end": 9.135
   },
   {
     "word": "but",
-    "start": 21.851,
-    "end": 21.952
+    "start": 9.415,
+    "end": 9.535
   },
   {
-    "word": "it",
-    "start": 21.992,
-    "end": 22.032
+    "word": "this",
+    "start": 9.555,
+    "end": 9.695
   },
   {
-    "word": "creates",
-    "start": 22.092,
-    "end": 22.412
+    "word": "project",
+    "start": 9.755,
+    "end": 10.115
+  },
+  {
+    "word": "is",
+    "start": 10.155,
+    "end": 10.235
+  },
+  {
+    "word": "sucking",
+    "start": 10.295,
+    "end": 10.555
+  },
+  {
+    "word": "up",
+    "start": 10.595,
+    "end": 10.675
+  },
+  {
+    "word": "cash",
+    "start": 10.715,
+    "end": 11.015
+  },
+  {
+    "word": "like",
+    "start": 11.035,
+    "end": 11.155
   },
   {
     "word": "a",
-    "start": 22.452,
-    "end": 22.472
+    "start": 11.175,
+    "end": 11.215
   },
   {
-    "word": "massive",
-    "start": 22.512,
-    "end": 22.792
-  },
-  {
-    "word": "problem.",
-    "start": 22.832,
-    "end": 23.152
-  },
-  {
-    "word": "Businesses",
-    "start": 23.973,
-    "end": 24.373
-  },
-  {
-    "word": "will",
-    "start": 24.413,
-    "end": 24.533
-  },
-  {
-    "word": "no",
-    "start": 24.573,
-    "end": 24.653
-  },
-  {
-    "word": "longer",
-    "start": 24.713,
-    "end": 24.954
-  },
-  {
-    "word": "know",
-    "start": 24.994,
-    "end": 25.134
-  },
-  {
-    "word": "if",
-    "start": 25.174,
-    "end": 25.234
-  },
-  {
-    "word": "they",
-    "start": 25.274,
-    "end": 25.354
-  },
-  {
-    "word": "are",
-    "start": 25.374,
-    "end": 25.474
-  },
-  {
-    "word": "talking",
-    "start": 25.494,
-    "end": 25.774
+    "word": "vacuum",
+    "start": 11.276,
+    "end": 11.676
   },
   {
     "word": "to",
-    "start": 25.814,
-    "end": 25.894
+    "start": 11.696,
+    "end": 11.776
+  },
+  {
+    "word": "dig",
+    "start": 11.816,
+    "end": 11.976
+  },
+  {
+    "word": "tunnels",
+    "start": 12.036,
+    "end": 12.336
+  },
+  {
+    "word": "under",
+    "start": 12.436,
+    "end": 12.576
+  },
+  {
+    "word": "our",
+    "start": 12.616,
+    "end": 12.716
+  },
+  {
+    "word": "feet.",
+    "start": 12.756,
+    "end": 12.956
+  },
+  {
+    "word": "It",
+    "start": 13.356,
+    "end": 13.396
+  },
+  {
+    "word": "is",
+    "start": 13.436,
+    "end": 13.496
   },
   {
     "word": "a",
-    "start": 25.934,
-    "end": 25.954
+    "start": 13.516,
+    "end": 13.556
   },
   {
-    "word": "human",
-    "start": 25.994,
-    "end": 26.275
+    "word": "massive",
+    "start": 13.596,
+    "end": 13.937
   },
   {
-    "word": "or",
-    "start": 26.395,
-    "end": 26.475
+    "word": "bet",
+    "start": 13.997,
+    "end": 14.177
   },
   {
-    "word": "a",
-    "start": 26.495,
-    "end": 26.515
+    "word": "that",
+    "start": 14.197,
+    "end": 14.297
   },
   {
-    "word": "bot",
-    "start": 26.555,
-    "end": 26.775
+    "word": "we",
+    "start": 14.317,
+    "end": 14.377
   },
   {
-    "word": "with",
-    "start": 26.815,
-    "end": 26.935
+    "word": "can",
+    "start": 14.417,
+    "end": 14.517
   },
   {
-    "word": "its",
-    "start": 26.975,
-    "end": 27.055
+    "word": "finally",
+    "start": 14.597,
+    "end": 14.937
   },
   {
-    "word": "own",
-    "start": 27.135,
-    "end": 27.255
+    "word": "end",
+    "start": 15.037,
+    "end": 15.117
   },
   {
-    "word": "private",
-    "start": 27.315,
-    "end": 27.575
+    "word": "traffic",
+    "start": 15.157,
+    "end": 15.497
   },
   {
-    "word": "account.",
-    "start": 27.595,
-    "end": 27.896
+    "word": "jams",
+    "start": 15.537,
+    "end": 15.837
   },
   {
-    "word": "We",
-    "start": 28.736,
-    "end": 28.836
-  },
-  {
-    "word": "are",
-    "start": 28.856,
-    "end": 28.936
+    "word": "by",
+    "start": 15.877,
+    "end": 15.997
   },
   {
     "word": "moving",
-    "start": 28.996,
-    "end": 29.217
+    "start": 16.057,
+    "end": 16.278
   },
   {
-    "word": "toward",
-    "start": 29.257,
-    "end": 29.457
+    "word": "cars",
+    "start": 16.338,
+    "end": 16.598
   },
   {
-    "word": "a",
-    "start": 29.497,
-    "end": 29.517
+    "word": "into",
+    "start": 16.638,
+    "end": 16.778
   },
   {
-    "word": "world",
-    "start": 29.557,
-    "end": 29.777
+    "word": "underground",
+    "start": 16.818,
+    "end": 17.178
   },
   {
-    "word": "where",
-    "start": 29.817,
-    "end": 29.917
+    "word": "tubes.",
+    "start": 17.198,
+    "end": 17.478
   },
   {
-    "word": "your",
-    "start": 29.957,
-    "end": 30.037
+    "word": "Some",
+    "start": 17.938,
+    "end": 18.038
   },
   {
-    "word": "digital",
-    "start": 30.077,
-    "end": 30.337
+    "word": "people",
+    "start": 18.078,
+    "end": 18.298
   },
   {
-    "word": "assistant",
-    "start": 30.357,
-    "end": 30.738
+    "word": "think",
+    "start": 18.338,
+    "end": 18.478
   },
   {
-    "word": "does",
-    "start": 30.798,
-    "end": 30.938
+    "word": "it",
+    "start": 18.518,
+    "end": 18.558
   },
   {
-    "word": "your",
-    "start": 30.958,
-    "end": 31.078
-  },
-  {
-    "word": "chores",
-    "start": 31.098,
-    "end": 31.358
-  },
-  {
-    "word": "behind",
-    "start": 31.378,
-    "end": 31.638
-  },
-  {
-    "word": "your",
-    "start": 31.658,
-    "end": 31.758
-  },
-  {
-    "word": "back.",
-    "start": 31.798,
-    "end": 31.998
-  },
-  {
-    "word": "If",
-    "start": 32.899,
-    "end": 32.959
-  },
-  {
-    "word": "you",
-    "start": 32.979,
-    "end": 33.079
-  },
-  {
-    "word": "were",
-    "start": 33.119,
-    "end": 33.239
+    "word": "is",
+    "start": 18.598,
+    "end": 18.678
   },
   {
     "word": "a",
-    "start": 33.279,
-    "end": 33.299
+    "start": 18.719,
+    "end": 18.759
   },
   {
-    "word": "business",
-    "start": 33.339,
-    "end": 33.62
+    "word": "brilliant",
+    "start": 18.859,
+    "end": 19.239
   },
   {
-    "word": "owner,",
-    "start": 33.68,
-    "end": 33.86
+    "word": "way",
+    "start": 19.259,
+    "end": 19.399
   },
   {
-    "word": "would",
-    "start": 33.88,
-    "end": 34.0
+    "word": "to",
+    "start": 19.419,
+    "end": 19.499
   },
   {
-    "word": "you",
-    "start": 34.02,
-    "end": 34.1
+    "word": "fix",
+    "start": 19.619,
+    "end": 19.819
   },
   {
-    "word": "block",
-    "start": 34.12,
-    "end": 34.36
+    "word": "city",
+    "start": 19.839,
+    "end": 19.999
   },
   {
-    "word": "emails",
-    "start": 34.44,
-    "end": 34.74
+    "word": "gridlock,",
+    "start": 20.039,
+    "end": 20.399
   },
   {
-    "word": "coming",
-    "start": 34.78,
-    "end": 35.001
+    "word": "while",
+    "start": 20.639,
+    "end": 20.799
   },
   {
-    "word": "from",
-    "start": 35.041,
-    "end": 35.161
+    "word": "others",
+    "start": 20.839,
+    "end": 21.019
   },
   {
-    "word": "an",
-    "start": 35.181,
-    "end": 35.221
+    "word": "wonder",
+    "start": 21.079,
+    "end": 21.28
   },
   {
-    "word": "AI",
-    "start": 35.321,
-    "end": 35.541
+    "word": "if",
+    "start": 21.32,
+    "end": 21.38
   },
   {
-    "word": "assistant",
-    "start": 35.581,
-    "end": 35.941
+    "word": "we",
+    "start": 21.4,
+    "end": 21.48
   },
   {
-    "word": "instead",
-    "start": 36.021,
-    "end": 36.281
+    "word": "are",
+    "start": 21.5,
+    "end": 21.58
+  },
+  {
+    "word": "just",
+    "start": 21.62,
+    "end": 21.76
+  },
+  {
+    "word": "bearing",
+    "start": 21.8,
+    "end": 22.1
+  },
+  {
+    "word": "money",
+    "start": 22.16,
+    "end": 22.36
+  },
+  {
+    "word": "in",
+    "start": 22.38,
+    "end": 22.44
+  },
+  {
+    "word": "the",
+    "start": 22.46,
+    "end": 22.52
+  },
+  {
+    "word": "dirt.",
+    "start": 22.56,
+    "end": 22.76
+  },
+  {
+    "word": "It",
+    "start": 23.14,
+    "end": 23.18
+  },
+  {
+    "word": "is",
+    "start": 23.22,
+    "end": 23.28
+  },
+  {
+    "word": "a",
+    "start": 23.32,
+    "end": 23.36
+  },
+  {
+    "word": "wild",
+    "start": 23.42,
+    "end": 23.701
+  },
+  {
+    "word": "gamble",
+    "start": 23.741,
+    "end": 24.021
+  },
+  {
+    "word": "on",
+    "start": 24.061,
+    "end": 24.121
+  },
+  {
+    "word": "the",
+    "start": 24.141,
+    "end": 24.221
+  },
+  {
+    "word": "future",
+    "start": 24.261,
+    "end": 24.581
   },
   {
     "word": "of",
-    "start": 36.301,
-    "end": 36.341
+    "start": 24.621,
+    "end": 24.661
+  },
+  {
+    "word": "how",
+    "start": 24.701,
+    "end": 24.781
+  },
+  {
+    "word": "we",
+    "start": 24.821,
+    "end": 24.901
+  },
+  {
+    "word": "get",
+    "start": 24.921,
+    "end": 25.021
+  },
+  {
+    "word": "around.",
+    "start": 25.041,
+    "end": 25.341
+  },
+  {
+    "word": "If",
+    "start": 25.721,
+    "end": 25.781
+  },
+  {
+    "word": "you",
+    "start": 25.801,
+    "end": 25.901
+  },
+  {
+    "word": "had",
+    "start": 25.921,
+    "end": 26.021
+  },
+  {
+    "word": "the",
+    "start": 26.041,
+    "end": 26.121
+  },
+  {
+    "word": "choice,",
+    "start": 26.162,
+    "end": 26.442
+  },
+  {
+    "word": "would",
+    "start": 26.682,
+    "end": 26.802
+  },
+  {
+    "word": "you",
+    "start": 26.822,
+    "end": 26.902
+  },
+  {
+    "word": "rather",
+    "start": 26.942,
+    "end": 27.162
+  },
+  {
+    "word": "ride",
+    "start": 27.222,
+    "end": 27.442
+  },
+  {
+    "word": "in",
+    "start": 27.462,
+    "end": 27.522
   },
   {
     "word": "a",
-    "start": 36.381,
-    "end": 36.422
+    "start": 27.542,
+    "end": 27.582
   },
   {
-    "word": "real",
-    "start": 36.462,
-    "end": 36.602
+    "word": "tunnel",
+    "start": 27.622,
+    "end": 27.842
   },
   {
-    "word": "person?",
-    "start": 36.642,
-    "end": 36.922
+    "word": "under",
+    "start": 27.862,
+    "end": 27.982
+  },
+  {
+    "word": "the",
+    "start": 28.002,
+    "end": 28.082
+  },
+  {
+    "word": "city,",
+    "start": 28.122,
+    "end": 28.342
+  },
+  {
+    "word": "or",
+    "start": 28.562,
+    "end": 28.643
+  },
+  {
+    "word": "take",
+    "start": 28.663,
+    "end": 28.803
+  },
+  {
+    "word": "a",
+    "start": 28.823,
+    "end": 28.863
+  },
+  {
+    "word": "flying",
+    "start": 28.883,
+    "end": 29.123
+  },
+  {
+    "word": "taxi",
+    "start": 29.163,
+    "end": 29.423
+  },
+  {
+    "word": "above",
+    "start": 29.443,
+    "end": 29.623
+  },
+  {
+    "word": "it?",
+    "start": 29.663,
+    "end": 29.723
   }
 ]

@@ -1,157 +1,145 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1108,
+  "totalDurationInFrames": 892,
   "beats": [
     {
       "type": "headline_card",
-      "text": "AI assistant instinct is now",
+      "text": "Musk just raised $3",
       "emphasisWords": [
-        "Instinct",
-        "email address"
+        "Elon Musk",
+        "$3B",
+        "Austin"
       ],
       "pacing": "slow",
-      "startFrame": 6,
-      "endFrame": 53,
-      "durationInFrames": 47,
-      "scriptText": "The AI assistant Instinct is now worth two point five"
+      "startFrame": 4,
+      "endFrame": 49,
+      "durationInFrames": 45,
+      "scriptText": "Elon Musk just raised three billion dollars for his Boring"
     },
     {
       "type": "stat_pill",
-      "text": "worth $2.5 billion, and it",
-      "value": "$2.5B",
-      "label": "Valuation",
+      "text": "billion for his boring company, and it is officially",
+      "value": "$3B",
+      "label": "Funding Record",
       "pacing": "slow",
-      "startFrame": 53,
-      "endFrame": 110,
-      "durationInFrames": 57,
-      "scriptText": "billion dollars and it just gave itself an email address."
+      "startFrame": 49,
+      "endFrame": 125,
+      "durationInFrames": 76,
+      "scriptText": "Company, and it is officially the biggest funding round for"
     },
     {
-      "type": "icon_text",
-      "text": "just gave itself an email address. Its founder",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 110,
-      "endFrame": 193,
-      "durationInFrames": 83,
-      "scriptText": "Its founder Noah Shinn says your AI can now sign"
-    },
-    {
-      "type": "process_flow",
-      "text": "Noah Shin says your AI can now sign up for its own accounts and handle your business",
-      "steps": [
-        "Forward email",
-        "AI receives",
-        "AI handles",
-        "Task complete"
-      ],
-      "pacing": "slow",
-      "startFrame": 193,
-      "endFrame": 304,
-      "durationInFrames": 111,
-      "scriptText": "up for its own accounts and handle your business without cluttering your personal inbox."
-    },
-    {
-      "type": "icon_text",
-      "text": "without cluttering your personal inbox. need to",
-      "icon": "\ud83d\udce6",
-      "pacing": "slow",
-      "startFrame": 304,
-      "endFrame": 385,
-      "durationInFrames": 81,
-      "scriptText": "Need to return a package or ask a store a question."
-    },
-    {
-      "type": "key_statement",
-      "text": "return a package or ask a store a question. You just forward the",
-      "emphasisWords": [],
-      "startFrame": 385,
-      "endFrame": 491,
-      "durationInFrames": 106,
-      "scriptText": "You just forward the email to your AI and it takes over the conversation."
-    },
-    {
-      "type": "key_statement",
-      "text": "email to your AI and it takes over the conversation. This",
-      "emphasisWords": [],
-      "startFrame": 491,
-      "endFrame": 592,
-      "durationInFrames": 101,
-      "scriptText": "This sounds like a dream for people who hate admin"
-    },
-    {
-      "type": "key_statement",
-      "text": "sounds like a dream for people who hate admin work, but it creates a massive",
-      "emphasisWords": [],
-      "startFrame": 592,
-      "endFrame": 684,
-      "durationInFrames": 92,
-      "scriptText": "work but it creates a massive problem. Businesses will no"
-    },
-    {
-      "type": "icon_text",
-      "text": "problem. Businesses will no longer know if they are talking to a human",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 684,
-      "endFrame": 782,
-      "durationInFrames": 98,
-      "scriptText": "longer know if they are talking to a human or"
-    },
-    {
-      "type": "timeline",
-      "text": "or a bot with its own private account.",
-      "events": [
+      "type": "chart_line",
+      "text": "the biggest funding round for any startup in Austin history.",
+      "points": [
         {
-          "date": "Past",
-          "label": "Manual tasks"
+          "label": "Avg Startup",
+          "value": 5
         },
         {
-          "date": "Present",
-          "label": "AI assistance"
-        },
-        {
-          "date": "Future",
-          "label": "Autonomous chores"
+          "label": "Boring Co",
+          "value": 3000
         }
       ],
       "pacing": "slow",
-      "startFrame": 782,
-      "endFrame": 837,
-      "durationInFrames": 55,
-      "scriptText": "a bot with its own private account. We are moving"
-    },
-    {
-      "type": "scrollytelling",
-      "text": "We are moving toward a world where your digital assistant does your",
-      "title": "The New Reality",
-      "body": "Digital assistants are now performing chores behind your back.",
-      "pacing": "slow",
-      "startFrame": 837,
-      "endFrame": 932,
-      "durationInFrames": 95,
-      "scriptText": "toward a world where your digital assistant does your chores behind your back."
-    },
-    {
-      "type": "key_statement",
-      "text": "chores behind your back. If you were a",
-      "emphasisWords": [],
-      "startFrame": 932,
-      "endFrame": 999,
-      "durationInFrames": 67,
-      "scriptText": "If you were a business owner would you block emails"
+      "startFrame": 125,
+      "endFrame": 203,
+      "durationInFrames": 78,
+      "scriptText": "any startup in Austin history. Most companies struggle to raise"
     },
     {
       "type": "icon_text",
-      "text": "business owner, would you block emails coming from an AI assistant instead of a real person?",
+      "text": "Most companies struggle to raise a few million, but this project",
+      "icon": "\ud83d\udcb8",
+      "pacing": "slow",
+      "startFrame": 203,
+      "endFrame": 295,
+      "durationInFrames": 92,
+      "scriptText": "a few million, but this project is sucking up cash"
+    },
+    {
+      "type": "key_statement",
+      "text": "is sucking up cash like a vacuum to dig tunnels",
+      "emphasisWords": [],
+      "startFrame": 295,
+      "endFrame": 366,
+      "durationInFrames": 71,
+      "scriptText": "like a vacuum to dig tunnels under our feet."
+    },
+    {
+      "type": "key_statement",
+      "text": "under our feet. It is a massive bet that we",
+      "emphasisWords": [],
+      "startFrame": 366,
+      "endFrame": 431,
+      "durationInFrames": 65,
+      "scriptText": "It is a massive bet that we can finally end"
+    },
+    {
+      "type": "key_statement",
+      "text": "can finally end traffic jams by moving cars",
+      "emphasisWords": [],
+      "startFrame": 431,
+      "endFrame": 496,
+      "durationInFrames": 65,
+      "scriptText": "traffic jams by moving cars into underground tubes."
+    },
+    {
+      "type": "icon_text",
+      "text": "into underground tubes. Some people think it is a",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 999,
-      "endFrame": 1108,
-      "durationInFrames": 109,
-      "scriptText": "coming from an AI assistant instead of a real person?"
+      "startFrame": 496,
+      "endFrame": 563,
+      "durationInFrames": 67,
+      "scriptText": "Some people think it is a brilliant way to fix"
+    },
+    {
+      "type": "icon_text",
+      "text": "brilliant way to fix city gridlock, while others wonder if we are just",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 563,
+      "endFrame": 653,
+      "durationInFrames": 90,
+      "scriptText": "city gridlock, while others wonder if we are just burying money in the dirt."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "bearing money in the dirt. It is a wild gamble on the future of",
+      "title": "A Wild Gamble",
+      "body": "The Boring Company represents a massive, high-stakes bet on the future of urban transportation.",
+      "pacing": "slow",
+      "startFrame": 653,
+      "endFrame": 740,
+      "durationInFrames": 87,
+      "scriptText": "It is a wild gamble on the future of how we get around."
+    },
+    {
+      "type": "icon_text",
+      "text": "how we get around. If you had the choice,",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 740,
+      "endFrame": 796,
+      "durationInFrames": 56,
+      "scriptText": "If you had the choice, would you rather ride in"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "would you rather ride in a tunnel under the city, or take a flying taxi above it?",
+      "stories": [
+        "Musk raises $3B",
+        "Austin record broken",
+        "Future of transit"
+      ],
+      "label": "Updates",
+      "pacing": "slow",
+      "startFrame": 796,
+      "endFrame": 892,
+      "durationInFrames": 96,
+      "scriptText": "a tunnel under the city or take a flying taxi above it?"
     }
   ],
-  "source": "TechCrunch AI",
-  "sourceUrl": "https://techcrunch.com/2026/09/09/viral-ai-assistant-instinct-now-has-its-own-email-address/"
+  "source": "Google News Business",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMilAFBVV95cUxNZDNJWUF0M2Q3QU4wQUswcm9zak93UHJ5OE1PMmwteEFpdmgzblhMR19CczhWUjhqa2RrT2tIVjFqUW9KREZzTzF5eEY4dTNuMjl5elFzbUNxd0p4TnVnS0JnNDduSUpydVdFREQyYXhUU0FXYnZfTjNCeXhhTk9XZExtajBJQUlCQnBmNFBsMkZQMndU?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isFt__VFcqztUF8-R7t2vCGlvA3HbzOjHM69SjURQ-MysCdVVlrxC0O9XVbq0s2Oi1OwRrLEe6Ao-6Mx_uCwYGL4rEvpXcUW"
 }

@@ -1,697 +1,597 @@
 [
   {
-    "word": "OpenAI",
-    "start": 0.171,
-    "end": 0.652
+    "word": "30",
+    "start": 0.211,
+    "end": 0.391
+  },
+  {
+    "word": "robots",
+    "start": 0.432,
+    "end": 0.812
   },
   {
     "word": "just",
-    "start": 0.712,
-    "end": 0.892
-  },
-  {
-    "word": "launched",
     "start": 0.972,
-    "end": 1.232
+    "end": 1.152
   },
   {
-    "word": "a",
-    "start": 1.312,
-    "end": 1.353
+    "word": "showed",
+    "start": 1.192,
+    "end": 1.373
   },
   {
-    "word": "new",
-    "start": 1.413,
-    "end": 1.533
-  },
-  {
-    "word": "tool",
-    "start": 1.593,
-    "end": 1.833
-  },
-  {
-    "word": "specifically",
-    "start": 1.873,
-    "end": 2.374
-  },
-  {
-    "word": "designed",
-    "start": 2.414,
-    "end": 2.734
+    "word": "up",
+    "start": 1.393,
+    "end": 1.473
   },
   {
     "word": "to",
-    "start": 2.754,
-    "end": 2.834
+    "start": 1.493,
+    "end": 1.553
   },
   {
-    "word": "replace",
-    "start": 2.874,
-    "end": 3.235
+    "word": "protest",
+    "start": 1.613,
+    "end": 2.054
+  },
+  {
+    "word": "outside",
+    "start": 2.194,
+    "end": 2.574
   },
   {
     "word": "the",
-    "start": 3.275,
-    "end": 3.355
+    "start": 2.594,
+    "end": 2.674
   },
   {
-    "word": "entry-level",
-    "start": 3.475,
-    "end": 3.936
+    "word": "Polish",
+    "start": 2.714,
+    "end": 2.975
   },
   {
-    "word": "work",
-    "start": 3.976,
-    "end": 4.176
+    "word": "government",
+    "start": 3.015,
+    "end": 3.275
   },
   {
-    "word": "of",
-    "start": 4.256,
-    "end": 4.336
+    "word": "building.",
+    "start": 3.295,
+    "end": 3.575
   },
   {
-    "word": "Wall",
-    "start": 4.416,
-    "end": 4.636
-  },
-  {
-    "word": "Street",
-    "start": 4.656,
-    "end": 4.857
-  },
-  {
-    "word": "Junior",
-    "start": 4.897,
-    "end": 5.117
-  },
-  {
-    "word": "Bankers.",
-    "start": 5.137,
-    "end": 5.437
-  },
-  {
-    "word": "This",
-    "start": 5.878,
-    "end": 6.018
-  },
-  {
-    "word": "new",
-    "start": 6.078,
-    "end": 6.178
-  },
-  {
-    "word": "version",
-    "start": 6.218,
-    "end": 6.498
-  },
-  {
-    "word": "of",
-    "start": 6.539,
-    "end": 6.579
-  },
-  {
-    "word": "chat",
-    "start": 6.639,
-    "end": 6.819
-  },
-  {
-    "word": "GPT",
-    "start": 6.859,
-    "end": 7.4
-  },
-  {
-    "word": "was",
-    "start": 7.44,
-    "end": 7.56
-  },
-  {
-    "word": "built",
-    "start": 7.6,
-    "end": 7.8
-  },
-  {
-    "word": "with",
-    "start": 7.82,
-    "end": 7.94
-  },
-  {
-    "word": "help",
-    "start": 7.98,
-    "end": 8.14
-  },
-  {
-    "word": "from",
-    "start": 8.18,
-    "end": 8.281
-  },
-  {
-    "word": "Morgan",
-    "start": 8.321,
-    "end": 8.581
-  },
-  {
-    "word": "Stanley",
-    "start": 8.601,
-    "end": 8.961
-  },
-  {
-    "word": "and",
-    "start": 9.021,
-    "end": 9.101
-  },
-  {
-    "word": "Evercore",
-    "start": 9.182,
-    "end": 9.542
-  },
-  {
-    "word": "to",
-    "start": 9.702,
-    "end": 9.802
-  },
-  {
-    "word": "research",
-    "start": 9.842,
-    "end": 10.183
-  },
-  {
-    "word": "companies",
-    "start": 10.223,
-    "end": 10.563
-  },
-  {
-    "word": "and",
-    "start": 10.844,
-    "end": 10.904
-  },
-  {
-    "word": "write",
-    "start": 10.924,
-    "end": 11.124
-  },
-  {
-    "word": "financial",
-    "start": 11.164,
-    "end": 11.504
-  },
-  {
-    "word": "reports.",
-    "start": 11.544,
-    "end": 11.865
-  },
-  {
-    "word": "For",
-    "start": 12.345,
-    "end": 12.485
-  },
-  {
-    "word": "decades,",
-    "start": 12.545,
-    "end": 12.926
-  },
-  {
-    "word": "recent",
-    "start": 13.246,
-    "end": 13.507
-  },
-  {
-    "word": "college",
-    "start": 13.547,
-    "end": 13.827
-  },
-  {
-    "word": "graduates",
-    "start": 13.847,
-    "end": 14.227
-  },
-  {
-    "word": "have",
-    "start": 14.247,
-    "end": 14.348
-  },
-  {
-    "word": "been",
-    "start": 14.368,
-    "end": 14.488
-  },
-  {
-    "word": "hired",
-    "start": 14.528,
-    "end": 14.748
-  },
-  {
-    "word": "to",
-    "start": 14.768,
-    "end": 14.808
-  },
-  {
-    "word": "do",
-    "start": 14.848,
-    "end": 14.988
-  },
-  {
-    "word": "this",
-    "start": 15.028,
-    "end": 15.169
-  },
-  {
-    "word": "exact",
-    "start": 15.269,
-    "end": 15.649
-  },
-  {
-    "word": "grunt",
-    "start": 15.709,
-    "end": 15.929
-  },
-  {
-    "word": "work",
-    "start": 15.969,
-    "end": 16.17
-  },
-  {
-    "word": "to",
-    "start": 16.29,
-    "end": 16.37
-  },
-  {
-    "word": "prove",
-    "start": 16.43,
-    "end": 16.61
-  },
-  {
-    "word": "their",
-    "start": 16.63,
-    "end": 16.77
-  },
-  {
-    "word": "worth.",
-    "start": 16.81,
-    "end": 16.991
-  },
-  {
-    "word": "Now,",
-    "start": 17.431,
-    "end": 17.611
-  },
-  {
-    "word": "a",
-    "start": 17.852,
-    "end": 17.892
-  },
-  {
-    "word": "computer",
-    "start": 17.912,
-    "end": 18.232
-  },
-  {
-    "word": "model",
-    "start": 18.252,
-    "end": 18.493
-  },
-  {
-    "word": "called",
-    "start": 18.513,
-    "end": 18.713
-  },
-  {
-    "word": "GPT-6",
-    "start": 18.833,
-    "end": 19.975
-  },
-  {
-    "word": "Astra",
-    "start": 20.055,
-    "end": 20.355
-  },
-  {
-    "word": "is",
-    "start": 20.495,
-    "end": 20.555
-  },
-  {
-    "word": "doing",
-    "start": 20.595,
-    "end": 20.776
-  },
-  {
-    "word": "the",
-    "start": 20.796,
-    "end": 20.876
-  },
-  {
-    "word": "heavy",
-    "start": 20.916,
-    "end": 21.136
-  },
-  {
-    "word": "lifting",
-    "start": 21.216,
-    "end": 21.497
-  },
-  {
-    "word": "in",
-    "start": 21.517,
-    "end": 21.597
-  },
-  {
-    "word": "seconds",
-    "start": 21.677,
-    "end": 22.017
-  },
-  {
-    "word": "instead",
-    "start": 22.117,
-    "end": 22.378
-  },
-  {
-    "word": "of",
-    "start": 22.398,
-    "end": 22.458
-  },
-  {
-    "word": "hours.",
-    "start": 22.478,
-    "end": 22.738
-  },
-  {
-    "word": "The",
-    "start": 23.179,
-    "end": 23.259
-  },
-  {
-    "word": "company",
-    "start": 23.299,
-    "end": 23.599
-  },
-  {
-    "word": "is",
-    "start": 23.66,
-    "end": 23.74
-  },
-  {
-    "word": "pushing",
-    "start": 23.8,
-    "end": 24.08
-  },
-  {
-    "word": "hard",
-    "start": 24.14,
-    "end": 24.3
-  },
-  {
-    "word": "into",
-    "start": 24.32,
-    "end": 24.481
-  },
-  {
-    "word": "business",
-    "start": 24.581,
-    "end": 24.881
-  },
-  {
-    "word": "sales",
-    "start": 24.901,
-    "end": 25.182
-  },
-  {
-    "word": "as",
-    "start": 25.262,
-    "end": 25.322
-  },
-  {
-    "word": "they",
-    "start": 25.362,
-    "end": 25.482
-  },
-  {
-    "word": "prepare",
-    "start": 25.502,
-    "end": 25.842
-  },
-  {
-    "word": "for",
-    "start": 25.903,
-    "end": 26.023
-  },
-  {
-    "word": "a",
-    "start": 26.043,
-    "end": 26.083
-  },
-  {
-    "word": "massive",
-    "start": 26.163,
-    "end": 26.483
-  },
-  {
-    "word": "public",
-    "start": 26.523,
-    "end": 26.744
-  },
-  {
-    "word": "stock",
-    "start": 26.764,
-    "end": 26.984
-  },
-  {
-    "word": "offering.",
-    "start": 27.024,
-    "end": 27.304
-  },
-  {
-    "word": "It",
-    "start": 27.665,
-    "end": 27.725
-  },
-  {
-    "word": "feels",
-    "start": 27.765,
-    "end": 27.945
-  },
-  {
-    "word": "like",
-    "start": 27.965,
-    "end": 28.065
-  },
-  {
-    "word": "the",
-    "start": 28.086,
-    "end": 28.166
-  },
-  {
-    "word": "days",
-    "start": 28.206,
-    "end": 28.406
-  },
-  {
-    "word": "of",
-    "start": 28.446,
-    "end": 28.506
-  },
-  {
-    "word": "pulling",
-    "start": 28.566,
-    "end": 28.806
-  },
-  {
-    "word": "all",
-    "start": 28.847,
-    "end": 28.967
-  },
-  {
-    "word": "nighters",
-    "start": 29.007,
-    "end": 29.287
-  },
-  {
-    "word": "to",
-    "start": 29.347,
-    "end": 29.407
-  },
-  {
-    "word": "make",
-    "start": 29.447,
-    "end": 29.588
-  },
-  {
-    "word": "slide",
-    "start": 29.648,
-    "end": 29.908
-  },
-  {
-    "word": "decks",
-    "start": 29.988,
-    "end": 30.228
-  },
-  {
-    "word": "might",
-    "start": 30.449,
-    "end": 30.589
-  },
-  {
-    "word": "be",
-    "start": 30.609,
-    "end": 30.689
-  },
-  {
-    "word": "coming",
-    "start": 30.729,
-    "end": 30.909
-  },
-  {
-    "word": "to",
-    "start": 30.929,
-    "end": 31.009
-  },
-  {
-    "word": "an",
-    "start": 31.05,
-    "end": 31.09
-  },
-  {
-    "word": "end.",
-    "start": 31.17,
-    "end": 31.31
-  },
-  {
-    "word": "If",
-    "start": 31.71,
-    "end": 31.77
-  },
-  {
-    "word": "you",
-    "start": 31.791,
-    "end": 31.851
+    "word": "They",
+    "start": 3.896,
+    "end": 3.996
   },
   {
     "word": "were",
-    "start": 31.871,
-    "end": 32.011
+    "start": 4.016,
+    "end": 4.116
+  },
+  {
+    "word": "not",
+    "start": 4.136,
+    "end": 4.256
+  },
+  {
+    "word": "there",
+    "start": 4.276,
+    "end": 4.417
+  },
+  {
+    "word": "for",
+    "start": 4.457,
+    "end": 4.557
   },
   {
     "word": "a",
-    "start": 32.031,
-    "end": 32.051
+    "start": 4.577,
+    "end": 4.617
   },
   {
-    "word": "fresh",
-    "start": 32.111,
-    "end": 32.311
+    "word": "photo",
+    "start": 4.657,
+    "end": 4.897
   },
   {
-    "word": "college",
-    "start": 32.351,
-    "end": 32.632
+    "word": "op,",
+    "start": 4.997,
+    "end": 5.137
   },
   {
-    "word": "grad",
-    "start": 32.652,
-    "end": 32.932
-  },
-  {
-    "word": "hoping",
-    "start": 32.972,
-    "end": 33.172
+    "word": "but",
+    "start": 5.378,
+    "end": 5.458
   },
   {
     "word": "to",
-    "start": 33.212,
-    "end": 33.252
+    "start": 5.478,
+    "end": 5.558
   },
   {
-    "word": "land",
-    "start": 33.293,
-    "end": 33.453
+    "word": "demand",
+    "start": 5.598,
+    "end": 5.898
   },
   {
-    "word": "a",
-    "start": 33.493,
-    "end": 33.533
-  },
-  {
-    "word": "job",
-    "start": 33.553,
-    "end": 33.753
-  },
-  {
-    "word": "on",
-    "start": 33.813,
-    "end": 33.873
-  },
-  {
-    "word": "Wall",
-    "start": 33.893,
-    "end": 34.094
-  },
-  {
-    "word": "Street,",
-    "start": 34.114,
-    "end": 34.334
-  },
-  {
-    "word": "does",
-    "start": 34.654,
-    "end": 34.795
-  },
-  {
-    "word": "this",
-    "start": 34.815,
-    "end": 34.955
+    "word": "strict",
+    "start": 5.959,
+    "end": 6.239
   },
   {
     "word": "new",
-    "start": 34.995,
-    "end": 35.115
+    "start": 6.359,
+    "end": 6.519
   },
   {
-    "word": "AI",
-    "start": 35.175,
-    "end": 35.415
+    "word": "rules",
+    "start": 6.599,
+    "end": 6.88
   },
   {
-    "word": "tool",
-    "start": 35.475,
-    "end": 35.716
+    "word": "for",
+    "start": 6.92,
+    "end": 7.04
   },
   {
-    "word": "make",
-    "start": 35.876,
-    "end": 35.996
+    "word": "artificial",
+    "start": 7.1,
+    "end": 7.46
   },
   {
-    "word": "you",
-    "start": 36.016,
-    "end": 36.076
+    "word": "intelligence.",
+    "start": 7.48,
+    "end": 7.941
   },
   {
-    "word": "want",
-    "start": 36.096,
-    "end": 36.176
+    "word": "A",
+    "start": 8.402,
+    "end": 8.442
+  },
+  {
+    "word": "group",
+    "start": 8.482,
+    "end": 8.702
+  },
+  {
+    "word": "called",
+    "start": 8.742,
+    "end": 8.962
+  },
+  {
+    "word": "democratism",
+    "start": 9.103,
+    "end": 9.663
+  },
+  {
+    "word": "organized",
+    "start": 9.823,
+    "end": 10.204
+  },
+  {
+    "word": "the",
+    "start": 10.224,
+    "end": 10.284
+  },
+  {
+    "word": "whole",
+    "start": 10.324,
+    "end": 10.484
+  },
+  {
+    "word": "thing",
+    "start": 10.544,
+    "end": 10.725
   },
   {
     "word": "to",
-    "start": 36.196,
-    "end": 36.257
+    "start": 10.765,
+    "end": 10.845
   },
   {
-    "word": "change",
-    "start": 36.277,
-    "end": 36.437
+    "word": "force",
+    "start": 10.905,
+    "end": 11.145
+  },
+  {
+    "word": "leaders",
+    "start": 11.185,
+    "end": 11.425
+  },
+  {
+    "word": "to",
+    "start": 11.466,
+    "end": 11.526
+  },
+  {
+    "word": "pay",
+    "start": 11.566,
+    "end": 11.706
+  },
+  {
+    "word": "attention",
+    "start": 11.746,
+    "end": 12.146
+  },
+  {
+    "word": "to",
+    "start": 12.186,
+    "end": 12.267
+  },
+  {
+    "word": "how",
+    "start": 12.307,
+    "end": 12.467
+  },
+  {
+    "word": "AI",
+    "start": 12.607,
+    "end": 12.907
+  },
+  {
+    "word": "is",
+    "start": 13.068,
+    "end": 13.128
+  },
+  {
+    "word": "changing",
+    "start": 13.188,
+    "end": 13.468
+  },
+  {
+    "word": "our",
+    "start": 13.508,
+    "end": 13.588
+  },
+  {
+    "word": "lives.",
+    "start": 13.628,
+    "end": 13.889
+  },
+  {
+    "word": "It",
+    "start": 14.329,
+    "end": 14.389
+  },
+  {
+    "word": "sounds",
+    "start": 14.429,
+    "end": 14.609
+  },
+  {
+    "word": "like",
+    "start": 14.63,
+    "end": 14.73
+  },
+  {
+    "word": "a",
+    "start": 14.75,
+    "end": 14.79
+  },
+  {
+    "word": "scene",
+    "start": 14.83,
+    "end": 15.01
+  },
+  {
+    "word": "from",
+    "start": 15.03,
+    "end": 15.13
+  },
+  {
+    "word": "a",
+    "start": 15.15,
+    "end": 15.17
+  },
+  {
+    "word": "sci-fi",
+    "start": 15.23,
+    "end": 15.571
+  },
+  {
+    "word": "movie,",
+    "start": 15.591,
+    "end": 15.871
+  },
+  {
+    "word": "but",
+    "start": 16.151,
+    "end": 16.252
+  },
+  {
+    "word": "this",
+    "start": 16.272,
+    "end": 16.412
+  },
+  {
+    "word": "is",
+    "start": 16.452,
+    "end": 16.532
+  },
+  {
+    "word": "happening",
+    "start": 16.572,
+    "end": 16.872
+  },
+  {
+    "word": "right",
+    "start": 16.932,
+    "end": 17.093
+  },
+  {
+    "word": "now",
+    "start": 17.133,
+    "end": 17.293
+  },
+  {
+    "word": "in",
+    "start": 17.353,
+    "end": 17.413
+  },
+  {
+    "word": "real",
+    "start": 17.453,
+    "end": 17.613
+  },
+  {
+    "word": "life.",
+    "start": 17.653,
+    "end": 17.854
+  },
+  {
+    "word": "These",
+    "start": 18.294,
+    "end": 18.454
+  },
+  {
+    "word": "machines",
+    "start": 18.514,
+    "end": 18.815
+  },
+  {
+    "word": "are",
+    "start": 18.835,
+    "end": 18.915
+  },
+  {
+    "word": "being",
+    "start": 18.935,
+    "end": 19.115
+  },
+  {
+    "word": "used",
+    "start": 19.255,
+    "end": 19.416
+  },
+  {
+    "word": "as",
+    "start": 19.496,
+    "end": 19.576
+  },
+  {
+    "word": "a",
+    "start": 19.616,
+    "end": 19.636
+  },
+  {
+    "word": "symbol",
+    "start": 19.716,
+    "end": 19.976
+  },
+  {
+    "word": "to",
+    "start": 20.016,
+    "end": 20.076
+  },
+  {
+    "word": "show",
+    "start": 20.116,
+    "end": 20.297
+  },
+  {
+    "word": "that",
+    "start": 20.337,
+    "end": 20.437
+  },
+  {
+    "word": "we",
+    "start": 20.457,
+    "end": 20.537
+  },
+  {
+    "word": "need",
+    "start": 20.557,
+    "end": 20.697
+  },
+  {
+    "word": "to",
+    "start": 20.717,
+    "end": 20.757
+  },
+  {
+    "word": "keep",
+    "start": 20.797,
+    "end": 20.958
+  },
+  {
+    "word": "a",
+    "start": 20.998,
+    "end": 21.018
+  },
+  {
+    "word": "close",
+    "start": 21.078,
+    "end": 21.338
+  },
+  {
+    "word": "eye",
+    "start": 21.518,
+    "end": 21.598
+  },
+  {
+    "word": "on",
+    "start": 21.638,
+    "end": 21.698
+  },
+  {
+    "word": "the",
+    "start": 21.719,
+    "end": 21.779
+  },
+  {
+    "word": "tech",
+    "start": 21.839,
+    "end": 22.039
+  },
+  {
+    "word": "giants",
+    "start": 22.079,
+    "end": 22.359
+  },
+  {
+    "word": "building",
+    "start": 22.399,
+    "end": 22.64
+  },
+  {
+    "word": "these",
+    "start": 22.66,
+    "end": 22.8
+  },
+  {
+    "word": "systems.",
+    "start": 22.84,
+    "end": 23.16
+  },
+  {
+    "word": "If",
+    "start": 23.621,
+    "end": 23.701
+  },
+  {
+    "word": "robots",
+    "start": 23.741,
+    "end": 24.041
+  },
+  {
+    "word": "are",
+    "start": 24.061,
+    "end": 24.142
+  },
+  {
+    "word": "the",
+    "start": 24.162,
+    "end": 24.222
+  },
+  {
+    "word": "ones",
+    "start": 24.302,
+    "end": 24.442
+  },
+  {
+    "word": "telling",
+    "start": 24.482,
+    "end": 24.722
+  },
+  {
+    "word": "us",
+    "start": 24.742,
+    "end": 24.822
+  },
+  {
+    "word": "to",
+    "start": 24.862,
+    "end": 24.903
+  },
+  {
+    "word": "be",
+    "start": 24.943,
+    "end": 25.003
+  },
+  {
+    "word": "careful,",
+    "start": 25.043,
+    "end": 25.383
+  },
+  {
+    "word": "maybe",
+    "start": 25.643,
+    "end": 25.804
+  },
+  {
+    "word": "we",
+    "start": 25.824,
+    "end": 25.884
+  },
+  {
+    "word": "should",
+    "start": 25.904,
+    "end": 26.044
+  },
+  {
+    "word": "listen.",
+    "start": 26.064,
+    "end": 26.304
+  },
+  {
+    "word": "Would",
+    "start": 26.625,
+    "end": 26.745
+  },
+  {
+    "word": "you",
+    "start": 26.765,
+    "end": 26.865
+  },
+  {
+    "word": "trust",
+    "start": 26.905,
+    "end": 27.085
+  },
+  {
+    "word": "a",
+    "start": 27.145,
+    "end": 27.165
+  },
+  {
+    "word": "computer",
+    "start": 27.185,
+    "end": 27.526
+  },
+  {
+    "word": "program",
+    "start": 27.546,
+    "end": 27.906
+  },
+  {
+    "word": "to",
+    "start": 28.027,
+    "end": 28.107
+  },
+  {
+    "word": "make",
+    "start": 28.127,
+    "end": 28.247
+  },
+  {
+    "word": "laws",
+    "start": 28.287,
+    "end": 28.447
+  },
+  {
+    "word": "for",
+    "start": 28.467,
+    "end": 28.547
   },
   {
     "word": "your",
-    "start": 36.457,
-    "end": 36.557
+    "start": 28.567,
+    "end": 28.667
   },
   {
-    "word": "career",
-    "start": 36.577,
-    "end": 36.797
-  },
-  {
-    "word": "path?",
-    "start": 36.817,
-    "end": 37.098
+    "word": "country?",
+    "start": 28.687,
+    "end": 28.948
   }
 ]

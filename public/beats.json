@@ -1,181 +1,160 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1113,
+  "totalDurationInFrames": 868,
   "beats": [
     {
       "type": "headline_card",
-      "text": "OpenAI just launched a new tool",
+      "text": "30 robots just showed up to protest",
       "emphasisWords": [
-        "OpenAI",
-        "junior bankers"
+        "Robots",
+        "protest",
+        "Poland"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 55,
-      "durationInFrames": 50,
-      "scriptText": "OpenAI just launched a new tool specifically designed to replace"
-    },
-    {
-      "type": "stat_pill",
-      "text": "specifically designed to replace the entry-level work of",
-      "value": "100%",
-      "label": "Entry-level work",
-      "pacing": "normal",
-      "startFrame": 55,
-      "endFrame": 131,
-      "durationInFrames": 76,
-      "scriptText": "the entry-level work of Wall Street junior bankers."
-    },
-    {
-      "type": "icon_text",
-      "text": "Wall Street Junior Bankers. This new version of chat",
-      "icon": "\ud83e\udd1d",
-      "pacing": "slow",
-      "startFrame": 131,
-      "endFrame": 205,
-      "durationInFrames": 74,
-      "scriptText": "This new version of ChatGPT was built with help from"
+      "startFrame": 6,
+      "endFrame": 62,
+      "durationInFrames": 56,
+      "scriptText": "Thirty robots just showed up to protest outside the Polish government building."
     },
     {
       "type": "process_flow",
-      "text": "GPT was built with help from Morgan Stanley and Evercore to research",
+      "text": "outside the Polish government building. They were not there for a photo op,",
       "steps": [
-        "Research companies",
-        "Write reports",
-        "Automate analysis"
+        "Arrival",
+        "Protest",
+        "Demand"
       ],
       "pacing": "slow",
-      "startFrame": 205,
-      "endFrame": 305,
-      "durationInFrames": 100,
-      "scriptText": "Morgan Stanley and Evercore to research companies and write financial reports."
+      "startFrame": 62,
+      "endFrame": 154,
+      "durationInFrames": 92,
+      "scriptText": "They were not there for a photo op, but to"
+    },
+    {
+      "type": "icon_text",
+      "text": "but to demand strict new rules for",
+      "icon": "\ud83e\udd16",
+      "pacing": "slow",
+      "startFrame": 154,
+      "endFrame": 211,
+      "durationInFrames": 57,
+      "scriptText": "demand strict new rules for artificial intelligence. A group called"
     },
     {
       "type": "timeline",
-      "text": "companies and write financial reports. For decades, recent",
-      "pacing": "slow",
+      "text": "artificial intelligence. A group called democratism organized the whole",
       "events": [
         {
-          "date": "Decades ago",
-          "label": "Graduates hired"
+          "date": "Start",
+          "label": "Organization"
         },
         {
-          "date": "Recent years",
-          "label": "Grunt work focus"
+          "date": "Mid",
+          "label": "Protest"
         },
         {
-          "date": "Today",
-          "label": "AI automation"
+          "date": "End",
+          "label": "Policy Demand"
         }
       ],
-      "startFrame": 305,
-      "endFrame": 405,
-      "durationInFrames": 100,
-      "scriptText": "For decades, recent college graduates have been hired to do"
+      "pacing": "slow",
+      "startFrame": 211,
+      "endFrame": 315,
+      "durationInFrames": 104,
+      "scriptText": "Democratism organized the whole thing to force leaders to pay"
     },
     {
       "type": "stat_pill",
-      "text": "college graduates have been hired to do this exact grunt work to",
+      "text": "thing to force leaders to pay attention to how AI",
       "pacing": "normal",
-      "value": "Grunt work",
-      "label": "Traditional career path",
-      "startFrame": 405,
-      "endFrame": 491,
-      "durationInFrames": 86,
-      "scriptText": "this exact grunt work to prove their worth."
+      "value": "100%",
+      "label": "AI impact on lives",
+      "startFrame": 315,
+      "endFrame": 392,
+      "durationInFrames": 77,
+      "scriptText": "attention to how AI is changing our lives."
     },
     {
       "type": "compare_split",
-      "text": "prove their worth. Now, a computer model called",
-      "left": "Human junior banker",
-      "right": "GPT-6 Astra model",
+      "text": "is changing our lives. It sounds like a scene from a",
+      "left": "Sci-fi movie scene",
+      "right": "Real life event",
       "pacing": "slow",
-      "startFrame": 491,
-      "endFrame": 561,
-      "durationInFrames": 70,
-      "scriptText": "Now, a computer model called GPT-6 Astra is doing the"
+      "startFrame": 392,
+      "endFrame": 455,
+      "durationInFrames": 63,
+      "scriptText": "It sounds like a scene from a sci-fi movie, but"
     },
     {
-      "type": "stat_pill",
-      "text": "GPT-6 Astra is doing the heavy lifting in seconds instead of hours.",
-      "value": "Seconds",
-      "label": "Processing time",
-      "pacing": "slow",
-      "startFrame": 561,
-      "endFrame": 682,
-      "durationInFrames": 121,
-      "scriptText": "heavy lifting in seconds instead of hours. The company is"
+      "type": "icon_text",
+      "text": "sci-fi movie, but this is happening right now in real life.",
+      "icon": "\ud83d\udcca",
+      "pacing": "normal",
+      "startFrame": 455,
+      "endFrame": 530,
+      "durationInFrames": 75,
+      "scriptText": "this is happening right now in real life."
     },
     {
       "type": "progress_meter",
-      "text": "The company is pushing hard into business sales as they prepare for a massive",
+      "text": "These machines are being used",
+      "value": 30,
+      "maxValue": 100,
+      "label": "Robot participants",
+      "pacing": "slow",
+      "startFrame": 530,
+      "endFrame": 582,
+      "durationInFrames": 52,
+      "scriptText": "These machines are being used as a symbol to show"
+    },
+    {
+      "type": "progress_meter",
+      "text": "as a symbol to show that we need to keep a close eye on",
+      "pacing": "slow",
       "value": 85,
       "maxValue": 100,
-      "label": "Business sales push",
-      "pacing": "slow",
-      "startFrame": 682,
-      "endFrame": 794,
-      "durationInFrames": 112,
-      "scriptText": "pushing hard into business sales as they prepare for a massive public stock offering."
+      "label": "Need for oversight",
+      "startFrame": 582,
+      "endFrame": 651,
+      "durationInFrames": 69,
+      "scriptText": "that we need to keep a close eye on the"
     },
     {
       "type": "icon_text",
-      "text": "public stock offering. It feels like the days of pulling all",
+      "text": "the tech giants building these systems.",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 794,
-      "endFrame": 869,
-      "durationInFrames": 75,
-      "scriptText": "It feels like the days of pulling all-nighters to make"
+      "startFrame": 651,
+      "endFrame": 697,
+      "durationInFrames": 46,
+      "scriptText": "tech giants building these systems. If robots are the ones"
     },
     {
-      "type": "scrollytelling",
-      "text": "nighters to make slide decks might be coming to an",
-      "pacing": "normal",
-      "title": "The End of Grunt Work",
-      "body": "The traditional path for college graduates entering finance is facing a significant technological disruption.",
-      "startFrame": 869,
-      "endFrame": 933,
-      "durationInFrames": 64,
-      "scriptText": "slide decks might be coming to an end."
-    },
-    {
-      "type": "icon_text",
-      "text": "end. If you were a fresh college grad hoping",
-      "icon": "\ud83d\udcca",
+      "type": "quote_attribution",
+      "text": "If robots are the ones telling us to be careful, maybe we",
+      "quote": "If robots are the ones telling us to be careful, maybe we should listen.",
+      "attribution": "Protest organizers",
       "pacing": "slow",
-      "startFrame": 933,
-      "endFrame": 995,
-      "durationInFrames": 62,
-      "scriptText": "If you were a fresh college grad hoping to land"
+      "startFrame": 697,
+      "endFrame": 777,
+      "durationInFrames": 80,
+      "scriptText": "telling us to be careful, maybe we should listen."
     },
     {
-      "type": "stat_pill",
-      "text": "to land a job on Wall Street, does this new",
-      "value": "New AI",
-      "label": "Career impact",
-      "pacing": "slow",
-      "startFrame": 995,
-      "endFrame": 1053,
-      "durationInFrames": 58,
-      "scriptText": "a job on Wall Street, does this new AI tool"
-    },
-    {
-      "type": "ticker_tape",
-      "text": "AI tool make you want to change your career path?",
-      "stories": [
-        "Wall Street shifts",
-        "AI adoption grows",
-        "Career paths evolve"
+      "type": "key_statement",
+      "text": "should listen. Would you trust a computer program to make laws for your country?",
+      "emphasisWords": [
+        "Trust",
+        "AI",
+        "Laws"
       ],
-      "label": "Industry News",
-      "pacing": "normal",
-      "startFrame": 1053,
-      "endFrame": 1113,
-      "durationInFrames": 60,
-      "scriptText": "make you want to change your career path?"
+      "pacing": "slow",
+      "startFrame": 777,
+      "endFrame": 868,
+      "durationInFrames": 91,
+      "scriptText": "Would you trust a computer program to make laws for your country?"
     }
   ],
-  "source": "CNBC Business",
-  "sourceUrl": "https://www.cnbc.com/2026/09/10/openai-chatgpt-for-financial-services-targets-work-of-junior-bankers.html"
+  "source": "YouTube Yahoo Finance",
+  "sourceUrl": "https://www.youtube.com/shorts/u5mz4OaO4xw"
 }

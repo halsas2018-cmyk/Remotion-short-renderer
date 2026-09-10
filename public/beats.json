@@ -1,145 +1,181 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 892,
+  "totalDurationInFrames": 1113,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Musk just raised $3",
+      "text": "OpenAI just launched a new tool",
       "emphasisWords": [
-        "Elon Musk",
-        "$3B",
-        "Austin"
+        "OpenAI",
+        "junior bankers"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 49,
-      "durationInFrames": 45,
-      "scriptText": "Elon Musk just raised three billion dollars for his Boring"
+      "startFrame": 5,
+      "endFrame": 55,
+      "durationInFrames": 50,
+      "scriptText": "OpenAI just launched a new tool specifically designed to replace"
     },
     {
       "type": "stat_pill",
-      "text": "billion for his boring company, and it is officially",
-      "value": "$3B",
-      "label": "Funding Record",
-      "pacing": "slow",
-      "startFrame": 49,
-      "endFrame": 125,
+      "text": "specifically designed to replace the entry-level work of",
+      "value": "100%",
+      "label": "Entry-level work",
+      "pacing": "normal",
+      "startFrame": 55,
+      "endFrame": 131,
       "durationInFrames": 76,
-      "scriptText": "Company, and it is officially the biggest funding round for"
+      "scriptText": "the entry-level work of Wall Street junior bankers."
     },
     {
-      "type": "chart_line",
-      "text": "the biggest funding round for any startup in Austin history.",
-      "points": [
-        {
-          "label": "Avg Startup",
-          "value": 5
-        },
-        {
-          "label": "Boring Co",
-          "value": 3000
-        }
+      "type": "icon_text",
+      "text": "Wall Street Junior Bankers. This new version of chat",
+      "icon": "\ud83e\udd1d",
+      "pacing": "slow",
+      "startFrame": 131,
+      "endFrame": 205,
+      "durationInFrames": 74,
+      "scriptText": "This new version of ChatGPT was built with help from"
+    },
+    {
+      "type": "process_flow",
+      "text": "GPT was built with help from Morgan Stanley and Evercore to research",
+      "steps": [
+        "Research companies",
+        "Write reports",
+        "Automate analysis"
       ],
       "pacing": "slow",
-      "startFrame": 125,
-      "endFrame": 203,
-      "durationInFrames": 78,
-      "scriptText": "any startup in Austin history. Most companies struggle to raise"
+      "startFrame": 205,
+      "endFrame": 305,
+      "durationInFrames": 100,
+      "scriptText": "Morgan Stanley and Evercore to research companies and write financial reports."
     },
     {
-      "type": "icon_text",
-      "text": "Most companies struggle to raise a few million, but this project",
-      "icon": "\ud83d\udcb8",
+      "type": "timeline",
+      "text": "companies and write financial reports. For decades, recent",
       "pacing": "slow",
-      "startFrame": 203,
-      "endFrame": 295,
-      "durationInFrames": 92,
-      "scriptText": "a few million, but this project is sucking up cash"
+      "events": [
+        {
+          "date": "Decades ago",
+          "label": "Graduates hired"
+        },
+        {
+          "date": "Recent years",
+          "label": "Grunt work focus"
+        },
+        {
+          "date": "Today",
+          "label": "AI automation"
+        }
+      ],
+      "startFrame": 305,
+      "endFrame": 405,
+      "durationInFrames": 100,
+      "scriptText": "For decades, recent college graduates have been hired to do"
     },
     {
-      "type": "key_statement",
-      "text": "is sucking up cash like a vacuum to dig tunnels",
-      "emphasisWords": [],
-      "startFrame": 295,
-      "endFrame": 366,
-      "durationInFrames": 71,
-      "scriptText": "like a vacuum to dig tunnels under our feet."
+      "type": "stat_pill",
+      "text": "college graduates have been hired to do this exact grunt work to",
+      "pacing": "normal",
+      "value": "Grunt work",
+      "label": "Traditional career path",
+      "startFrame": 405,
+      "endFrame": 491,
+      "durationInFrames": 86,
+      "scriptText": "this exact grunt work to prove their worth."
     },
     {
-      "type": "key_statement",
-      "text": "under our feet. It is a massive bet that we",
-      "emphasisWords": [],
-      "startFrame": 366,
-      "endFrame": 431,
-      "durationInFrames": 65,
-      "scriptText": "It is a massive bet that we can finally end"
+      "type": "compare_split",
+      "text": "prove their worth. Now, a computer model called",
+      "left": "Human junior banker",
+      "right": "GPT-6 Astra model",
+      "pacing": "slow",
+      "startFrame": 491,
+      "endFrame": 561,
+      "durationInFrames": 70,
+      "scriptText": "Now, a computer model called GPT-6 Astra is doing the"
     },
     {
-      "type": "key_statement",
-      "text": "can finally end traffic jams by moving cars",
-      "emphasisWords": [],
-      "startFrame": 431,
-      "endFrame": 496,
-      "durationInFrames": 65,
-      "scriptText": "traffic jams by moving cars into underground tubes."
+      "type": "stat_pill",
+      "text": "GPT-6 Astra is doing the heavy lifting in seconds instead of hours.",
+      "value": "Seconds",
+      "label": "Processing time",
+      "pacing": "slow",
+      "startFrame": 561,
+      "endFrame": 682,
+      "durationInFrames": 121,
+      "scriptText": "heavy lifting in seconds instead of hours. The company is"
+    },
+    {
+      "type": "progress_meter",
+      "text": "The company is pushing hard into business sales as they prepare for a massive",
+      "value": 85,
+      "maxValue": 100,
+      "label": "Business sales push",
+      "pacing": "slow",
+      "startFrame": 682,
+      "endFrame": 794,
+      "durationInFrames": 112,
+      "scriptText": "pushing hard into business sales as they prepare for a massive public stock offering."
     },
     {
       "type": "icon_text",
-      "text": "into underground tubes. Some people think it is a",
+      "text": "public stock offering. It feels like the days of pulling all",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 496,
-      "endFrame": 563,
-      "durationInFrames": 67,
-      "scriptText": "Some people think it is a brilliant way to fix"
-    },
-    {
-      "type": "icon_text",
-      "text": "brilliant way to fix city gridlock, while others wonder if we are just",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 563,
-      "endFrame": 653,
-      "durationInFrames": 90,
-      "scriptText": "city gridlock, while others wonder if we are just burying money in the dirt."
+      "startFrame": 794,
+      "endFrame": 869,
+      "durationInFrames": 75,
+      "scriptText": "It feels like the days of pulling all-nighters to make"
     },
     {
       "type": "scrollytelling",
-      "text": "bearing money in the dirt. It is a wild gamble on the future of",
-      "title": "A Wild Gamble",
-      "body": "The Boring Company represents a massive, high-stakes bet on the future of urban transportation.",
-      "pacing": "slow",
-      "startFrame": 653,
-      "endFrame": 740,
-      "durationInFrames": 87,
-      "scriptText": "It is a wild gamble on the future of how we get around."
+      "text": "nighters to make slide decks might be coming to an",
+      "pacing": "normal",
+      "title": "The End of Grunt Work",
+      "body": "The traditional path for college graduates entering finance is facing a significant technological disruption.",
+      "startFrame": 869,
+      "endFrame": 933,
+      "durationInFrames": 64,
+      "scriptText": "slide decks might be coming to an end."
     },
     {
       "type": "icon_text",
-      "text": "how we get around. If you had the choice,",
+      "text": "end. If you were a fresh college grad hoping",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 740,
-      "endFrame": 796,
-      "durationInFrames": 56,
-      "scriptText": "If you had the choice, would you rather ride in"
+      "startFrame": 933,
+      "endFrame": 995,
+      "durationInFrames": 62,
+      "scriptText": "If you were a fresh college grad hoping to land"
+    },
+    {
+      "type": "stat_pill",
+      "text": "to land a job on Wall Street, does this new",
+      "value": "New AI",
+      "label": "Career impact",
+      "pacing": "slow",
+      "startFrame": 995,
+      "endFrame": 1053,
+      "durationInFrames": 58,
+      "scriptText": "a job on Wall Street, does this new AI tool"
     },
     {
       "type": "ticker_tape",
-      "text": "would you rather ride in a tunnel under the city, or take a flying taxi above it?",
+      "text": "AI tool make you want to change your career path?",
       "stories": [
-        "Musk raises $3B",
-        "Austin record broken",
-        "Future of transit"
+        "Wall Street shifts",
+        "AI adoption grows",
+        "Career paths evolve"
       ],
-      "label": "Updates",
-      "pacing": "slow",
-      "startFrame": 796,
-      "endFrame": 892,
-      "durationInFrames": 96,
-      "scriptText": "a tunnel under the city or take a flying taxi above it?"
+      "label": "Industry News",
+      "pacing": "normal",
+      "startFrame": 1053,
+      "endFrame": 1113,
+      "durationInFrames": 60,
+      "scriptText": "make you want to change your career path?"
     }
   ],
-  "source": "Google News Business",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMilAFBVV95cUxNZDNJWUF0M2Q3QU4wQUswcm9zak93UHJ5OE1PMmwteEFpdmgzblhMR19CczhWUjhqa2RrT2tIVjFqUW9KREZzTzF5eEY4dTNuMjl5elFzbUNxd0p4TnVnS0JnNDduSUpydVdFREQyYXhUU0FXYnZfTjNCeXhhTk9XZExtajBJQUlCQnBmNFBsMkZQMndU?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isFt__VFcqztUF8-R7t2vCGlvA3HbzOjHM69SjURQ-MysCdVVlrxC0O9XVbq0s2Oi1OwRrLEe6Ao-6Mx_uCwYGL4rEvpXcUW"
+  "source": "CNBC Business",
+  "sourceUrl": "https://www.cnbc.com/2026/09/10/openai-chatgpt-for-financial-services-targets-work-of-junior-bankers.html"
 }

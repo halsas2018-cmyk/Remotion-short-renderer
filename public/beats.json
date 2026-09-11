@@ -1,160 +1,146 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 868,
+  "totalDurationInFrames": 998,
   "beats": [
     {
       "type": "headline_card",
-      "text": "30 robots just showed up to protest",
+      "text": "anthropic researcher just quit and",
       "emphasisWords": [
-        "Robots",
-        "protest",
-        "Poland"
+        "Anthropic researcher",
+        "doomsday warning"
       ],
       "pacing": "slow",
-      "startFrame": 6,
-      "endFrame": 62,
+      "startFrame": 4,
+      "endFrame": 60,
       "durationInFrames": 56,
-      "scriptText": "Thirty robots just showed up to protest outside the Polish government building."
+      "scriptText": "An Anthropic researcher just quit and warned the world that"
+    },
+    {
+      "type": "icon_text",
+      "text": "warned the world that the company is gambling with our lives to build",
+      "icon": "\u26a0\ufe0f",
+      "pacing": "slow",
+      "startFrame": 60,
+      "endFrame": 145,
+      "durationInFrames": 85,
+      "scriptText": "the company is gambling with our lives to build a super-intelligent AI."
     },
     {
       "type": "process_flow",
-      "text": "outside the Polish government building. They were not there for a photo op,",
+      "text": "a super intelligent AI. This isn't just a random complaint",
       "steps": [
-        "Arrival",
-        "Protest",
-        "Demand"
+        "Researcher warning",
+        "Internal validation",
+        "Public concern"
       ],
       "pacing": "slow",
-      "startFrame": 62,
-      "endFrame": 154,
-      "durationInFrames": 92,
-      "scriptText": "They were not there for a photo op, but to"
+      "startFrame": 145,
+      "endFrame": 231,
+      "durationInFrames": 86,
+      "scriptText": "This isn't just a random complaint, because the company's own"
     },
     {
       "type": "icon_text",
-      "text": "but to demand strict new rules for",
-      "icon": "\ud83e\udd16",
+      "text": "because the company's own safety lead actually agreed with the post",
+      "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 154,
-      "endFrame": 211,
-      "durationInFrames": 57,
-      "scriptText": "demand strict new rules for artificial intelligence. A group called"
+      "startFrame": 231,
+      "endFrame": 320,
+      "durationInFrames": 89,
+      "scriptText": "safety lead actually agreed with the post instead of denying it."
     },
     {
-      "type": "timeline",
-      "text": "artificial intelligence. A group called democratism organized the whole",
-      "events": [
-        {
-          "date": "Start",
-          "label": "Organization"
-        },
-        {
-          "date": "Mid",
-          "label": "Protest"
-        },
-        {
-          "date": "End",
-          "label": "Policy Demand"
-        }
-      ],
+      "type": "versus",
+      "text": "instead of denying it. It is a massive red flag coming from the people literally",
+      "left": "Building safe AI code",
+      "right": "Gambling with human lives",
       "pacing": "slow",
-      "startFrame": 211,
-      "endFrame": 315,
-      "durationInFrames": 104,
-      "scriptText": "Democratism organized the whole thing to force leaders to pay"
+      "startFrame": 320,
+      "endFrame": 431,
+      "durationInFrames": 111,
+      "scriptText": "It is a massive red flag coming from the people literally building the code."
     },
     {
-      "type": "stat_pill",
-      "text": "thing to force leaders to pay attention to how AI",
-      "pacing": "normal",
-      "value": "100%",
-      "label": "AI impact on lives",
-      "startFrame": 315,
-      "endFrame": 392,
-      "durationInFrames": 77,
-      "scriptText": "attention to how AI is changing our lives."
+      "type": "before_after",
+      "text": "building the code. But here is the catch. This",
+      "pacing": "slow",
+      "beforeLabel": "Internal research phase",
+      "afterLabel": "Public stock market launch",
+      "startFrame": 431,
+      "endFrame": 497,
+      "durationInFrames": 66,
+      "scriptText": "But here is the catch, this panic is happening right"
     },
     {
       "type": "compare_split",
-      "text": "is changing our lives. It sounds like a scene from a",
-      "left": "Sci-fi movie scene",
-      "right": "Real life event",
+      "text": "panic is happening right as anthropic is reportedly getting ready to go public on the",
+      "left": "Anthropic internal safety concerns",
+      "right": "Impending public stock offering",
       "pacing": "slow",
-      "startFrame": 392,
-      "endFrame": 455,
-      "durationInFrames": 63,
-      "scriptText": "It sounds like a scene from a sci-fi movie, but"
+      "startFrame": 497,
+      "endFrame": 606,
+      "durationInFrames": 109,
+      "scriptText": "as Anthropic is reportedly getting ready to go public on the stock market."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "stock market. Are they rushing to build something",
+      "pacing": "slow",
+      "title": "The Investor Pressure",
+      "body": "The company faces intense scrutiny as they prepare for a major financial payday.",
+      "startFrame": 606,
+      "endFrame": 667,
+      "durationInFrames": 61,
+      "scriptText": "Are they rushing to build something dangerous just to impress"
     },
     {
       "type": "icon_text",
-      "text": "sci-fi movie, but this is happening right now in real life.",
+      "text": "dangerous just to impress investors before the big payday? Or is",
       "icon": "\ud83d\udcca",
-      "pacing": "normal",
-      "startFrame": 455,
-      "endFrame": 530,
+      "pacing": "slow",
+      "startFrame": 667,
+      "endFrame": 754,
+      "durationInFrames": 87,
+      "scriptText": "investors before the big payday? Or is the tech actually"
+    },
+    {
+      "type": "icon_text",
+      "text": "the tech actually getting too smart for its own good? If",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 754,
+      "endFrame": 829,
       "durationInFrames": 75,
-      "scriptText": "this is happening right now in real life."
+      "scriptText": "getting too smart for its own good? If you were"
     },
     {
       "type": "progress_meter",
-      "text": "These machines are being used",
-      "value": 30,
+      "text": "you were in charge of a company building super",
+      "value": 50,
       "maxValue": 100,
-      "label": "Robot participants",
+      "label": "Safety vs Competition",
       "pacing": "slow",
-      "startFrame": 530,
-      "endFrame": 582,
+      "startFrame": 829,
+      "endFrame": 881,
       "durationInFrames": 52,
-      "scriptText": "These machines are being used as a symbol to show"
+      "scriptText": "in charge of a company building super-intelligence, would you prioritize"
     },
     {
-      "type": "progress_meter",
-      "text": "as a symbol to show that we need to keep a close eye on",
-      "pacing": "slow",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Need for oversight",
-      "startFrame": 582,
-      "endFrame": 651,
-      "durationInFrames": 69,
-      "scriptText": "that we need to keep a close eye on the"
-    },
-    {
-      "type": "icon_text",
-      "text": "the tech giants building these systems.",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 651,
-      "endFrame": 697,
-      "durationInFrames": 46,
-      "scriptText": "tech giants building these systems. If robots are the ones"
-    },
-    {
-      "type": "quote_attribution",
-      "text": "If robots are the ones telling us to be careful, maybe we",
-      "quote": "If robots are the ones telling us to be careful, maybe we should listen.",
-      "attribution": "Protest organizers",
-      "pacing": "slow",
-      "startFrame": 697,
-      "endFrame": 777,
-      "durationInFrames": 80,
-      "scriptText": "telling us to be careful, maybe we should listen."
-    },
-    {
-      "type": "key_statement",
-      "text": "should listen. Would you trust a computer program to make laws for your country?",
-      "emphasisWords": [
-        "Trust",
-        "AI",
-        "Laws"
+      "type": "ticker_tape",
+      "text": "intelligence, would you prioritize safety or beating your competition to the finish line?",
+      "stories": [
+        "Anthropic IPO looms",
+        "Safety concerns rise",
+        "Investors watch closely"
       ],
+      "label": "Market Watch",
       "pacing": "slow",
-      "startFrame": 777,
-      "endFrame": 868,
-      "durationInFrames": 91,
-      "scriptText": "Would you trust a computer program to make laws for your country?"
+      "startFrame": 881,
+      "endFrame": 998,
+      "durationInFrames": 117,
+      "scriptText": "safety or beating your competition to the finish line?"
     }
   ],
-  "source": "YouTube Yahoo Finance",
-  "sourceUrl": "https://www.youtube.com/shorts/u5mz4OaO4xw"
+  "source": "TechCrunch AI",
+  "sourceUrl": "https://techcrunch.com/podcast/an-anthropic-researchers-doomsday-warning-comes-at-a-very-interesting-time/"
 }

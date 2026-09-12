@@ -1,146 +1,174 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 998,
+  "totalDurationInFrames": 1063,
   "beats": [
     {
       "type": "headline_card",
-      "text": "anthropic researcher just quit and",
+      "text": "Tesla just unveiled a car with no steering wheel and no",
       "emphasisWords": [
-        "Anthropic researcher",
-        "doomsday warning"
+        "no steering wheel",
+        "no pedals"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 60,
-      "durationInFrames": 56,
-      "scriptText": "An Anthropic researcher just quit and warned the world that"
+      "startFrame": 3,
+      "endFrame": 74,
+      "durationInFrames": 71,
+      "scriptText": "Tesla just unveiled a car with no steering wheel and no pedals."
     },
     {
       "type": "icon_text",
-      "text": "warned the world that the company is gambling with our lives to build",
-      "icon": "\u26a0\ufe0f",
+      "text": "pedals. It is called the CyberCab, and it",
+      "icon": "\ud83d\ude95",
       "pacing": "slow",
-      "startFrame": 60,
-      "endFrame": 145,
-      "durationInFrames": 85,
-      "scriptText": "the company is gambling with our lives to build a super-intelligent AI."
+      "startFrame": 74,
+      "endFrame": 136,
+      "durationInFrames": 62,
+      "scriptText": "It is called the Cybercab and it is basically a"
     },
     {
       "type": "process_flow",
-      "text": "a super intelligent AI. This isn't just a random complaint",
+      "text": "is basically a lounge on wheels designed to drive itself",
       "steps": [
-        "Researcher warning",
-        "Internal validation",
-        "Public concern"
+        "Lounge design",
+        "Camera vision",
+        "Autonomous driving"
       ],
       "pacing": "slow",
-      "startFrame": 145,
-      "endFrame": 231,
-      "durationInFrames": 86,
-      "scriptText": "This isn't just a random complaint, because the company's own"
-    },
-    {
-      "type": "icon_text",
-      "text": "because the company's own safety lead actually agreed with the post",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 231,
-      "endFrame": 320,
-      "durationInFrames": 89,
-      "scriptText": "safety lead actually agreed with the post instead of denying it."
-    },
-    {
-      "type": "versus",
-      "text": "instead of denying it. It is a massive red flag coming from the people literally",
-      "left": "Building safe AI code",
-      "right": "Gambling with human lives",
-      "pacing": "slow",
-      "startFrame": 320,
-      "endFrame": 431,
-      "durationInFrames": 111,
-      "scriptText": "It is a massive red flag coming from the people literally building the code."
-    },
-    {
-      "type": "before_after",
-      "text": "building the code. But here is the catch. This",
-      "pacing": "slow",
-      "beforeLabel": "Internal research phase",
-      "afterLabel": "Public stock market launch",
-      "startFrame": 431,
-      "endFrame": 497,
-      "durationInFrames": 66,
-      "scriptText": "But here is the catch, this panic is happening right"
-    },
-    {
-      "type": "compare_split",
-      "text": "panic is happening right as anthropic is reportedly getting ready to go public on the",
-      "left": "Anthropic internal safety concerns",
-      "right": "Impending public stock offering",
-      "pacing": "slow",
-      "startFrame": 497,
-      "endFrame": 606,
-      "durationInFrames": 109,
-      "scriptText": "as Anthropic is reportedly getting ready to go public on the stock market."
-    },
-    {
-      "type": "scrollytelling",
-      "text": "stock market. Are they rushing to build something",
-      "pacing": "slow",
-      "title": "The Investor Pressure",
-      "body": "The company faces intense scrutiny as they prepare for a major financial payday.",
-      "startFrame": 606,
-      "endFrame": 667,
-      "durationInFrames": 61,
-      "scriptText": "Are they rushing to build something dangerous just to impress"
-    },
-    {
-      "type": "icon_text",
-      "text": "dangerous just to impress investors before the big payday? Or is",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 667,
-      "endFrame": 754,
-      "durationInFrames": 87,
-      "scriptText": "investors before the big payday? Or is the tech actually"
-    },
-    {
-      "type": "icon_text",
-      "text": "the tech actually getting too smart for its own good? If",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 754,
-      "endFrame": 829,
+      "startFrame": 136,
+      "endFrame": 211,
       "durationInFrames": 75,
-      "scriptText": "getting too smart for its own good? If you were"
+      "scriptText": "lounge on wheels designed to drive itself using only cameras."
+    },
+    {
+      "type": "icon_text",
+      "text": "using only cameras. While other companies are testing",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 211,
+      "endFrame": 289,
+      "durationInFrames": 78,
+      "scriptText": "While other companies are testing robot taxis, Tesla plans to"
+    },
+    {
+      "type": "chart_line",
+      "text": "robot taxis, Tesla plans to build over 100,000 of these every single year",
+      "pacing": "slow",
+      "points": [
+        {
+          "label": "Year 1",
+          "value": 100
+        },
+        {
+          "label": "Year 2",
+          "value": 100
+        },
+        {
+          "label": "Year 3",
+          "value": 100
+        }
+      ],
+      "startFrame": 289,
+      "endFrame": 413,
+      "durationInFrames": 124,
+      "scriptText": "build over one hundred thousand of these every single year in Texas."
+    },
+    {
+      "type": "stat_pill",
+      "text": "in Texas. People who sat in it described the",
+      "pacing": "slow",
+      "value": "Perfectly boring",
+      "label": "Ride quality",
+      "startFrame": 413,
+      "endFrame": 479,
+      "durationInFrames": 66,
+      "scriptText": "People who sat in it describe the ride as perfectly"
+    },
+    {
+      "type": "icon_text",
+      "text": "ride as perfectly boring and smooth, like",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 479,
+      "endFrame": 550,
+      "durationInFrames": 71,
+      "scriptText": "boring and smooth, like being in a private spaceship."
+    },
+    {
+      "type": "icon_text",
+      "text": "being in a private spaceship. It is a huge gamble to",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 550,
+      "endFrame": 631,
+      "durationInFrames": 81,
+      "scriptText": "It is a huge gamble to remove the human controls"
     },
     {
       "type": "progress_meter",
-      "text": "you were in charge of a company building super",
-      "value": 50,
+      "text": "remove the human controls entirely, but Tesla is betting that the technology",
+      "value": 100,
       "maxValue": 100,
-      "label": "Safety vs Competition",
+      "label": "Public readiness",
       "pacing": "slow",
-      "startFrame": 829,
-      "endFrame": 881,
-      "durationInFrames": 52,
-      "scriptText": "in charge of a company building super-intelligence, would you prioritize"
+      "startFrame": 631,
+      "endFrame": 738,
+      "durationInFrames": 107,
+      "scriptText": "entirely, but Tesla is betting that the technology is finally ready for the public."
     },
     {
-      "type": "ticker_tape",
-      "text": "intelligence, would you prioritize safety or beating your competition to the finish line?",
-      "stories": [
-        "Anthropic IPO looms",
-        "Safety concerns rise",
-        "Investors watch closely"
+      "type": "timeline",
+      "text": "is finally ready for the public. For years, self-driving",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Scary experiment"
+        },
+        {
+          "date": "Now",
+          "label": "Steering wheel deleted"
+        }
       ],
-      "label": "Market Watch",
       "pacing": "slow",
-      "startFrame": 881,
-      "endFrame": 998,
-      "durationInFrames": 117,
-      "scriptText": "safety or beating your competition to the finish line?"
+      "startFrame": 738,
+      "endFrame": 825,
+      "durationInFrames": 87,
+      "scriptText": "For years, self-driving cars felt like a scary science experiment,"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "cars felt like a scary science experiment, but now the steering wheel is",
+      "title": "The Future of Driving",
+      "body": "Tesla is officially removing the steering wheel, marking a major shift in vehicle design.",
+      "pacing": "slow",
+      "startFrame": 825,
+      "endFrame": 925,
+      "durationInFrames": 100,
+      "scriptText": "but now the steering wheel is officially being deleted."
+    },
+    {
+      "type": "icon_text",
+      "text": "officially being deleted. Would you actually trust a car with",
+      "icon": "\u26a0\ufe0f",
+      "pacing": "slow",
+      "startFrame": 925,
+      "endFrame": 1008,
+      "durationInFrames": 83,
+      "scriptText": "Would you actually trust a car with no way for"
+    },
+    {
+      "type": "key_statement",
+      "text": "no way for you to take control in an emergency?",
+      "emphasisWords": [
+        "trust",
+        "emergency"
+      ],
+      "pacing": "normal",
+      "startFrame": 1008,
+      "endFrame": 1063,
+      "durationInFrames": 55,
+      "scriptText": "you to take control in an emergency?"
     }
   ],
-  "source": "TechCrunch AI",
-  "sourceUrl": "https://techcrunch.com/podcast/an-anthropic-researchers-doomsday-warning-comes-at-a-very-interesting-time/"
+  "source": "YouTube Yahoo Finance",
+  "sourceUrl": "https://www.youtube.com/watch?v=x4g8PJo9-xM"
 }

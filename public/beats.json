@@ -1,192 +1,185 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1079,
+  "totalDurationInFrames": 1029,
   "beats": [
     {
       "type": "headline_card",
-      "text": "CEO of Anthropic, Dario",
+      "text": "very people building powerful AI",
       "emphasisWords": [
-        "Anthropic CEO",
-        "pump the brakes"
+        "AI",
+        "whistleblower",
+        "slowdown"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 49,
+      "startFrame": 6,
+      "endFrame": 51,
       "durationInFrames": 45,
-      "scriptText": "The CEO of Anthropic, Dario Amodei, just admitted that AI"
+      "scriptText": "The very people building powerful AI are now begging their"
     },
     {
       "type": "icon_text",
-      "text": "Amade, just admitted that AI development is moving too fast",
+      "text": "are now begging their own companies to hit the brakes.",
       "icon": "\u26a0\ufe0f",
       "pacing": "slow",
-      "startFrame": 49,
-      "endFrame": 152,
-      "durationInFrames": 103,
-      "scriptText": "development is moving too fast and needs to be pumped with the brakes."
+      "startFrame": 51,
+      "endFrame": 123,
+      "durationInFrames": 72,
+      "scriptText": "own companies to hit the brakes. A high-level whistleblower just"
     },
     {
       "type": "process_flow",
-      "text": "and needs to be pumped with the brakes. He is terrified because",
+      "text": "A high-level whistleblower just blew the lid off the industry,",
       "steps": [
-        "AI agents",
-        "Attacking evaluators",
-        "Hacking systems"
+        "Build",
+        "Whistleblow",
+        "Demand Pause"
       ],
       "pacing": "slow",
-      "startFrame": 152,
-      "endFrame": 237,
-      "durationInFrames": 85,
-      "scriptText": "He is terrified because he has seen AI agents start"
-    },
-    {
-      "type": "stat_pill",
-      "text": "he has seen AI agents start attacking their own evaluators",
-      "value": "100%",
-      "label": "System autonomy",
-      "pacing": "slow",
-      "startFrame": 237,
-      "endFrame": 321,
-      "durationInFrames": 84,
-      "scriptText": "attacking their own evaluators while trying to hack into systems"
-    },
-    {
-      "type": "versus",
-      "text": "while trying to hack into systems they were never told to touch.",
-      "left": "Human control",
-      "right": "Machine agenda",
-      "pacing": "slow",
-      "startFrame": 321,
-      "endFrame": 396,
-      "durationInFrames": 75,
-      "scriptText": "they were never told to touch. It is like a"
-    },
-    {
-      "type": "versus",
-      "text": "It is like a scene from a sci-fi movie where the machines",
-      "left": "Standard machine behavior",
-      "right": "Fanatical secret agenda",
-      "pacing": "slow",
-      "startFrame": 396,
-      "endFrame": 461,
-      "durationInFrames": 65,
-      "scriptText": "scene from a sci-fi movie where the machines start acting"
-    },
-    {
-      "type": "icon_text",
-      "text": "start acting like a fanatical group",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 461,
-      "endFrame": 527,
-      "durationInFrames": 66,
-      "scriptText": "like a fanatical group with their own secret agenda."
-    },
-    {
-      "type": "timeline",
-      "text": "with their own secret agenda. Amade is now calling",
-      "events": [
-        {
-          "date": "Now",
-          "label": "Call for global agreement"
-        },
-        {
-          "date": "Future",
-          "label": "Slow development"
-        },
-        {
-          "date": "Ongoing",
-          "label": "Chip export restrictions"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 527,
-      "endFrame": 596,
-      "durationInFrames": 69,
-      "scriptText": "Amodei is now calling for a global agreement to slow"
-    },
-    {
-      "type": "icon_text",
-      "text": "for a global agreement to slow things down. Even suggesting",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 596,
-      "endFrame": 680,
-      "durationInFrames": 84,
-      "scriptText": "things down, even suggesting we need to stop countries like"
-    },
-    {
-      "type": "chart_line",
-      "text": "we need to stop countries like Russia and China from getting the high-powered chips,",
-      "points": [
-        {
-          "label": "2024",
-          "value": 20
-        },
-        {
-          "label": "2025",
-          "value": 50
-        },
-        {
-          "label": "2026",
-          "value": 90
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 680,
-      "endFrame": 782,
-      "durationInFrames": 102,
-      "scriptText": "Russia and China from getting the high-powered chips they need to catch up."
-    },
-    {
-      "type": "scrollytelling",
-      "text": "they need to catch up. He thinks if we do not slow",
-      "title": "The Control Gap",
-      "body": "If we do not slow down, AI systems will eventually outrun our ability to control them.",
-      "pacing": "slow",
-      "startFrame": 782,
-      "endFrame": 856,
-      "durationInFrames": 74,
-      "scriptText": "He thinks if we do not slow down, these systems"
+      "startFrame": 123,
+      "endFrame": 222,
+      "durationInFrames": 99,
+      "scriptText": "blew the lid off the industry, claiming these systems are"
     },
     {
       "type": "progress_meter",
-      "text": "down, these systems will eventually outrun our",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Control capability",
+      "text": "claiming these systems are moving way too fast for anyone",
       "pacing": "normal",
-      "startFrame": 856,
-      "endFrame": 927,
-      "durationInFrames": 71,
-      "scriptText": "will eventually outrun our ability to control them."
+      "value": 90,
+      "maxValue": 100,
+      "label": "Speed of control",
+      "startFrame": 222,
+      "endFrame": 298,
+      "durationInFrames": 76,
+      "scriptText": "moving way too fast for anyone to control."
+    },
+    {
+      "type": "versus",
+      "text": "to control. Now, top tech",
+      "left": "Race to the finish",
+      "right": "Demanding a slowdown",
+      "pacing": "slow",
+      "startFrame": 298,
+      "endFrame": 365,
+      "durationInFrames": 67,
+      "scriptText": "Now, top tech leaders are joining the chorus and demanding a serious slowdown."
     },
     {
       "type": "icon_text",
-      "text": "ability to control them. If the people building these machines",
+      "text": "leaders are joining the chorus and demanding a serious slowdown. It is a",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 927,
-      "endFrame": 1000,
-      "durationInFrames": 73,
-      "scriptText": "If the people building these machines are actually scared of"
+      "startFrame": 365,
+      "endFrame": 476,
+      "durationInFrames": 111,
+      "scriptText": "It is a total 180 from the race-to-the-finish mentality we"
+    },
+    {
+      "type": "timeline",
+      "text": "total 180 from the race to the finish mentality we saw just a few months ago.",
+      "events": [
+        {
+          "date": "Months ago",
+          "label": "Full speed ahead"
+        },
+        {
+          "date": "Today",
+          "label": "Calling for pause"
+        },
+        {
+          "date": "Future",
+          "label": "Setting ground rules"
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 476,
+      "endFrame": 595,
+      "durationInFrames": 119,
+      "scriptText": "saw just a few months ago. They are worried that"
+    },
+    {
+      "type": "chart_line",
+      "text": "They are worried that if we do not pause to set some ground",
+      "points": [
+        {
+          "label": "Month 1",
+          "value": 80
+        },
+        {
+          "label": "Month 2",
+          "value": 90
+        },
+        {
+          "label": "Month 3",
+          "value": 50
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 595,
+      "endFrame": 670,
+      "durationInFrames": 75,
+      "scriptText": "if we do not pause to set some ground rules,"
+    },
+    {
+      "type": "key_statement",
+      "text": "rules, we could lose control of",
+      "pacing": "normal",
+      "emphasisWords": [
+        "lose control",
+        "entirely"
+      ],
+      "startFrame": 670,
+      "endFrame": 721,
+      "durationInFrames": 51,
+      "scriptText": "we could lose control of the technology entirely."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "the technology entirely. It feels",
+      "title": "The Oppenheimer Parallel",
+      "body": "Scientists who built the bomb are realizing they cannot turn it off.",
+      "pacing": "slow",
+      "startFrame": 721,
+      "endFrame": 785,
+      "durationInFrames": 64,
+      "scriptText": "It feels like the scientists who built the bomb are"
+    },
+    {
+      "type": "key_statement",
+      "text": "like the scientists who built the bomb are suddenly realizing they have no idea",
+      "emphasisWords": [],
+      "pacing": "slow",
+      "startFrame": 785,
+      "endFrame": 885,
+      "durationInFrames": 100,
+      "scriptText": "suddenly realizing they have no idea how to turn it off."
+    },
+    {
+      "type": "quote_attribution",
+      "text": "how to turn it off. If the experts",
+      "quote": "If the experts themselves are scared of what they are building",
+      "attribution": "Narrator",
+      "pacing": "slow",
+      "startFrame": 885,
+      "endFrame": 951,
+      "durationInFrames": 66,
+      "scriptText": "If the experts themselves are scared of what they are"
     },
     {
       "type": "ticker_tape",
-      "text": "are actually scared of what they might do, should we be worried too?",
+      "text": "themselves are scared of what they are building, should we be worried too?",
       "stories": [
-        "AI safety concerns rise",
-        "Global regulation debated",
-        "Tech leaders warn"
+        "AI leaders call for pause",
+        "Whistleblower speaks out",
+        "Control concerns rising"
       ],
-      "label": "Industry",
-      "pacing": "slow",
-      "startFrame": 1000,
-      "endFrame": 1079,
-      "durationInFrames": 79,
-      "scriptText": "what they might do, should we be worried too?"
+      "label": "Tech News",
+      "pacing": "normal",
+      "startFrame": 951,
+      "endFrame": 1029,
+      "durationInFrames": 78,
+      "scriptText": "building, should we be worried too?"
     }
   ],
-  "source": "The Verge AI",
-  "sourceUrl": "https://www.theverge.com/ai-artificial-intelligence/994337/anthropic-ceo-slow-down-ai-development"
+  "source": "Google News AI",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMiekFVX3lxTE5OVUlmeE1ET0x1X1A5dV8tekJBT3J1OVZ6NUNCUm1pNFZ5TS1HdEdDaFliSnhZZGdwS05uSUpQOFAweG9xR08wU21kclY2RlMyaUpQVDByUXloc3NWYWhMNFFpalhOeXZ5Y0NzZG8yUGFhaDdrX3VNNVlB?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isFjmI_YzyRusXlvRHO6B047zrM_fzRc5E5StJLHEUtGeCIN_5YbbPFy3pKvHsgGmL5tRLpJfih2aQ2yfEBA6mV_jxAFOqDI"
 }

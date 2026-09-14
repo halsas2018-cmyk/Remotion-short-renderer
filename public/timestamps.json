@@ -1,647 +1,572 @@
 [
   {
-    "word": "The",
-    "start": 0.191,
-    "end": 0.291
+    "word": "Tech",
+    "start": 0.131,
+    "end": 0.271
   },
   {
-    "word": "very",
-    "start": 0.331,
-    "end": 0.531
+    "word": "stocks",
+    "start": 0.291,
+    "end": 0.572
   },
   {
-    "word": "people",
-    "start": 0.571,
-    "end": 0.811
+    "word": "just",
+    "start": 0.692,
+    "end": 0.832
   },
   {
-    "word": "building",
-    "start": 0.851,
-    "end": 1.111
+    "word": "took",
+    "start": 0.872,
+    "end": 1.012
   },
   {
-    "word": "powerful",
-    "start": 1.151,
-    "end": 1.532
+    "word": "a",
+    "start": 1.052,
+    "end": 1.072
   },
   {
-    "word": "AI",
-    "start": 1.612,
-    "end": 1.912
-  },
-  {
-    "word": "are",
-    "start": 2.012,
-    "end": 2.092
-  },
-  {
-    "word": "now",
-    "start": 2.132,
-    "end": 2.252
-  },
-  {
-    "word": "begging",
-    "start": 2.312,
-    "end": 2.572
-  },
-  {
-    "word": "their",
-    "start": 2.592,
-    "end": 2.712
-  },
-  {
-    "word": "own",
-    "start": 2.772,
-    "end": 2.892
-  },
-  {
-    "word": "companies",
-    "start": 2.952,
-    "end": 3.312
-  },
-  {
-    "word": "to",
-    "start": 3.352,
-    "end": 3.412
+    "word": "massive",
+    "start": 1.132,
+    "end": 1.452
   },
   {
     "word": "hit",
-    "start": 3.452,
-    "end": 3.573
+    "start": 1.492,
+    "end": 1.653
   },
   {
-    "word": "the",
-    "start": 3.593,
-    "end": 3.673
-  },
-  {
-    "word": "brakes.",
-    "start": 3.693,
-    "end": 3.953
-  },
-  {
-    "word": "A",
-    "start": 4.873,
-    "end": 4.933
-  },
-  {
-    "word": "high-level",
-    "start": 4.953,
-    "end": 5.333
-  },
-  {
-    "word": "whistleblower",
-    "start": 5.353,
-    "end": 5.853
-  },
-  {
-    "word": "just",
-    "start": 5.894,
-    "end": 6.054
-  },
-  {
-    "word": "blew",
-    "start": 6.094,
-    "end": 6.274
-  },
-  {
-    "word": "the",
-    "start": 6.294,
-    "end": 6.374
-  },
-  {
-    "word": "lid",
-    "start": 6.394,
-    "end": 6.554
-  },
-  {
-    "word": "off",
-    "start": 6.594,
-    "end": 6.714
-  },
-  {
-    "word": "the",
-    "start": 6.734,
-    "end": 6.834
-  },
-  {
-    "word": "industry,",
-    "start": 6.854,
-    "end": 7.214
-  },
-  {
-    "word": "claiming",
-    "start": 7.594,
-    "end": 7.874
-  },
-  {
-    "word": "these",
-    "start": 7.914,
-    "end": 8.034
-  },
-  {
-    "word": "systems",
-    "start": 8.074,
-    "end": 8.395
-  },
-  {
-    "word": "are",
-    "start": 8.435,
-    "end": 8.535
-  },
-  {
-    "word": "moving",
-    "start": 8.575,
-    "end": 8.775
-  },
-  {
-    "word": "way",
-    "start": 8.815,
-    "end": 8.975
-  },
-  {
-    "word": "too",
-    "start": 8.995,
-    "end": 9.135
-  },
-  {
-    "word": "fast",
-    "start": 9.155,
-    "end": 9.455
-  },
-  {
-    "word": "for",
-    "start": 9.515,
-    "end": 9.615
-  },
-  {
-    "word": "anyone",
-    "start": 9.695,
-    "end": 9.975
-  },
-  {
-    "word": "to",
-    "start": 9.995,
-    "end": 10.055
-  },
-  {
-    "word": "control.",
-    "start": 10.075,
-    "end": 10.415
-  },
-  {
-    "word": "Now,",
-    "start": 11.296,
-    "end": 11.476
-  },
-  {
-    "word": "top",
-    "start": 11.716,
-    "end": 11.936
-  },
-  {
-    "word": "tech",
-    "start": 11.976,
-    "end": 12.156
-  },
-  {
-    "word": "leaders",
-    "start": 12.176,
-    "end": 12.436
-  },
-  {
-    "word": "are",
-    "start": 12.496,
-    "end": 12.576
-  },
-  {
-    "word": "joining",
-    "start": 12.616,
-    "end": 12.876
-  },
-  {
-    "word": "the",
-    "start": 12.917,
-    "end": 12.977
-  },
-  {
-    "word": "chorus",
-    "start": 13.017,
-    "end": 13.317
-  },
-  {
-    "word": "and",
-    "start": 13.457,
-    "end": 13.537
-  },
-  {
-    "word": "demanding",
-    "start": 13.557,
-    "end": 13.917
-  },
-  {
-    "word": "a",
-    "start": 13.937,
-    "end": 13.977
-  },
-  {
-    "word": "serious",
-    "start": 14.017,
-    "end": 14.337
-  },
-  {
-    "word": "slowdown.",
-    "start": 14.357,
-    "end": 14.737
-  },
-  {
-    "word": "It",
-    "start": 15.598,
-    "end": 15.638
-  },
-  {
-    "word": "is",
-    "start": 15.698,
-    "end": 15.758
-  },
-  {
-    "word": "a",
-    "start": 15.798,
-    "end": 15.838
-  },
-  {
-    "word": "total",
-    "start": 15.878,
-    "end": 16.298
-  },
-  {
-    "word": "180",
-    "start": 16.338,
-    "end": 16.838
-  },
-  {
-    "word": "from",
-    "start": 16.898,
-    "end": 16.998
-  },
-  {
-    "word": "the",
-    "start": 17.038,
-    "end": 17.118
-  },
-  {
-    "word": "race",
-    "start": 17.158,
-    "end": 17.338
-  },
-  {
-    "word": "to",
-    "start": 17.358,
-    "end": 17.418
-  },
-  {
-    "word": "the",
-    "start": 17.438,
-    "end": 17.518
-  },
-  {
-    "word": "finish",
-    "start": 17.538,
-    "end": 17.779
-  },
-  {
-    "word": "mentality",
-    "start": 17.799,
-    "end": 18.239
-  },
-  {
-    "word": "we",
-    "start": 18.319,
-    "end": 18.399
-  },
-  {
-    "word": "saw",
-    "start": 18.439,
-    "end": 18.579
-  },
-  {
-    "word": "just",
-    "start": 18.619,
-    "end": 18.779
-  },
-  {
-    "word": "a",
-    "start": 18.799,
-    "end": 18.839
-  },
-  {
-    "word": "few",
-    "start": 18.879,
-    "end": 18.979
-  },
-  {
-    "word": "months",
-    "start": 19.019,
-    "end": 19.199
-  },
-  {
-    "word": "ago.",
-    "start": 19.239,
-    "end": 19.459
-  },
-  {
-    "word": "They",
-    "start": 20.3,
-    "end": 20.42
-  },
-  {
-    "word": "are",
-    "start": 20.46,
-    "end": 20.54
-  },
-  {
-    "word": "worried",
-    "start": 20.58,
-    "end": 20.82
-  },
-  {
-    "word": "that",
-    "start": 20.84,
-    "end": 20.94
-  },
-  {
-    "word": "if",
-    "start": 20.96,
-    "end": 21.02
-  },
-  {
-    "word": "we",
-    "start": 21.06,
-    "end": 21.14
-  },
-  {
-    "word": "do",
-    "start": 21.18,
-    "end": 21.28
-  },
-  {
-    "word": "not",
-    "start": 21.32,
-    "end": 21.44
-  },
-  {
-    "word": "pause",
-    "start": 21.5,
-    "end": 21.78
-  },
-  {
-    "word": "to",
-    "start": 21.82,
-    "end": 21.9
-  },
-  {
-    "word": "set",
-    "start": 21.92,
-    "end": 22.08
+    "word": "because",
+    "start": 1.833,
+    "end": 2.033
   },
   {
     "word": "some",
-    "start": 22.1,
-    "end": 22.22
-  },
-  {
-    "word": "ground",
-    "start": 22.26,
-    "end": 22.501
-  },
-  {
-    "word": "rules,",
-    "start": 22.541,
-    "end": 22.781
-  },
-  {
-    "word": "we",
-    "start": 23.121,
-    "end": 23.201
-  },
-  {
-    "word": "could",
-    "start": 23.221,
-    "end": 23.361
-  },
-  {
-    "word": "lose",
-    "start": 23.381,
-    "end": 23.561
-  },
-  {
-    "word": "control",
-    "start": 23.601,
-    "end": 23.941
+    "start": 2.073,
+    "end": 2.173
   },
   {
     "word": "of",
-    "start": 23.961,
-    "end": 24.021
+    "start": 2.193,
+    "end": 2.253
   },
   {
     "word": "the",
-    "start": 24.041,
-    "end": 24.101
+    "start": 2.273,
+    "end": 2.353
   },
   {
-    "word": "technology",
-    "start": 24.141,
-    "end": 24.642
+    "word": "biggest",
+    "start": 2.413,
+    "end": 2.693
   },
   {
-    "word": "entirely.",
-    "start": 24.682,
-    "end": 25.122
+    "word": "names",
+    "start": 2.794,
+    "end": 3.034
   },
   {
-    "word": "It",
-    "start": 25.982,
-    "end": 26.042
-  },
-  {
-    "word": "feels",
-    "start": 26.102,
-    "end": 26.323
-  },
-  {
-    "word": "like",
-    "start": 26.363,
-    "end": 26.483
+    "word": "in",
+    "start": 3.074,
+    "end": 3.114
   },
   {
     "word": "the",
-    "start": 26.503,
-    "end": 26.583
+    "start": 3.134,
+    "end": 3.214
   },
   {
-    "word": "scientists",
-    "start": 26.623,
-    "end": 27.104
-  },
-  {
-    "word": "who",
-    "start": 27.144,
-    "end": 27.244
-  },
-  {
-    "word": "built",
-    "start": 27.264,
-    "end": 27.424
-  },
-  {
-    "word": "the",
-    "start": 27.444,
-    "end": 27.524
-  },
-  {
-    "word": "bomb",
-    "start": 27.544,
-    "end": 27.744
+    "word": "industry",
+    "start": 3.274,
+    "end": 3.634
   },
   {
     "word": "are",
-    "start": 27.785,
-    "end": 27.865
+    "start": 3.714,
+    "end": 3.795
   },
   {
-    "word": "suddenly",
-    "start": 27.905,
-    "end": 28.185
+    "word": "begging",
+    "start": 3.835,
+    "end": 4.095
   },
   {
-    "word": "realizing",
-    "start": 28.245,
-    "end": 28.686
+    "word": "for",
+    "start": 4.115,
+    "end": 4.235
   },
   {
-    "word": "they",
-    "start": 28.746,
-    "end": 28.846
+    "word": "a",
+    "start": 4.255,
+    "end": 4.295
   },
   {
-    "word": "have",
-    "start": 28.866,
-    "end": 28.986
+    "word": "six-month",
+    "start": 4.355,
+    "end": 4.755
   },
   {
-    "word": "no",
-    "start": 29.046,
-    "end": 29.166
+    "word": "pause",
+    "start": 4.775,
+    "end": 5.056
   },
   {
-    "word": "idea",
-    "start": 29.246,
-    "end": 29.507
+    "word": "on",
+    "start": 5.116,
+    "end": 5.176
   },
   {
-    "word": "how",
-    "start": 29.547,
-    "end": 29.647
+    "word": "AI",
+    "start": 5.216,
+    "end": 5.436
   },
   {
-    "word": "to",
-    "start": 29.687,
-    "end": 29.747
+    "word": "research.",
+    "start": 5.476,
+    "end": 5.856
   },
   {
-    "word": "turn",
-    "start": 29.767,
-    "end": 29.927
+    "word": "Billionaires",
+    "start": 6.277,
+    "end": 6.737
   },
   {
-    "word": "it",
-    "start": 29.967,
-    "end": 30.027
+    "word": "and",
+    "start": 6.777,
+    "end": 6.857
   },
   {
-    "word": "off.",
-    "start": 30.107,
-    "end": 30.228
+    "word": "top",
+    "start": 6.897,
+    "end": 7.078
   },
   {
-    "word": "If",
-    "start": 31.109,
-    "end": 31.189
-  },
-  {
-    "word": "the",
-    "start": 31.229,
-    "end": 31.309
-  },
-  {
-    "word": "experts",
-    "start": 31.389,
-    "end": 31.71
-  },
-  {
-    "word": "themselves",
-    "start": 31.75,
-    "end": 32.17
+    "word": "engineers",
+    "start": 7.118,
+    "end": 7.478
   },
   {
     "word": "are",
-    "start": 32.21,
-    "end": 32.31
-  },
-  {
-    "word": "scared",
-    "start": 32.33,
-    "end": 32.571
-  },
-  {
-    "word": "of",
-    "start": 32.591,
-    "end": 32.651
-  },
-  {
-    "word": "what",
-    "start": 32.671,
-    "end": 32.771
-  },
-  {
-    "word": "they",
-    "start": 32.791,
-    "end": 32.891
-  },
-  {
-    "word": "are",
-    "start": 32.911,
-    "end": 32.991
-  },
-  {
-    "word": "building,",
-    "start": 33.011,
-    "end": 33.312
-  },
-  {
-    "word": "should",
-    "start": 33.472,
-    "end": 33.632
-  },
-  {
-    "word": "we",
-    "start": 33.672,
-    "end": 33.732
-  },
-  {
-    "word": "be",
-    "start": 33.772,
-    "end": 33.852
+    "start": 7.578,
+    "end": 7.658
   },
   {
     "word": "worried",
-    "start": 33.872,
-    "end": 34.133
+    "start": 7.698,
+    "end": 7.938
   },
   {
-    "word": "too?",
-    "start": 34.173,
-    "end": 34.313
+    "word": "that",
+    "start": 7.958,
+    "end": 8.058
+  },
+  {
+    "word": "these",
+    "start": 8.079,
+    "end": 8.219
+  },
+  {
+    "word": "machines",
+    "start": 8.279,
+    "end": 8.639
+  },
+  {
+    "word": "are",
+    "start": 8.699,
+    "end": 8.779
+  },
+  {
+    "word": "getting",
+    "start": 8.799,
+    "end": 8.979
+  },
+  {
+    "word": "too",
+    "start": 9.059,
+    "end": 9.22
+  },
+  {
+    "word": "powerful,",
+    "start": 9.3,
+    "end": 9.72
+  },
+  {
+    "word": "too",
+    "start": 9.96,
+    "end": 10.1
+  },
+  {
+    "word": "fast.",
+    "start": 10.14,
+    "end": 10.461
+  },
+  {
+    "word": "They",
+    "start": 10.841,
+    "end": 10.941
+  },
+  {
+    "word": "are",
+    "start": 10.961,
+    "end": 11.041
+  },
+  {
+    "word": "literally",
+    "start": 11.101,
+    "end": 11.442
+  },
+  {
+    "word": "asking",
+    "start": 11.542,
+    "end": 11.802
+  },
+  {
+    "word": "for",
+    "start": 11.822,
+    "end": 11.922
+  },
+  {
+    "word": "a",
+    "start": 11.942,
+    "end": 11.982
+  },
+  {
+    "word": "timeout",
+    "start": 12.022,
+    "end": 12.383
+  },
+  {
+    "word": "before",
+    "start": 12.463,
+    "end": 12.743
+  },
+  {
+    "word": "someone",
+    "start": 12.783,
+    "end": 13.043
+  },
+  {
+    "word": "builds",
+    "start": 13.063,
+    "end": 13.283
+  },
+  {
+    "word": "something",
+    "start": 13.323,
+    "end": 13.564
+  },
+  {
+    "word": "we",
+    "start": 13.584,
+    "end": 13.664
+  },
+  {
+    "word": "cannot",
+    "start": 13.684,
+    "end": 13.924
+  },
+  {
+    "word": "control.",
+    "start": 13.964,
+    "end": 14.304
+  },
+  {
+    "word": "Wall",
+    "start": 14.685,
+    "end": 14.865
+  },
+  {
+    "word": "Street",
+    "start": 14.885,
+    "end": 15.085
+  },
+  {
+    "word": "investors",
+    "start": 15.105,
+    "end": 15.505
+  },
+  {
+    "word": "are",
+    "start": 15.545,
+    "end": 15.626
+  },
+  {
+    "word": "freaking",
+    "start": 15.666,
+    "end": 15.946
+  },
+  {
+    "word": "out",
+    "start": 16.026,
+    "end": 16.126
+  },
+  {
+    "word": "because",
+    "start": 16.286,
+    "end": 16.486
+  },
+  {
+    "word": "their",
+    "start": 16.506,
+    "end": 16.667
+  },
+  {
+    "word": "multi-billion",
+    "start": 16.687,
+    "end": 17.307
+  },
+  {
+    "word": "dollar",
+    "start": 17.327,
+    "end": 17.547
+  },
+  {
+    "word": "bets",
+    "start": 17.587,
+    "end": 17.808
+  },
+  {
+    "word": "are",
+    "start": 18.028,
+    "end": 18.128
+  },
+  {
+    "word": "suddenly",
+    "start": 18.168,
+    "end": 18.468
+  },
+  {
+    "word": "on",
+    "start": 18.528,
+    "end": 18.608
+  },
+  {
+    "word": "ice.",
+    "start": 18.728,
+    "end": 18.869
+  },
+  {
+    "word": "It",
+    "start": 19.349,
+    "end": 19.389
+  },
+  {
+    "word": "is",
+    "start": 19.429,
+    "end": 19.489
+  },
+  {
+    "word": "a",
+    "start": 19.529,
+    "end": 19.569
+  },
+  {
+    "word": "total",
+    "start": 19.609,
+    "end": 19.85
+  },
+  {
+    "word": "boardroom",
+    "start": 19.89,
+    "end": 20.23
+  },
+  {
+    "word": "panic",
+    "start": 20.25,
+    "end": 20.53
+  },
+  {
+    "word": "between",
+    "start": 20.55,
+    "end": 20.79
+  },
+  {
+    "word": "the",
+    "start": 20.81,
+    "end": 20.87
+  },
+  {
+    "word": "people",
+    "start": 20.911,
+    "end": 21.111
+  },
+  {
+    "word": "who",
+    "start": 21.151,
+    "end": 21.231
+  },
+  {
+    "word": "want",
+    "start": 21.271,
+    "end": 21.351
+  },
+  {
+    "word": "to",
+    "start": 21.371,
+    "end": 21.431
+  },
+  {
+    "word": "move",
+    "start": 21.451,
+    "end": 21.611
+  },
+  {
+    "word": "fast",
+    "start": 21.671,
+    "end": 22.052
+  },
+  {
+    "word": "and",
+    "start": 22.292,
+    "end": 22.372
+  },
+  {
+    "word": "the",
+    "start": 22.392,
+    "end": 22.472
+  },
+  {
+    "word": "people",
+    "start": 22.492,
+    "end": 22.712
+  },
+  {
+    "word": "who",
+    "start": 22.732,
+    "end": 22.812
+  },
+  {
+    "word": "want",
+    "start": 22.832,
+    "end": 22.932
+  },
+  {
+    "word": "to",
+    "start": 22.952,
+    "end": 23.012
+  },
+  {
+    "word": "be",
+    "start": 23.032,
+    "end": 23.113
+  },
+  {
+    "word": "safe.",
+    "start": 23.153,
+    "end": 23.373
+  },
+  {
+    "word": "If",
+    "start": 23.813,
+    "end": 23.873
+  },
+  {
+    "word": "you",
+    "start": 23.913,
+    "end": 23.973
+  },
+  {
+    "word": "were",
+    "start": 24.013,
+    "end": 24.134
+  },
+  {
+    "word": "in",
+    "start": 24.154,
+    "end": 24.214
+  },
+  {
+    "word": "charge",
+    "start": 24.274,
+    "end": 24.554
+  },
+  {
+    "word": "of",
+    "start": 24.574,
+    "end": 24.634
+  },
+  {
+    "word": "a",
+    "start": 24.674,
+    "end": 24.714
+  },
+  {
+    "word": "massive",
+    "start": 24.814,
+    "end": 25.195
+  },
+  {
+    "word": "tech",
+    "start": 25.235,
+    "end": 25.415
+  },
+  {
+    "word": "company,",
+    "start": 25.455,
+    "end": 25.755
+  },
+  {
+    "word": "would",
+    "start": 25.995,
+    "end": 26.115
+  },
+  {
+    "word": "you",
+    "start": 26.135,
+    "end": 26.215
+  },
+  {
+    "word": "hit",
+    "start": 26.235,
+    "end": 26.336
+  },
+  {
+    "word": "the",
+    "start": 26.376,
+    "end": 26.436
+  },
+  {
+    "word": "brakes",
+    "start": 26.476,
+    "end": 26.736
+  },
+  {
+    "word": "or",
+    "start": 26.956,
+    "end": 27.036
+  },
+  {
+    "word": "keep",
+    "start": 27.076,
+    "end": 27.256
+  },
+  {
+    "word": "racing",
+    "start": 27.316,
+    "end": 27.597
+  },
+  {
+    "word": "toward",
+    "start": 27.637,
+    "end": 27.817
+  },
+  {
+    "word": "the",
+    "start": 27.837,
+    "end": 27.917
+  },
+  {
+    "word": "next",
+    "start": 27.957,
+    "end": 28.097
+  },
+  {
+    "word": "big",
+    "start": 28.137,
+    "end": 28.277
+  },
+  {
+    "word": "breakthrough?",
+    "start": 28.297,
+    "end": 28.678
   }
 ]

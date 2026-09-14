@@ -1,185 +1,161 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1029,
+  "totalDurationInFrames": 860,
   "beats": [
     {
       "type": "headline_card",
-      "text": "very people building powerful AI",
+      "text": "stocks just took a massive hit",
       "emphasisWords": [
-        "AI",
-        "whistleblower",
-        "slowdown"
+        "Tech stocks",
+        "massive hit"
       ],
       "pacing": "slow",
-      "startFrame": 6,
-      "endFrame": 51,
-      "durationInFrames": 45,
-      "scriptText": "The very people building powerful AI are now begging their"
+      "startFrame": 4,
+      "endFrame": 50,
+      "durationInFrames": 46,
+      "scriptText": "Tech stocks just took a massive hit because some of"
     },
     {
       "type": "icon_text",
-      "text": "are now begging their own companies to hit the brakes.",
-      "icon": "\u26a0\ufe0f",
+      "text": "because some of the biggest names in the industry are",
+      "icon": "\u23f8\ufe0f",
       "pacing": "slow",
-      "startFrame": 51,
-      "endFrame": 123,
-      "durationInFrames": 72,
-      "scriptText": "own companies to hit the brakes. A high-level whistleblower just"
-    },
-    {
-      "type": "process_flow",
-      "text": "A high-level whistleblower just blew the lid off the industry,",
-      "steps": [
-        "Build",
-        "Whistleblow",
-        "Demand Pause"
-      ],
-      "pacing": "slow",
-      "startFrame": 123,
-      "endFrame": 222,
-      "durationInFrames": 99,
-      "scriptText": "blew the lid off the industry, claiming these systems are"
-    },
-    {
-      "type": "progress_meter",
-      "text": "claiming these systems are moving way too fast for anyone",
-      "pacing": "normal",
-      "value": 90,
-      "maxValue": 100,
-      "label": "Speed of control",
-      "startFrame": 222,
-      "endFrame": 298,
-      "durationInFrames": 76,
-      "scriptText": "moving way too fast for anyone to control."
-    },
-    {
-      "type": "versus",
-      "text": "to control. Now, top tech",
-      "left": "Race to the finish",
-      "right": "Demanding a slowdown",
-      "pacing": "slow",
-      "startFrame": 298,
-      "endFrame": 365,
-      "durationInFrames": 67,
-      "scriptText": "Now, top tech leaders are joining the chorus and demanding a serious slowdown."
-    },
-    {
-      "type": "icon_text",
-      "text": "leaders are joining the chorus and demanding a serious slowdown. It is a",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 365,
-      "endFrame": 476,
-      "durationInFrames": 111,
-      "scriptText": "It is a total 180 from the race-to-the-finish mentality we"
+      "startFrame": 50,
+      "endFrame": 114,
+      "durationInFrames": 64,
+      "scriptText": "the biggest names in the industry are begging for a"
     },
     {
       "type": "timeline",
-      "text": "total 180 from the race to the finish mentality we saw just a few months ago.",
+      "text": "begging for a six-month pause on AI research.",
       "events": [
         {
-          "date": "Months ago",
-          "label": "Full speed ahead"
+          "date": "Month 1",
+          "label": "Research"
         },
         {
-          "date": "Today",
-          "label": "Calling for pause"
+          "date": "Month 3",
+          "label": "Review"
         },
         {
-          "date": "Future",
-          "label": "Setting ground rules"
+          "date": "Month 6",
+          "label": "Pause"
         }
       ],
       "pacing": "slow",
-      "startFrame": 476,
-      "endFrame": 595,
-      "durationInFrames": 119,
-      "scriptText": "saw just a few months ago. They are worried that"
+      "startFrame": 114,
+      "endFrame": 176,
+      "durationInFrames": 62,
+      "scriptText": "six month pause on AI research. Billionaires and top engineers"
     },
     {
-      "type": "chart_line",
-      "text": "They are worried that if we do not pause to set some ground",
-      "points": [
-        {
-          "label": "Month 1",
-          "value": 80
-        },
-        {
-          "label": "Month 2",
-          "value": 90
-        },
-        {
-          "label": "Month 3",
-          "value": 50
-        }
-      ],
+      "type": "progress_meter",
+      "text": "Billionaires and top engineers are worried that these machines are getting",
+      "value": 85,
+      "maxValue": 100,
+      "label": "Power growth",
       "pacing": "slow",
-      "startFrame": 595,
-      "endFrame": 670,
-      "durationInFrames": 75,
-      "scriptText": "if we do not pause to set some ground rules,"
-    },
-    {
-      "type": "key_statement",
-      "text": "rules, we could lose control of",
-      "pacing": "normal",
-      "emphasisWords": [
-        "lose control",
-        "entirely"
-      ],
-      "startFrame": 670,
-      "endFrame": 721,
-      "durationInFrames": 51,
-      "scriptText": "we could lose control of the technology entirely."
+      "startFrame": 176,
+      "endFrame": 269,
+      "durationInFrames": 93,
+      "scriptText": "are worried that these machines are getting too powerful, too fast."
     },
     {
       "type": "scrollytelling",
-      "text": "the technology entirely. It feels",
-      "title": "The Oppenheimer Parallel",
-      "body": "Scientists who built the bomb are realizing they cannot turn it off.",
+      "text": "too powerful, too fast. They are literally asking for a timeout before",
       "pacing": "slow",
-      "startFrame": 721,
-      "endFrame": 785,
-      "durationInFrames": 64,
-      "scriptText": "It feels like the scientists who built the bomb are"
+      "title": "The Control Problem",
+      "body": "Experts are calling for a timeout to prevent the development of uncontrollable AI systems.",
+      "startFrame": 269,
+      "endFrame": 382,
+      "durationInFrames": 113,
+      "scriptText": "They are literally asking for a timeout before someone builds something we cannot control."
     },
     {
-      "type": "key_statement",
-      "text": "like the scientists who built the bomb are suddenly realizing they have no idea",
-      "emphasisWords": [],
+      "type": "chart_line",
+      "text": "someone builds something we cannot control. Wall Street investors are",
       "pacing": "slow",
-      "startFrame": 785,
-      "endFrame": 885,
-      "durationInFrames": 100,
-      "scriptText": "suddenly realizing they have no idea how to turn it off."
+      "points": [
+        {
+          "label": "Q1",
+          "value": 100
+        },
+        {
+          "label": "Q2",
+          "value": 80
+        },
+        {
+          "label": "Q3",
+          "value": 60
+        }
+      ],
+      "startFrame": 382,
+      "endFrame": 469,
+      "durationInFrames": 87,
+      "scriptText": "Wall Street investors are freaking out because their multi billion"
     },
     {
-      "type": "quote_attribution",
-      "text": "how to turn it off. If the experts",
-      "quote": "If the experts themselves are scared of what they are building",
-      "attribution": "Narrator",
+      "type": "process_flow",
+      "text": "freaking out because their multi-billion dollar bets are suddenly",
       "pacing": "slow",
-      "startFrame": 885,
-      "endFrame": 951,
-      "durationInFrames": 66,
-      "scriptText": "If the experts themselves are scared of what they are"
+      "steps": [
+        "Multi-billion investment",
+        "Research progress",
+        "Sudden pause",
+        "Market reaction"
+      ],
+      "startFrame": 469,
+      "endFrame": 554,
+      "durationInFrames": 85,
+      "scriptText": "dollar bets are suddenly on ice. It is a total"
+    },
+    {
+      "type": "versus",
+      "text": "on ice. It is a total boardroom panic between the people who want to",
+      "pacing": "slow",
+      "left": "Tech companies moving fast",
+      "right": "Safety advocates wanting caution",
+      "startFrame": 554,
+      "endFrame": 643,
+      "durationInFrames": 89,
+      "scriptText": "boardroom panic between the people who want to move fast"
+    },
+    {
+      "type": "icon_text",
+      "text": "move fast and the people who want to be safe.",
+      "icon": "\ud83d\udcca",
+      "pacing": "normal",
+      "startFrame": 643,
+      "endFrame": 695,
+      "durationInFrames": 52,
+      "scriptText": "and the people who want to be safe."
+    },
+    {
+      "type": "icon_text",
+      "text": "If you were in charge of a",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 695,
+      "endFrame": 741,
+      "durationInFrames": 46,
+      "scriptText": "If you were in charge of a massive tech company,"
     },
     {
       "type": "ticker_tape",
-      "text": "themselves are scared of what they are building, should we be worried too?",
+      "text": "massive tech company, would you hit the brakes or keep racing toward the next big breakthrough?",
       "stories": [
-        "AI leaders call for pause",
-        "Whistleblower speaks out",
-        "Control concerns rising"
+        "Tech stocks volatile",
+        "AI pause debated",
+        "Market uncertainty"
       ],
-      "label": "Tech News",
-      "pacing": "normal",
-      "startFrame": 951,
-      "endFrame": 1029,
-      "durationInFrames": 78,
-      "scriptText": "building, should we be worried too?"
+      "label": "Markets",
+      "pacing": "slow",
+      "startFrame": 741,
+      "endFrame": 860,
+      "durationInFrames": 119,
+      "scriptText": "would you hit the brakes or keep racing toward the next big breakthrough?"
     }
   ],
   "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMiekFVX3lxTE5OVUlmeE1ET0x1X1A5dV8tekJBT3J1OVZ6NUNCUm1pNFZ5TS1HdEdDaFliSnhZZGdwS05uSUpQOFAweG9xR08wU21kclY2RlMyaUpQVDByUXloc3NWYWhMNFFpalhOeXZ5Y0NzZG8yUGFhaDdrX3VNNVlB?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isFjmI_YzyRusXlvRHO6B047zrM_fzRc5E5StJLHEUtGeCIN_5YbbPFy3pKvHsgGmL5tRLpJfih2aQ2yfEBA6mV_jxAFOqDI"
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMicEFVX3lxTE4teEhEV3lFNEY0RGNiYTR1LWZ2TFlya2dVeGZaS2JkSEhtWnBpQmRIU2FzT2YyY1V0TnNGMXZwYXlQZzlyWDRMY2Q0QVBnVUgybW5mRzEyazNjZl84WEFSai1nTnFtUGJDV2dhNWV2NS0?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isEhIQzuTxzRY58dcAt0IO0fvWt-5bnE9ora5JN-BGbpO_chntp8vqiwVCZffPw5TJJ1hJyVl_eep9qfzRSyHSDACbZEDxu2"
 }

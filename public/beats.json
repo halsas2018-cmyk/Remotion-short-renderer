@@ -1,161 +1,171 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 860,
+  "totalDurationInFrames": 944,
   "beats": [
     {
       "type": "headline_card",
-      "text": "stocks just took a massive hit",
+      "text": "Nike just lost $200 billion in",
       "emphasisWords": [
-        "Tech stocks",
-        "massive hit"
+        "$200B",
+        "wipeout"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 50,
-      "durationInFrames": 46,
-      "scriptText": "Tech stocks just took a massive hit because some of"
+      "startFrame": 5,
+      "endFrame": 60,
+      "durationInFrames": 55,
+      "scriptText": "Nike just lost two hundred billion dollars in value and"
     },
     {
-      "type": "icon_text",
-      "text": "because some of the biggest names in the industry are",
-      "icon": "\u23f8\ufe0f",
+      "type": "stat_pill",
+      "text": "value and is getting kicked out of the top 100",
+      "value": "100",
+      "label": "S&P Index Rank",
       "pacing": "slow",
-      "startFrame": 50,
-      "endFrame": 114,
-      "durationInFrames": 64,
-      "scriptText": "the biggest names in the industry are begging for a"
+      "startFrame": 60,
+      "endFrame": 123,
+      "durationInFrames": 63,
+      "scriptText": "is getting kicked out of the top one hundred U.S."
     },
     {
       "type": "timeline",
-      "text": "begging for a six-month pause on AI research.",
+      "text": "US companies. After 18 years",
       "events": [
         {
-          "date": "Month 1",
-          "label": "Research"
+          "date": "2006",
+          "label": "Joined S&P 100"
         },
         {
-          "date": "Month 3",
-          "label": "Review"
-        },
-        {
-          "date": "Month 6",
-          "label": "Pause"
+          "date": "2024",
+          "label": "Exited S&P 100"
         }
       ],
       "pacing": "slow",
-      "startFrame": 114,
-      "endFrame": 176,
+      "startFrame": 123,
+      "endFrame": 185,
       "durationInFrames": 62,
-      "scriptText": "six month pause on AI research. Billionaires and top engineers"
+      "scriptText": "companies. After eighteen years on the S&P one hundred, the"
     },
     {
-      "type": "progress_meter",
-      "text": "Billionaires and top engineers are worried that these machines are getting",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Power growth",
+      "type": "compare_split",
+      "text": "on the S&P 100, the sneaker giant is being replaced by tech companies like Dell",
+      "left": "Nike",
+      "right": "Dell & Palo Alto",
       "pacing": "slow",
-      "startFrame": 176,
-      "endFrame": 269,
-      "durationInFrames": 93,
-      "scriptText": "are worried that these machines are getting too powerful, too fast."
-    },
-    {
-      "type": "scrollytelling",
-      "text": "too powerful, too fast. They are literally asking for a timeout before",
-      "pacing": "slow",
-      "title": "The Control Problem",
-      "body": "Experts are calling for a timeout to prevent the development of uncontrollable AI systems.",
-      "startFrame": 269,
-      "endFrame": 382,
-      "durationInFrames": 113,
-      "scriptText": "They are literally asking for a timeout before someone builds something we cannot control."
-    },
-    {
-      "type": "chart_line",
-      "text": "someone builds something we cannot control. Wall Street investors are",
-      "pacing": "slow",
-      "points": [
-        {
-          "label": "Q1",
-          "value": 100
-        },
-        {
-          "label": "Q2",
-          "value": 80
-        },
-        {
-          "label": "Q3",
-          "value": 60
-        }
-      ],
-      "startFrame": 382,
-      "endFrame": 469,
-      "durationInFrames": 87,
-      "scriptText": "Wall Street investors are freaking out because their multi billion"
+      "startFrame": 185,
+      "endFrame": 305,
+      "durationInFrames": 120,
+      "scriptText": "sneaker giant is being replaced by tech companies like Dell and Palo Alto Networks."
     },
     {
       "type": "process_flow",
-      "text": "freaking out because their multi-billion dollar bets are suddenly",
+      "text": "and Palo Alto Networks. People are blaming bad",
       "pacing": "slow",
       "steps": [
-        "Multi-billion investment",
-        "Research progress",
-        "Sudden pause",
-        "Market reaction"
+        "Bad marketing",
+        "Cheap quality",
+        "Retail store cuts"
       ],
-      "startFrame": 469,
-      "endFrame": 554,
-      "durationInFrames": 85,
-      "scriptText": "dollar bets are suddenly on ice. It is a total"
-    },
-    {
-      "type": "versus",
-      "text": "on ice. It is a total boardroom panic between the people who want to",
-      "pacing": "slow",
-      "left": "Tech companies moving fast",
-      "right": "Safety advocates wanting caution",
-      "startFrame": 554,
-      "endFrame": 643,
-      "durationInFrames": 89,
-      "scriptText": "boardroom panic between the people who want to move fast"
+      "startFrame": 305,
+      "endFrame": 386,
+      "durationInFrames": 81,
+      "scriptText": "People are blaming bad marketing, cheap quality that falls apart"
     },
     {
       "type": "icon_text",
-      "text": "move fast and the people who want to be safe.",
+      "text": "marketing, cheap quality that falls apart in months, and a disastrous push to cut",
+      "icon": "\ud83d\udcc9",
+      "pacing": "slow",
+      "startFrame": 386,
+      "endFrame": 500,
+      "durationInFrames": 114,
+      "scriptText": "in months, and a disastrous push to cut out retail stores."
+    },
+    {
+      "type": "icon_text",
+      "text": "out retail stores. It seems like everyone suddenly",
       "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 500,
+      "endFrame": 575,
+      "durationInFrames": 75,
+      "scriptText": "It seems like everyone suddenly switched to Hoka or On"
+    },
+    {
+      "type": "chart_line",
+      "text": "switched to Hoka or on running shoes while Nike was busy",
+      "points": [
+        {
+          "label": "2022",
+          "value": 100
+        },
+        {
+          "label": "2023",
+          "value": 85
+        },
+        {
+          "label": "2024",
+          "value": 60
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 575,
+      "endFrame": 658,
+      "durationInFrames": 83,
+      "scriptText": "running shoes while Nike was busy losing its way."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "losing its way. The brand that once felt untouchable",
+      "title": "Brand Scramble",
+      "body": "The brand that once felt untouchable is now scrambling to fix its reputation.",
+      "pacing": "slow",
+      "startFrame": 658,
+      "endFrame": 734,
+      "durationInFrames": 76,
+      "scriptText": "The brand that once felt untouchable is now scrambling to"
+    },
+    {
+      "type": "key_statement",
+      "text": "is now scrambling to fix its reputation and win",
+      "emphasisWords": [
+        "win back",
+        "customers"
+      ],
       "pacing": "normal",
-      "startFrame": 643,
-      "endFrame": 695,
-      "durationInFrames": 52,
-      "scriptText": "and the people who want to be safe."
-    },
-    {
-      "type": "icon_text",
-      "text": "If you were in charge of a",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 695,
-      "endFrame": 741,
-      "durationInFrames": 46,
-      "scriptText": "If you were in charge of a massive tech company,"
+      "startFrame": 734,
+      "endFrame": 815,
+      "durationInFrames": 81,
+      "scriptText": "fix its reputation and win back its customers."
     },
     {
       "type": "ticker_tape",
-      "text": "massive tech company, would you hit the brakes or keep racing toward the next big breakthrough?",
+      "text": "back its customers. Is Nike still your go-to shoe",
       "stories": [
-        "Tech stocks volatile",
-        "AI pause debated",
-        "Market uncertainty"
+        "Nike exits S&P 100",
+        "Market cap drops $200B",
+        "Competitors gaining share"
       ],
-      "label": "Markets",
+      "label": "Market News",
       "pacing": "slow",
-      "startFrame": 741,
-      "endFrame": 860,
-      "durationInFrames": 119,
-      "scriptText": "would you hit the brakes or keep racing toward the next big breakthrough?"
+      "startFrame": 815,
+      "endFrame": 885,
+      "durationInFrames": 70,
+      "scriptText": "Is Nike still your go-to shoe brand, or have you"
+    },
+    {
+      "type": "key_statement",
+      "text": "brand? or have you already switched to something else?",
+      "emphasisWords": [
+        "switched",
+        "something else"
+      ],
+      "pacing": "normal",
+      "startFrame": 885,
+      "endFrame": 944,
+      "durationInFrames": 59,
+      "scriptText": "already switched to something else?"
     }
   ],
-  "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMicEFVX3lxTE4teEhEV3lFNEY0RGNiYTR1LWZ2TFlya2dVeGZaS2JkSEhtWnBpQmRIU2FzT2YyY1V0TnNGMXZwYXlQZzlyWDRMY2Q0QVBnVUgybW5mRzEyazNjZl84WEFSai1nTnFtUGJDV2dhNWV2NS0?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isEhIQzuTxzRY58dcAt0IO0fvWt-5bnE9ora5JN-BGbpO_chntp8vqiwVCZffPw5TJJ1hJyVl_eep9qfzRSyHSDACbZEDxu2"
+  "source": "Hacker News",
+  "sourceUrl": "https://fortune.com/2026/09/08/nike-stock-plummets-sp500-market-cap-index/"
 }

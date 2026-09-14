@@ -1,171 +1,134 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 944,
+  "totalDurationInFrames": 800,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Nike just lost $200 billion in",
+      "text": "bosses of open AI and Anthropic just",
       "emphasisWords": [
-        "$200B",
-        "wipeout"
+        "OpenAI",
+        "Anthropic"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 60,
-      "durationInFrames": 55,
-      "scriptText": "Nike just lost two hundred billion dollars in value and"
+      "startFrame": 4,
+      "endFrame": 63,
+      "durationInFrames": 59,
+      "scriptText": "The bosses of OpenAI and Anthropic just did something nobody expected."
     },
     {
       "type": "stat_pill",
-      "text": "value and is getting kicked out of the top 100",
-      "value": "100",
-      "label": "S&P Index Rank",
+      "text": "did something nobody expected. Sam Altman and Dario Amade",
+      "value": "2",
+      "label": "Industry Leaders",
       "pacing": "slow",
-      "startFrame": 60,
-      "endFrame": 123,
-      "durationInFrames": 63,
-      "scriptText": "is getting kicked out of the top one hundred U.S."
-    },
-    {
-      "type": "timeline",
-      "text": "US companies. After 18 years",
-      "events": [
-        {
-          "date": "2006",
-          "label": "Joined S&P 100"
-        },
-        {
-          "date": "2024",
-          "label": "Exited S&P 100"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 123,
-      "endFrame": 185,
-      "durationInFrames": 62,
-      "scriptText": "companies. After eighteen years on the S&P one hundred, the"
-    },
-    {
-      "type": "compare_split",
-      "text": "on the S&P 100, the sneaker giant is being replaced by tech companies like Dell",
-      "left": "Nike",
-      "right": "Dell & Palo Alto",
-      "pacing": "slow",
-      "startFrame": 185,
-      "endFrame": 305,
-      "durationInFrames": 120,
-      "scriptText": "sneaker giant is being replaced by tech companies like Dell and Palo Alto Networks."
+      "startFrame": 63,
+      "endFrame": 157,
+      "durationInFrames": 94,
+      "scriptText": "Sam Altman and Dario Amodei are actually telling their own industry to slow down."
     },
     {
       "type": "process_flow",
-      "text": "and Palo Alto Networks. People are blaming bad",
-      "pacing": "slow",
+      "text": "are actually telling their own industry to slow down. For years, these guys have",
       "steps": [
-        "Bad marketing",
-        "Cheap quality",
-        "Retail store cuts"
+        "Research",
+        "Development",
+        "Deployment"
       ],
-      "startFrame": 305,
-      "endFrame": 386,
-      "durationInFrames": 81,
-      "scriptText": "People are blaming bad marketing, cheap quality that falls apart"
-    },
-    {
-      "type": "icon_text",
-      "text": "marketing, cheap quality that falls apart in months, and a disastrous push to cut",
-      "icon": "\ud83d\udcc9",
       "pacing": "slow",
-      "startFrame": 386,
-      "endFrame": 500,
-      "durationInFrames": 114,
-      "scriptText": "in months, and a disastrous push to cut out retail stores."
-    },
-    {
-      "type": "icon_text",
-      "text": "out retail stores. It seems like everyone suddenly",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 500,
-      "endFrame": 575,
-      "durationInFrames": 75,
-      "scriptText": "It seems like everyone suddenly switched to Hoka or On"
+      "startFrame": 157,
+      "endFrame": 275,
+      "durationInFrames": 118,
+      "scriptText": "For years, these guys have been in a sprint to"
     },
     {
       "type": "chart_line",
-      "text": "switched to Hoka or on running shoes while Nike was busy",
+      "text": "been in a sprint to build the smartest AI on the planet.",
+      "pacing": "slow",
       "points": [
         {
-          "label": "2022",
-          "value": 100
+          "label": "Year 1",
+          "value": 20
         },
         {
-          "label": "2023",
+          "label": "Year 2",
+          "value": 50
+        },
+        {
+          "label": "Year 3",
+          "value": 90
+        }
+      ],
+      "startFrame": 275,
+      "endFrame": 350,
+      "durationInFrames": 75,
+      "scriptText": "build the smartest AI on the planet. But this weekend,"
+    },
+    {
+      "type": "before_after",
+      "text": "But this weekend, they both admitted that moving this fast",
+      "beforeLabel": "Full Speed Ahead",
+      "afterLabel": "Hitting The Brakes",
+      "pacing": "slow",
+      "startFrame": 350,
+      "endFrame": 434,
+      "durationInFrames": 84,
+      "scriptText": "they both admitted that moving this fast might be a massive mistake."
+    },
+    {
+      "type": "icon_text",
+      "text": "might be a massive mistake. It is not every day the people",
+      "icon": "\u26a0\ufe0f",
+      "pacing": "slow",
+      "startFrame": 434,
+      "endFrame": 514,
+      "durationInFrames": 80,
+      "scriptText": "It is not every day the people leading the AI"
+    },
+    {
+      "type": "chart_line",
+      "text": "leading the AI revolution asked to hit the brakes.",
+      "points": [
+        {
+          "label": "Speed",
+          "value": 90
+        },
+        {
+          "label": "Safety",
+          "value": 40
+        },
+        {
+          "label": "Risk",
           "value": 85
-        },
-        {
-          "label": "2024",
-          "value": 60
         }
       ],
       "pacing": "slow",
-      "startFrame": 575,
-      "endFrame": 658,
-      "durationInFrames": 83,
-      "scriptText": "running shoes while Nike was busy losing its way."
+      "startFrame": 514,
+      "endFrame": 581,
+      "durationInFrames": 67,
+      "scriptText": "revolution ask to hit the brakes. They are worried about"
+    },
+    {
+      "type": "icon_text",
+      "text": "They are worried about the risks of building technology that we do not",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 581,
+      "endFrame": 675,
+      "durationInFrames": 94,
+      "scriptText": "the risks of building technology that we do not fully understand yet."
     },
     {
       "type": "scrollytelling",
-      "text": "losing its way. The brand that once felt untouchable",
-      "title": "Brand Scramble",
-      "body": "The brand that once felt untouchable is now scrambling to fix its reputation.",
+      "text": "fully understand yet. If the people building these machines are getting scared, should we be worried too?",
+      "title": "Should We Be Worried?",
+      "body": "The creators of the technology are expressing concern about the risks of building systems we do not yet fully understand.",
       "pacing": "slow",
-      "startFrame": 658,
-      "endFrame": 734,
-      "durationInFrames": 76,
-      "scriptText": "The brand that once felt untouchable is now scrambling to"
-    },
-    {
-      "type": "key_statement",
-      "text": "is now scrambling to fix its reputation and win",
-      "emphasisWords": [
-        "win back",
-        "customers"
-      ],
-      "pacing": "normal",
-      "startFrame": 734,
-      "endFrame": 815,
-      "durationInFrames": 81,
-      "scriptText": "fix its reputation and win back its customers."
-    },
-    {
-      "type": "ticker_tape",
-      "text": "back its customers. Is Nike still your go-to shoe",
-      "stories": [
-        "Nike exits S&P 100",
-        "Market cap drops $200B",
-        "Competitors gaining share"
-      ],
-      "label": "Market News",
-      "pacing": "slow",
-      "startFrame": 815,
-      "endFrame": 885,
-      "durationInFrames": 70,
-      "scriptText": "Is Nike still your go-to shoe brand, or have you"
-    },
-    {
-      "type": "key_statement",
-      "text": "brand? or have you already switched to something else?",
-      "emphasisWords": [
-        "switched",
-        "something else"
-      ],
-      "pacing": "normal",
-      "startFrame": 885,
-      "endFrame": 944,
-      "durationInFrames": 59,
-      "scriptText": "already switched to something else?"
+      "startFrame": 675,
+      "endFrame": 800,
+      "durationInFrames": 125,
+      "scriptText": "If the people building these machines are getting scared, should we be worried too?"
     }
   ],
-  "source": "Hacker News",
-  "sourceUrl": "https://fortune.com/2026/09/08/nike-stock-plummets-sp500-market-cap-index/"
+  "source": "YouTube Yahoo Finance",
+  "sourceUrl": "https://www.youtube.com/shorts/75WbmdBqgT4"
 }

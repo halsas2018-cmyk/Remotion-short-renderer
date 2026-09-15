@@ -1,134 +1,171 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 800,
+  "totalDurationInFrames": 911,
   "beats": [
     {
       "type": "headline_card",
-      "text": "bosses of open AI and Anthropic just",
+      "text": "McConnell literally rolled out of his",
       "emphasisWords": [
-        "OpenAI",
-        "Anthropic"
+        "crypto's",
+        "tax advantage"
       ],
       "pacing": "slow",
-      "startFrame": 4,
-      "endFrame": 63,
-      "durationInFrames": 59,
-      "scriptText": "The bosses of OpenAI and Anthropic just did something nobody expected."
+      "startFrame": 5,
+      "endFrame": 52,
+      "durationInFrames": 47,
+      "scriptText": "Mitch McConnell literally rolled out of his house to vote"
     },
     {
-      "type": "stat_pill",
-      "text": "did something nobody expected. Sam Altman and Dario Amade",
-      "value": "2",
-      "label": "Industry Leaders",
+      "type": "timeline",
+      "text": "house to vote today because the Senate is",
+      "events": [
+        {
+          "date": "Today",
+          "label": "Senate vote"
+        },
+        {
+          "date": "Future",
+          "label": "Crypto tax policy"
+        }
+      ],
       "pacing": "slow",
-      "startFrame": 63,
-      "endFrame": 157,
-      "durationInFrames": 94,
-      "scriptText": "Sam Altman and Dario Amodei are actually telling their own industry to slow down."
+      "startFrame": 52,
+      "endFrame": 108,
+      "durationInFrames": 56,
+      "scriptText": "today because the Senate is finally deciding the future of crypto taxes."
     },
     {
       "type": "process_flow",
-      "text": "are actually telling their own industry to slow down. For years, these guys have",
+      "text": "finally deciding the future of crypto taxes. They are voting on the Clarity",
       "steps": [
-        "Research",
-        "Development",
-        "Deployment"
+        "Introduce Clarity Act",
+        "Senate debate",
+        "Tax implementation"
       ],
       "pacing": "slow",
-      "startFrame": 157,
-      "endFrame": 275,
-      "durationInFrames": 118,
-      "scriptText": "For years, these guys have been in a sprint to"
+      "startFrame": 108,
+      "endFrame": 209,
+      "durationInFrames": 101,
+      "scriptText": "They are voting on the Clarity Act, a bill that"
+    },
+    {
+      "type": "icon_text",
+      "text": "Act, a bill that could change how every digital",
+      "icon": "\ud83e\ude99",
+      "pacing": "slow",
+      "startFrame": 209,
+      "endFrame": 287,
+      "durationInFrames": 78,
+      "scriptText": "could change how every digital coin is taxed in America."
+    },
+    {
+      "type": "progress_meter",
+      "text": "coin is taxed in America. It is not a final vote",
+      "pacing": "slow",
+      "value": 60,
+      "maxValue": 100,
+      "label": "Senators needed",
+      "startFrame": 287,
+      "endFrame": 360,
+      "durationInFrames": 73,
+      "scriptText": "It is not a final vote yet, but they need"
+    },
+    {
+      "type": "stat_pill",
+      "text": "yet, but they need 60 senators to agree",
+      "pacing": "slow",
+      "value": "60",
+      "label": "Required votes",
+      "startFrame": 360,
+      "endFrame": 427,
+      "durationInFrames": 67,
+      "scriptText": "sixty senators to agree just to start the conversation."
     },
     {
       "type": "chart_line",
-      "text": "been in a sprint to build the smartest AI on the planet.",
-      "pacing": "slow",
+      "text": "just to start the conversation. The crypto lobby",
       "points": [
         {
-          "label": "Year 1",
-          "value": 20
+          "label": "Lobbying",
+          "value": 10
         },
         {
-          "label": "Year 2",
+          "label": "Spending",
           "value": 50
         },
         {
-          "label": "Year 3",
-          "value": 90
-        }
-      ],
-      "startFrame": 275,
-      "endFrame": 350,
-      "durationInFrames": 75,
-      "scriptText": "build the smartest AI on the planet. But this weekend,"
-    },
-    {
-      "type": "before_after",
-      "text": "But this weekend, they both admitted that moving this fast",
-      "beforeLabel": "Full Speed Ahead",
-      "afterLabel": "Hitting The Brakes",
-      "pacing": "slow",
-      "startFrame": 350,
-      "endFrame": 434,
-      "durationInFrames": 84,
-      "scriptText": "they both admitted that moving this fast might be a massive mistake."
-    },
-    {
-      "type": "icon_text",
-      "text": "might be a massive mistake. It is not every day the people",
-      "icon": "\u26a0\ufe0f",
-      "pacing": "slow",
-      "startFrame": 434,
-      "endFrame": 514,
-      "durationInFrames": 80,
-      "scriptText": "It is not every day the people leading the AI"
-    },
-    {
-      "type": "chart_line",
-      "text": "leading the AI revolution asked to hit the brakes.",
-      "points": [
-        {
-          "label": "Speed",
-          "value": 90
-        },
-        {
-          "label": "Safety",
-          "value": 40
-        },
-        {
-          "label": "Risk",
-          "value": 85
+          "label": "Influence",
+          "value": 80
         }
       ],
       "pacing": "slow",
-      "startFrame": 514,
-      "endFrame": 581,
-      "durationInFrames": 67,
-      "scriptText": "revolution ask to hit the brakes. They are worried about"
+      "startFrame": 427,
+      "endFrame": 493,
+      "durationInFrames": 66,
+      "scriptText": "The crypto lobby is spending a fortune, and now even"
     },
     {
       "type": "icon_text",
-      "text": "They are worried about the risks of building technology that we do not",
+      "text": "is spending a fortune and now even politicians who hate the industry might vote",
       "icon": "\ud83d\udcca",
       "pacing": "slow",
-      "startFrame": 581,
-      "endFrame": 675,
-      "durationInFrames": 94,
-      "scriptText": "the risks of building technology that we do not fully understand yet."
+      "startFrame": 493,
+      "endFrame": 602,
+      "durationInFrames": 109,
+      "scriptText": "politicians who hate the industry might vote yes just to play it safe."
     },
     {
       "type": "scrollytelling",
-      "text": "fully understand yet. If the people building these machines are getting scared, should we be worried too?",
-      "title": "Should We Be Worried?",
-      "body": "The creators of the technology are expressing concern about the risks of building systems we do not yet fully understand.",
+      "text": "yes, just to play it safe. It is a massive chess",
+      "title": "The Political Chess Game",
+      "body": "Politicians are balancing campaign donations against the risk of regulating the crypto industry.",
       "pacing": "slow",
-      "startFrame": 675,
-      "endFrame": 800,
-      "durationInFrames": 125,
-      "scriptText": "If the people building these machines are getting scared, should we be worried too?"
+      "startFrame": 602,
+      "endFrame": 678,
+      "durationInFrames": 76,
+      "scriptText": "It is a massive chess game where one wrong move"
+    },
+    {
+      "type": "map_3d",
+      "text": "game where one wrong move could cost them millions in campaign",
+      "locationName": "Washington D.C.",
+      "latitude": 38.8951,
+      "longitude": -77.0364,
+      "buildings": [
+        "Capitol Building"
+      ],
+      "pacing": "slow",
+      "startFrame": 678,
+      "endFrame": 756,
+      "durationInFrames": 78,
+      "scriptText": "could cost them millions in campaign donations. If the government"
+    },
+    {
+      "type": "key_statement",
+      "text": "donations. If the government finally sets clear rules for",
+      "emphasisWords": [],
+      "pacing": "slow",
+      "startFrame": 756,
+      "endFrame": 841,
+      "durationInFrames": 85,
+      "scriptText": "finally sets clear rules for crypto, do you think prices"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "crypto, do you think prices will go up or crash?",
+      "stories": [
+        "Senate votes on crypto",
+        "Clarity Act debated",
+        "Market volatility expected"
+      ],
+      "label": "Crypto News",
+      "pacing": "normal",
+      "startFrame": 841,
+      "endFrame": 911,
+      "durationInFrames": 70,
+      "scriptText": "will go up or crash?"
     }
   ],
   "source": "YouTube Yahoo Finance",
-  "sourceUrl": "https://www.youtube.com/shorts/75WbmdBqgT4"
+  "sourceUrl": "https://www.youtube.com/watch?v=zJrZb6Lu2f4"
 }

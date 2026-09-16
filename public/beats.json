@@ -1,179 +1,162 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1059,
+  "totalDurationInFrames": 1171,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Google just gave AI agents the keys to",
+      "text": "latest model, GPT-6",
       "emphasisWords": [
-        "AI agents",
-        "Google Home"
+        "GPT-6 Astra",
+        "farming potatoes"
       ],
       "pacing": "slow",
-      "startFrame": 3,
-      "endFrame": 56,
-      "durationInFrames": 53,
-      "scriptText": "Google just gave AI agents the keys to your house."
+      "startFrame": 13,
+      "endFrame": 58,
+      "durationInFrames": 45,
+      "scriptText": "OpenAI's latest model, GPT-6 Astra, spent several hours just farming"
+    },
+    {
+      "type": "icon_text",
+      "text": "Astra, spent several hours just farming potatoes after a creeper blew up its base",
+      "icon": "\ud83d\udca5",
+      "pacing": "slow",
+      "startFrame": 58,
+      "endFrame": 193,
+      "durationInFrames": 135,
+      "scriptText": "potatoes after a Creeper blew up its base in Minecraft."
     },
     {
       "type": "stat_pill",
-      "text": "your house. Starting today, if you",
-      "value": "$20",
-      "label": "Monthly subscription",
-      "pacing": "slow",
-      "startFrame": 56,
-      "endFrame": 114,
-      "durationInFrames": 58,
-      "scriptText": "Starting today, if you pay for the twenty dollar a"
-    },
-    {
-      "type": "process_flow",
-      "text": "pay for the $20 a month Google Home Premium subscription,",
-      "steps": [
-        "Connect AI",
-        "Link Devices",
-        "Control Home"
-      ],
-      "pacing": "slow",
-      "startFrame": 114,
-      "endFrame": 193,
-      "durationInFrames": 79,
-      "scriptText": "month Google Home Premium subscription, you can connect tools like"
-    },
-    {
-      "type": "icon_text",
-      "text": "you can connect tools like chat GPT or claw directly to your",
-      "icon": "\ud83d\udca1",
+      "text": "in Minecraft. This happened during",
+      "value": "141-hour",
+      "label": "Test duration",
       "pacing": "slow",
       "startFrame": 193,
-      "endFrame": 286,
-      "durationInFrames": 93,
-      "scriptText": "ChatGPT or Claude directly to your smart lights, cameras, and thermostats."
-    },
-    {
-      "type": "timeline",
-      "text": "smart lights, cameras, and thermostats. This means you can",
-      "events": [
-        {
-          "date": "Step 1",
-          "label": "Summarize camera history"
-        },
-        {
-          "date": "Step 2",
-          "label": "Tweak temperature"
-        },
-        {
-          "date": "Step 3",
-          "label": "Send text command"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 286,
-      "endFrame": 380,
-      "durationInFrames": 94,
-      "scriptText": "This means you can finally ask your AI to summarize"
-    },
-    {
-      "type": "timeline",
-      "text": "finally ask your AI to summarize your doorbell camera history or tweak your home's",
-      "pacing": "slow",
-      "events": [
-        {
-          "date": "Past",
-          "label": "Manual home control"
-        },
-        {
-          "date": "Today",
-          "label": "AI agent integration"
-        },
-        {
-          "date": "Future",
-          "label": "Automated home chores"
-        }
-      ],
-      "startFrame": 380,
-      "endFrame": 492,
-      "durationInFrames": 112,
-      "scriptText": "your doorbell camera history or tweak your home's temperature with a simple text message."
-    },
-    {
-      "type": "versus",
-      "text": "temperature with a simple text message. It is a massive change for",
-      "left": "Writing essays",
-      "right": "Doing chores",
-      "pacing": "slow",
-      "startFrame": 492,
-      "endFrame": 582,
-      "durationInFrames": 90,
-      "scriptText": "It is a massive change for anyone who wants their"
-    },
-    {
-      "type": "before_after",
-      "text": "anyone who wants their AI to actually do chores instead of",
-      "beforeLabel": "Passive AI assistant",
-      "afterLabel": "Active home controller",
-      "pacing": "slow",
-      "startFrame": 582,
-      "endFrame": 659,
-      "durationInFrames": 77,
-      "scriptText": "AI to actually do chores instead of just writing essays."
-    },
-    {
-      "type": "before_after",
-      "text": "just writing essays, but there is a catch",
-      "pacing": "slow",
-      "beforeLabel": "Free standard access",
-      "afterLabel": "Premium subscription required",
-      "startFrame": 659,
-      "endFrame": 718,
-      "durationInFrames": 59,
-      "scriptText": "But there is a catch. Right now, this feature is"
+      "endFrame": 258,
+      "durationInFrames": 65,
+      "scriptText": "This happened during a massive 141-hour test where the AI"
     },
     {
       "type": "progress_meter",
-      "text": "right now this feature is locked behind that expensive monthly",
-      "value": 20,
+      "text": "a massive 141-hour test where the AI beat every other system in the game.",
+      "value": 100,
       "maxValue": 100,
-      "label": "Plan availability",
+      "label": "Game performance",
       "pacing": "slow",
-      "startFrame": 718,
-      "endFrame": 810,
-      "durationInFrames": 92,
-      "scriptText": "locked behind that expensive monthly fee, and Google is staying"
+      "startFrame": 258,
+      "endFrame": 378,
+      "durationInFrames": 120,
+      "scriptText": "beat every other system in the game. While the model"
     },
     {
-      "type": "icon_text",
-      "text": "fee and Google is staying quiet on whether it will ever come to the",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 810,
-      "endFrame": 897,
-      "durationInFrames": 87,
-      "scriptText": "quiet on whether it will ever come to the cheaper plans."
-    },
-    {
-      "type": "icon_text",
-      "text": "cheaper plants do you actually want to chat",
-      "icon": "\ud83d\udd12",
-      "pacing": "slow",
-      "startFrame": 897,
-      "endFrame": 957,
-      "durationInFrames": 60,
-      "scriptText": "Do you actually want a chatbot controlling your front door"
-    },
-    {
-      "type": "key_statement",
-      "text": "about controlling your front door lock or is this a security nightmare waiting to happen.",
-      "emphasisWords": [
-        "security nightmare"
+      "type": "process_flow",
+      "text": "While the model was supposed to be doing complex tasks,",
+      "steps": [
+        "Task execution",
+        "Creeper explosion",
+        "Digital gardening"
       ],
       "pacing": "slow",
-      "startFrame": 957,
-      "endFrame": 1059,
-      "durationInFrames": 102,
-      "scriptText": "lock, or is this a security nightmare waiting to happen?"
+      "startFrame": 378,
+      "endFrame": 465,
+      "durationInFrames": 87,
+      "scriptText": "was supposed to be doing complex tasks, it decided that"
+    },
+    {
+      "type": "icon_text",
+      "text": "it decided that digital gardening was the best way to spend its time after a",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 465,
+      "endFrame": 560,
+      "durationInFrames": 95,
+      "scriptText": "digital gardening was the best way to spend its time after a disaster."
+    },
+    {
+      "type": "icon_text",
+      "text": "disaster. Engineers watched",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 560,
+      "endFrame": 622,
+      "durationInFrames": 62,
+      "scriptText": "Engineers watched as the machine showed a weirdly human level"
+    },
+    {
+      "type": "icon_text",
+      "text": "as the machine showed a weirdly human level of persistence in the face of a total",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 622,
+      "endFrame": 721,
+      "durationInFrames": 99,
+      "scriptText": "of persistence in the face of a total loss."
+    },
+    {
+      "type": "chart_line",
+      "text": "loss. Most people expected the AI to crash",
+      "points": [
+        {
+          "label": "Expectation",
+          "value": 0
+        },
+        {
+          "label": "Persistence",
+          "value": 100
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 721,
+      "endFrame": 809,
+      "durationInFrames": 88,
+      "scriptText": "Most people expected the AI to crash or quit, but it just kept planting."
+    },
+    {
+      "type": "icon_text",
+      "text": "or quit, but it just kept planting. We are teaching",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 809,
+      "endFrame": 898,
+      "durationInFrames": 89,
+      "scriptText": "We are teaching computers to be smarter than us, yet"
+    },
+    {
+      "type": "icon_text",
+      "text": "computers to be smarter than us, yet they are starting to act just like us when things go",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 898,
+      "endFrame": 1008,
+      "durationInFrames": 110,
+      "scriptText": "they are starting to act just like us when things go wrong."
+    },
+    {
+      "type": "icon_text",
+      "text": "wrong. If an AI loses",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 1008,
+      "endFrame": 1068,
+      "durationInFrames": 60,
+      "scriptText": "If an AI loses its cool and starts farming, are"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "its cool and starts farming, are we really ready for it to handle the important stuff?",
+      "stories": [
+        "AI autonomy concerns",
+        "Future of automation",
+        "System reliability"
+      ],
+      "label": "Analysis",
+      "pacing": "slow",
+      "startFrame": 1068,
+      "endFrame": 1171,
+      "durationInFrames": 103,
+      "scriptText": "we really ready for it to handle the important stuff?"
     }
   ],
-  "source": "TechCrunch AI",
-  "sourceUrl": "https://techcrunch.com/2026/09/16/your-ai-agents-can-now-control-your-google-home-devices/"
+  "source": "Google News AI",
+  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMi7gJBVV95cUxOdEVEN0dXS2lPdzZhR0l5UTZnWl9uSVE4VlVrVWZ2WW9uUmpLekRvbWlsYjVRT1VNWUVIb0FNc245X245RDdzNlh6cVBIdXZsU3V2Wi1Udkd6cFZZZDB0UnpmTGVEWkl2X0ppMDNfVjlnT3FHQ2FZMHVFamZ0UGUzZmQ5bjhnUXdGS0xheTh4OFhFVHVpUVFyclBERzJrWjB1SlNNX291bW1HSFJlRnZDbjZNQkNfR1M5NWdieGkzTHZzTkUtT1p3Mk8xeUxSdHlTUWtVbGZFR1JmOUpzR01ZUlU4cUJROHU5TVBRUFNXSk9nNUw3WkY0NFRBMXB5LVhfYjBjNTg0LV9nVXdGbG5zZ1ZSV092Y3hyYkg2YnBsdmxkeWpRMlY5Q29oLTFMTVZmWGU0YVowVXJHVHJnRFoyUVRtemNzV1FtQTlicFVYSGFpM19FbzR5S09kUDlOMVRBTi1FOXFST2c4azlMQXc?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isGygg4fZaNYlq0lAgVVg9Qjo3MopvoQO8v3MJuoN97kzr2rS3N96F6idvxne37ef3G-6uGKXxn6NgBcUxRoV9stPes42us5"
 }

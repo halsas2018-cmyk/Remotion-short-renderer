@@ -1,171 +1,179 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 911,
+  "totalDurationInFrames": 1059,
   "beats": [
     {
       "type": "headline_card",
-      "text": "McConnell literally rolled out of his",
+      "text": "Google just gave AI agents the keys to",
       "emphasisWords": [
-        "crypto's",
-        "tax advantage"
+        "AI agents",
+        "Google Home"
       ],
       "pacing": "slow",
-      "startFrame": 5,
-      "endFrame": 52,
-      "durationInFrames": 47,
-      "scriptText": "Mitch McConnell literally rolled out of his house to vote"
-    },
-    {
-      "type": "timeline",
-      "text": "house to vote today because the Senate is",
-      "events": [
-        {
-          "date": "Today",
-          "label": "Senate vote"
-        },
-        {
-          "date": "Future",
-          "label": "Crypto tax policy"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 52,
-      "endFrame": 108,
-      "durationInFrames": 56,
-      "scriptText": "today because the Senate is finally deciding the future of crypto taxes."
-    },
-    {
-      "type": "process_flow",
-      "text": "finally deciding the future of crypto taxes. They are voting on the Clarity",
-      "steps": [
-        "Introduce Clarity Act",
-        "Senate debate",
-        "Tax implementation"
-      ],
-      "pacing": "slow",
-      "startFrame": 108,
-      "endFrame": 209,
-      "durationInFrames": 101,
-      "scriptText": "They are voting on the Clarity Act, a bill that"
-    },
-    {
-      "type": "icon_text",
-      "text": "Act, a bill that could change how every digital",
-      "icon": "\ud83e\ude99",
-      "pacing": "slow",
-      "startFrame": 209,
-      "endFrame": 287,
-      "durationInFrames": 78,
-      "scriptText": "could change how every digital coin is taxed in America."
-    },
-    {
-      "type": "progress_meter",
-      "text": "coin is taxed in America. It is not a final vote",
-      "pacing": "slow",
-      "value": 60,
-      "maxValue": 100,
-      "label": "Senators needed",
-      "startFrame": 287,
-      "endFrame": 360,
-      "durationInFrames": 73,
-      "scriptText": "It is not a final vote yet, but they need"
+      "startFrame": 3,
+      "endFrame": 56,
+      "durationInFrames": 53,
+      "scriptText": "Google just gave AI agents the keys to your house."
     },
     {
       "type": "stat_pill",
-      "text": "yet, but they need 60 senators to agree",
+      "text": "your house. Starting today, if you",
+      "value": "$20",
+      "label": "Monthly subscription",
       "pacing": "slow",
-      "value": "60",
-      "label": "Required votes",
-      "startFrame": 360,
-      "endFrame": 427,
-      "durationInFrames": 67,
-      "scriptText": "sixty senators to agree just to start the conversation."
+      "startFrame": 56,
+      "endFrame": 114,
+      "durationInFrames": 58,
+      "scriptText": "Starting today, if you pay for the twenty dollar a"
     },
     {
-      "type": "chart_line",
-      "text": "just to start the conversation. The crypto lobby",
-      "points": [
-        {
-          "label": "Lobbying",
-          "value": 10
-        },
-        {
-          "label": "Spending",
-          "value": 50
-        },
-        {
-          "label": "Influence",
-          "value": 80
-        }
+      "type": "process_flow",
+      "text": "pay for the $20 a month Google Home Premium subscription,",
+      "steps": [
+        "Connect AI",
+        "Link Devices",
+        "Control Home"
       ],
       "pacing": "slow",
-      "startFrame": 427,
-      "endFrame": 493,
-      "durationInFrames": 66,
-      "scriptText": "The crypto lobby is spending a fortune, and now even"
+      "startFrame": 114,
+      "endFrame": 193,
+      "durationInFrames": 79,
+      "scriptText": "month Google Home Premium subscription, you can connect tools like"
     },
     {
       "type": "icon_text",
-      "text": "is spending a fortune and now even politicians who hate the industry might vote",
-      "icon": "\ud83d\udcca",
+      "text": "you can connect tools like chat GPT or claw directly to your",
+      "icon": "\ud83d\udca1",
       "pacing": "slow",
-      "startFrame": 493,
-      "endFrame": 602,
-      "durationInFrames": 109,
-      "scriptText": "politicians who hate the industry might vote yes just to play it safe."
+      "startFrame": 193,
+      "endFrame": 286,
+      "durationInFrames": 93,
+      "scriptText": "ChatGPT or Claude directly to your smart lights, cameras, and thermostats."
     },
     {
-      "type": "scrollytelling",
-      "text": "yes, just to play it safe. It is a massive chess",
-      "title": "The Political Chess Game",
-      "body": "Politicians are balancing campaign donations against the risk of regulating the crypto industry.",
-      "pacing": "slow",
-      "startFrame": 602,
-      "endFrame": 678,
-      "durationInFrames": 76,
-      "scriptText": "It is a massive chess game where one wrong move"
-    },
-    {
-      "type": "map_3d",
-      "text": "game where one wrong move could cost them millions in campaign",
-      "locationName": "Washington D.C.",
-      "latitude": 38.8951,
-      "longitude": -77.0364,
-      "buildings": [
-        "Capitol Building"
+      "type": "timeline",
+      "text": "smart lights, cameras, and thermostats. This means you can",
+      "events": [
+        {
+          "date": "Step 1",
+          "label": "Summarize camera history"
+        },
+        {
+          "date": "Step 2",
+          "label": "Tweak temperature"
+        },
+        {
+          "date": "Step 3",
+          "label": "Send text command"
+        }
       ],
       "pacing": "slow",
-      "startFrame": 678,
-      "endFrame": 756,
-      "durationInFrames": 78,
-      "scriptText": "could cost them millions in campaign donations. If the government"
+      "startFrame": 286,
+      "endFrame": 380,
+      "durationInFrames": 94,
+      "scriptText": "This means you can finally ask your AI to summarize"
+    },
+    {
+      "type": "timeline",
+      "text": "finally ask your AI to summarize your doorbell camera history or tweak your home's",
+      "pacing": "slow",
+      "events": [
+        {
+          "date": "Past",
+          "label": "Manual home control"
+        },
+        {
+          "date": "Today",
+          "label": "AI agent integration"
+        },
+        {
+          "date": "Future",
+          "label": "Automated home chores"
+        }
+      ],
+      "startFrame": 380,
+      "endFrame": 492,
+      "durationInFrames": 112,
+      "scriptText": "your doorbell camera history or tweak your home's temperature with a simple text message."
+    },
+    {
+      "type": "versus",
+      "text": "temperature with a simple text message. It is a massive change for",
+      "left": "Writing essays",
+      "right": "Doing chores",
+      "pacing": "slow",
+      "startFrame": 492,
+      "endFrame": 582,
+      "durationInFrames": 90,
+      "scriptText": "It is a massive change for anyone who wants their"
+    },
+    {
+      "type": "before_after",
+      "text": "anyone who wants their AI to actually do chores instead of",
+      "beforeLabel": "Passive AI assistant",
+      "afterLabel": "Active home controller",
+      "pacing": "slow",
+      "startFrame": 582,
+      "endFrame": 659,
+      "durationInFrames": 77,
+      "scriptText": "AI to actually do chores instead of just writing essays."
+    },
+    {
+      "type": "before_after",
+      "text": "just writing essays, but there is a catch",
+      "pacing": "slow",
+      "beforeLabel": "Free standard access",
+      "afterLabel": "Premium subscription required",
+      "startFrame": 659,
+      "endFrame": 718,
+      "durationInFrames": 59,
+      "scriptText": "But there is a catch. Right now, this feature is"
+    },
+    {
+      "type": "progress_meter",
+      "text": "right now this feature is locked behind that expensive monthly",
+      "value": 20,
+      "maxValue": 100,
+      "label": "Plan availability",
+      "pacing": "slow",
+      "startFrame": 718,
+      "endFrame": 810,
+      "durationInFrames": 92,
+      "scriptText": "locked behind that expensive monthly fee, and Google is staying"
+    },
+    {
+      "type": "icon_text",
+      "text": "fee and Google is staying quiet on whether it will ever come to the",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 810,
+      "endFrame": 897,
+      "durationInFrames": 87,
+      "scriptText": "quiet on whether it will ever come to the cheaper plans."
+    },
+    {
+      "type": "icon_text",
+      "text": "cheaper plants do you actually want to chat",
+      "icon": "\ud83d\udd12",
+      "pacing": "slow",
+      "startFrame": 897,
+      "endFrame": 957,
+      "durationInFrames": 60,
+      "scriptText": "Do you actually want a chatbot controlling your front door"
     },
     {
       "type": "key_statement",
-      "text": "donations. If the government finally sets clear rules for",
-      "emphasisWords": [],
-      "pacing": "slow",
-      "startFrame": 756,
-      "endFrame": 841,
-      "durationInFrames": 85,
-      "scriptText": "finally sets clear rules for crypto, do you think prices"
-    },
-    {
-      "type": "ticker_tape",
-      "text": "crypto, do you think prices will go up or crash?",
-      "stories": [
-        "Senate votes on crypto",
-        "Clarity Act debated",
-        "Market volatility expected"
+      "text": "about controlling your front door lock or is this a security nightmare waiting to happen.",
+      "emphasisWords": [
+        "security nightmare"
       ],
-      "label": "Crypto News",
-      "pacing": "normal",
-      "startFrame": 841,
-      "endFrame": 911,
-      "durationInFrames": 70,
-      "scriptText": "will go up or crash?"
+      "pacing": "slow",
+      "startFrame": 957,
+      "endFrame": 1059,
+      "durationInFrames": 102,
+      "scriptText": "lock, or is this a security nightmare waiting to happen?"
     }
   ],
-  "source": "YouTube Yahoo Finance",
-  "sourceUrl": "https://www.youtube.com/watch?v=zJrZb6Lu2f4"
+  "source": "TechCrunch AI",
+  "sourceUrl": "https://techcrunch.com/2026/09/16/your-ai-agents-can-now-control-your-google-home-devices/"
 }

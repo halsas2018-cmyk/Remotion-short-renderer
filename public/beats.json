@@ -1,162 +1,159 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1171,
+  "totalDurationInFrames": 1098,
   "beats": [
     {
       "type": "headline_card",
-      "text": "latest model, GPT-6",
+      "text": "head of physical AI says robots are currently missing",
       "emphasisWords": [
-        "GPT-6 Astra",
-        "farming potatoes"
+        "Robots",
+        "ChatGPT moment"
       ],
       "pacing": "slow",
-      "startFrame": 13,
-      "endFrame": 58,
-      "durationInFrames": 45,
-      "scriptText": "OpenAI's latest model, GPT-6 Astra, spent several hours just farming"
-    },
-    {
-      "type": "icon_text",
-      "text": "Astra, spent several hours just farming potatoes after a creeper blew up its base",
-      "icon": "\ud83d\udca5",
-      "pacing": "slow",
-      "startFrame": 58,
-      "endFrame": 193,
-      "durationInFrames": 135,
-      "scriptText": "potatoes after a Creeper blew up its base in Minecraft."
+      "startFrame": 8,
+      "endFrame": 89,
+      "durationInFrames": 81,
+      "scriptText": "Nvidia\u2019s head of physical AI says robots are currently missing their ChatGPT moment."
     },
     {
       "type": "stat_pill",
-      "text": "in Minecraft. This happened during",
-      "value": "141-hour",
-      "label": "Test duration",
+      "text": "their chat GPT moment. We have AI that can",
+      "value": "100%",
+      "label": "Digital AI capability",
       "pacing": "slow",
-      "startFrame": 193,
-      "endFrame": 258,
-      "durationInFrames": 65,
-      "scriptText": "This happened during a massive 141-hour test where the AI"
+      "startFrame": 89,
+      "endFrame": 178,
+      "durationInFrames": 89,
+      "scriptText": "We have AI that can write poetry and code, but"
     },
     {
       "type": "progress_meter",
-      "text": "a massive 141-hour test where the AI beat every other system in the game.",
-      "value": 100,
+      "text": "write poetry in code, but we still don't have a robot that can reliably",
+      "value": 15,
       "maxValue": 100,
-      "label": "Game performance",
+      "label": "Physical robot reliability",
       "pacing": "slow",
-      "startFrame": 258,
-      "endFrame": 378,
-      "durationInFrames": 120,
-      "scriptText": "beat every other system in the game. While the model"
+      "startFrame": 178,
+      "endFrame": 272,
+      "durationInFrames": 94,
+      "scriptText": "we still don't have a robot that can reliably fold"
+    },
+    {
+      "type": "quote_attribution",
+      "text": "fold your laundry or clean your kitchen.",
+      "pacing": "slow",
+      "quote": "The big problem for physical AI is a lack of training data",
+      "attribution": "Les Karpas",
+      "startFrame": 272,
+      "endFrame": 319,
+      "durationInFrames": 47,
+      "scriptText": "your laundry or clean your kitchen. Les Karpas from Nvidia"
+    },
+    {
+      "type": "stat_pill",
+      "text": "Less Carpas from Nvidia explains that the big problem is",
+      "pacing": "slow",
+      "value": "100%",
+      "label": "Internet data availability",
+      "startFrame": 319,
+      "endFrame": 414,
+      "durationInFrames": 95,
+      "scriptText": "explains that the big problem is data. OpenAI had the"
+    },
+    {
+      "type": "icon_text",
+      "text": "data. Open AI had the entire internet to train its language models,",
+      "icon": "\ud83c\udf10",
+      "pacing": "slow",
+      "startFrame": 414,
+      "endFrame": 528,
+      "durationInFrames": 114,
+      "scriptText": "entire internet to train its language models, but there is"
     },
     {
       "type": "process_flow",
-      "text": "While the model was supposed to be doing complex tasks,",
+      "text": "but there is no internet wide library for how the real world moves and",
       "steps": [
-        "Task execution",
-        "Creeper explosion",
-        "Digital gardening"
+        "Observe movement",
+        "Record interaction",
+        "Train model"
       ],
       "pacing": "slow",
-      "startFrame": 378,
-      "endFrame": 465,
-      "durationInFrames": 87,
-      "scriptText": "was supposed to be doing complex tasks, it decided that"
-    },
-    {
-      "type": "icon_text",
-      "text": "it decided that digital gardening was the best way to spend its time after a",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 465,
-      "endFrame": 560,
-      "durationInFrames": 95,
-      "scriptText": "digital gardening was the best way to spend its time after a disaster."
-    },
-    {
-      "type": "icon_text",
-      "text": "disaster. Engineers watched",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 560,
+      "startFrame": 528,
       "endFrame": 622,
-      "durationInFrames": 62,
-      "scriptText": "Engineers watched as the machine showed a weirdly human level"
+      "durationInFrames": 94,
+      "scriptText": "no internet-wide library for how the real world moves and bumps into things."
     },
     {
-      "type": "icon_text",
-      "text": "as the machine showed a weirdly human level of persistence in the face of a total",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 622,
-      "endFrame": 721,
-      "durationInFrames": 99,
-      "scriptText": "of persistence in the face of a total loss."
-    },
-    {
-      "type": "chart_line",
-      "text": "loss. Most people expected the AI to crash",
-      "points": [
+      "type": "timeline",
+      "text": "bumps into things. Without that massive data set of",
+      "events": [
         {
-          "label": "Expectation",
-          "value": 0
+          "date": "Past",
+          "label": "Lab testing"
         },
         {
-          "label": "Persistence",
-          "value": 100
+          "date": "Present",
+          "label": "Data bottleneck"
+        },
+        {
+          "date": "Future",
+          "label": "Real-world deployment"
         }
       ],
       "pacing": "slow",
-      "startFrame": 721,
-      "endFrame": 809,
-      "durationInFrames": 88,
-      "scriptText": "Most people expected the AI to crash or quit, but it just kept planting."
+      "startFrame": 622,
+      "endFrame": 709,
+      "durationInFrames": 87,
+      "scriptText": "Without that massive dataset of physical movement, robots remain stuck in the lab."
     },
     {
-      "type": "icon_text",
-      "text": "or quit, but it just kept planting. We are teaching",
-      "icon": "\ud83d\udcca",
+      "type": "stat_pill",
+      "text": "physical movement, robots remain stuck in the lab. Engineers are now trying",
+      "value": "Simulated",
+      "label": "Current data source",
       "pacing": "slow",
-      "startFrame": 809,
-      "endFrame": 898,
-      "durationInFrames": 89,
-      "scriptText": "We are teaching computers to be smarter than us, yet"
+      "startFrame": 709,
+      "endFrame": 833,
+      "durationInFrames": 124,
+      "scriptText": "Engineers are now trying to fake this data using simulations,"
     },
     {
-      "type": "icon_text",
-      "text": "computers to be smarter than us, yet they are starting to act just like us when things go",
-      "icon": "\ud83d\udcca",
+      "type": "stat_pill",
+      "text": "to fake this data using simulations, but it's still a massive",
+      "pacing": "normal",
+      "value": "High",
+      "label": "Hurdle to clear",
+      "startFrame": 833,
+      "endFrame": 911,
+      "durationInFrames": 78,
+      "scriptText": "but it\u2019s still a massive hurdle to clear."
+    },
+    {
+      "type": "scrollytelling",
+      "text": "hurdle to clear. If a robot could",
+      "title": "The Home Robot Future",
+      "body": "Robots are transitioning from controlled lab environments to complex, unpredictable home settings.",
       "pacing": "slow",
-      "startFrame": 898,
-      "endFrame": 1008,
-      "durationInFrames": 110,
-      "scriptText": "they are starting to act just like us when things go wrong."
+      "startFrame": 911,
+      "endFrame": 984,
+      "durationInFrames": 73,
+      "scriptText": "If a robot could actually do your chores around the"
     },
     {
-      "type": "icon_text",
-      "text": "wrong. If an AI loses",
-      "icon": "\ud83d\udcca",
-      "pacing": "slow",
-      "startFrame": 1008,
-      "endFrame": 1068,
-      "durationInFrames": 60,
-      "scriptText": "If an AI loses its cool and starts farming, are"
-    },
-    {
-      "type": "ticker_tape",
-      "text": "its cool and starts farming, are we really ready for it to handle the important stuff?",
-      "stories": [
-        "AI autonomy concerns",
-        "Future of automation",
-        "System reliability"
+      "type": "key_statement",
+      "text": "actually do your chores around the house, would you finally be comfortable letting it live in your home?",
+      "emphasisWords": [
+        "comfortable",
+        "live in your home"
       ],
-      "label": "Analysis",
       "pacing": "slow",
-      "startFrame": 1068,
-      "endFrame": 1171,
-      "durationInFrames": 103,
-      "scriptText": "we really ready for it to handle the important stuff?"
+      "startFrame": 984,
+      "endFrame": 1098,
+      "durationInFrames": 114,
+      "scriptText": "house, would you finally be comfortable letting it live in your home?"
     }
   ],
-  "source": "Google News AI",
-  "sourceUrl": "https://consent.google.com/ml?continue=https://news.google.com/rss/articles/CBMi7gJBVV95cUxOdEVEN0dXS2lPdzZhR0l5UTZnWl9uSVE4VlVrVWZ2WW9uUmpLekRvbWlsYjVRT1VNWUVIb0FNc245X245RDdzNlh6cVBIdXZsU3V2Wi1Udkd6cFZZZDB0UnpmTGVEWkl2X0ppMDNfVjlnT3FHQ2FZMHVFamZ0UGUzZmQ5bjhnUXdGS0xheTh4OFhFVHVpUVFyclBERzJrWjB1SlNNX291bW1HSFJlRnZDbjZNQkNfR1M5NWdieGkzTHZzTkUtT1p3Mk8xeUxSdHlTUWtVbGZFR1JmOUpzR01ZUlU4cUJROHU5TVBRUFNXSk9nNUw3WkY0NFRBMXB5LVhfYjBjNTg0LV9nVXdGbG5zZ1ZSV092Y3hyYkg2YnBsdmxkeWpRMlY5Q29oLTFMTVZmWGU0YVowVXJHVHJnRFoyUVRtemNzV1FtQTlicFVYSGFpM19FbzR5S09kUDlOMVRBTi1FOXFST2c4azlMQXc?oc%3D5&gl=NG&hl=en-US&cm=2&pc=n&src=1&escs=ATu9isGygg4fZaNYlq0lAgVVg9Qjo3MopvoQO8v3MJuoN97kzr2rS3N96F6idvxne37ef3G-6uGKXxn6NgBcUxRoV9stPes42us5"
+  "source": "TechCrunch AI",
+  "sourceUrl": "https://techcrunch.com/2026/09/16/robots-are-waiting-for-a-chatgpt-moment-nvidias-les-karpas-explains-why-at-techcrunch-disrupt-2026/"
 }

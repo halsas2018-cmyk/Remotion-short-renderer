@@ -1,181 +1,162 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 1005,
+  "totalDurationInFrames": 971,
   "beats": [
     {
       "type": "headline_card",
-      "text": "AI just made a scientific discovery",
+      "text": "Rath just says the United States is",
       "emphasisWords": [
-        "scientific discovery",
-        "21 hours"
+        "United States",
+        "China"
       ],
       "pacing": "slow",
-      "startFrame": 4,
+      "startFrame": 6,
       "endFrame": 59,
-      "durationInFrames": 55,
-      "scriptText": "An AI just made a scientific discovery in 21 hours"
-    },
-    {
-      "type": "icon_text",
-      "text": "in 21 hours that could change how we edit DNA.",
-      "icon": "\ud83e\uddec",
-      "pacing": "slow",
-      "startFrame": 59,
-      "endFrame": 131,
-      "durationInFrames": 72,
-      "scriptText": "that could change how we edit DNA. Claude, an AI"
-    },
-    {
-      "type": "timeline",
-      "text": "Clod, an AI built by a company called Anthropic,",
-      "events": [
-        {
-          "date": "Start",
-          "label": "AI begins scan"
-        },
-        {
-          "date": "12 hours",
-          "label": "Mid-process"
-        },
-        {
-          "date": "21 hours",
-          "label": "Discovery made"
-        }
-      ],
-      "pacing": "slow",
-      "startFrame": 131,
-      "endFrame": 216,
-      "durationInFrames": 85,
-      "scriptText": "built by a company called Anthropic, spent nearly a day"
-    },
-    {
-      "type": "process_flow",
-      "text": "spent nearly a day scanning millions of genetic sequences.",
-      "steps": [
-        "Scan sequences",
-        "Identify enzymes",
-        "Validate system"
-      ],
-      "pacing": "slow",
-      "startFrame": 216,
-      "endFrame": 288,
-      "durationInFrames": 72,
-      "scriptText": "scanning millions of genetic sequences. It found a new enzyme"
-    },
-    {
-      "type": "versus",
-      "text": "It found a new enzyme system similar to the famous gene editing",
-      "left": "Traditional Crispr tools",
-      "right": "New AI-discovered system",
-      "pacing": "slow",
-      "startFrame": 288,
-      "endFrame": 398,
-      "durationInFrames": 110,
-      "scriptText": "system similar to the famous gene-editing tool Crispr, all on its own."
-    },
-    {
-      "type": "before_after",
-      "text": "tool CRISPR, all on its own. The humans in the lab just watched",
-      "beforeLabel": "Human-led research",
-      "afterLabel": "AI-autonomous research",
-      "pacing": "slow",
-      "startFrame": 398,
-      "endFrame": 493,
-      "durationInFrames": 95,
-      "scriptText": "The humans in the lab just watched it work and"
+      "durationInFrames": 53,
+      "scriptText": "Jason Rathje says the United States is falling behind China"
     },
     {
       "type": "stat_pill",
-      "text": "it work and checked its math at the end. They still",
-      "value": "100%",
-      "label": "AI autonomy",
+      "text": "falling behind China in the race for artificial",
+      "value": "AI",
+      "label": "Global Race",
       "pacing": "slow",
-      "startFrame": 493,
-      "endFrame": 563,
-      "durationInFrames": 70,
-      "scriptText": "checked its math at the end. They still don\u2019t even"
+      "startFrame": 59,
+      "endFrame": 123,
+      "durationInFrames": 64,
+      "scriptText": "in the race for artificial intelligence. He is a top"
     },
     {
       "type": "icon_text",
-      "text": "don't even know exactly what this new discovery",
-      "icon": "\ud83e\uddea",
+      "text": "intelligence. He is a top official at a company called WebAI,",
+      "icon": "\ud83c\udfe2",
       "pacing": "slow",
-      "startFrame": 563,
-      "endFrame": 622,
-      "durationInFrames": 59,
-      "scriptText": "know exactly what this new discovery does yet, but they"
+      "startFrame": 123,
+      "endFrame": 228,
+      "durationInFrames": 105,
+      "scriptText": "official at a company called webAI, and he claims our"
     },
     {
-      "type": "progress_meter",
-      "text": "does yet, but they are already calling it a massive breakthrough.",
-      "value": 85,
-      "maxValue": 100,
-      "label": "Breakthrough confidence",
+      "type": "versus",
+      "text": "and he claims our national security is now on the line.",
+      "left": "Software code development",
+      "right": "Supply chain infrastructure",
       "pacing": "slow",
-      "startFrame": 622,
-      "endFrame": 701,
-      "durationInFrames": 79,
-      "scriptText": "are already calling it a massive breakthrough. It is the"
+      "startFrame": 228,
+      "endFrame": 305,
+      "durationInFrames": 77,
+      "scriptText": "national security is now on the line. The problem isn't"
+    },
+    {
+      "type": "process_flow",
+      "text": "The problem isn't just the software itself, but how",
+      "pacing": "slow",
+      "steps": [
+        "Build supply chains",
+        "Power AI machines",
+        "Secure national interests"
+      ],
+      "startFrame": 305,
+      "endFrame": 397,
+      "durationInFrames": 92,
+      "scriptText": "just the software itself, but how we build the supply"
     },
     {
       "type": "chart_line",
-      "text": "It is the first time an AI has done this kind of",
+      "text": "we build the supply chains that power these machines.",
       "points": [
         {
-          "label": "Step 1",
-          "value": 10
+          "label": "Year 1",
+          "value": 20
         },
         {
-          "label": "Step 2",
-          "value": 40
+          "label": "Year 2",
+          "value": 45
         },
         {
-          "label": "Step 3",
-          "value": 90
+          "label": "Year 3",
+          "value": 80
         }
       ],
       "pacing": "slow",
-      "startFrame": 701,
-      "endFrame": 769,
-      "durationInFrames": 68,
-      "scriptText": "first time an AI has done this kind of complex"
+      "startFrame": 397,
+      "endFrame": 460,
+      "durationInFrames": 63,
+      "scriptText": "chains that power these machines. Rathje argues the only way"
     },
     {
-      "type": "scrollytelling",
-      "text": "complex science without a human holding its",
-      "title": "Autonomous Science",
-      "body": "The AI completed complex research without human intervention, marking a shift in scientific methodology.",
+      "type": "icon_text",
+      "text": "Raphja argues the only way to catch up is to embrace open source",
+      "icon": "\ud83d\udd13",
       "pacing": "slow",
-      "startFrame": 769,
-      "endFrame": 823,
-      "durationInFrames": 54,
-      "scriptText": "science without a human holding its hand. If an AI"
+      "startFrame": 460,
+      "endFrame": 571,
+      "durationInFrames": 111,
+      "scriptText": "to catch up is to embrace open source AI, which"
     },
     {
-      "type": "scrollytelling",
-      "text": "hand. If an AI can find brand new biological",
-      "title": "The Future of Discovery",
-      "body": "As AI accelerates biological research, we must weigh the benefits of rapid innovation against potential risks.",
-      "pacing": "slow",
-      "startFrame": 823,
-      "endFrame": 899,
-      "durationInFrames": 76,
-      "scriptText": "can find brand new biological tools while we sleep, should"
-    },
-    {
-      "type": "key_statement",
-      "text": "tools while we sleep, should we be excited or terrified about what it finds next?",
-      "emphasisWords": [
-        "excited",
-        "terrified"
+      "type": "process_flow",
+      "text": "AI, which lets anyone see and improve the code.",
+      "steps": [
+        "View Code",
+        "Improve Code",
+        "Innovate"
       ],
       "pacing": "slow",
-      "startFrame": 899,
-      "endFrame": 1005,
-      "durationInFrames": 106,
-      "scriptText": "we be excited or terrified about what it finds next?"
+      "startFrame": 571,
+      "endFrame": 644,
+      "durationInFrames": 73,
+      "scriptText": "lets anyone see and improve the code. It is a"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "It is a bold plan to keep American tech in the",
+      "pacing": "slow",
+      "title": "The Open Source Strategy",
+      "body": "Embracing open source is a bold plan to maintain American technological leadership.",
+      "startFrame": 644,
+      "endFrame": 723,
+      "durationInFrames": 79,
+      "scriptText": "bold plan to keep American tech in the lead, but"
+    },
+    {
+      "type": "scrollytelling",
+      "text": "lead, but it relies on sharing our secrets to",
+      "title": "The Open Source Paradox",
+      "body": "Sharing secrets to maintain a competitive advantage in global technology.",
+      "pacing": "slow",
+      "startFrame": 723,
+      "endFrame": 786,
+      "durationInFrames": 63,
+      "scriptText": "it relies on sharing our secrets to stay ahead."
+    },
+    {
+      "type": "quote_attribution",
+      "text": "stay ahead. If you were in charge",
+      "quote": "If you were in charge of national security, would you keep AI code secret?",
+      "attribution": "Jason Rathje",
+      "pacing": "slow",
+      "startFrame": 786,
+      "endFrame": 848,
+      "durationInFrames": 62,
+      "scriptText": "If you were in charge of national security, would you"
+    },
+    {
+      "type": "ticker_tape",
+      "text": "of national security, would you keep AI code secret or share it with the world to grow faster?",
+      "stories": [
+        "Open Source vs Closed",
+        "National Security Stakes",
+        "Global AI Race"
+      ],
+      "label": "Strategy",
+      "pacing": "slow",
+      "startFrame": 848,
+      "endFrame": 971,
+      "durationInFrames": 123,
+      "scriptText": "keep AI code secret or share it with the world to grow faster?"
     }
   ],
-  "source": "The Verge AI",
-  "sourceUrl": "https://www.theverge.com/ai-artificial-intelligence/999470/anthropic-biolab-claude-crispr"
+  "source": "YouTube CNBC",
+  "sourceUrl": "https://www.youtube.com/watch?v=EfdAaR_uDNs"
 }

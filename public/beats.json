@@ -1,162 +1,197 @@
 {
   "fps": 30,
-  "totalDurationInFrames": 971,
+  "totalDurationInFrames": 1181,
   "beats": [
     {
       "type": "headline_card",
-      "text": "Rath just says the United States is",
+      "text": "is trying to borrow $40 billion just",
       "emphasisWords": [
-        "United States",
-        "China"
+        "SpaceX",
+        "40 billion",
+        "Nvidia"
       ],
       "pacing": "slow",
-      "startFrame": 6,
-      "endFrame": 59,
-      "durationInFrames": 53,
-      "scriptText": "Jason Rathje says the United States is falling behind China"
+      "startFrame": 7,
+      "endFrame": 78,
+      "durationInFrames": 71,
+      "scriptText": "SpaceX is trying to borrow 40 billion dollars just to buy computer chips."
     },
     {
       "type": "stat_pill",
-      "text": "falling behind China in the race for artificial",
-      "value": "AI",
-      "label": "Global Race",
+      "text": "to buy computer chips. That is not a",
+      "value": "$40B",
+      "label": "Debt sought",
       "pacing": "slow",
-      "startFrame": 59,
-      "endFrame": 123,
-      "durationInFrames": 64,
-      "scriptText": "in the race for artificial intelligence. He is a top"
-    },
-    {
-      "type": "icon_text",
-      "text": "intelligence. He is a top official at a company called WebAI,",
-      "icon": "\ud83c\udfe2",
-      "pacing": "slow",
-      "startFrame": 123,
-      "endFrame": 228,
-      "durationInFrames": 105,
-      "scriptText": "official at a company called webAI, and he claims our"
-    },
-    {
-      "type": "versus",
-      "text": "and he claims our national security is now on the line.",
-      "left": "Software code development",
-      "right": "Supply chain infrastructure",
-      "pacing": "slow",
-      "startFrame": 228,
-      "endFrame": 305,
-      "durationInFrames": 77,
-      "scriptText": "national security is now on the line. The problem isn't"
+      "startFrame": 78,
+      "endFrame": 147,
+      "durationInFrames": 69,
+      "scriptText": "That is not a typo. They want to spend that"
     },
     {
       "type": "process_flow",
-      "text": "The problem isn't just the software itself, but how",
-      "pacing": "slow",
+      "text": "typo. They want to spend that massive pile of cash on Nvidia hardware to power",
       "steps": [
-        "Build supply chains",
-        "Power AI machines",
-        "Secure national interests"
+        "Borrow Cash",
+        "Buy Nvidia Chips",
+        "Power AI Data Centers"
       ],
-      "startFrame": 305,
-      "endFrame": 397,
-      "durationInFrames": 92,
-      "scriptText": "just the software itself, but how we build the supply"
+      "pacing": "slow",
+      "startFrame": 147,
+      "endFrame": 279,
+      "durationInFrames": 132,
+      "scriptText": "massive pile of cash on Nvidia hardware to power their artificial intelligence data centers."
     },
     {
-      "type": "chart_line",
-      "text": "we build the supply chains that power these machines.",
-      "points": [
+      "type": "progress_meter",
+      "text": "their artificial intelligence data centers. But here is the",
+      "value": 50,
+      "maxValue": 100,
+      "label": "Investment Clarity",
+      "pacing": "slow",
+      "startFrame": 279,
+      "endFrame": 374,
+      "durationInFrames": 95,
+      "scriptText": "But here is the wild part. Investors were shown a"
+    },
+    {
+      "type": "timeline",
+      "text": "wild part. Investors were shown a two-page document to explain this",
+      "pacing": "slow",
+      "events": [
         {
-          "label": "Year 1",
-          "value": 20
+          "date": "Step 1",
+          "label": "Two-page document"
         },
         {
-          "label": "Year 2",
-          "value": 45
+          "date": "Step 2",
+          "label": "Investment explanation"
         },
         {
-          "label": "Year 3",
-          "value": 80
+          "date": "Step 3",
+          "label": "Investor review"
         }
       ],
-      "pacing": "slow",
-      "startFrame": 397,
-      "endFrame": 460,
-      "durationInFrames": 63,
-      "scriptText": "chains that power these machines. Rathje argues the only way"
+      "startFrame": 374,
+      "endFrame": 487,
+      "durationInFrames": 113,
+      "scriptText": "two-page document to explain this investment, and it basically just"
     },
     {
       "type": "icon_text",
-      "text": "Raphja argues the only way to catch up is to embrace open source",
-      "icon": "\ud83d\udd13",
+      "text": "investment, and it basically just had a drawing of bees and stars with an arrow",
       "pacing": "slow",
-      "startFrame": 460,
-      "endFrame": 571,
-      "durationInFrames": 111,
-      "scriptText": "to catch up is to embrace open source AI, which"
-    },
-    {
-      "type": "process_flow",
-      "text": "AI, which lets anyone see and improve the code.",
-      "steps": [
-        "View Code",
-        "Improve Code",
-        "Innovate"
-      ],
-      "pacing": "slow",
-      "startFrame": 571,
-      "endFrame": 644,
-      "durationInFrames": 73,
-      "scriptText": "lets anyone see and improve the code. It is a"
-    },
-    {
-      "type": "scrollytelling",
-      "text": "It is a bold plan to keep American tech in the",
-      "pacing": "slow",
-      "title": "The Open Source Strategy",
-      "body": "Embracing open source is a bold plan to maintain American technological leadership.",
-      "startFrame": 644,
-      "endFrame": 723,
-      "durationInFrames": 79,
-      "scriptText": "bold plan to keep American tech in the lead, but"
-    },
-    {
-      "type": "scrollytelling",
-      "text": "lead, but it relies on sharing our secrets to",
-      "title": "The Open Source Paradox",
-      "body": "Sharing secrets to maintain a competitive advantage in global technology.",
-      "pacing": "slow",
-      "startFrame": 723,
-      "endFrame": 786,
-      "durationInFrames": 63,
-      "scriptText": "it relies on sharing our secrets to stay ahead."
+      "icon": "\ud83d\udc1d",
+      "startFrame": 487,
+      "endFrame": 589,
+      "durationInFrames": 102,
+      "scriptText": "had a drawing of bees and stars with an arrow pointing up."
     },
     {
       "type": "quote_attribution",
-      "text": "stay ahead. If you were in charge",
-      "quote": "If you were in charge of national security, would you keep AI code secret?",
-      "attribution": "Jason Rathje",
+      "text": "pointing up. One expert said it",
       "pacing": "slow",
-      "startFrame": 786,
-      "endFrame": 848,
-      "durationInFrames": 62,
-      "scriptText": "If you were in charge of national security, would you"
+      "quote": "It looked like a child's picture book instead of a real business plan.",
+      "attribution": "Industry expert",
+      "startFrame": 589,
+      "endFrame": 653,
+      "durationInFrames": 64,
+      "scriptText": "One expert said it looked like a child's picture book"
+    },
+    {
+      "type": "chart_line",
+      "text": "looked like a child's picture book instead of a real business plan.",
+      "points": [
+        {
+          "label": "Q1",
+          "value": 10
+        },
+        {
+          "label": "Q2",
+          "value": 25
+        },
+        {
+          "label": "Q3",
+          "value": 15
+        },
+        {
+          "label": "Q4",
+          "value": 40
+        }
+      ],
+      "pacing": "slow",
+      "startFrame": 653,
+      "endFrame": 732,
+      "durationInFrames": 79,
+      "scriptText": "instead of a real business plan. Now, everyone is asking"
+    },
+    {
+      "type": "icon_text",
+      "text": "Now, everyone is asking if these chips will actually make any",
+      "icon": "\ud83d\udcb8",
+      "pacing": "slow",
+      "startFrame": 732,
+      "endFrame": 839,
+      "durationInFrames": 107,
+      "scriptText": "if these chips will actually make any money or if"
+    },
+    {
+      "type": "stat_pill",
+      "text": "money, or if this is just a giant, extensive",
+      "value": "High",
+      "label": "Gamble Risk",
+      "pacing": "slow",
+      "startFrame": 839,
+      "endFrame": 902,
+      "durationInFrames": 63,
+      "scriptText": "this is just a giant, expensive gamble. With so many"
+    },
+    {
+      "type": "compare_split",
+      "text": "gamble. With so many companies fighting for the same limited",
+      "pacing": "slow",
+      "left": "Limited supply of cash",
+      "right": "Limited supply of chips",
+      "startFrame": 902,
+      "endFrame": 997,
+      "durationInFrames": 95,
+      "scriptText": "companies fighting for the same limited supply of cash and"
+    },
+    {
+      "type": "icon_text",
+      "text": "supply of cash and chips, the math is starting to",
+      "icon": "\ud83d\udcca",
+      "pacing": "normal",
+      "startFrame": 997,
+      "endFrame": 1063,
+      "durationInFrames": 66,
+      "scriptText": "chips, the math is starting to look shaky."
+    },
+    {
+      "type": "icon_text",
+      "text": "look shaky. Do you think",
+      "icon": "\ud83d\udcca",
+      "pacing": "slow",
+      "startFrame": 1063,
+      "endFrame": 1117,
+      "durationInFrames": 54,
+      "scriptText": "Do you think SpaceX is actually building the future, or"
     },
     {
       "type": "ticker_tape",
-      "text": "of national security, would you keep AI code secret or share it with the world to grow faster?",
+      "text": "SpaceX is actually building the future, or are they",
       "stories": [
-        "Open Source vs Closed",
-        "National Security Stakes",
-        "Global AI Race"
+        "SpaceX debt request",
+        "Nvidia chip demand",
+        "AI market volatility"
       ],
-      "label": "Strategy",
+      "label": "Markets",
       "pacing": "slow",
-      "startFrame": 848,
-      "endFrame": 971,
-      "durationInFrames": 123,
-      "scriptText": "keep AI code secret or share it with the world to grow faster?"
+      "startFrame": 1117,
+      "endFrame": 1181,
+      "durationInFrames": 64,
+      "scriptText": "are they just burning through cash on a trend?"
     }
   ],
-  "source": "YouTube CNBC",
-  "sourceUrl": "https://www.youtube.com/watch?v=EfdAaR_uDNs"
+  "source": "YouTube Yahoo Finance",
+  "sourceUrl": "https://www.youtube.com/watch?v=Bwwa4-EwpQQ"
 }

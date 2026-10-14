@@ -24,7 +24,7 @@ readability-lxml>=0.8.0
 # (empty timedtext responses → xml ParseError "no element found"); the 1.x
 # rewrite tracks YouTube's changes, and article_fetcher uses its instance
 # .fetch() API.
-youtube-transcript-api==1.2.2
+youtube-transcript-api==1.2.4
 
 # Assembly also requires ffmpeg (install via apt/brew/choco):
 #   sudo apt install ffmpeg        # Linux
@@ -35,4 +35,3 @@ youtube-transcript-api==1.2.2
 # For stock footage: No extra deps needed (uses stdlib urllib)
 # Get a free Pexels API key at: https://www.pexels.com/api/
 # Get a free Pixabay API key at: https://pixabay.com/api/docs/
-youtube-transcript-api==1.2.4

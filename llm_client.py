@@ -141,13 +141,31 @@ MODEL_REGISTRY = {
         "key_env": "GEMINI_API_KEY",
         "notes": "Google Gemini 3.1 Flash Lite (Google AI Studio)",
     },
+    "gemini-35-flash-lite": {
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "key_env": "GEMINI_API_KEY",
+        "notes": "Google Gemini 3.5 Flash Lite — fast, efficient, optimized for cost",
+    },
+    "gemini-37-flash": {
+        "provider": "gemini",
+        "model": "gemini-3.7-flash",
+        "key_env": "GEMINI_API_KEY",
+        "notes": "Google Gemini 3.7 Flash — fast, efficient, optimized for cost",
+    },
+    "gemini-38-flash": {
+        "provider": "gemini",
+        "model": "gemini-3.8-flash",
+        "key_env": "GEMINI_API_KEY",
+        "notes": "Google Gemini 3.8 Flash — fast, efficient, optimized for cost",
+    },
 }
 
-# Default model: Google Gemini 3.1 Flash Lite (Google AI Studio free tier).
+# Default model: Google Gemini 3.5 Flash Lite (Google AI Studio free tier).
 # Verified end-to-end on the Astra story (Sept 2026): 15/15 audio-text matches,
 # smoke test green. Groq (groq-gpt-oss-120b) is still in the registry for
 # fallback / A-B comparison but is no longer the default — see CLAUDE.md §11.
-DEFAULT_MODEL_KEY = "gemini-31-flash-lite"
+DEFAULT_MODEL_KEY = "gemini-35-flash-lite"
 
 
 def list_models() -> list[dict]:

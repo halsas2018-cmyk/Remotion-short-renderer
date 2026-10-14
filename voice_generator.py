@@ -43,7 +43,7 @@ FORMAT_LENGTH_SCALE = {
 DEFAULT_LENGTH_SCALE = 1.0 / 1.20  # +20% rate -> 0.8333
 
 # Model directory relative to project root
-MODELS_DIR = Path("/root/video_maker/models/piper")
+MODELS_DIR = Path(__file__).parent / "models" / "piper"
 
 # ---------------------------------------------------------------------------
 # Helper Functions

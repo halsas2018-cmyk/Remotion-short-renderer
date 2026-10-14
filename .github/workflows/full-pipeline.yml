@@ -68,7 +68,42 @@ jobs:
             libglib2.0-0 \
             curl
 
-      # ── 5. Python dependencies ────────────────────────────────────────────────
+      # ── 5. Piper TTS models (all 3 voices used by voice_generator.py) ────────
+      - name: Download Piper TTS models
+        run: |
+          mkdir -p models/piper
+
+          declare -A model_paths=(
+            ["en_US-ryan-medium"]="en/en_US/ryan/medium/en_US-ryan-medium"
+            ["en_US-amy-medium"]="en/en_US/amy/medium/en_US-amy-medium"
+            ["en_US-hfc_male-medium"]="en/en_US/hfc_male/medium/en_US-hfc_male-medium"
+          )
+
+          for voice_name in "${!model_paths[@]}"; do
+            url_suffix="${model_paths[$voice_name]}"
+            echo "━━ Downloading: $voice_name"
+
+            # .onnx model
+            onnx_tmp=$(mktemp)
+            curl -fsSL "https://huggingface.co/rhasspy/piper-voices/resolve/main/${url_suffix}.onnx?download=true" \
+              -o "$onnx_tmp" || { echo "ERROR: failed to download ${voice_name}.onnx"; exit 1; }
+            [ -s "$onnx_tmp" ] || { echo "ERROR: empty file for ${voice_name}.onnx"; exit 1; }
+            mv "$onnx_tmp" "models/piper/${voice_name}.onnx"
+
+            # .onnx.json config
+            json_tmp=$(mktemp)
+            curl -fsSL "https://huggingface.co/rhasspy/piper-voices/resolve/main/${url_suffix}.onnx.json?download=true" \
+              -o "$json_tmp" || { echo "ERROR: failed to download ${voice_name}.onnx.json"; exit 1; }
+            [ -s "$json_tmp" ] || { echo "ERROR: empty file for ${voice_name}.onnx.json"; exit 1; }
+            mv "$json_tmp" "models/piper/${voice_name}.onnx.json"
+
+            echo "✓ $voice_name"
+          done
+
+          echo "✓ All Piper TTS models downloaded"
+          ls -lh models/piper/
+
+      # ── 6. Python dependencies ────────────────────────────────────────────────
       - name: Install Python dependencies
         run: |
           python3 -m pip install --break-system-packages --upgrade pip

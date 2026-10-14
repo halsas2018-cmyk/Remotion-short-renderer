@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -77,9 +78,9 @@ def _generate_wav_with_piper(text: str, wav_output_path: Path, voice_name: str, 
     """Generate WAV audio using Piper TTS."""
     model_path, config_path = _get_model_paths(voice_name)
 
-    # Piper command: echo "text" | piper --model model.onnx --config model.onnx.json --output_file output.wav --length-scale X.X
+    piper_bin = ["piper"] if shutil.which("piper") else [sys.executable, "-m", "piper"]
     cmd = [
-        "piper",
+        *piper_bin,
         "--model", str(model_path),
         "--config", str(config_path),
         "--output-file", str(wav_output_path),

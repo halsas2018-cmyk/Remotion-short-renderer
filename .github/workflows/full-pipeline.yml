@@ -1,4 +1,4 @@
-name: Full Pipeline (No YouTube Upload)
+name: Full YouTube Shorts Pipeline (No YouTube Upload)
 
 on:
   workflow_dispatch:
@@ -100,7 +100,8 @@ jobs:
             echo "✓ $voice_name"
           done
 
-          echo "✓ All Piper TTS models downloaded"
+          chmod 644 models/piper/*
+          echo "✓ All Piper TTS models downloaded and verified"
           ls -lh models/piper/
 
       # ── 6. Python dependencies ────────────────────────────────────────────────
@@ -108,6 +109,7 @@ jobs:
         run: |
           python3 -m pip install --break-system-packages --upgrade pip
           python3 -m pip install --break-system-packages -r requirements.txt
+          python3 -m pip install --break-system-packages piper-tts==1.8.0
           # WhisperX for word-level timestamps (word captions in Remotion)
           python3 -m pip install --break-system-packages \
             git+https://github.com/m-bain/whisperx.git
@@ -115,11 +117,22 @@ jobs:
           python3 -m pip install --break-system-packages \
             torch --index-url https://download.pytorch.org/whl/cpu
 
-      # ── 6. Node / Remotion dependencies ──────────────────────────────────────
+      # ── 6b. Verify Piper TTS ──────────────────────────────────────────────────
+      - name: Verify Piper TTS setup
+        run: |
+          echo "Verifying Piper CLI / module..."
+          python3 -m piper --help > /dev/null 2>&1 || which piper || { echo "ERROR: piper not found"; exit 1; }
+          echo "Verifying downloaded models..."
+          test -f models/piper/en_US-ryan-medium.onnx || { echo "ERROR: en_US-ryan-medium.onnx missing"; exit 1; }
+          test -f models/piper/en_US-amy-medium.onnx || { echo "ERROR: en_US-amy-medium.onnx missing"; exit 1; }
+          test -f models/piper/en_US-hfc_male-medium.onnx || { echo "ERROR: en_US-hfc_male-medium.onnx missing"; exit 1; }
+          echo "✓ Piper TTS setup verified successfully"
+
+      # ── 7. Node / Remotion dependencies ──────────────────────────────────────
       - name: Install Node dependencies
         run: npm ci --legacy-peer-deps
 
-      # ── 7. Run full pipeline (voice + assets + Remotion render) ──────────────
+      # ── 8. Run full pipeline (voice + assets + Remotion render) ──────────────
       - name: Run full pipeline
         if: ${{ github.event.inputs.no_video != 'true' }}
         id: pipeline
@@ -134,10 +147,9 @@ jobs:
             --auto \
             --count "${{ inputs.count }}" \
             --model "${{ inputs.model }}" \
-            --rank-model "${{ inputs.rank_model }}" \
-            
+            --rank-model "${{ inputs.rank_model }}"
 
-      # ── 7b. Scripts-only mode ─────────────────────────────────────────────────
+      # ── 8b. Scripts-only mode ─────────────────────────────────────────────────
       - name: Run pipeline (scripts only)
         if: ${{ github.event.inputs.no_video == 'true' }}
         id: pipeline-no-video
@@ -155,7 +167,7 @@ jobs:
             --rank-model "${{ inputs.rank_model }}" \
             --no-video
 
-      # ── 8. Diagnostics (always, even on failure) ──────────────────────────────
+      # ── 9. Diagnostics (always, even on failure) ──────────────────────────────
       - name: Diagnose generated files
         if: always() && github.event.inputs.no_video != 'true'
         run: |
@@ -163,8 +175,8 @@ jobs:
           find output -type f -name 'draft_video.mp4' 2>/dev/null | sort || echo "(none)"
 
           echo ""
-          echo "=== YouTube metadata ==="
-          find output -type f -name 'youtube_meta.json' 2>/dev/null | sort || echo "(none)"
+          echo "=== Social & YouTube metadata ==="
+          find output -type f \( -name 'youtube_meta.json' -o -name 'social_metadata.json' -o -name 'youtube_title.txt' \) 2>/dev/null | sort || echo "(none)"
 
           echo ""
           echo "=== Output directory size ==="
@@ -174,7 +186,7 @@ jobs:
           echo "=== MP4 files (first 20) ==="
           find output -type f -name '*.mp4' 2>/dev/null | head -20 || echo "(none)"
 
-      # ── 9. Save videos as GitHub artifacts ───────────────────────────────────
+      # ── 10. Save videos as GitHub artifacts ───────────────────────────────────
       - name: Upload rendered videos (artifacts)
         if: always() && github.event.inputs.no_video != 'true'
         uses: actions/upload-artifact@v4
@@ -184,7 +196,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      # ── 10. Save all project files as artifacts ───────────────────────────────
+      # ── 11. Save all project files as artifacts ───────────────────────────────
       - name: Upload project folders (artifacts)
         if: always()
         uses: actions/upload-artifact@v4
@@ -194,7 +206,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      # ── 11. Final summary ─────────────────────────────────────────────────────
+      # ── 12. Final summary ─────────────────────────────────────────────────────
       - name: Print summary
         if: always()
         env:

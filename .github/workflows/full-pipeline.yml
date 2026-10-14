@@ -1,0 +1,186 @@
+name: Full Pipeline (No YouTube Upload)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Number of videos to produce"
+        type: number
+        default: 3
+        required: false
+      model:
+        description: "LLM model key for script generation"
+        type: string
+        default: "gemini-35-flash-lite"
+        required: false
+      rank_model:
+        description: "LLM model key for editorial rerank (defaults to model)"
+        type: string
+        default: "nvidia-nemotron-ultra"
+        required: false
+      no_video:
+        description: "Scripts only (skip voice, assets, render)"
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  pipeline:
+    name: Generate Shorts
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    permissions:
+      contents: write
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. Python ────────────────────────────────────────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      # ── 3. Node.js (for Remotion render) ─────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # ── 4. System packages (ffmpeg required by voice_generator + remotion_assembler) ──
+      - name: Install system packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libglib2.0-0 \
+            curl
+
+      # ── 5. Python dependencies ────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --break-system-packages --upgrade pip
+          python3 -m pip install --break-system-packages -r requirements.txt
+          # WhisperX for word-level timestamps (word captions in Remotion)
+          python3 -m pip install --break-system-packages \
+            git+https://github.com/m-bain/whisperx.git
+          # CPU-only torch (CI has no GPU)
+          python3 -m pip install --break-system-packages \
+            torch --index-url https://download.pytorch.org/whl/cpu
+
+      # ── 6. Node / Remotion dependencies ──────────────────────────────────────
+      - name: Install Node dependencies
+        run: npm ci --legacy-peer-deps
+
+      # ── 7. Run full pipeline (voice + assets + Remotion render) ──────────────
+      - name: Run full pipeline
+        if: ${{ github.event.inputs.no_video != 'true' }}
+        id: pipeline
+        env:
+          GROQ_API_KEY:    ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY:  ${{ secrets.GEMINI_API_KEY }}
+          NVIDIA_API_KEY:  ${{ secrets.NVIDIA_API_KEY }}
+          PEXELS_API_KEY:  ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          python3 run_pipeline.py \
+            --auto \
+            --count "${{ inputs.count }}" \
+            --model "${{ inputs.model }}" \
+            --rank-model "${{ inputs.rank_model }}" \
+            --render
+
+      # ── 7b. Scripts-only mode ─────────────────────────────────────────────────
+      - name: Run pipeline (scripts only)
+        if: ${{ github.event.inputs.no_video == 'true' }}
+        id: pipeline-no-video
+        env:
+          GROQ_API_KEY:    ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY:  ${{ secrets.GEMINI_API_KEY }}
+          NVIDIA_API_KEY:  ${{ secrets.NVIDIA_API_KEY }}
+          PEXELS_API_KEY:  ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          python3 run_pipeline.py \
+            --auto \
+            --count "${{ inputs.count }}" \
+            --model "${{ inputs.model }}" \
+            --rank-model "${{ inputs.rank_model }}" \
+            --no-video
+
+      # ── 8. Diagnostics (always, even on failure) ──────────────────────────────
+      - name: Diagnose generated files
+        if: always() && github.event.inputs.no_video != 'true'
+        run: |
+          echo "=== Rendered videos ==="
+          find output -type f -name 'draft_video.mp4' 2>/dev/null | sort || echo "(none)"
+
+          echo ""
+          echo "=== YouTube metadata ==="
+          find output -type f -name 'youtube_meta.json' 2>/dev/null | sort || echo "(none)"
+
+          echo ""
+          echo "=== Output directory size ==="
+          du -sh output 2>/dev/null || echo "output/ does not exist"
+
+          echo ""
+          echo "=== MP4 files (first 20) ==="
+          find output -type f -name '*.mp4' 2>/dev/null | head -20 || echo "(none)"
+
+      # ── 9. Save videos as GitHub artifacts ───────────────────────────────────
+      - name: Upload rendered videos (artifacts)
+        if: always() && github.event.inputs.no_video != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-videos-${{ github.run_id }}
+          path: output/**/draft_video.mp4
+          retention-days: 7
+          if-no-files-found: warn
+
+      # ── 10. Save all project files as artifacts ───────────────────────────────
+      - name: Upload project folders (artifacts)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-projects-${{ github.run_id }}
+          path: output/**/*
+          retention-days: 7
+          if-no-files-found: warn
+
+      # ── 11. Final summary ─────────────────────────────────────────────────────
+      - name: Print summary
+        if: always()
+        env:
+          REQUESTED_COUNT: ${{ inputs.count }}
+          MODEL:           ${{ inputs.model }}
+          RANK_MODEL:      ${{ inputs.rank_model }}
+          NO_VIDEO:        ${{ inputs.no_video }}
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════╗"
+          echo "║            Pipeline Run Summary                  ║"
+          echo "╠══════════════════════════════════════════════════╣"
+          echo "║  Run ID:           ${{ github.run_id }}"
+          echo "║  Requested videos: $REQUESTED_COUNT"
+          echo "║  Generation model: $MODEL"
+          echo "║  Ranking model:    $RANK_MODEL"
+          echo "║  Scripts-only:     $NO_VIDEO"
+          echo "╚══════════════════════════════════════════════════╝"
+
+          if [[ "$NO_VIDEO" != "true" ]]; then
+            echo ""
+            echo "=== Finished Videos ==="
+            find output -type f -name 'draft_video.mp4' -exec ls -lh {} \; 2>/dev/null || echo "(none)"
+          fi

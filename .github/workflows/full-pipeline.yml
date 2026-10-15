@@ -147,7 +147,8 @@ jobs:
             --auto \
             --count "${{ inputs.count }}" \
             --model "${{ inputs.model }}" \
-            --rank-model "${{ inputs.rank_model }}"
+            --rank-model "${{ inputs.rank_model }}" \
+            --render
 
       # ── 8b. Scripts-only mode ─────────────────────────────────────────────────
       - name: Run pipeline (scripts only)

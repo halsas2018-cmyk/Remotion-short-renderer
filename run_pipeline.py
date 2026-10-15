@@ -26,6 +26,7 @@ Flags:
     --auto        Don't prompt for story selection; generate top-N automatically
     --no-dedupe   Don't filter out stories already generated today
     --no-llm-rank Skip the LLM editorial rerank; rank by heuristic score only
+    --render      Render video with Remotion after staging assets (default: stage only)
 """
 
 import argparse
@@ -60,6 +61,7 @@ from script_generator import process_story
 from voice_generator import generate_narration
 from extract_word_timestamps import extract_word_timestamps
 from beat_generator import generate_beats
+from remotion_assembler import assemble_video_remotion
 
 
 def slugify(text: str, max_len: int = 50) -> str:
@@ -334,6 +336,10 @@ def main():
     parser.add_argument("--auto", action="store_true", help="Don't prompt for story selection; generate top-N automatically")
     parser.add_argument("--no-dedupe", action="store_true", help="Don't filter out stories already generated today")
     parser.add_argument("--no-llm-rank", action="store_true", help="Skip LLM editorial rerank; rank by heuristic score only")
+    parser.add_argument(
+        "--render", action="store_true",
+        help="Render video with Remotion after staging assets (default: stage only, use --render to actually render)"
+    )
     args = parser.parse_args()
 
     if args.count > 10:
@@ -496,6 +502,26 @@ def main():
                     continue
                 shutil.copyfile(src_path, dst)
             print(f"  ✓ copied beats.json + narration.mp3 + timestamps.json to public/")
+
+            # ── Remotion render (per-video, in order: video 1, 2, ... N) ──────────
+            # Only runs when --render is passed and we actually have a narration.
+            # assemble_video_remotion() re-stages assets into public/project_assets/,
+            # writes remotion_props.json, then calls `npx remotion render` to produce
+            # draft_video.mp4 inside the project directory.
+            if args.render and not args.no_video:
+                narration_check = Path(artifacts.get("narration") or "")
+                if narration_check.exists():
+                    print(f"  ─ [{idx}/{len(selected)}] Rendering video with Remotion...")
+                    try:
+                        output_video = assemble_video_remotion(project_dir)
+                        print(f"  ✓ [{idx}/{len(selected)}] Rendered: {output_video}")
+                    except Exception as rend_err:
+                        print(f"  ⚠ [{idx}/{len(selected)}] Remotion render FAILED: {rend_err}")
+                        import traceback
+                        traceback.print_exc()
+                else:
+                    print(f"  ⚠ [{idx}/{len(selected)}] Skipping render — narration not found at {narration_check}")
+
         except Exception as e:
             print(f"  ERROR: {e}")
             import traceback

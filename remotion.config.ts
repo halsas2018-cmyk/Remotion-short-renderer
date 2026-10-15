@@ -73,4 +73,34 @@ Config.overrideWebpackConfig((current) => {
   };
 });
 Config.setPublicLicenseKey('free-license');
+
+/**
+ * Limit Remotion to a single Chrome tab on headless CI runners.
+ *
+ * The default concurrency spawns one Chrome tab per logical CPU core.
+ * On a memory-constrained GitHub Actions runner this causes Chrome to
+ * OOM-kill tabs mid-render, triggering "No target found" ProtocolErrors.
+ * Capping at 1 trades parallelism for stability.
+ *
+ * Safe to override locally with `--concurrency=<n>` on the CLI.
+ */
+Config.setConcurrency(1);
+
+/**
+ * Disable Chrome's kernel sandbox for GitHub Actions headless environments.
+ *
+ * GitHub Actions runners run inside a container/VM where the user-namespace
+ * sandbox is not available. Without these flags Chrome refuses to start.
+ *
+ * These flags are safe on a trusted CI runner; do NOT use in production
+ * environments where the rendered content is untrusted.
+ */
+Config.setChromiumDisableWebSecurity(false);
+Config.setChromiumHeadlessMode("shell");
+Config.overrideBrowserExecutable(undefined); // use bundled Chromium
+Config.setChromiumUserAgent(undefined);      // keep default UA
+
+/**
+ * Surface the real error in CI logs if a render still fails.
+ */
 Config.setLogLevel('verbose');

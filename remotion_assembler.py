@@ -148,6 +148,11 @@ def assemble_video_remotion(project_dir: Path) -> Path:
         "ShortsComposition",
         str(output_video.absolute()),
         f"--props={str(props_json_path.absolute())}",
+        "--concurrency=1",   # Prevents "No target found" ProtocolError on headless CI —
+                             # default concurrency spawns multiple Chrome tabs; if the
+                             # runner runs out of memory/CPU, Chrome kills a tab while
+                             # Remotion is still sending it a Target.closeTarget command.
+        "--log=verbose",     # Surface the real error in CI logs if the render still fails.
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
